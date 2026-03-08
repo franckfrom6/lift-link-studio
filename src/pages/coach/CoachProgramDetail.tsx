@@ -512,7 +512,12 @@ const CoachProgramDetail = () => {
 
       {/* Weeks tabs */}
       {program.weeks.length > 0 && (
-        <Tabs value={activeWeek} onValueChange={setActiveWeek}>
+        <Tabs value={activeWeek} onValueChange={(v) => {
+          setActiveWeek(v);
+          const weekIdx = Number(v);
+          const firstSession = program.weeks[weekIdx]?.sessions[0];
+          setActiveSessionId(firstSession?.id || null);
+        }}>
           <TabsList className="bg-surface">
             {program.weeks.map((w, i) => (
               <TabsTrigger key={w.id} value={String(i)} className="text-xs">
