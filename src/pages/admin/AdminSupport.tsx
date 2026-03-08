@@ -42,7 +42,7 @@ const AdminSupport = () => {
   const [sending, setSending] = useState(false);
 
   const fetchTickets = async () => {
-    const { data } = await supabase.from("support_tickets").select("*").order("created_at", { ascending: false });
+    const { data } = await db.from("support_tickets").select("*").order("created_at", { ascending: false });
     setTickets(data || []);
 
     // Fetch user names
