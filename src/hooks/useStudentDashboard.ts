@@ -34,7 +34,7 @@ export const useStudentDashboard = () => {
       const { data: completedSessions } = await supabase
         .from("completed_sessions")
         .select("id, session_id, started_at")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .gte("started_at", weekStart.toISOString())
         .lte("started_at", weekEnd.toISOString());
 
