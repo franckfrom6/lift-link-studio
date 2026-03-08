@@ -45,6 +45,7 @@ i18n
         exercises: frExercises,
         recovery: frRecovery,
         settings: frSettings,
+        bilan: frBilan,
       },
       en: {
         common: enCommon,
