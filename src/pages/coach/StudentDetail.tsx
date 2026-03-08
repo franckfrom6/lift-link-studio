@@ -16,6 +16,8 @@ import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import CoachSuggestion from "@/components/coach/CoachSuggestion";
 import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
+import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
+import { BookOpen } from "lucide-react";
 
 // Demo data for Yana
 const DEMO_CHECKIN = {
