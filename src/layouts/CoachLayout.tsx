@@ -66,7 +66,7 @@ const CoachLayout = () => {
 
       <div className="flex-1 flex flex-col min-h-screen">
         <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background">
-          <Logo variant="compact" size="sm" />
+          <Logo variant="mobile" />
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
             <ThemeToggle />

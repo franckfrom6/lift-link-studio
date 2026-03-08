@@ -67,7 +67,7 @@ const AuthPage = () => {
 
         <div className="w-full max-w-md space-y-8">
           <div className="lg:hidden flex justify-center mb-4">
-            <Logo variant="full" size="md" />
+            <Logo variant="full" />
           </div>
 
           <div className="space-y-2 text-center">
