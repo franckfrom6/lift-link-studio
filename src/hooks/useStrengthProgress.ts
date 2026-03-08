@@ -27,12 +27,12 @@ export const useStrengthProgress = () => {
 
   // Fetch exercises the student has done
   useEffect(() => {
-    if (!user) return;
+    if (!studentId) return;
     const fetch = async () => {
       const { data: completedSessions } = await supabase
         .from("completed_sessions")
         .select("id")
-        .eq("student_id", user.id);
+        .eq("student_id", studentId);
       
       if (!completedSessions || completedSessions.length === 0) return;
       
