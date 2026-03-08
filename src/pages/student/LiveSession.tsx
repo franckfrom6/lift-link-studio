@@ -374,10 +374,10 @@ const LiveSession = () => {
                       restSeconds={restSeconds}
                       tempo={ex.tempo || null}
                       rpeTarget={ex.rpe || null}
-                      suggestedWeight={null}
+                      suggestedWeight={ex.load ? parseFloat(ex.load) || null : null}
                       coachNotes={ex.notes || null}
                       videoUrl={ex.video || null}
-                      videoSearchQuery={null}
+                      videoSearchQuery={(ex as any).videoSearchQuery || ex.name || null}
                       isActive={isActive}
                       completedSets={sets}
                       onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
