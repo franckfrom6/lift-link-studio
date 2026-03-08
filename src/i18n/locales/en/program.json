@@ -55,5 +55,18 @@
   "blocks": "{{count}} blocks",
   "coach_note": "Coach note",
   "generate_ai_bilan": "Generate AI report",
-  "pdf_downloaded": "PDF downloaded!"
+  "pdf_downloaded": "PDF downloaded!",
+  "week_title": "Week {{number}}",
+  "duplicate": "Duplicate",
+  "add_session_placeholder": "Add a session...",
+  "session_default_name": "Session {{day}}",
+  "session_name_placeholder": "Session name",
+  "exercises_outside_section": "Exercises outside sections",
+  "exercise": "Exercise",
+  "section": "Section",
+  "section_name_placeholder": "Section name",
+  "section_notes_placeholder": "Section notes (optional)...",
+  "add_exercise": "Add an exercise",
+  "adapted_program_week": "Adapted program — Week {{number}}",
+  "proposed_sessions": "{{count}} proposed session(s)"
 }

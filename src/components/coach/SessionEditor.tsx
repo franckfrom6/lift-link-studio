@@ -6,6 +6,7 @@ import SessionExerciseCard from "./SessionExerciseCard";
 import { useState } from "react";
 import ExercisePicker from "./ExercisePicker";
 import SessionSectionEditor from "./SessionSectionEditor";
+import { useTranslation } from "react-i18next";
 
 interface SessionEditorProps {
   session: SessionData;
@@ -14,6 +15,7 @@ interface SessionEditorProps {
 }
 
 const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
+  const { t } = useTranslation('program');
   const [collapsed, setCollapsed] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [addToSectionId, setAddToSectionId] = useState<string | null>(null);
@@ -94,6 +96,9 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
     ...(session.sections || []).flatMap(s => s.exercises.map(e => e.exercise.id)),
   ];
 
+  const totalExercises = session.exercises.length + (session.sections || []).reduce((a, s) => a + s.exercises.length, 0);
+  const totalSections = (session.sections || []).length;
+
   return (
     <div className="border border-border rounded-xl overflow-hidden">
       {/* Session header */}
@@ -109,10 +114,10 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
             value={session.name}
             onChange={(e) => onUpdate({ ...session, name: e.target.value })}
             className="h-8 bg-transparent border-none p-0 font-semibold text-sm focus-visible:ring-0"
-            placeholder="Nom de la séance"
+            placeholder={t('session_name_placeholder')}
           />
           <p className="text-[11px] text-muted-foreground">
-            {DAY_NAMES[session.dayOfWeek]} · {session.exercises.length + (session.sections || []).reduce((a, s) => a + s.exercises.length, 0)} exercice{session.exercises.length !== 1 ? "s" : ""} · {(session.sections || []).length} section{(session.sections || []).length !== 1 ? "s" : ""}
+            {DAY_NAMES[session.dayOfWeek]} · {t('exercises_count', { count: totalExercises })} · {totalSections} {t('section').toLowerCase()}{totalSections !== 1 ? "s" : ""}
           </p>
         </div>
         <button onClick={onRemove} className="text-muted-foreground hover:text-destructive transition-colors p-1">
@@ -137,7 +142,7 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
             <div className="space-y-3">
               {(session.sections || []).length > 0 && (
                 <p className="text-[11px] text-muted-foreground uppercase tracking-[0.05em] font-semibold px-1">
-                  Exercices hors section
+                  {t('exercises_outside_section')}
                 </p>
               )}
               {session.exercises.map((exItem, i) => (
@@ -158,11 +163,11 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="flex-1" onClick={() => { setAddToSectionId(null); setPickerOpen(true); }}>
               <Plus className="w-4 h-4 mr-2" strokeWidth={1.5} />
-              Exercice
+              {t('exercise')}
             </Button>
             <Button variant="outline" size="sm" className="flex-1" onClick={addSection}>
               <FolderPlus className="w-4 h-4 mr-2" strokeWidth={1.5} />
-              Section
+              {t('section')}
             </Button>
           </div>
         </div>

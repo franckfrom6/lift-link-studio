@@ -55,5 +55,18 @@
   "blocks": "{{count}} blocs",
   "coach_note": "Note coach",
   "generate_ai_bilan": "Générer un bilan IA",
-  "pdf_downloaded": "PDF téléchargé !"
+  "pdf_downloaded": "PDF téléchargé !",
+  "week_title": "Semaine {{number}}",
+  "duplicate": "Dupliquer",
+  "add_session_placeholder": "Ajouter une séance...",
+  "session_default_name": "Séance {{day}}",
+  "session_name_placeholder": "Nom de la séance",
+  "exercises_outside_section": "Exercices hors section",
+  "exercise": "Exercice",
+  "section": "Section",
+  "section_name_placeholder": "Nom de la section",
+  "section_notes_placeholder": "Notes de section (optionnel)...",
+  "add_exercise": "Ajouter un exercice",
+  "adapted_program_week": "Programme adapté — Semaine {{number}}",
+  "proposed_sessions": "{{count}} séance(s) proposée(s)"
 }

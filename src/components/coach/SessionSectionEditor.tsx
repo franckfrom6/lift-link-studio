@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import SessionExerciseCard from "./SessionExerciseCard";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface SessionSectionEditorProps {
   section: SessionSectionData;
@@ -14,6 +15,7 @@ interface SessionSectionEditorProps {
 }
 
 const SessionSectionEditor = ({ section, onUpdate, onRemove, onAddExercise }: SessionSectionEditorProps) => {
+  const { t } = useTranslation('program');
   const [collapsed, setCollapsed] = useState(false);
 
   const updateExercise = (index: number, updated: SessionExerciseData) => {
@@ -52,7 +54,7 @@ const SessionSectionEditor = ({ section, onUpdate, onRemove, onAddExercise }: Se
           value={section.name}
           onChange={(e) => onUpdate({ ...section, name: e.target.value })}
           className="h-7 bg-transparent border-none p-0 font-semibold text-sm focus-visible:ring-0 flex-1"
-          placeholder="Nom de la section"
+          placeholder={t('section_name_placeholder')}
         />
         <Input
           value={section.durationEstimate || ""}
@@ -71,7 +73,7 @@ const SessionSectionEditor = ({ section, onUpdate, onRemove, onAddExercise }: Se
           <Input
             value={section.notes || ""}
             onChange={(e) => onUpdate({ ...section, notes: e.target.value || undefined })}
-            placeholder="Notes de section (optionnel)..."
+            placeholder={t('section_notes_placeholder')}
             className="h-7 bg-transparent border-dashed text-xs italic"
           />
         </div>
@@ -94,7 +96,7 @@ const SessionSectionEditor = ({ section, onUpdate, onRemove, onAddExercise }: Se
           ))}
           <Button variant="ghost" size="sm" className="w-full text-muted-foreground text-xs" onClick={onAddExercise}>
             <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
-            Ajouter un exercice
+            {t('add_exercise')}
           </Button>
         </div>
       )}
