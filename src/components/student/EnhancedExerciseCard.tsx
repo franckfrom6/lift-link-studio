@@ -42,6 +42,7 @@ const EnhancedExerciseCard = ({
   tempo, rpeTarget, suggestedWeight, coachNotes,
   videoUrl, videoSearchQuery,
   isActive, completedSets, onCompletedSetsChange, onAllSetsComplete,
+  onSwapExercise, hasAlternatives, isSubstituted,
   previousSets,
 }: EnhancedExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
