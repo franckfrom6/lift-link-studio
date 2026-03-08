@@ -78,24 +78,22 @@ export const useStudentProgram = () => {
   const [error, setError] = useState<string | null>(null);
 
   const studentId = user ? effectiveStudentId(user.id) : null;
-  const isFetchingRef = useRef(false);
 
-  const fetchProgram = useCallback(async (isRefresh = false) => {
-    if (!studentId || isFetchingRef.current) {
-      if (!studentId) setLoading(false);
+  // Debounced refetch: queues a refetch if one is in-flight, never drops requests
+  const pendingRef = useRef(false);
+  const inFlightRef = useRef(false);
+
+  const doFetch = useCallback(async (isRefresh: boolean) => {
+    if (!studentId) {
+      setLoading(false);
       return;
     }
 
-    isFetchingRef.current = true;
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     setError(null);
 
     try {
-      // Get active program for this student
       const { data: programs, error: pErr } = await supabase
         .from("programs")
         .select("*")
@@ -106,20 +104,17 @@ export const useStudentProgram = () => {
       if (pErr) throw pErr;
       if (!programs || programs.length === 0) {
         setProgram(null);
-        setLoading(false);
         return;
       }
 
       const prog = programs[0];
 
-      // Fetch weeks
       const { data: weeks } = await supabase
         .from("program_weeks")
         .select("*")
         .eq("program_id", prog.id)
         .order("week_number");
 
-      // Fetch progression
       const { data: progression } = await supabase
         .from("program_progression")
         .select("*")
@@ -128,11 +123,9 @@ export const useStudentProgram = () => {
 
       if (!weeks || weeks.length === 0) {
         setProgram({ ...prog, weeks: [], progression: progression || [] });
-        setLoading(false);
         return;
       }
 
-      // Fetch sessions for all weeks
       const weekIds = weeks.map(w => w.id);
       const { data: sessions } = await supabase
         .from("sessions")
@@ -142,11 +135,9 @@ export const useStudentProgram = () => {
 
       if (!sessions) {
         setProgram({ ...prog, weeks: weeks.map(w => ({ ...w, sessions: [] })), progression: progression || [] });
-        setLoading(false);
         return;
       }
 
-      // Fetch sections for all sessions
       const sessionIds = sessions.map(s => s.id);
       const { data: sections } = await supabase
         .from("session_sections")
@@ -154,7 +145,6 @@ export const useStudentProgram = () => {
         .in("session_id", sessionIds)
         .order("sort_order");
 
-      // Fetch exercises with exercise details
       const { data: sessionExercises } = await supabase
         .from("session_exercises")
         .select("*, exercise:exercises(*)")
@@ -216,12 +206,31 @@ export const useStudentProgram = () => {
       console.error("Error fetching program:", e);
       setError(e.message);
     } finally {
-      isFetchingRef.current = false;
       setLoading(false);
       setRefreshing(false);
     }
   }, [studentId]);
 
+  // Smart fetch: if already in-flight, queue a re-run instead of dropping
+  const fetchProgram = useCallback(async (isRefresh = false) => {
+    if (inFlightRef.current) {
+      pendingRef.current = true;
+      return;
+    }
+    inFlightRef.current = true;
+    await doFetch(isRefresh);
+    inFlightRef.current = false;
+
+    // If a request was queued while we were fetching, run it now
+    if (pendingRef.current) {
+      pendingRef.current = false;
+      inFlightRef.current = true;
+      await doFetch(true);
+      inFlightRef.current = false;
+    }
+  }, [doFetch]);
+
+  // Initial load
   useEffect(() => {
     fetchProgram(false);
   }, [fetchProgram]);
@@ -232,54 +241,25 @@ export const useStudentProgram = () => {
 
     const channel = supabase
       .channel('student-program-sync')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'session_exercises' },
-        () => fetchProgram(true)
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'sessions' },
-        () => fetchProgram(true)
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'session_sections' },
-        () => fetchProgram(true)
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_exercises' }, () => fetchProgram(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => fetchProgram(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_sections' }, () => fetchProgram(true))
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [program?.id, fetchProgram]);
 
-  // Fallback polling: guarantees eventual sync even if realtime events are missed
+  // Visibility-based refetch: sync when user returns to tab
   useEffect(() => {
     if (!studentId) return;
 
-    let pollInterval = 4000;
-    let timeoutId: ReturnType<typeof setTimeout>;
-    let isActive = true;
-
-    const poll = async () => {
-      await fetchProgram(true);
-
-      pollInterval = document.visibilityState === "visible"
-        ? 4000
-        : Math.min(pollInterval * 1.5, 30000);
-
-      if (isActive) {
-        timeoutId = setTimeout(poll, pollInterval);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchProgram(true);
       }
     };
-
-    timeoutId = setTimeout(poll, pollInterval);
-
-    return () => {
-      isActive = false;
-      clearTimeout(timeoutId);
-    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [studentId, fetchProgram]);
 
   const seedDemo = async () => {
