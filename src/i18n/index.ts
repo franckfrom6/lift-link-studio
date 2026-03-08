@@ -57,6 +57,7 @@ i18n
         recommendations: frRecommendations,
         plans: frPlans,
         admin: frAdmin,
+        feedback: frFeedback,
       },
       en: {
         common: enCommon,
