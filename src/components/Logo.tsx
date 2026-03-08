@@ -1,95 +1,56 @@
 import { useTheme } from "@/contexts/ThemeContext";
 
-type LogoVariant = "full" | "compact" | "icon";
-type LogoSize = "sm" | "md" | "lg";
-
 interface LogoProps {
-  variant?: LogoVariant;
-  size?: LogoSize;
+  variant?: "full" | "header" | "mobile" | "compact";
   className?: string;
 }
 
-const sizes = {
-  sm: { full: { h: 24, fs: 18 }, compact: { h: 28, w: 28 }, icon: { h: 20, w: 20 } },
-  md: { full: { h: 32, fs: 24 }, compact: { h: 36, w: 36 }, icon: { h: 28, w: 28 } },
-  lg: { full: { h: 48, fs: 36 }, compact: { h: 48, w: 48 }, icon: { h: 36, w: 36 } },
-};
+const ACCENT = "#6C5CE7";
 
-const Logo = ({ variant = "full", size = "md", className = "" }: LogoProps) => {
+const Logo = ({ variant = "header", className = "" }: LogoProps) => {
   const { theme } = useTheme();
-  const isDark = theme === "dark";
-  const s = sizes[size];
+  const textColor = theme === "dark" ? "#F3F4F6" : "#1A1A1A";
 
-  const accentColor = "#6C5CE7";
-  const textColor = isDark ? "#FFFFFF" : "#1A1A2E";
-
-  if (variant === "icon" || variant === "compact") {
-    const dim = variant === "compact" ? s.compact : s.icon;
-    const fontSize = dim.h * 0.48;
+  if (variant === "compact") {
     return (
-      <svg
-        width={dim.w}
-        height={dim.h}
-        viewBox="0 0 36 36"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className={className}
-      >
-        <rect width="36" height="36" rx="8" fill={accentColor} />
-        <text
-          x="18"
-          y="19"
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill="#FFFFFF"
-          fontFamily="Inter, sans-serif"
-          fontWeight="800"
-          fontSize={fontSize > 0 ? "16" : "16"}
-          letterSpacing="-0.02em"
-        >
-          F6
-        </text>
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" className={className}>
+        <rect width="44" height="44" rx="10" fill={ACCENT} />
+        <text x="22" y="23" textAnchor="middle" dominantBaseline="central" fill="#FFF" fontFamily="Inter,sans-serif" fontWeight="900" fontSize="20" letterSpacing="-1">F6</text>
       </svg>
     );
   }
 
-  // Full variant
-  const h = s.full.h;
-  const fs = s.full.fs;
+  if (variant === "full") {
+    return (
+      <div className={`flex flex-col items-center ${className}`}>
+        <div style={{ fontSize: 46, fontWeight: 900, letterSpacing: "-2px", lineHeight: 1, fontFamily: "Inter,sans-serif" }}>
+          <span style={{ color: textColor }}>F</span>
+          <span style={{ color: ACCENT }}>6</span>
+          <span style={{ color: textColor }}>GYM</span>
+        </div>
+        <span style={{ fontSize: 9, fontWeight: 400, letterSpacing: "5px", color: textColor, opacity: 0.3, marginTop: 6 }}>
+          COACHING
+        </span>
+      </div>
+    );
+  }
+
+  // header & mobile
+  const isHeader = variant === "header";
+  const badgeSize = isHeader ? 36 : 32;
+  const badgeRadius = isHeader ? 8 : 7;
+  const badgeFontSize = isHeader ? 15 : 13;
+  const textSize = isHeader ? 20 : 16;
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <svg
-        width="36"
-        height="36"
-        viewBox="0 0 36 36"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <rect width="36" height="36" rx="8" fill={accentColor} />
-        <text
-          x="18"
-          y="19"
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill="#FFFFFF"
-          fontFamily="Inter, sans-serif"
-          fontWeight="800"
-          fontSize="16"
-          letterSpacing="-0.02em"
-        >
-          F6
-        </text>
+      <svg width={badgeSize} height={badgeSize} viewBox={`0 0 ${badgeSize} ${badgeSize}`} fill="none">
+        <rect width={badgeSize} height={badgeSize} rx={badgeRadius} fill={ACCENT} />
+        <text x={badgeSize / 2} y={badgeSize / 2 + 1} textAnchor="middle" dominantBaseline="central" fill="#FFF" fontFamily="Inter,sans-serif" fontWeight="900" fontSize={badgeFontSize} letterSpacing="-0.5">F6</text>
       </svg>
-      <span
-        style={{
-          fontSize: `${fs}px`,
-          fontWeight: 800,
-          letterSpacing: "-0.02em",
-          lineHeight: 1,
-        }}
-      >
-        <span style={{ color: accentColor }}>F6</span>
+      <span style={{ fontSize: textSize, fontWeight: 900, letterSpacing: "-2px", lineHeight: 1, fontFamily: "Inter,sans-serif" }}>
+        <span style={{ color: textColor }}>F</span>
+        <span style={{ color: ACCENT }}>6</span>
         <span style={{ color: textColor }}>GYM</span>
       </span>
     </div>
