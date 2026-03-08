@@ -69,6 +69,9 @@ const CoachDashboard = () => {
         <KPICard icon={AlertTriangle} label={t("dashboard:alerts")} value={kpis.alertCount} variant={kpis.alertCount > 0 ? "warning" : "default"} />
       </div>
 
+      {/* AI Usage */}
+      <AIUsageDashboard />
+
       {/* Student Overview */}
       <div className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
