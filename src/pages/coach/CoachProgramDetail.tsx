@@ -292,7 +292,7 @@ const CoachProgramDetail = () => {
       sort_order: sortOrder,
     }).select().single();
 
-    if (error) { toast.error("Erreur"); return; }
+    if (error) { toast.error(t("common:error")); return; }
 
     setProgram(prev => {
       if (!prev) return prev;
