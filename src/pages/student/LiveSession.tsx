@@ -377,7 +377,7 @@ const LiveSession = () => {
                       suggestedWeight={ex.load ? parseFloat(ex.load) || null : null}
                       coachNotes={ex.notes || null}
                       videoUrl={ex.video || null}
-                      videoSearchQuery={(ex as any).videoSearchQuery || ex.name || null}
+                      videoSearchQuery={ex.videoSearchQuery || ex.name || null}
                       isActive={isActive}
                       completedSets={sets}
                       onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
