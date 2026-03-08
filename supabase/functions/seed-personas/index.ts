@@ -78,6 +78,7 @@ const EXERCISE_DEFS: Record<string, { name_en: string; muscle_group: string; equ
 };
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
