@@ -15,8 +15,6 @@ import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-
 const DEFAULT_SESSIONS: Record<number, { name: string; sessionId: string }> = {
   3: { name: "Lower Body — Glutes", sessionId: "demo-session-1" },
 };
@@ -29,7 +27,11 @@ interface LocalSwap {
 }
 
 const StudentWeek = () => {
-  const { t } = useTranslation(['calendar', 'common', 'session']);
+  const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
+  const DAYS = [
+    t("common:days.mon"), t("common:days.tue"), t("common:days.wed"),
+    t("common:days.thu"), t("common:days.fri"), t("common:days.sat"), t("common:days.sun"),
+  ];
   const [weekOffset, setWeekOffset] = useState(0);
   const navigate = useNavigate();
   const [swapMode, setSwapMode] = useState(false);
@@ -236,7 +238,7 @@ const StudentWeek = () => {
         <div className="flex items-center justify-between bg-warning-bg text-warning rounded-lg px-4 py-2.5 text-sm font-medium animate-fade-in">
           <div className="flex items-center gap-2">
             <ArrowLeftRight className="w-4 h-4" strokeWidth={1.5} />
-            Choisissez le jour cible
+            {t('calendar:choose_target_day')}
           </div>
           <Button
             variant="ghost" size="icon"
@@ -302,7 +304,7 @@ const StudentWeek = () => {
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] text-muted-foreground">{YANA_PROGRAM.duration}</span>
                             <span className="text-[10px] text-muted-foreground">·</span>
-                            <span className="text-[10px] text-muted-foreground">Fessiers, Ischios</span>
+                            <span className="text-[10px] text-muted-foreground">{t("calendar:muscle_groups.glutes")}, {t("calendar:muscle_groups.ischios")}</span>
                           </div>
                         </div>
                       ) : dayExternals.length > 0 ? (
@@ -313,7 +315,7 @@ const StudentWeek = () => {
                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground">
-                          {isDropTarget && sourceDayHasSession ? "Déplacer ici" : "Repos"}
+                          {isDropTarget && sourceDayHasSession ? t('calendar:move_here') : t('common:rest')}
                         </p>
                       )}
                     </div>
@@ -358,7 +360,7 @@ const StudentWeek = () => {
                 )}
               </div>
 
-              {/* Editable external sessions list (expanded view for days with externals only, non-session days) */}
+              {/* Editable external sessions list */}
               {!isSessionDay && dayExternals.length > 0 && (
                 <div className="pl-14 space-y-1">
                   {dayExternals.map(ext => (

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ProgramData, WeekData, SessionSectionData, MOCK_STUDENTS } from "@/types/coach";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ const ProgramEditor = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation(["program", "common"]);
   const student = MOCK_STUDENTS.find((s) => s.id === studentId);
   const { generate, loading: aiLoading } = useGenerateProgram();
 
@@ -81,33 +83,33 @@ const ProgramEditor = () => {
     }));
     setProgram((prev) => ({ ...prev, weeks: [...prev.weeks, newWeek] }));
     setActiveWeek(String(program.weeks.length));
-    toast.success(`Semaine ${source.weekNumber} dupliquée`);
+    toast.success(t("program:week_duplicated", { number: source.weekNumber }));
   };
 
   const handleSave = async () => {
     if (!program.name.trim()) {
-      toast.error("Donnez un nom au programme");
+      toast.error(t("program:error_no_name"));
       return;
     }
     if (program.weeks.length === 0) {
-      toast.error("Ajoutez au moins une semaine");
+      toast.error(t("program:error_no_weeks"));
       return;
     }
     if (!user) {
-      toast.error("Vous devez être connecté");
+      toast.error(t("program:error_not_logged_in"));
       return;
     }
     setSaving(true);
     const result = await saveProgram(program, user.id, studentId || "");
     setSaving(false);
     if (result) {
-      toast.success("Programme sauvegardé !");
+      toast.success(t("program:program_saved"));
     }
   };
 
   const handleActivate = () => {
     setProgram((prev) => ({ ...prev, status: "active" }));
-    toast.success("Programme activé pour l'élève !");
+    toast.success(t("program:program_activated"));
   };
 
   const handleAIGenerate = async () => {
@@ -115,7 +117,7 @@ const ProgramEditor = () => {
     const structured = aiMode === "guided" ? aiForm : undefined;
 
     if (aiMode === "free" && !aiPrompt.trim()) {
-      toast.error("Décrivez le programme que vous souhaitez générer");
+      toast.error(t("program:error_describe_program"));
       return;
     }
 
@@ -128,12 +130,6 @@ const ProgramEditor = () => {
       setShowAI(false);
       setActiveWeek("0");
     }
-  };
-
-  const statusConfig = {
-    draft: { label: "Brouillon", variant: "secondary" as const },
-    active: { label: "Actif", variant: "default" as const },
-    completed: { label: "Terminé", variant: "outline" as const },
   };
 
   const totalSessions = program.weeks.reduce((acc, w) => acc + w.sessions.length, 0);
@@ -171,20 +167,20 @@ const ProgramEditor = () => {
                 <span className="text-sm text-muted-foreground">{student.name}</span>
               </div>
             )}
-            <Badge variant={statusConfig[program.status].variant}>
-              {statusConfig[program.status].label}
+            <Badge variant={program.status === "draft" ? "secondary" : program.status === "active" ? "default" : "outline"}>
+              {t(`program:status.${program.status}`)}
             </Badge>
           </div>
           <Input
             value={program.name}
             onChange={(e) => setProgram((prev) => ({ ...prev, name: e.target.value }))}
-            placeholder="Nom du programme (ex: PPL 4 semaines)"
+            placeholder={t("program:program_name_placeholder")}
             className="text-xl font-display font-bold bg-transparent border-none p-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40"
           />
           <div className="flex gap-4 text-sm text-muted-foreground">
-            <span>{program.weeks.length} semaine{program.weeks.length !== 1 ? "s" : ""}</span>
-            <span>{totalSessions} séance{totalSessions !== 1 ? "s" : ""}</span>
-            <span>{totalExercises} exercice{totalExercises !== 1 ? "s" : ""}</span>
+            <span>{program.weeks.length} {program.weeks.length !== 1 ? t("program:weeks_count_plural", { count: program.weeks.length }).split(" ").slice(1).join(" ") : t("program:weeks_count", { count: 1 }).split(" ").slice(1).join(" ")}</span>
+            <span>{totalSessions} {totalSessions !== 1 ? t("program:sessions_count_plural", { count: totalSessions }).split(" ").slice(1).join(" ") : t("program:sessions_count", { count: 1 }).split(" ").slice(1).join(" ")}</span>
+            <span>{totalExercises} {totalExercises !== 1 ? t("program:exercises_count_plural", { count: totalExercises }).split(" ").slice(1).join(" ") : t("program:exercises_count", { count: 1 }).split(" ").slice(1).join(" ")}</span>
           </div>
         </div>
       </div>
@@ -193,12 +189,12 @@ const ProgramEditor = () => {
       <div className="flex gap-2 flex-wrap">
         <Button onClick={handleSave} variant="outline" size="sm" disabled={saving}>
           {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
-          Sauvegarder
+          {t("program:save_program")}
         </Button>
         {program.status === "draft" && program.weeks.length > 0 && (
           <Button onClick={handleActivate} size="sm">
             <Play className="w-4 h-4 mr-1" />
-            Activer le programme
+            {t("program:activate_program")}
           </Button>
         )}
         <Button
@@ -208,7 +204,7 @@ const ProgramEditor = () => {
           className="ml-auto"
         >
           <Sparkles className="w-4 h-4 mr-1" />
-          Générer avec l'IA
+          {t("program:generate_ai")}
         </Button>
       </div>
 
@@ -218,7 +214,7 @@ const ProgramEditor = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Wand2 className="w-5 h-5 text-primary" />
-              <h3 className="font-display font-bold text-sm">Génération IA</h3>
+              <h3 className="font-display font-bold text-sm">{t("program:ai_generation")}</h3>
             </div>
             <button
               onClick={() => setAiMode(aiMode === "guided" ? "free" : "guided")}
@@ -227,12 +223,12 @@ const ProgramEditor = () => {
               {aiMode === "guided" ? (
                 <>
                   <ToggleLeft className="w-4 h-4" />
-                  Mode guidé
+                  {t("program:guided_mode")}
                 </>
               ) : (
                 <>
                   <ToggleRight className="w-4 h-4 text-primary" />
-                  Mode libre
+                  {t("program:free_mode")}
                 </>
               )}
             </button>
@@ -241,45 +237,42 @@ const ProgramEditor = () => {
           {aiMode === "guided" ? (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] text-muted-foreground font-medium uppercase">Objectif</label>
+                <label className="text-[11px] text-muted-foreground font-medium uppercase">{t("program:ai_objective")}</label>
                 <Input
                   value={aiForm.objective}
                   onChange={(e) => setAiForm({ ...aiForm, objective: e.target.value })}
-                  placeholder="Hypertrophie fessiers, prise de masse..."
+                  placeholder={t("program:ai_objective_placeholder")}
                   className="h-9 bg-surface text-sm"
                 />
               </div>
               <div>
-                <label className="text-[11px] text-muted-foreground font-medium uppercase">Niveau</label>
+                <label className="text-[11px] text-muted-foreground font-medium uppercase">{t("program:ai_level")}</label>
                 <Select value={aiForm.level} onValueChange={(v) => setAiForm({ ...aiForm, level: v })}>
                   <SelectTrigger className="h-9 bg-surface text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Débutant">Débutant</SelectItem>
-                    <SelectItem value="Intermédiaire">Intermédiaire</SelectItem>
-                    <SelectItem value="Avancé">Avancé</SelectItem>
+                    <SelectItem value="Débutant">{t("program:levels.beginner")}</SelectItem>
+                    <SelectItem value="Intermédiaire">{t("program:levels.intermediate")}</SelectItem>
+                    <SelectItem value="Avancé">{t("program:levels.advanced")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="text-[11px] text-muted-foreground font-medium uppercase">Fréquence</label>
+                <label className="text-[11px] text-muted-foreground font-medium uppercase">{t("program:ai_frequency")}</label>
                 <Select value={aiForm.frequency} onValueChange={(v) => setAiForm({ ...aiForm, frequency: v })}>
                   <SelectTrigger className="h-9 bg-surface text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1x/semaine">1x / semaine</SelectItem>
-                    <SelectItem value="2x/semaine">2x / semaine</SelectItem>
-                    <SelectItem value="3x/semaine">3x / semaine</SelectItem>
-                    <SelectItem value="4x/semaine">4x / semaine</SelectItem>
-                    <SelectItem value="5x/semaine">5x / semaine</SelectItem>
-                    <SelectItem value="6x/semaine">6x / semaine</SelectItem>
+                    {[1,2,3,4,5,6].map(n => (
+                      <SelectItem key={n} value={`${n}x/semaine`}>{n}x / {t("calendar:per_week").replace("x/", "")}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="text-[11px] text-muted-foreground font-medium uppercase">Durée / séance</label>
+                <label className="text-[11px] text-muted-foreground font-medium uppercase">{t("program:ai_duration")}</label>
                 <Select value={aiForm.duration} onValueChange={(v) => setAiForm({ ...aiForm, duration: v })}>
                   <SelectTrigger className="h-9 bg-surface text-sm">
                     <SelectValue />
@@ -294,20 +287,20 @@ const ProgramEditor = () => {
                 </Select>
               </div>
               <div className="col-span-2">
-                <label className="text-[11px] text-muted-foreground font-medium uppercase">Équipement</label>
+                <label className="text-[11px] text-muted-foreground font-medium uppercase">{t("program:ai_equipment")}</label>
                 <Input
                   value={aiForm.equipment}
                   onChange={(e) => setAiForm({ ...aiForm, equipment: e.target.value })}
-                  placeholder="Salle complète, home gym, poids du corps..."
+                  placeholder={t("program:ai_equipment_placeholder")}
                   className="h-9 bg-surface text-sm"
                 />
               </div>
               <div className="col-span-2">
-                <label className="text-[11px] text-muted-foreground font-medium uppercase">Instructions supplémentaires</label>
+                <label className="text-[11px] text-muted-foreground font-medium uppercase">{t("program:ai_instructions")}</label>
                 <Textarea
                   value={aiForm.notes}
                   onChange={(e) => setAiForm({ ...aiForm, notes: e.target.value })}
-                  placeholder="Ex: Focus glutes et ischios, éviter les exercices avec impact, inclure du tempo training..."
+                  placeholder={t("program:ai_instructions_placeholder")}
                   className="bg-surface text-sm resize-none"
                   rows={3}
                 />
@@ -317,7 +310,7 @@ const ProgramEditor = () => {
             <Textarea
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder="Décrivez le programme que vous souhaitez...&#10;&#10;Ex: Programme lower body pour femme avancée, 1x/semaine en salle, focus hypertrophie fessiers et ischios avec surcharge progressive sur 8 semaines. Inclure warm-up, 2 blocs compounds, 1 bloc isolation et cool-down."
+              placeholder={t("program:ai_free_placeholder")}
               className="bg-surface text-sm resize-none min-h-[120px]"
               rows={5}
             />
@@ -331,12 +324,12 @@ const ProgramEditor = () => {
             {aiLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Génération en cours...
+                {t("program:generating")}
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4 mr-2" />
-                Générer le programme
+                {t("program:generate_program")}
               </>
             )}
           </Button>
@@ -346,7 +339,7 @@ const ProgramEditor = () => {
       {/* Progression timeline */}
       {progressionPhases.length > 0 && (
         <div className="glass rounded-xl p-4 space-y-3">
-          <h3 className="font-display font-bold text-sm">Plan de progression</h3>
+          <h3 className="font-display font-bold text-sm">{t("session:progression_plan")}</h3>
           <ProgressionTimeline phases={progressionPhases} currentWeek={1} />
         </div>
       )}
@@ -354,10 +347,10 @@ const ProgramEditor = () => {
       {/* Weeks */}
       {program.weeks.length === 0 ? (
         <div className="glass rounded-xl p-12 text-center space-y-4">
-          <p className="text-muted-foreground">Commencez par ajouter une semaine type ou générez avec l'IA</p>
+          <p className="text-muted-foreground">{t("program:start_with_ai")}</p>
           <Button onClick={addWeek}>
             <Plus className="w-4 h-4 mr-2" />
-            Ajouter la semaine 1
+            {t("program:add_week", { number: 1 })}
           </Button>
         </div>
       ) : (

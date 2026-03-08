@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FullProgram, ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, Clock, Target, Play, Dumbbell, MessageSquare, TrendingUp } from "lucide-react";
@@ -8,6 +9,7 @@ interface ProgramViewProps {
 }
 
 const ExerciseRow = ({ ex, idx }: { ex: ProgramExerciseDetail; idx: number }) => {
+  const { t } = useTranslation(["session", "program"]);
   const [open, setOpen] = useState(false);
 
   return (
@@ -20,10 +22,10 @@ const ExerciseRow = ({ ex, idx }: { ex: ProgramExerciseDetail; idx: number }) =>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm leading-tight">{ex.name}</p>
           <div className="flex flex-wrap gap-1.5 mt-2">
-            {ex.sets && <Tag label="Séries" value={ex.sets} type="sets" />}
-            {ex.reps && <Tag label="Reps" value={ex.reps} type="sets" />}
+            {ex.sets && <Tag label={t("session:sets")} value={ex.sets} type="sets" />}
+            {ex.reps && <Tag label={t("session:reps")} value={ex.reps} type="sets" />}
             {ex.tempo && <Tag label="Tempo" value={ex.tempo} type="sets" />}
-            {ex.rest && ex.rest !== "—" && <Tag label="Repos" value={ex.rest} type="rest" />}
+            {ex.rest && ex.rest !== "—" && <Tag label={t("common:rest")} value={ex.rest} type="rest" />}
             {ex.rpe && <Tag label="RPE" value={ex.rpe} type="rpe" />}
           </div>
         </div>
@@ -35,7 +37,7 @@ const ExerciseRow = ({ ex, idx }: { ex: ProgramExerciseDetail; idx: number }) =>
           {ex.load && (
             <div className="flex items-center gap-2 text-sm">
               <Dumbbell className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
-              <span className="text-muted-foreground">Charge :</span>
+              <span className="text-muted-foreground">{t("program:load_label")} :</span>
               <span className="font-medium">{ex.load}</span>
             </div>
           )}
@@ -53,7 +55,7 @@ const ExerciseRow = ({ ex, idx }: { ex: ProgramExerciseDetail; idx: number }) =>
               className="inline-flex items-center gap-2 bg-tag-red/10 hover:bg-tag-red/20 text-tag-red px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors mt-1"
             >
               <Play className="w-3 h-3" strokeWidth={1.5} />
-              Vidéo — {ex.channel}
+              {t("session:video_label")} — {ex.channel}
             </a>
           )}
         </div>
@@ -114,6 +116,7 @@ const SectionBlock = ({ section }: { section: ProgramSection }) => {
 };
 
 const ProgramView = ({ program }: ProgramViewProps) => {
+  const { t } = useTranslation(["program", "session", "common"]);
   const [showProgression, setShowProgression] = useState(false);
 
   const totalExercises = program.sections.reduce((acc, s) => acc + s.exercises.length, 0);
@@ -128,7 +131,7 @@ const ProgramView = ({ program }: ProgramViewProps) => {
             <p className="text-xs text-muted-foreground">{program.client}</p>
           </div>
           <Badge variant={program.status === "active" ? "default" : "secondary"}>
-            {program.status === "active" ? "Actif" : program.status === "draft" ? "Brouillon" : "Terminé"}
+            {t(`program:status.${program.status}`)}
           </Badge>
         </div>
 
@@ -144,10 +147,10 @@ const ProgramView = ({ program }: ProgramViewProps) => {
           </div>
           <div className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-lg">
             <Dumbbell className="w-3.5 h-3.5" strokeWidth={1.5} />
-            <span className="text-xs font-semibold">{totalExercises} exercices</span>
+            <span className="text-xs font-semibold">{totalExercises} {t("calendar:exercises")}</span>
           </div>
           <div className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-lg">
-            <span className="text-xs font-semibold">{program.sections.length} blocs</span>
+            <span className="text-xs font-semibold">{t("program:blocks", { count: program.sections.length })}</span>
           </div>
         </div>
       </div>
@@ -166,7 +169,7 @@ const ProgramView = ({ program }: ProgramViewProps) => {
           >
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-              <h3 className="font-bold text-sm">Plan de progression (8 semaines)</h3>
+              <h3 className="font-bold text-sm">{t("session:progression_plan")}</h3>
             </div>
             {showProgression ? <ChevronUp className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} /> : <ChevronDown className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />}
           </button>
@@ -189,8 +192,7 @@ const ProgramView = ({ program }: ProgramViewProps) => {
       {/* Coach note */}
       <div className="bg-accent border border-accent-foreground/10 rounded-xl p-4 text-center">
         <p className="text-xs text-accent-foreground leading-relaxed">
-          💡 <strong>Note coach :</strong> Avec le cycling et le HIIT en semaine, les quads sont déjà bien stimulés.
-          Cette séance cible volontairement les glutes et ischios avec des mouvements hip-dominant pour compenser et maximiser le développement fessier.
+          💡 <strong>{t("program:coach_note")} :</strong> {(program as any).coachNote || ""}
         </p>
       </div>
     </div>

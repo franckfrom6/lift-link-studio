@@ -272,10 +272,10 @@ const CoachRecommendationForm = ({ open, onClose, onSave, type, students, initia
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="protein">Protéines</SelectItem>
-                      <SelectItem value="carbs">Glucides</SelectItem>
-                      <SelectItem value="fat">Lipides</SelectItem>
-                      <SelectItem value="calories">Calories</SelectItem>
+                      <SelectItem value="protein">{t("cat_general") === "General" ? "Protein" : "Protéines"}</SelectItem>
+                      <SelectItem value="carbs">{t("cat_general") === "General" ? "Carbs" : "Glucides"}</SelectItem>
+                      <SelectItem value="fat">{t("cat_general") === "General" ? "Fats" : "Lipides"}</SelectItem>
+                      <SelectItem value="calories">{t("cat_general") === "General" ? "Calories" : "Calories"}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

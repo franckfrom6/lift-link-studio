@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { MOCK_STUDENTS } from "@/types/coach";
 import { YANA_PROGRAM } from "@/data/yana-program";
 import { Button } from "@/components/ui/button";
@@ -15,10 +16,6 @@ import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import CoachSuggestion from "@/components/coach/CoachSuggestion";
 import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
-
-const DAY_NAMES: Record<number, string> = {
-  1: "Lundi", 2: "Mardi", 3: "Mercredi", 4: "Jeudi", 5: "Vendredi", 6: "Samedi", 7: "Dimanche",
-};
 
 // Demo data for Yana
 const DEMO_CHECKIN = {
@@ -68,6 +65,7 @@ const DEMO_EXTERNALS: ExternalSessionData[] = [
 const StudentDetail = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation(["dashboard", "common", "program", "calendar"]);
   const student = MOCK_STUDENTS.find((s) => s.id === studentId);
   const { swaps, loading: swapsLoading } = useCoachStudentSwaps(studentId === "yana" ? studentId : undefined);
   const [coachFormOpen, setCoachFormOpen] = useState(false);
@@ -76,9 +74,9 @@ const StudentDetail = () => {
   if (!student) {
     return (
       <div className="text-center py-20">
-        <p className="text-muted-foreground">Élève introuvable</p>
+        <p className="text-muted-foreground">{t("common:student_not_found")}</p>
         <Button variant="ghost" onClick={() => navigate("/coach/students")} className="mt-4">
-          Retour
+          {t("common:back")}
         </Button>
       </div>
     );
@@ -96,6 +94,8 @@ const StudentDetail = () => {
     return d >= weekAgo;
   });
 
+  const dateFmt = i18n.language === "fr" ? "fr-FR" : "en-US";
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ const StudentDetail = () => {
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold">{student.name}</h1>
               <Badge variant={student.status === "active" ? "default" : "secondary"}>
-                {student.status === "active" ? "Actif" : "Inactif"}
+                {student.status === "active" ? t("common:active") : t("common:inactive")}
               </Badge>
               {recentSwaps.length > 0 && (
                 <Badge variant="outline" className="text-warning border-warning/30 bg-warning-bg">
@@ -129,7 +129,7 @@ const StudentDetail = () => {
         <div className="space-y-3">
           <h2 className="font-bold flex items-center gap-2">
             <Activity className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-            Check-in de la semaine
+            {t("dashboard:week_checkin")}
           </h2>
           {checkin ? (
             <div className="space-y-2">
@@ -137,7 +137,7 @@ const StudentDetail = () => {
               <CoachSuggestion checkin={checkin} />
             </div>
           ) : (
-            <p className="text-sm text-warning">⚠️ Pas de check-in cette semaine</p>
+            <p className="text-sm text-warning">⚠️ {t("dashboard:no_checkin")}</p>
           )}
         </div>
       )}
@@ -155,10 +155,10 @@ const StudentDetail = () => {
       {/* External sessions */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-bold">Activités externes cette semaine</h2>
+          <h2 className="font-bold">{t("calendar:external_activities_this_week")}</h2>
           <Button size="sm" variant="outline" onClick={() => setCoachFormOpen(true)}>
             <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
-            Ajouter
+            {t("common:add")}
           </Button>
         </div>
         {allExternals.length > 0 ? (
@@ -168,7 +168,7 @@ const StudentDetail = () => {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">Aucune activité externe cette semaine</p>
+          <p className="text-sm text-muted-foreground">{t("calendar:no_external_activities")}</p>
         )}
       </div>
 
@@ -176,17 +176,17 @@ const StudentDetail = () => {
       <div className="grid grid-cols-3 gap-3">
         <div className="glass p-4 text-center">
           <Target className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
-          <p className="text-xs text-muted-foreground">Objectif</p>
+          <p className="text-xs text-muted-foreground">{t("dashboard:goal")}</p>
           <p className="text-sm font-semibold mt-0.5">{student.goal}</p>
         </div>
         <div className="glass p-4 text-center">
           <BarChart3 className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
-          <p className="text-xs text-muted-foreground">Niveau</p>
+          <p className="text-xs text-muted-foreground">{t("dashboard:level")}</p>
           <p className="text-sm font-semibold mt-0.5">{student.level}</p>
         </div>
         <div className="glass p-4 text-center">
           <ClipboardList className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
-          <p className="text-xs text-muted-foreground">Programmes</p>
+          <p className="text-xs text-muted-foreground">{t("program:programs")}</p>
           <p className="text-sm font-semibold mt-0.5">{hasProgram ? "1" : "0"}</p>
         </div>
       </div>
@@ -196,7 +196,7 @@ const StudentDetail = () => {
         <div className="space-y-3">
           <h2 className="font-bold flex items-center gap-2">
             <ArrowLeftRight className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-            Historique des déplacements
+            {t("dashboard:swap_history")}
           </h2>
           <div className="space-y-2">
             {swaps.slice(0, 5).map((swap) => (
@@ -208,7 +208,7 @@ const StudentDetail = () => {
                   </span>
                 )}
                 <span className="text-[10px] text-muted-foreground shrink-0">
-                  {new Date(swap.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                  {new Date(swap.created_at).toLocaleDateString(dateFmt, { day: "numeric", month: "short" })}
                 </span>
               </div>
             ))}
@@ -224,18 +224,18 @@ const StudentDetail = () => {
           onClick={() => navigate(`/coach/students/${studentId}/bilan`)}
         >
           <Bot className="w-4 h-4 mr-2" />
-          Générer un bilan IA
+          {t("program:generate_ai_bilan")}
         </Button>
       </div>
 
       {/* Programs section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-bold">Programme actif</h2>
+          <h2 className="font-bold">{t("program:active_program")}</h2>
           {!hasProgram && (
             <Button size="sm" onClick={() => navigate(`/coach/students/${studentId}/program/new`)}>
               <Plus className="w-4 h-4 mr-1" strokeWidth={1.5} />
-              Nouveau programme
+              {t("program:new_program")}
             </Button>
           )}
         </div>
@@ -245,13 +245,13 @@ const StudentDetail = () => {
         ) : (
           <div className="glass p-8 text-center space-y-3">
             <ClipboardList className="w-8 h-8 text-muted-foreground/50 mx-auto" strokeWidth={1.5} />
-            <p className="text-muted-foreground text-sm">Aucun programme pour cet élève</p>
+            <p className="text-muted-foreground text-sm">{t("program:no_program_for_student")}</p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigate(`/coach/students/${studentId}/program/new`)}
             >
-              Créer le premier programme
+              {t("program:create_program")}
             </Button>
           </div>
         )}
@@ -263,7 +263,7 @@ const StudentDetail = () => {
         onClose={() => setCoachFormOpen(false)}
         onSubmit={(data) => {
           setCoachExternals(prev => [...prev, { ...data, id: crypto.randomUUID() }]);
-          toast.success("Activité ajoutée pour l'élève !");
+          toast.success(t("calendar:activity_added_for_student"));
         }}
         date={new Date()}
         addedBy="coach"
