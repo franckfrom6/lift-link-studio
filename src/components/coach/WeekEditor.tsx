@@ -22,6 +22,7 @@ const WeekEditor = ({ week, onUpdate, onDuplicate }: WeekEditorProps) => {
       id: crypto.randomUUID(),
       dayOfWeek,
       name: `Séance ${DAY_NAMES[dayOfWeek]}`,
+      sections: [],
       exercises: [],
     };
     const updated = [...week.sessions, newSession].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
