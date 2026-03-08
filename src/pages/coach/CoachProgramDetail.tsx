@@ -141,7 +141,7 @@ const CoachProgramDetail = () => {
   const [program, setProgram] = useState<ProgramFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeWeek, setActiveWeek] = useState("0");
-  const [openSessions, setOpenSessions] = useState<Set<string>>(new Set());
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   // Picker state
   const [pickerOpen, setPickerOpen] = useState(false);
