@@ -75,6 +75,7 @@ i18n
         recommendations: enRecommendations,
         plans: enPlans,
         admin: enAdmin,
+        feedback: enFeedback,
       },
     },
     lng: 'fr',
