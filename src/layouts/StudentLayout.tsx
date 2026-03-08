@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Calendar, BarChart3, User, LogOut, BookOpen } from "lucide-react";
+import { Calendar, BarChart3, User, LogOut, BookOpen, HelpCircle } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
