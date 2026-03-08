@@ -186,7 +186,7 @@ const EnhancedExerciseCard = ({
             <div className="space-y-2">
               {suggestedWeight && (
                 <p className="text-xs text-muted-foreground">
-                  💪 <span className="font-medium">Charge cible :</span> {suggestedWeight} kg
+                  💪 <span className="font-medium">{t('target_weight')} :</span> {suggestedWeight} kg
                 </p>
               )}
               {coachNotes && (
