@@ -141,7 +141,7 @@ const CoachProgramDetail = () => {
   const [program, setProgram] = useState<ProgramFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeWeek, setActiveWeek] = useState("0");
-  const [openSessions, setOpenSessions] = useState<Set<string>>(new Set());
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   // Picker state
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -202,8 +202,10 @@ const CoachProgramDetail = () => {
     }));
 
     setProgram({ ...prog, studentName: profile?.full_name, weeks: builtWeeks });
-    if (builtWeeks[0]?.sessions[0]) {
-      setOpenSessions(new Set(builtWeeks[0].sessions.map(s => s.id)));
+    // Auto-select first session
+    const firstSession = builtWeeks[0]?.sessions[0];
+    if (firstSession) {
+      setActiveSessionId(firstSession.id);
     }
     setLoading(false);
   };
@@ -445,12 +447,8 @@ const CoachProgramDetail = () => {
     });
   };
 
-  const toggleSession = (id: string) => {
-    setOpenSessions(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+  const selectSession = (id: string) => {
+    setActiveSessionId(id);
   };
 
   const activateProgram = async () => {
@@ -514,7 +512,12 @@ const CoachProgramDetail = () => {
 
       {/* Weeks tabs */}
       {program.weeks.length > 0 && (
-        <Tabs value={activeWeek} onValueChange={setActiveWeek}>
+        <Tabs value={activeWeek} onValueChange={(v) => {
+          setActiveWeek(v);
+          const weekIdx = Number(v);
+          const firstSession = program.weeks[weekIdx]?.sessions[0];
+          setActiveSessionId(firstSession?.id || null);
+        }}>
           <TabsList className="bg-surface">
             {program.weeks.map((w, i) => (
               <TabsTrigger key={w.id} value={String(i)} className="text-xs">
@@ -525,31 +528,29 @@ const CoachProgramDetail = () => {
 
           {program.weeks.map((week, wi) => (
             <TabsContent key={week.id} value={String(wi)} className="space-y-4 mt-4">
-              {/* Mini weekly calendar strip */}
+              {/* Mini weekly calendar — day tabs */}
               <div className="grid grid-cols-7 gap-1.5 p-3 bg-secondary/20 rounded-xl border border-border/50">
                 {[1, 2, 3, 4, 5, 6, 7].map(day => {
                   const session = week.sessions.find(s => s.day_of_week === day);
                   const hasSession = !!session;
+                  const isActive = session?.id === activeSessionId;
                   return (
                     <button
                       key={day}
-                      onClick={() => {
-                        if (session) {
-                          setOpenSessions(prev => new Set([...prev, session.id]));
-                          document.getElementById(`session-${session.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-                        }
-                      }}
+                      onClick={() => { if (session) setActiveSessionId(session.id); }}
                       className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center min-h-[60px] ${
-                        hasSession
-                          ? "bg-accent/60 border border-accent-foreground/20 hover:bg-accent cursor-pointer"
-                          : "bg-background/50 border border-transparent opacity-50 cursor-default"
+                        isActive
+                          ? "bg-accent border-2 border-accent-foreground/30 shadow-sm"
+                          : hasSession
+                            ? "bg-accent/40 border border-accent-foreground/15 hover:bg-accent/60 cursor-pointer"
+                            : "bg-background/50 border border-transparent opacity-40 cursor-default"
                       }`}
                     >
-                      <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+                      <span className={`text-[10px] font-semibold uppercase ${isActive ? "text-accent-foreground" : "text-muted-foreground"}`}>
                         {dayLabel(day).slice(0, 3)}
                       </span>
                       {hasSession ? (
-                        <span className="text-[10px] font-medium text-accent-foreground leading-tight line-clamp-2">
+                        <span className={`text-[10px] font-medium leading-tight line-clamp-2 ${isActive ? "text-accent-foreground" : "text-accent-foreground/70"}`}>
                           {session.name}
                         </span>
                       ) : (
@@ -560,21 +561,22 @@ const CoachProgramDetail = () => {
                 })}
               </div>
 
-              {week.sessions.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">{t("program:start_with_ai")}</p>
-              )}
+              {/* Selected session content */}
+              {(() => {
+                const session = week.sessions.find(s => s.id === activeSessionId);
+                if (!session && week.sessions.length === 0) {
+                  return <p className="text-sm text-muted-foreground text-center py-8">{t("program:start_with_ai")}</p>;
+                }
+                if (!session) {
+                  return <p className="text-sm text-muted-foreground text-center py-8">{t("common:select_session", "Sélectionnez une séance dans le calendrier ci-dessus")}</p>;
+                }
 
-              {week.sessions.map(session => {
-                const isOpen = openSessions.has(session.id);
                 const totalExercises = session.sections.reduce((sum, s) => sum + s.exercises.length, 0);
 
                 return (
-                  <div key={session.id} id={`session-${session.id}`} className="border border-border rounded-xl overflow-hidden">
+                  <div className="border border-border rounded-xl overflow-hidden animate-fade-in">
                     {/* Session header */}
                     <div className="flex items-center gap-3 p-4 bg-secondary/30">
-                      <button onClick={() => toggleSession(session.id)} className="text-muted-foreground hover:text-foreground">
-                        {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </button>
                       <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-xs font-bold text-accent-foreground">
                         {dayLabel(session.day_of_week).slice(0, 2).toUpperCase()}
                       </div>
@@ -597,184 +599,182 @@ const CoachProgramDetail = () => {
                     </div>
 
                     {/* Session content */}
-                    {isOpen && (
-                      <div className="p-4 space-y-4">
-                        {/* Session notes */}
-                        <Input
-                          value={session.notes || ""}
-                          onChange={(e) => updateSessionField(session.id, "notes", e.target.value || null)}
-                          placeholder={t("exercises:coach_notes", "Notes de séance...")}
-                          className="h-8 bg-transparent border-dashed text-xs italic"
-                        />
+                    <div className="p-4 space-y-4">
+                      {/* Session notes */}
+                      <Input
+                        value={session.notes || ""}
+                        onChange={(e) => updateSessionField(session.id, "notes", e.target.value || null)}
+                        placeholder={t("exercises:coach_notes", "Notes de séance...")}
+                        className="h-8 bg-transparent border-dashed text-xs italic"
+                      />
 
-                        {/* Sections */}
-                        {session.sections.map((section, si) => (
-                          <div key={section.id} className="border border-border/60 rounded-lg overflow-hidden bg-muted/20">
-                            {/* Section header */}
-                            <div className="flex items-center gap-2 p-3 bg-muted/30">
-                              <div className="flex flex-col gap-0.5">
-                                <button onClick={() => moveSection(session.id, section.id, -1)} disabled={si === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20">
-                                  <ChevronUp className="w-3 h-3" />
-                                </button>
-                                <button onClick={() => moveSection(session.id, section.id, 1)} disabled={si === session.sections.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20">
-                                  <ChevronDown className="w-3 h-3" />
-                                </button>
-                              </div>
-                              <Input
-                                value={section.icon || ""}
-                                onChange={(e) => updateSectionField(section.id, "icon", e.target.value || null)}
-                                className="w-10 h-7 text-center bg-transparent border-none p-0 text-sm focus-visible:ring-0"
-                                placeholder="🏋️"
-                              />
-                              <InlineText
-                                value={section.name}
-                                onChange={(v) => updateSectionField(section.id, "name", v)}
-                                className="font-semibold flex-1"
-                              />
-                              <Input
-                                value={section.duration_estimate || ""}
-                                onChange={(e) => updateSectionField(section.id, "duration_estimate", e.target.value || null)}
-                                placeholder="10 min"
-                                className="w-16 h-7 text-center bg-surface text-[11px] border-border/50"
-                              />
-                              <button
-                                onClick={() => setDeleteDialog({ open: true, type: "section", id: section.id, name: section.name })}
-                                className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      {/* Sections */}
+                      {session.sections.map((section, si) => (
+                        <div key={section.id} className="border border-border/60 rounded-lg overflow-hidden bg-muted/20">
+                          {/* Section header */}
+                          <div className="flex items-center gap-2 p-3 bg-muted/30">
+                            <div className="flex flex-col gap-0.5">
+                              <button onClick={() => moveSection(session.id, section.id, -1)} disabled={si === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20">
+                                <ChevronUp className="w-3 h-3" />
+                              </button>
+                              <button onClick={() => moveSection(session.id, section.id, 1)} disabled={si === session.sections.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20">
+                                <ChevronDown className="w-3 h-3" />
                               </button>
                             </div>
+                            <Input
+                              value={section.icon || ""}
+                              onChange={(e) => updateSectionField(section.id, "icon", e.target.value || null)}
+                              className="w-10 h-7 text-center bg-transparent border-none p-0 text-sm focus-visible:ring-0"
+                              placeholder="🏋️"
+                            />
+                            <InlineText
+                              value={section.name}
+                              onChange={(v) => updateSectionField(section.id, "name", v)}
+                              className="font-semibold flex-1"
+                            />
+                            <Input
+                              value={section.duration_estimate || ""}
+                              onChange={(e) => updateSectionField(section.id, "duration_estimate", e.target.value || null)}
+                              placeholder="10 min"
+                              className="w-16 h-7 text-center bg-surface text-[11px] border-border/50"
+                            />
+                            <button
+                              onClick={() => setDeleteDialog({ open: true, type: "section", id: section.id, name: section.name })}
+                              className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            </button>
+                          </div>
 
-                            {/* Section notes */}
-                            <div className="px-3 pt-2">
-                              <Input
-                                value={section.notes || ""}
-                                onChange={(e) => updateSectionField(section.id, "notes", e.target.value || null)}
-                                placeholder="Notes de section..."
-                                className="h-7 bg-transparent border-dashed text-xs italic"
-                              />
-                            </div>
+                          {/* Section notes */}
+                          <div className="px-3 pt-2">
+                            <Input
+                              value={section.notes || ""}
+                              onChange={(e) => updateSectionField(section.id, "notes", e.target.value || null)}
+                              placeholder="Notes de section..."
+                              className="h-7 bg-transparent border-dashed text-xs italic"
+                            />
+                          </div>
 
-                            {/* Exercises */}
-                            <div className="p-3 space-y-2">
-                              {section.exercises.map((ex, ei) => {
-                                const exName = lang === "en" && ex.exercise.name_en ? ex.exercise.name_en : ex.exercise.name;
-                                return (
-                                  <div key={ex.id} className="bg-background border border-border/40 rounded-lg p-3 space-y-2">
-                                    <div className="flex items-center gap-2">
-                                      <div className="flex flex-col gap-0.5">
-                                        <button onClick={() => moveExercise(section.id, ex.id, -1)} disabled={ei === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20">
-                                          <ChevronUp className="w-3 h-3" />
-                                        </button>
-                                        <button onClick={() => moveExercise(section.id, ex.id, 1)} disabled={ei === section.exercises.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20">
-                                          <ChevronDown className="w-3 h-3" />
-                                        </button>
-                                      </div>
-                                      <div className="w-6 h-6 rounded bg-secondary flex items-center justify-center shrink-0">
-                                        <Dumbbell className="w-3 h-3 text-muted-foreground" />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-sm">{exName}</p>
-                                        <p className="text-[10px] text-muted-foreground">{ex.exercise.muscle_group} · {ex.exercise.equipment}</p>
-                                      </div>
-                                      <button
-                                        onClick={() => setDeleteDialog({ open: true, type: "exercise", id: ex.id, name: exName })}
-                                        className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                          {/* Exercises */}
+                          <div className="p-3 space-y-2">
+                            {section.exercises.map((ex, ei) => {
+                              const exName = lang === "en" && ex.exercise.name_en ? ex.exercise.name_en : ex.exercise.name;
+                              return (
+                                <div key={ex.id} className="bg-background border border-border/40 rounded-lg p-3 space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex flex-col gap-0.5">
+                                      <button onClick={() => moveExercise(section.id, ex.id, -1)} disabled={ei === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20">
+                                        <ChevronUp className="w-3 h-3" />
+                                      </button>
+                                      <button onClick={() => moveExercise(section.id, ex.id, 1)} disabled={ei === section.exercises.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20">
+                                        <ChevronDown className="w-3 h-3" />
                                       </button>
                                     </div>
-
-                                    {/* Inline prescription editing */}
-                                    <div className="flex flex-wrap gap-2 items-center">
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-[10px] text-muted-foreground uppercase">{t("session:sets")}</span>
-                                        <InlineNumber value={ex.sets} onChange={(v) => updateExerciseField(ex.id, "sets", v)} min={1} max={20} />
-                                      </div>
-                                      <span className="text-muted-foreground text-xs">×</span>
-                                      <div className="flex items-center gap-1">
-                                        <InlineNumber value={ex.reps_min} onChange={(v) => updateExerciseField(ex.id, "reps_min", v)} min={1} max={100} />
-                                        <span className="text-muted-foreground text-xs">–</span>
-                                        <InlineNumber value={ex.reps_max} onChange={(v) => updateExerciseField(ex.id, "reps_max", v)} min={1} max={100} />
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-[10px] text-muted-foreground uppercase">Repos</span>
-                                        <InlineNumber value={ex.rest_seconds} onChange={(v) => updateExerciseField(ex.id, "rest_seconds", v)} min={0} max={600} step={15} className="w-16" />
-                                        <span className="text-[10px] text-muted-foreground">s</span>
-                                      </div>
+                                    <div className="w-6 h-6 rounded bg-secondary flex items-center justify-center shrink-0">
+                                      <Dumbbell className="w-3 h-3 text-muted-foreground" />
                                     </div>
-
-                                    <div className="flex flex-wrap gap-2 items-center">
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-[10px] text-muted-foreground uppercase">Tempo</span>
-                                        <Input
-                                          value={ex.tempo || ""}
-                                          onChange={(e) => updateExerciseField(ex.id, "tempo", e.target.value || null)}
-                                          placeholder="2-0-1-0"
-                                          className="h-7 w-20 text-center text-xs bg-surface border-border/50"
-                                        />
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-[10px] text-muted-foreground uppercase">RPE</span>
-                                        <Input
-                                          value={ex.rpe_target || ""}
-                                          onChange={(e) => updateExerciseField(ex.id, "rpe_target", e.target.value || null)}
-                                          placeholder="8"
-                                          className="h-7 w-14 text-center text-xs bg-surface border-border/50"
-                                        />
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-[10px] text-muted-foreground uppercase">Kg</span>
-                                        <Input
-                                          type="number"
-                                          value={ex.suggested_weight ?? ""}
-                                          onChange={(e) => updateExerciseField(ex.id, "suggested_weight", e.target.value ? Number(e.target.value) : null)}
-                                          placeholder="—"
-                                          className="h-7 w-16 text-center text-xs bg-surface border-border/50"
-                                        />
-                                      </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-sm">{exName}</p>
+                                      <p className="text-[10px] text-muted-foreground">{ex.exercise.muscle_group} · {ex.exercise.equipment}</p>
                                     </div>
-
-                                    {/* Coach notes */}
-                                    <Input
-                                      value={ex.coach_notes || ""}
-                                      onChange={(e) => updateExerciseField(ex.id, "coach_notes", e.target.value || null)}
-                                      placeholder={t("exercises:coach_notes", "Notes coach...")}
-                                      className="h-7 bg-transparent border-dashed text-[11px] italic text-muted-foreground"
-                                    />
+                                    <button
+                                      onClick={() => setDeleteDialog({ open: true, type: "exercise", id: ex.id, name: exName })}
+                                      className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                    </button>
                                   </div>
-                                );
-                              })}
 
-                              {/* Add exercise button */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="w-full text-muted-foreground text-xs"
-                                onClick={() => { setPickerTarget({ sessionId: session.id, sectionId: section.id }); setPickerOpen(true); }}
-                              >
-                                <Plus className="w-3.5 h-3.5 mr-1" />
-                                {t("common:add")} {t("exercises:exercise", "exercice").toLowerCase()}
-                              </Button>
-                            </div>
+                                  {/* Inline prescription editing */}
+                                  <div className="flex flex-wrap gap-2 items-center">
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[10px] text-muted-foreground uppercase">{t("session:sets")}</span>
+                                      <InlineNumber value={ex.sets} onChange={(v) => updateExerciseField(ex.id, "sets", v)} min={1} max={20} />
+                                    </div>
+                                    <span className="text-muted-foreground text-xs">×</span>
+                                    <div className="flex items-center gap-1">
+                                      <InlineNumber value={ex.reps_min} onChange={(v) => updateExerciseField(ex.id, "reps_min", v)} min={1} max={100} />
+                                      <span className="text-muted-foreground text-xs">–</span>
+                                      <InlineNumber value={ex.reps_max} onChange={(v) => updateExerciseField(ex.id, "reps_max", v)} min={1} max={100} />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[10px] text-muted-foreground uppercase">Repos</span>
+                                      <InlineNumber value={ex.rest_seconds} onChange={(v) => updateExerciseField(ex.id, "rest_seconds", v)} min={0} max={600} step={15} className="w-16" />
+                                      <span className="text-[10px] text-muted-foreground">s</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex flex-wrap gap-2 items-center">
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[10px] text-muted-foreground uppercase">Tempo</span>
+                                      <Input
+                                        value={ex.tempo || ""}
+                                        onChange={(e) => updateExerciseField(ex.id, "tempo", e.target.value || null)}
+                                        placeholder="2-0-1-0"
+                                        className="h-7 w-20 text-center text-xs bg-surface border-border/50"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[10px] text-muted-foreground uppercase">RPE</span>
+                                      <Input
+                                        value={ex.rpe_target || ""}
+                                        onChange={(e) => updateExerciseField(ex.id, "rpe_target", e.target.value || null)}
+                                        placeholder="8"
+                                        className="h-7 w-14 text-center text-xs bg-surface border-border/50"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[10px] text-muted-foreground uppercase">Kg</span>
+                                      <Input
+                                        type="number"
+                                        value={ex.suggested_weight ?? ""}
+                                        onChange={(e) => updateExerciseField(ex.id, "suggested_weight", e.target.value ? Number(e.target.value) : null)}
+                                        placeholder="—"
+                                        className="h-7 w-16 text-center text-xs bg-surface border-border/50"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* Coach notes */}
+                                  <Input
+                                    value={ex.coach_notes || ""}
+                                    onChange={(e) => updateExerciseField(ex.id, "coach_notes", e.target.value || null)}
+                                    placeholder={t("exercises:coach_notes", "Notes coach...")}
+                                    className="h-7 bg-transparent border-dashed text-[11px] italic text-muted-foreground"
+                                  />
+                                </div>
+                              );
+                            })}
+
+                            {/* Add exercise button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full text-muted-foreground text-xs"
+                              onClick={() => { setPickerTarget({ sessionId: session.id, sectionId: section.id }); setPickerOpen(true); }}
+                            >
+                              <Plus className="w-3.5 h-3.5 mr-1" />
+                              {t("common:add")} {t("exercises:exercise", "exercice").toLowerCase()}
+                            </Button>
                           </div>
-                        ))}
+                        </div>
+                      ))}
 
-                        {/* Add section button */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                          onClick={() => setAddSectionDialog({ open: true, sessionId: session.id })}
-                        >
-                          <FolderPlus className="w-4 h-4 mr-2" strokeWidth={1.5} />
-                          {t("common:add")} section
-                        </Button>
-                      </div>
-                    )}
+                      {/* Add section button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setAddSectionDialog({ open: true, sessionId: session.id })}
+                      >
+                        <FolderPlus className="w-4 h-4 mr-2" strokeWidth={1.5} />
+                        {t("common:add")} section
+                      </Button>
+                    </div>
                   </div>
                 );
-              })}
+              })()}
             </TabsContent>
           ))}
         </Tabs>
