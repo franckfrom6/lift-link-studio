@@ -213,6 +213,34 @@ export const useStudentProgram = () => {
     fetchProgram();
   }, [fetchProgram]);
 
+  // Realtime: refetch when session_exercises, sessions, or session_sections change
+  useEffect(() => {
+    if (!program) return;
+
+    const channel = supabase
+      .channel('student-program-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'session_exercises' },
+        () => fetchProgram()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sessions' },
+        () => fetchProgram()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'session_sections' },
+        () => fetchProgram()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [program?.id, fetchProgram]);
+
   const seedDemo = async () => {
     if (!user) return;
     setLoading(true);
