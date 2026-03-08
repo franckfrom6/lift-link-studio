@@ -95,7 +95,7 @@ function useDebouncedSave(delay = 600) {
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } catch {
-        toast.error(t("common:save_error"));
+        toast.error("Save error");
       } finally {
         setSaving(false);
       }
