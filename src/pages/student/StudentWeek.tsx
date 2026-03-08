@@ -16,13 +16,7 @@ import { useTranslation } from "react-i18next";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface LocalSwap {
-  id: string;
-  originalDay: number;
-  newDay: number;
-  reason: string | null;
-}
+import { useSessionSwaps } from "@/hooks/useSessionSwaps";
 
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
@@ -39,7 +33,7 @@ const StudentWeek = () => {
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [swapTargetDay, setSwapTargetDay] = useState<number | null>(null);
-  const [localSwaps, setLocalSwaps] = useState<LocalSwap[]>([]);
+  
 
   const [externalSessions, setExternalSessions] = useState<ExternalSessionData[]>([]);
   const [externalFormOpen, setExternalFormOpen] = useState(false);
@@ -86,27 +80,34 @@ const StudentWeek = () => {
   };
 
   const weekStart = useMemo(getWeekStart, [weekOffset]);
+  const { swaps: dbSwaps, createSwap } = useSessionSwaps(weekStart);
   const weekKey = weekStart.toISOString().split("T")[0];
   const currentCheckin = checkins[weekKey] || null;
 
+  // Map DB swaps to the shape used by effectiveSessions
+  const mappedSwaps = useMemo(() =>
+    dbSwaps.map(s => ({ originalDay: s.original_day - 1, newDay: s.new_day - 1, reason: s.reason })),
+    [dbSwaps]
+  );
+
   const effectiveSessions = useMemo(() => {
     const sessions = { ...DEFAULT_SESSIONS };
-    for (const swap of localSwaps) {
+    for (const swap of mappedSwaps) {
       if (sessions[swap.originalDay]) {
         sessions[swap.newDay] = sessions[swap.originalDay];
         delete sessions[swap.originalDay];
       }
     }
     return sessions;
-  }, [localSwaps, DEFAULT_SESSIONS]);
+  }, [mappedSwaps, DEFAULT_SESSIONS]);
 
   const swappedDays = useMemo(() => {
     const map: Record<number, { originalDay: number; reason: string | null }> = {};
-    for (const swap of localSwaps) {
+    for (const swap of mappedSwaps) {
       map[swap.newDay] = { originalDay: swap.originalDay + 1, reason: swap.reason };
     }
     return map;
-  }, [localSwaps]);
+  }, [mappedSwaps]);
 
   const getExternalForDay = (date: Date) => {
     const dateStr = date.toISOString().split("T")[0];
@@ -151,13 +152,22 @@ const StudentWeek = () => {
     setSwapModalOpen(true);
   };
 
-  const handleSwapConfirm = (reason: string) => {
+  const handleSwapConfirm = async (reason: string) => {
     if (swapSourceDay === null || swapTargetDay === null) return;
-    setLocalSwaps(prev => [
-      ...prev,
-      { id: crypto.randomUUID(), originalDay: swapSourceDay, newDay: swapTargetDay, reason: reason || null },
-    ]);
-    toast.success(t('session:session_moved'));
+    const sourceSession = effectiveSessions[swapSourceDay];
+    if (!sourceSession) return;
+    const dates = getWeekDates();
+    const result = await createSwap({
+      sessionId: sourceSession.sessionId,
+      originalDay: swapSourceDay + 1,
+      newDay: swapTargetDay + 1,
+      originalDate: dates[swapSourceDay].date,
+      newDate: dates[swapTargetDay].date,
+      reason: reason || undefined,
+    });
+    if (result) {
+      toast.success(t('session:session_moved'));
+    }
     setSwapMode(false);
     setSwapSourceDay(null);
     setSwapTargetDay(null);
