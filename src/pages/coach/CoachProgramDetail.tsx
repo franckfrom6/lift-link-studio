@@ -202,8 +202,10 @@ const CoachProgramDetail = () => {
     }));
 
     setProgram({ ...prog, studentName: profile?.full_name, weeks: builtWeeks });
-    if (builtWeeks[0]?.sessions[0]) {
-      setOpenSessions(new Set(builtWeeks[0].sessions.map(s => s.id)));
+    // Auto-select first session
+    const firstSession = builtWeeks[0]?.sessions[0];
+    if (firstSession) {
+      setActiveSessionId(firstSession.id);
     }
     setLoading(false);
   };
