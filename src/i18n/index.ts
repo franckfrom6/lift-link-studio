@@ -83,6 +83,7 @@ i18n
         admin: enAdmin,
         feedback: enFeedback,
         support: enSupport,
+        landing: enLanding,
       },
     },
     lng: 'fr',

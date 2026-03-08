@@ -167,3 +167,14 @@
     @apply shadow-[0_2px_8px_rgba(0,0,0,0.08)] border-border;
   }
 }
+
+/* Scroll reveal animations for landing page */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+.scroll-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}

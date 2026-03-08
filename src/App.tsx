@@ -64,8 +64,9 @@ const App = () => (
             <ImpersonationProvider>
             <PlanProvider>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/auth" element={<AuthRedirect><AuthPage /></AuthRedirect>} />
+                <Route path="/legal/:slug" element={<LegalPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/onboarding" element={<OnboardingPage />} />
