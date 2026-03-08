@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     // Fetch student profile
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, goal, level")
+      .select("full_name, goal, level, age, weight, height")
       .eq("user_id", student_id)
       .single();
 
@@ -32,7 +32,64 @@ Deno.serve(async (req) => {
       .eq("id", program_id)
       .single();
 
-    // Fetch completed sessions this week with feedback
+    // Fetch current week structure (last week with exercises)
+    const { data: weeks } = await supabase
+      .from("program_weeks")
+      .select("id, week_number")
+      .eq("program_id", program_id)
+      .order("week_number", { ascending: false })
+      .limit(1);
+
+    let currentWeekStructure = "";
+    if (weeks && weeks.length > 0) {
+      const weekId = weeks[0].id;
+      const { data: sessions } = await supabase
+        .from("sessions")
+        .select("id, name, day_of_week, notes")
+        .eq("week_id", weekId)
+        .order("day_of_week");
+
+      if (sessions && sessions.length > 0) {
+        for (const session of sessions) {
+          const { data: sections } = await supabase
+            .from("session_sections")
+            .select("id, name, sort_order")
+            .eq("session_id", session.id)
+            .order("sort_order");
+
+          currentWeekStructure += `\nSESSION: ${session.name} (Day ${session.day_of_week})\n`;
+          
+          if (sections) {
+            for (const section of sections) {
+              const { data: exercises } = await supabase
+                .from("session_exercises")
+                .select("*, exercise:exercises(name, muscle_group, equipment)")
+                .eq("section_id", section.id)
+                .order("sort_order");
+
+              currentWeekStructure += `  SECTION: ${section.name}\n`;
+              if (exercises) {
+                for (const ex of exercises) {
+                  const e = (ex as any).exercise;
+                  currentWeekStructure += `    - ${e?.name || "?"} (${e?.muscle_group || "?"}) — ${ex.sets}x${ex.reps_min}-${ex.reps_max} RPE:${ex.rpe_target || "N/A"} Rest:${ex.rest_seconds}s\n`;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Fetch available exercises from the coach's library
+    const { data: coachExercises } = await supabase
+      .from("exercises")
+      .select("name, muscle_group, equipment, type")
+      .or(`is_default.eq.true,created_by.eq.${(await supabase.from("programs").select("coach_id").eq("id", program_id).single()).data?.coach_id}`)
+      .limit(200);
+
+    const exerciseCatalog = coachExercises?.map(e => `${e.name} (${e.muscle_group}, ${e.equipment})`).join(", ") || "";
+
+    // Fetch completed sessions with feedback
     const { data: completedSessions } = await supabase
       .from("completed_sessions")
       .select("*, session_feedback(*)")
@@ -59,15 +116,18 @@ Deno.serve(async (req) => {
 
     const lang = language === "en" ? "English" : "French";
 
-    const prompt = `You are an experienced strength coach. Analyze the weekly feedback for ${profile?.full_name || "this athlete"} and suggest adaptations for next week. Respond in ${lang}.
+    const prompt = `You are an experienced strength & conditioning coach. Based on all the data below, generate an ADAPTED PROGRAM for next week. Respond in ${lang}.
 
 ATHLETE PROFILE:
+- Name: ${profile?.full_name || "Athlete"}
 - Level: ${profile?.level || "Intermediate"}
 - Goal: ${profile?.goal || "General fitness"}
+- Age: ${profile?.age || "N/A"}, Weight: ${profile?.weight || "N/A"}kg, Height: ${profile?.height || "N/A"}cm
 
-PROGRAM: ${program?.name || "Current program"} — Week ${week_number}
+CURRENT PROGRAM: ${program?.name || "Current program"} — Week ${week_number}
+${currentWeekStructure || "No current week structure available"}
 
-FEEDBACKS THIS WEEK (${feedbacks.length} sessions):
+SESSION FEEDBACKS (${feedbacks.length} sessions):
 ${feedbacks.map((f: any) => `
 - Rating: ${f.overall_rating}/5
 - Energy post: ${f.energy_post || "N/A"}/5
@@ -81,26 +141,49 @@ ${feedbacks.map((f: any) => `
 `).join("\n")}
 
 WEEKLY CHECK-IN:
-${checkin ? `Energy: ${checkin.energy_level}/5, Sleep: ${checkin.sleep_quality}/5, Stress: ${checkin.stress_level}/5, Soreness: ${checkin.muscle_soreness}/5` : "No check-in this week"}
+${checkin ? `Energy: ${checkin.energy_level}/5, Sleep: ${checkin.sleep_quality}/5, Stress: ${checkin.stress_level}/5, Soreness: ${checkin.muscle_soreness}/5
+Notes: ${checkin.general_notes || "None"}
+Availability: ${checkin.availability_notes || "None"}` : "No check-in this week"}
 
-Average rating this week: ${avgRating.toFixed(1)}/5
+Average rating: ${avgRating.toFixed(1)}/5
 
-Generate adaptation recommendations in JSON format with this structure:
+AVAILABLE EXERCISES (use only these names): ${exerciseCatalog}
+
+Generate a complete adapted week program in JSON:
 {
-  "weekly_summary": "2-3 sentence summary",
+  "weekly_summary": "2-3 sentence analysis and rationale for changes",
   "load_assessment": "under_stimulated" | "optimal" | "slightly_high" | "overreaching",
-  "adaptations": [{ "type": "increase_load|decrease_load|swap_exercise|adjust_volume|adjust_rest|deload_suggestion|pain_alert", "detail": "...", "reason": "...", "priority": "high|medium|low" }],
+  "key_changes": ["Change 1 explanation", "Change 2 explanation"],
   "pain_alerts": [{ "location": "...", "recommendation": "...", "should_see_professional": true/false }],
-  "progression_suggestion": "...",
-  "coach_message_suggestion": "A message the coach could send to the athlete"
+  "proposed_sessions": [
+    {
+      "name": "Session name",
+      "day_of_week": 1,
+      "notes": "Coach notes for this session",
+      "sections": [
+        {
+          "name": "WARM-UP",
+          "exercises": [
+            { "name": "Exercise name (MUST be from available exercises list)", "sets": 3, "reps_min": 8, "reps_max": 12, "rest_seconds": 90, "rpe_target": "8", "coach_notes": "optional note" }
+          ]
+        }
+      ]
+    }
+  ],
+  "coach_message_suggestion": "A motivational message the coach could send to the athlete, referencing the feedback"
 }
 
 RULES:
-- If avg rating ≤ 2 → suggest increasing loads by 2.5-5kg
-- If avg rating ≥ 4 → suggest reducing volume 10-15% or adding rest
-- If joint discomfort reported → ALWAYS flag it as priority high
-- Never ignore joint pain
-- Be specific with weight suggestions in kg`;
+- Generate 2-4 sessions depending on athlete availability and feedback
+- If athlete requests specific training styles (e.g. Hyrox, running), ADAPT the program to include those
+- If athlete mentions time constraints or travel, reduce session count or duration  
+- If avg rating ≤ 2 → increase loads 2.5-5kg on compound lifts
+- If avg rating ≥ 4 → reduce volume 10-15% or add rest
+- If joint discomfort → swap exercises for joint-friendly alternatives, flag as pain alert
+- Use ONLY exercise names from the available exercises list
+- Include warm-up and cool-down sections
+- Be specific with sets, reps, RPE targets
+- Respond with valid JSON only`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -111,7 +194,7 @@ RULES:
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You are an expert strength and conditioning coach AI. Always respond with valid JSON only." },
+          { role: "system", content: "You are an expert strength and conditioning coach AI. Always respond with valid JSON only. No markdown code blocks." },
           { role: "user", content: prompt },
         ],
       }),
@@ -131,15 +214,13 @@ RULES:
 
     const aiData = await aiResponse.json();
     let content = aiData.choices?.[0]?.message?.content || "";
-    
-    // Clean markdown code blocks if present
     content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     
     let parsed;
     try {
       parsed = JSON.parse(content);
     } catch {
-      parsed = { weekly_summary: content, load_assessment: "optimal", adaptations: [], pain_alerts: [] };
+      parsed = { weekly_summary: content, load_assessment: "optimal", key_changes: [], pain_alerts: [], proposed_sessions: [] };
     }
 
     return new Response(JSON.stringify(parsed), {
