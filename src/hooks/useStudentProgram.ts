@@ -254,6 +254,34 @@ export const useStudentProgram = () => {
     };
   }, [program?.id, fetchProgram]);
 
+  // Fallback polling: guarantees eventual sync even if realtime events are missed
+  useEffect(() => {
+    if (!studentId) return;
+
+    let pollInterval = 4000;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let isActive = true;
+
+    const poll = async () => {
+      await fetchProgram(true);
+
+      pollInterval = document.visibilityState === "visible"
+        ? 4000
+        : Math.min(pollInterval * 1.5, 30000);
+
+      if (isActive) {
+        timeoutId = setTimeout(poll, pollInterval);
+      }
+    };
+
+    timeoutId = setTimeout(poll, pollInterval);
+
+    return () => {
+      isActive = false;
+      clearTimeout(timeoutId);
+    };
+  }, [studentId, fetchProgram]);
+
   const seedDemo = async () => {
     if (!user) return;
     setLoading(true);
