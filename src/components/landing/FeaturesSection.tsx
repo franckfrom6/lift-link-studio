@@ -6,7 +6,7 @@ import featureImg1 from "@/assets/landing-feature-1.png";
 const ACCENT = "#6C5CE7";
 
 const features = [
-  { icon: Dumbbell, n: 1, img: featureImg1 },
+  { icon: Dumbbell, n: 1 },
   { icon: Timer, n: 2 },
   { icon: CalendarDays, n: 3 },
   { icon: Apple, n: 4 },
