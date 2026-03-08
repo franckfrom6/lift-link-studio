@@ -240,7 +240,29 @@ const StudentWeek = () => {
         </div>
       )}
 
-      {/* Week navigator + Nutrition shortcut */}
+
+      {/* Program week selector */}
+      {totalWeeks > 1 && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground font-medium shrink-0">
+            {t('calendar:program_week', 'Semaine du programme')}
+          </span>
+          <div className="flex gap-1 flex-wrap">
+            {program!.weeks.map((w, idx) => (
+              <Button
+                key={w.id}
+                variant={idx === selectedWeekIndex ? "default" : "outline"}
+                size="sm"
+                className="h-7 w-9 text-xs px-0"
+                onClick={() => setSelectedWeekIndex(idx)}
+              >
+                {w.week_number}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset - 1)}>
           <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
