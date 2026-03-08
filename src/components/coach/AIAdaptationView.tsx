@@ -341,7 +341,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
       {result.coach_message_suggestion && (
         <div className="glass p-3 space-y-2">
           <p className="text-xs font-bold text-muted-foreground">
-            💬 {i18n.language === "fr" ? "Message suggéré pour l'athlète" : "Suggested message for athlete"}
+            💬 {t('suggested_message')}
           </p>
           <p className="text-sm italic">"{result.coach_message_suggestion}"</p>
         </div>
