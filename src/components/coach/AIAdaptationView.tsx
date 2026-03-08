@@ -214,10 +214,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
     return (
       <Button onClick={handleGenerate} disabled={loading} className="w-full gap-2">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
-        {loading 
-          ? (i18n.language === "fr" ? "Analyse des feedbacks et génération..." : "Analyzing feedback & generating...")
-          : (i18n.language === "fr" ? "🧠 Générer le programme adapté" : "🧠 Generate adapted program")
-        }
+        {loading ? t('analyzing_generating') : t('generate_adapted')}
       </Button>
     );
   }
