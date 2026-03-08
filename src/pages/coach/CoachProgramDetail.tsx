@@ -552,6 +552,15 @@ const CoachProgramDetail = () => {
       </div>
 
       {/* Weeks tabs */}
+      {program.weeks.length === 0 && (
+        <div className="glass rounded-xl p-12 text-center space-y-4">
+          <p className="text-muted-foreground">{t("program:start_with_ai")}</p>
+          <Button onClick={addWeek}>
+            <Plus className="w-4 h-4 mr-2" />
+            {t("program:add_week", { number: 1 })}
+          </Button>
+        </div>
+      )}
       {program.weeks.length > 0 && (
         <Tabs value={activeWeek} onValueChange={(v) => {
           setActiveWeek(v);
