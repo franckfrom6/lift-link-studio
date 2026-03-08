@@ -82,6 +82,7 @@ const StudentWeek = () => {
   };
 
   const weekStart = useMemo(getWeekStart, [weekOffset]);
+  const weekStartStr = weekStart.toISOString().split("T")[0];
   const { swaps: dbSwaps, createSwap } = useSessionSwaps(weekStart);
   const weekKey = weekStart.toISOString().split("T")[0];
   const currentCheckin = checkins[weekKey] || null;
