@@ -42,7 +42,7 @@ export const useStudentDashboard = () => {
       const { data: programs } = await supabase
         .from("programs")
         .select("id")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .eq("status", "active")
         .limit(1);
 
