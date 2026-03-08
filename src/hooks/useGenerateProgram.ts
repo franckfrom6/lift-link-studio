@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ProgramData, WeekData, SessionData, SessionExerciseData, SessionSectionData } from "@/types/coach";
-import { ProgressionPhase } from "@/components/student/ProgressionTimeline";
+import { ProgramData, WeekData, SessionData, SessionExerciseData, SessionSectionData, ProgressionPhaseData } from "@/types/coach";
 import { toast } from "sonner";
 
 interface AIStructuredInput {
