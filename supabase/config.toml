@@ -1,5 +1,8 @@
 project_id = "wlwzxhihykefzbtvoqtm"
 
+[functions.ai-coach]
+verify_jwt = false
+
 [functions.generate-bilan]
 verify_jwt = false
 
@@ -10,4 +13,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.adapt-next-week]
+verify_jwt = false
+
+[functions.seed-personas]
+verify_jwt = false
+
+[functions.seed-demo-program]
 verify_jwt = false

@@ -55,6 +55,45 @@ export type Database = {
           },
         ]
       }
+      ai_usage_logs: {
+        Row: {
+          action: string
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          input_tokens: number | null
+          output_tokens: number | null
+          plan: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_tokens?: number | null
+          output_tokens?: number | null
+          plan: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_tokens?: number | null
+          output_tokens?: number | null
+          plan?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       body_measurements: {
         Row: {
           arm_cm: number | null

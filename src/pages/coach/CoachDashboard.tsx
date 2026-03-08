@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AIUsageDashboard from "@/components/ai/AIUsageDashboard";
 import { Users, TrendingUp, Activity, AlertTriangle, ClipboardList, ChevronRight, Filter, ArrowUpDown, Search, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,9 @@ const CoachDashboard = () => {
         <KPICard icon={TrendingUp} label={t("dashboard:avg_adherence")} value={`${kpis.avgAdherence}%`} />
         <KPICard icon={AlertTriangle} label={t("dashboard:alerts")} value={kpis.alertCount} variant={kpis.alertCount > 0 ? "warning" : "default"} />
       </div>
+
+      {/* AI Usage */}
+      <AIUsageDashboard />
 
       {/* Student Overview */}
       <div className="space-y-3">
