@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,10 +15,21 @@ import {
   NUTRITION_TRIGGER_TYPES,
   RECOVERY_TRIGGER_TYPES,
   MUSCLE_GROUPS,
-  NUTRITION_TEMPLATES,
-  RECOVERY_TEMPLATES,
-  type RecommendationTemplate,
 } from "@/data/recommendation-templates";
+
+interface DbTemplate {
+  id: string;
+  type: string;
+  category: string;
+  title_fr: string;
+  title_en: string;
+  content_fr: string;
+  content_en: string;
+  trigger_type: string | null;
+  trigger_config: any;
+  duration_minutes: number | null;
+  sort_order: number;
+}
 
 interface Props {
   open: boolean;
