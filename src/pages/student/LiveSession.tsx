@@ -153,13 +153,15 @@ const LiveSession = () => {
   };
 
   const finishSession = async () => {
+    if (!user || !selectedSession?.id) {
+      setSessionDone(true);
+      toast.success(t('session:session_done'));
+      return;
+    }
+
     setSessionDone(true);
     toast.success(t('session:session_done'));
-
-    // Save completed session to DB
-    if (!user) return;
-    const dbSessionId = selectedSession?.id;
-    if (!dbSessionId) return;
+    const dbSessionId = selectedSession.id;
 
     try {
       const { data: cs, error } = await supabase.from("completed_sessions").insert({

@@ -99,8 +99,12 @@ const ProgramEditor = () => {
       toast.error(t("program:error_not_logged_in"));
       return;
     }
+    if (!studentId) {
+      toast.error("Student ID is missing");
+      return;
+    }
     setSaving(true);
-    const result = await saveProgram(program, user.id, studentId || "");
+    const result = await saveProgram(program, user.id, studentId);
     setSaving(false);
     if (result) {
       toast.success(t("program:program_saved"));
