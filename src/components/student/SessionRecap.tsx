@@ -106,9 +106,23 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
         />
       </div>
 
-      <Button className="w-full h-12 text-base font-semibold" onClick={onClose}>
-        Terminer et sauvegarder
-      </Button>
+      <div className="flex gap-2">
+        <Button variant="outline" className="flex-1 h-12 font-semibold gap-2" onClick={() => setRecoOpen(true)}>
+          <Sparkles className="w-4 h-4" strokeWidth={1.5} />
+          Voir les recos
+        </Button>
+        <Button className="flex-1 h-12 font-semibold" onClick={onClose}>
+          Terminer
+        </Button>
+      </div>
+
+      <RecommendationSheet
+        open={recoOpen}
+        onClose={() => setRecoOpen(false)}
+        triggerType="post_session"
+        activityType={activityType || null}
+        muscleGroups={muscleGroups || ["glutes", "quads", "hamstrings"]}
+      />
     </div>
   );
 };
