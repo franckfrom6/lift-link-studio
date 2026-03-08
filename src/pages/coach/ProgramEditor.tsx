@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ProgramData, WeekData, SessionSectionData, MOCK_STUDENTS } from "@/types/coach";
+import { ProgramData, WeekData, SessionSectionData, SessionExerciseData, SessionData, MOCK_STUDENTS } from "@/types/coach";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +14,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGenerateProgram } from "@/hooks/useGenerateProgram";
 import { saveProgram } from "@/hooks/useSaveProgram";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import ProgressionTimeline, { ProgressionPhase } from "@/components/student/ProgressionTimeline";
 
 const ProgramEditor = () => {
-  const { studentId } = useParams();
+  const { studentId, programId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation(["program", "common"]);
@@ -25,12 +26,14 @@ const ProgramEditor = () => {
   const { generate, loading: aiLoading } = useGenerateProgram();
 
   const [program, setProgram] = useState<ProgramData>({
-    id: crypto.randomUUID(),
+    id: programId || crypto.randomUUID(),
     name: "",
     studentId: studentId || "",
     status: "draft",
     weeks: [],
   });
+
+  const [initialLoading, setInitialLoading] = useState(!!programId);
 
   const [activeWeek, setActiveWeek] = useState<string>("0");
   const [saving, setSaving] = useState(false);
