@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
@@ -30,28 +30,30 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<AuthPage />} />
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<AuthPage />} />
 
-          <Route path="/coach" element={<CoachLayout />}>
-            <Route index element={<CoachDashboard />} />
-            <Route path="students" element={<CoachStudents />} />
-            <Route path="students/:studentId" element={<StudentDetail />} />
-            <Route path="students/:studentId/program/new" element={<ProgramEditor />} />
-            <Route path="programs" element={<CoachPrograms />} />
-            <Route path="exercises" element={<CoachExercises />} />
-          </Route>
+            <Route path="/coach" element={<CoachLayout />}>
+              <Route index element={<CoachDashboard />} />
+              <Route path="students" element={<CoachStudents />} />
+              <Route path="students/:studentId" element={<StudentDetail />} />
+              <Route path="students/:studentId/program/new" element={<ProgramEditor />} />
+              <Route path="programs" element={<CoachPrograms />} />
+              <Route path="exercises" element={<CoachExercises />} />
+            </Route>
 
-          <Route path="/student" element={<StudentLayout />}>
-            <Route index element={<StudentWeek />} />
-            <Route path="session" element={<LiveSession />} />
-            <Route path="progress" element={<StudentProgress />} />
-            <Route path="profile" element={<StudentProfile />} />
-          </Route>
+            <Route path="/student" element={<StudentLayout />}>
+              <Route index element={<StudentWeek />} />
+              <Route path="session" element={<LiveSession />} />
+              <Route path="progress" element={<StudentProgress />} />
+              <Route path="profile" element={<StudentProfile />} />
+            </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
