@@ -8,7 +8,7 @@ import { useState } from "react";
 interface SessionRecapProps {
   exercises: ProgramExerciseDetail[];
   completedSets: Record<number, CompletedSet[]>;
-  duration: number; // seconds
+  duration: number;
   onClose: () => void;
 }
 
@@ -33,46 +33,46 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose }: SessionRe
     <div className="space-y-6 animate-fade-in">
       {/* Hero */}
       <div className="text-center space-y-3 py-4">
-        <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto animate-pulse-glow">
-          <Trophy className="w-8 h-8 text-primary" />
+        <div className="w-16 h-16 rounded-2xl bg-success-bg flex items-center justify-center mx-auto">
+          <Trophy className="w-8 h-8 text-success" strokeWidth={1.5} />
         </div>
-        <h1 className="text-2xl font-display font-bold">Séance terminée ! 💪</h1>
+        <h1 className="text-2xl font-bold">Séance terminée ! 💪</h1>
         <p className="text-muted-foreground">Excellent travail, voici ton récap</p>
       </div>
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="glass rounded-xl p-4 text-center">
-          <Clock className="w-5 h-5 text-primary mx-auto mb-1" />
-          <p className="text-2xl font-display font-bold">{mins}:{secs.toString().padStart(2, "0")}</p>
+        <div className="glass p-4 text-center">
+          <Clock className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
+          <p className="text-2xl font-bold">{mins}:{secs.toString().padStart(2, "0")}</p>
           <p className="text-xs text-muted-foreground">Durée</p>
         </div>
-        <div className="glass rounded-xl p-4 text-center">
-          <Dumbbell className="w-5 h-5 text-primary mx-auto mb-1" />
-          <p className="text-2xl font-display font-bold">{Math.round(totalVolume).toLocaleString()}</p>
+        <div className="glass p-4 text-center">
+          <Dumbbell className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
+          <p className="text-2xl font-bold">{Math.round(totalVolume).toLocaleString()}</p>
           <p className="text-xs text-muted-foreground">Volume (kg)</p>
         </div>
-        <div className="glass rounded-xl p-4 text-center">
-          <TrendingUp className="w-5 h-5 text-primary mx-auto mb-1" />
-          <p className="text-2xl font-display font-bold">{totalSets}</p>
+        <div className="glass p-4 text-center">
+          <TrendingUp className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
+          <p className="text-2xl font-bold">{totalSets}</p>
           <p className="text-xs text-muted-foreground">Séries</p>
         </div>
-        <div className="glass rounded-xl p-4 text-center">
-          <p className="text-2xl font-display font-bold">{totalReps}</p>
+        <div className="glass p-4 text-center">
+          <p className="text-2xl font-bold">{totalReps}</p>
           <p className="text-xs text-muted-foreground">Répétitions</p>
         </div>
       </div>
 
       {/* Exercise breakdown */}
-      <div className="glass rounded-xl p-4 space-y-3">
-        <h3 className="font-display font-bold text-sm">Détail par exercice</h3>
+      <div className="glass p-4 space-y-3">
+        <h3 className="font-bold text-sm">Détail par exercice</h3>
         {exercises.map((ex, i) => {
           const sets = completedSets[i] || [];
           if (sets.length === 0) return null;
           const exVolume = sets.reduce((a, s) => a + s.weight * s.reps, 0);
           return (
             <div key={i} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
-              <span className="text-xs font-bold text-primary w-5">{i + 1}</span>
+              <span className="text-xs font-bold text-accent-foreground w-5">{i + 1}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{ex.name}</p>
                 <p className="text-[11px] text-muted-foreground">
@@ -80,7 +80,7 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose }: SessionRe
                 </p>
               </div>
               {sets.some((s) => s.isFailure) && (
-                <span className="text-[10px] bg-destructive/20 text-destructive px-2 py-0.5 rounded font-medium">Failure</span>
+                <span className="text-[10px] bg-destructive/10 text-destructive px-2 py-0.5 rounded-md font-medium">Failure</span>
               )}
             </div>
           );
@@ -90,7 +90,7 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose }: SessionRe
       {/* Feedback */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-primary" />
+          <MessageSquare className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
           <label className="text-sm font-medium">Note / Feedback (optionnel)</label>
         </div>
         <Textarea

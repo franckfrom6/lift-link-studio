@@ -47,13 +47,13 @@ const ProgressionTimeline = ({ phases, currentWeek }: ProgressionTimelineProps) 
             {/* Content */}
             <div className={cn(
               "pb-4 flex-1 rounded-lg px-3 py-2 -mt-0.5 transition-colors",
-              isCurrent && "bg-primary/10 border border-primary/20",
-              phase.isDeload && !isCurrent && "bg-warning/5"
+              isCurrent && "bg-accent border border-accent-foreground/10",
+              phase.isDeload && !isCurrent && "bg-warning-bg"
             )}>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={cn(
                   "text-sm font-semibold",
-                  isCurrent ? "text-primary" : "text-foreground"
+                  isCurrent ? "text-accent-foreground" : "text-foreground"
                 )}>
                   {phase.weekLabel}
                 </span>

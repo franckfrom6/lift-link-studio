@@ -36,11 +36,11 @@ const SessionSectionEditor = ({ section, onUpdate, onRemove, onAddExercise }: Se
   };
 
   return (
-    <div className="border border-border/60 rounded-lg overflow-hidden bg-surface/30">
+    <div className="border border-border rounded-lg overflow-hidden bg-secondary/30">
       {/* Section header */}
-      <div className="flex items-center gap-2 p-2.5 bg-surface/50">
+      <div className="flex items-center gap-2 p-2.5 bg-secondary/50">
         <button onClick={() => setCollapsed(!collapsed)} className="text-muted-foreground hover:text-foreground transition-colors">
-          {collapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+          {collapsed ? <ChevronDown className="w-3.5 h-3.5" strokeWidth={1.5} /> : <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.5} />}
         </button>
         <Input
           value={section.icon || ""}
@@ -61,7 +61,7 @@ const SessionSectionEditor = ({ section, onUpdate, onRemove, onAddExercise }: Se
           className="w-20 h-7 text-center bg-surface text-[11px] border-none"
         />
         <button onClick={onRemove} className="text-muted-foreground hover:text-destructive transition-colors p-1">
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
         </button>
       </div>
 
@@ -93,7 +93,7 @@ const SessionSectionEditor = ({ section, onUpdate, onRemove, onAddExercise }: Se
             />
           ))}
           <Button variant="ghost" size="sm" className="w-full text-muted-foreground text-xs" onClick={onAddExercise}>
-            <Plus className="w-3.5 h-3.5 mr-1" />
+            <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
             Ajouter un exercice
           </Button>
         </div>
