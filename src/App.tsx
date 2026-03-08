@@ -22,6 +22,7 @@ import StudentWeek from "./pages/student/StudentWeek";
 import StudentProgress from "./pages/student/StudentProgress";
 import StudentProfile from "./pages/student/StudentProfile";
 import LiveSession from "./pages/student/LiveSession";
+import StudentNutrition from "./pages/student/StudentNutrition";
 
 const queryClient = new QueryClient();
 
