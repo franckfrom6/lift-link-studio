@@ -5,7 +5,7 @@ import { YANA_PROGRAM } from "@/data/yana-program";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, FileText } from "lucide-react";
 import ProgramView from "@/components/coach/ProgramView";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import SwapBadge from "@/components/student/SwapBadge";
@@ -215,6 +215,18 @@ const StudentDetail = () => {
           </div>
         </div>
       )}
+
+      {/* AI Bilan + Report buttons */}
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={() => navigate(`/coach/students/${studentId}/bilan`)}
+        >
+          <Bot className="w-4 h-4 mr-2" />
+          Générer un bilan IA
+        </Button>
+      </div>
 
       {/* Programs section */}
       <div className="space-y-3">
