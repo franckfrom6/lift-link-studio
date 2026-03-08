@@ -38,6 +38,7 @@ import enPlans from './locales/en/plans.json';
 import enAdmin from './locales/en/admin.json';
 import enFeedback from './locales/en/feedback.json';
 import enSupport from './locales/en/support.json';
+import enLanding from './locales/en/landing.json';
 
 i18n
   .use(LanguageDetector)
