@@ -81,7 +81,7 @@ const AdminSupport = () => {
       is_internal: isInternal,
     });
     if (!isInternal) {
-      await supabase.from("support_tickets").update({ status: "waiting_response" }).eq("id", selectedTicket.id);
+      await db.from("support_tickets").update({ status: "waiting_response" }).eq("id", selectedTicket.id);
     }
     setSending(false);
     isInternal ? setInternalNote("") : setReply("");
