@@ -14,16 +14,375 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      coach_students: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
+      completed_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          duration: number | null
+          id: string
+          session_id: string
+          started_at: string
+          student_id: string
+          student_notes: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          duration?: number | null
+          id?: string
+          session_id: string
+          started_at?: string
+          student_id: string
+          student_notes?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          duration?: number | null
+          id?: string
+          session_id?: string
+          started_at?: string
+          student_id?: string
+          student_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "completed_sessions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      completed_sets: {
+        Row: {
+          completed_session_id: string
+          created_at: string
+          id: string
+          is_failure: boolean
+          reps: number
+          session_exercise_id: string
+          set_number: number
+          weight: number | null
+        }
+        Insert: {
+          completed_session_id: string
+          created_at?: string
+          id?: string
+          is_failure?: boolean
+          reps: number
+          session_exercise_id: string
+          set_number: number
+          weight?: number | null
+        }
+        Update: {
+          completed_session_id?: string
+          created_at?: string
+          id?: string
+          is_failure?: boolean
+          reps?: number
+          session_exercise_id?: string
+          set_number?: number
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "completed_sets_completed_session_id_fkey"
+            columns: ["completed_session_id"]
+            isOneToOne: false
+            referencedRelation: "completed_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "completed_sets_session_exercise_id_fkey"
+            columns: ["session_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "session_exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exercises: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          equipment: string
+          id: string
+          image_url: string | null
+          is_default: boolean
+          muscle_group: string
+          name: string
+          secondary_muscle: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          equipment: string
+          id?: string
+          image_url?: string | null
+          is_default?: boolean
+          muscle_group: string
+          name: string
+          secondary_muscle?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          equipment?: string
+          id?: string
+          image_url?: string | null
+          is_default?: boolean
+          muscle_group?: string
+          name?: string
+          secondary_muscle?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          age: number | null
+          avatar_url: string | null
+          created_at: string
+          full_name: string
+          goal: string | null
+          height: number | null
+          id: string
+          level: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          specialty: string | null
+          updated_at: string
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          age?: number | null
+          avatar_url?: string | null
+          created_at?: string
+          full_name: string
+          goal?: string | null
+          height?: number | null
+          id?: string
+          level?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          specialty?: string | null
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          age?: number | null
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string
+          goal?: string | null
+          height?: number | null
+          id?: string
+          level?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          specialty?: string | null
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      program_weeks: {
+        Row: {
+          created_at: string
+          id: string
+          program_id: string
+          week_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          program_id: string
+          week_number: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          program_id?: string
+          week_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_weeks_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programs: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          name: string
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          name: string
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      session_exercises: {
+        Row: {
+          coach_notes: string | null
+          created_at: string
+          exercise_id: string
+          id: string
+          reps_max: number
+          reps_min: number
+          rest_seconds: number
+          session_id: string
+          sets: number
+          sort_order: number
+          suggested_weight: number | null
+        }
+        Insert: {
+          coach_notes?: string | null
+          created_at?: string
+          exercise_id: string
+          id?: string
+          reps_max?: number
+          reps_min?: number
+          rest_seconds?: number
+          session_id: string
+          sets?: number
+          sort_order: number
+          suggested_weight?: number | null
+        }
+        Update: {
+          coach_notes?: string | null
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          reps_max?: number
+          reps_min?: number
+          rest_seconds?: number
+          session_id?: string
+          sets?: number
+          sort_order?: number
+          suggested_weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_exercises_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_exercises_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          id: string
+          name: string
+          notes: string | null
+          week_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          id?: string
+          name: string
+          notes?: string | null
+          week_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          name?: string
+          notes?: string | null
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "program_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "coach" | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +509,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["coach", "student"],
+    },
   },
 } as const
