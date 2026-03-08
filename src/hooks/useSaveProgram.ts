@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { ProgramData, WeekData, SessionData, SessionExerciseData, SessionSectionData } from "@/types/coach";
+import { ProgramData } from "@/types/coach";
 import { toast } from "sonner";
 
 export interface SaveProgramResult {
@@ -28,25 +28,61 @@ export async function saveProgram(
     if (programError) throw programError;
     const programId = programRow.id;
 
-    // 2. Delete existing weeks (cascade deletes sessions, exercises, sections)
-    await supabase.from("program_weeks").delete().eq("program_id", programId);
+    // 2. Get existing week IDs for this program
+    const { data: existingWeeks } = await supabase
+      .from("program_weeks")
+      .select("id")
+      .eq("program_id", programId);
+    const existingWeekIds = new Set((existingWeeks || []).map((w) => w.id));
+    const newWeekIds = new Set(program.weeks.map((w) => w.id));
 
-    // 3. Insert weeks
+    // 3. Delete removed weeks (cascade will handle sessions, sections, exercises)
+    const weeksToDelete = [...existingWeekIds].filter((id) => !newWeekIds.has(id));
+    if (weeksToDelete.length > 0) {
+      const { error } = await supabase
+        .from("program_weeks")
+        .delete()
+        .in("id", weeksToDelete);
+      if (error) throw error;
+    }
+
+    // 4. Upsert weeks and their children
     for (const week of program.weeks) {
       const { data: weekRow, error: weekError } = await supabase
         .from("program_weeks")
-        .insert({ program_id: programId, week_number: week.weekNumber })
+        .upsert({
+          id: week.id,
+          program_id: programId,
+          week_number: week.weekNumber,
+        })
         .select()
         .single();
 
       if (weekError) throw weekError;
+      const weekId = weekRow.id;
 
-      // 4. Insert sessions
+      // Get existing sessions for this week
+      const { data: existingSessions } = await supabase
+        .from("sessions")
+        .select("id")
+        .eq("week_id", weekId);
+      const existingSessionIds = new Set((existingSessions || []).map((s) => s.id));
+      const newSessionIds = new Set(week.sessions.map((s) => s.id));
+
+      // Delete removed sessions
+      const sessionsToDelete = [...existingSessionIds].filter((id) => !newSessionIds.has(id));
+      if (sessionsToDelete.length > 0) {
+        const { error } = await supabase.from("sessions").delete().in("id", sessionsToDelete);
+        if (error) throw error;
+      }
+
+      // Upsert sessions
       for (const session of week.sessions) {
         const { data: sessionRow, error: sessionError } = await supabase
           .from("sessions")
-          .insert({
-            week_id: weekRow.id,
+          .upsert({
+            id: session.id,
+            week_id: weekId,
             name: session.name,
             day_of_week: session.dayOfWeek,
             notes: session.notes || null,
@@ -55,14 +91,55 @@ export async function saveProgram(
           .single();
 
         if (sessionError) throw sessionError;
+        const sessionId = sessionRow.id;
 
-        // 5. Insert sections
-        const sectionIdMap: Record<string, string> = {};
+        // Get existing sections for this session
+        const { data: existingSections } = await supabase
+          .from("session_sections")
+          .select("id")
+          .eq("session_id", sessionId);
+        const existingSectionIds = new Set((existingSections || []).map((s) => s.id));
+        const newSectionIds = new Set((session.sections || []).map((s) => s.id));
+
+        // Delete removed sections (cascade deletes their exercises)
+        const sectionsToDelete = [...existingSectionIds].filter((id) => !newSectionIds.has(id));
+        if (sectionsToDelete.length > 0) {
+          const { error } = await supabase.from("session_sections").delete().in("id", sectionsToDelete);
+          if (error) throw error;
+        }
+
+        // Get existing exercises for this session
+        const { data: existingExercises } = await supabase
+          .from("session_exercises")
+          .select("id")
+          .eq("session_id", sessionId);
+        const existingExerciseIds = new Set((existingExercises || []).map((e) => e.id));
+
+        // Collect all exercise IDs from current state
+        const allNewExerciseIds = new Set<string>();
+        for (const section of session.sections || []) {
+          for (const ex of section.exercises) {
+            allNewExerciseIds.add(ex.id);
+          }
+        }
+        for (const ex of session.exercises) {
+          allNewExerciseIds.add(ex.id);
+        }
+
+        // Delete removed exercises
+        const exercisesToDelete = [...existingExerciseIds].filter((id) => !allNewExerciseIds.has(id));
+        if (exercisesToDelete.length > 0) {
+          const { error } = await supabase.from("session_exercises").delete().in("id", exercisesToDelete);
+          if (error) throw error;
+        }
+
+        // Upsert sections and their exercises
         for (const section of session.sections || []) {
           const { data: sectionRow, error: sectionError } = await supabase
             .from("session_sections")
-            .insert({
-              session_id: sessionRow.id,
+            .upsert({
+              id: section.id,
+              session_id: sessionId,
               name: section.name,
               icon: section.icon || null,
               sort_order: section.sortOrder,
@@ -73,14 +150,13 @@ export async function saveProgram(
             .single();
 
           if (sectionError) throw sectionError;
-          sectionIdMap[section.id] = sectionRow.id;
 
-          // 6. Insert section exercises
           for (const ex of section.exercises) {
             const { error: exError } = await supabase
               .from("session_exercises")
-              .insert({
-                session_id: sessionRow.id,
+              .upsert({
+                id: ex.id,
+                session_id: sessionId,
                 section_id: sectionRow.id,
                 exercise_id: ex.exercise.id,
                 sort_order: ex.sortOrder,
@@ -100,12 +176,13 @@ export async function saveProgram(
           }
         }
 
-        // 7. Insert unsectioned exercises
+        // Upsert unsectioned exercises
         for (const ex of session.exercises) {
           const { error: exError } = await supabase
             .from("session_exercises")
-            .insert({
-              session_id: sessionRow.id,
+            .upsert({
+              id: ex.id,
+              session_id: sessionId,
               section_id: null,
               exercise_id: ex.exercise.id,
               sort_order: ex.sortOrder,
@@ -126,7 +203,7 @@ export async function saveProgram(
       }
     }
 
-    // 8. Save progression if exists
+    // 5. Save progression if exists
     if (program.progression && program.progression.length > 0) {
       const { error: delProgError } = await supabase.from("program_progression").delete().eq("program_id", programId);
       if (delProgError) throw delProgError;

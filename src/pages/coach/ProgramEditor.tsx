@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ProgramData, WeekData, SessionSectionData, MOCK_STUDENTS } from "@/types/coach";
+import { ProgramData, WeekData, SessionSectionData, SessionExerciseData, SessionData, MOCK_STUDENTS } from "@/types/coach";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +14,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGenerateProgram } from "@/hooks/useGenerateProgram";
 import { saveProgram } from "@/hooks/useSaveProgram";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import ProgressionTimeline, { ProgressionPhase } from "@/components/student/ProgressionTimeline";
 
 const ProgramEditor = () => {
-  const { studentId } = useParams();
+  const { studentId, programId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation(["program", "common"]);
@@ -25,18 +26,107 @@ const ProgramEditor = () => {
   const { generate, loading: aiLoading } = useGenerateProgram();
 
   const [program, setProgram] = useState<ProgramData>({
-    id: crypto.randomUUID(),
+    id: programId || crypto.randomUUID(),
     name: "",
     studentId: studentId || "",
     status: "draft",
     weeks: [],
   });
 
+  const [initialLoading, setInitialLoading] = useState(!!programId);
+
   const [activeWeek, setActiveWeek] = useState<string>("0");
   const [saving, setSaving] = useState(false);
 
+  // Load existing program from DB when editing
+  useEffect(() => {
+    if (!programId || !user) return;
+    const loadProgram = async () => {
+      try {
+        const { data: prog } = await supabase.from("programs").select("*").eq("id", programId).single();
+        if (!prog) { setInitialLoading(false); return; }
+
+        const { data: weeks } = await supabase.from("program_weeks").select("*").eq("program_id", prog.id).order("week_number");
+        const { data: progression } = await supabase.from("program_progression").select("*").eq("program_id", prog.id).order("sort_order");
+
+        if (!weeks || weeks.length === 0) {
+          setProgram({
+            id: prog.id, name: prog.name, studentId: prog.student_id,
+            status: prog.status as ProgramData["status"], weeks: [],
+            progression: (progression || []).map((p) => ({ weekLabel: p.week_label, description: p.description, weekStart: p.week_start, weekEnd: p.week_end, isDeload: p.is_deload, order: p.sort_order })),
+          });
+          setShowAI(false);
+          setInitialLoading(false);
+          return;
+        }
+
+        const weekIds = weeks.map((w) => w.id);
+        const { data: sessions } = await supabase.from("sessions").select("*").in("week_id", weekIds).order("day_of_week");
+        const sessionIds = (sessions || []).map((s) => s.id);
+
+        const { data: sections } = await supabase.from("session_sections").select("*").in("session_id", sessionIds).order("sort_order");
+        const { data: exercises } = await supabase.from("session_exercises").select("*, exercise:exercises(*)").in("session_id", sessionIds).order("sort_order");
+
+        // Build section map
+        const sectionMap = new Map<string, SessionSectionData>();
+        for (const sec of (sections || [])) {
+          sectionMap.set(sec.id, {
+            id: sec.id, name: sec.name, icon: sec.icon || undefined,
+            sortOrder: sec.sort_order, durationEstimate: sec.duration_estimate || undefined,
+            notes: sec.notes || undefined, exercises: [],
+          });
+        }
+
+        // Assign exercises to sections
+        for (const ex of (exercises || [])) {
+          const mapped: SessionExerciseData = {
+            id: ex.id, exercise: ex.exercise as any, sortOrder: ex.sort_order,
+            sets: ex.sets, repsMin: ex.reps_min, repsMax: ex.reps_max,
+            restSeconds: ex.rest_seconds, suggestedWeight: ex.suggested_weight || undefined,
+            coachNotes: ex.coach_notes || undefined, tempo: ex.tempo || undefined,
+            rpeTarget: ex.rpe_target || undefined, videoUrl: ex.video_url || undefined,
+            videoSearchQuery: ex.video_search_query || undefined, sectionId: ex.section_id || undefined,
+          };
+          if (ex.section_id && sectionMap.has(ex.section_id)) {
+            sectionMap.get(ex.section_id)!.exercises.push(mapped);
+          }
+        }
+
+        // Build weeks
+        const builtWeeks: WeekData[] = weeks.map((w) => ({
+          id: w.id, weekNumber: w.week_number,
+          sessions: (sessions || []).filter((s) => s.week_id === w.id).map((s): SessionData => ({
+            id: s.id, name: s.name, dayOfWeek: s.day_of_week, notes: s.notes || undefined,
+            sections: (sections || []).filter((sec) => sec.session_id === s.id).map((sec) => sectionMap.get(sec.id)!).filter(Boolean),
+            exercises: (exercises || []).filter((ex) => ex.session_id === s.id && !ex.section_id).map((ex): SessionExerciseData => ({
+              id: ex.id, exercise: ex.exercise as any, sortOrder: ex.sort_order,
+              sets: ex.sets, repsMin: ex.reps_min, repsMax: ex.reps_max,
+              restSeconds: ex.rest_seconds, suggestedWeight: ex.suggested_weight || undefined,
+              coachNotes: ex.coach_notes || undefined, tempo: ex.tempo || undefined,
+              rpeTarget: ex.rpe_target || undefined, videoUrl: ex.video_url || undefined,
+              videoSearchQuery: ex.video_search_query || undefined,
+            })),
+          })),
+        }));
+
+        setProgram({
+          id: prog.id, name: prog.name, studentId: prog.student_id,
+          status: prog.status as ProgramData["status"], weeks: builtWeeks,
+          progression: (progression || []).map((p) => ({ weekLabel: p.week_label, description: p.description, weekStart: p.week_start, weekEnd: p.week_end, isDeload: p.is_deload, order: p.sort_order })),
+        });
+        setShowAI(false);
+      } catch (e) {
+        console.error("Error loading program:", e);
+        toast.error("Error loading program");
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    loadProgram();
+  }, [programId, user]);
+
   // AI generation state
-  const [showAI, setShowAI] = useState(true);
+  const [showAI, setShowAI] = useState(!programId);
   const [aiMode, setAiMode] = useState<"guided" | "free">("guided");
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiForm, setAiForm] = useState({
@@ -153,6 +243,14 @@ const ProgramEditor = () => {
     id: `prog-${i}`,
     ...p,
   }));
+
+  if (initialLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
