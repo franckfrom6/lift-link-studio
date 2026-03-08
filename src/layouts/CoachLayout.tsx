@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Dumbbell, Users, ClipboardList, LogOut, LayoutDashboard, BookOpen, CreditCard, Shield } from "lucide-react";
+import { Users, ClipboardList, LogOut, LayoutDashboard, BookOpen, CreditCard, Shield } from "lucide-react";
+import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
