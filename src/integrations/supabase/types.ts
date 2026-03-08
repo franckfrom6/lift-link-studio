@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      adaptation_logs: {
+        Row: {
+          adaptations_applied: Json | null
+          ai_response: Json
+          coach_id: string
+          created_at: string
+          id: string
+          program_id: string
+          student_id: string
+          week_number: number
+        }
+        Insert: {
+          adaptations_applied?: Json | null
+          ai_response: Json
+          coach_id: string
+          created_at?: string
+          id?: string
+          program_id: string
+          student_id: string
+          week_number: number
+        }
+        Update: {
+          adaptations_applied?: Json | null
+          ai_response?: Json
+          coach_id?: string
+          created_at?: string
+          id?: string
+          program_id?: string
+          student_id?: string
+          week_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adaptation_logs_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       body_measurements: {
         Row: {
           arm_cm: number | null
@@ -928,6 +969,71 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_feedback: {
+        Row: {
+          completed_session_id: string
+          created_at: string
+          energy_post: number | null
+          exercises_pain: string[] | null
+          exercises_too_easy: string[] | null
+          exercises_too_hard: string[] | null
+          free_comment: string | null
+          id: string
+          joint_discomfort: boolean
+          joint_discomfort_details: string | null
+          joint_discomfort_location: string[] | null
+          mood_after: string | null
+          muscle_pump: number | null
+          overall_rating: number
+          user_id: string
+          would_repeat: boolean | null
+        }
+        Insert: {
+          completed_session_id: string
+          created_at?: string
+          energy_post?: number | null
+          exercises_pain?: string[] | null
+          exercises_too_easy?: string[] | null
+          exercises_too_hard?: string[] | null
+          free_comment?: string | null
+          id?: string
+          joint_discomfort?: boolean
+          joint_discomfort_details?: string | null
+          joint_discomfort_location?: string[] | null
+          mood_after?: string | null
+          muscle_pump?: number | null
+          overall_rating: number
+          user_id: string
+          would_repeat?: boolean | null
+        }
+        Update: {
+          completed_session_id?: string
+          created_at?: string
+          energy_post?: number | null
+          exercises_pain?: string[] | null
+          exercises_too_easy?: string[] | null
+          exercises_too_hard?: string[] | null
+          free_comment?: string | null
+          id?: string
+          joint_discomfort?: boolean
+          joint_discomfort_details?: string | null
+          joint_discomfort_location?: string[] | null
+          mood_after?: string | null
+          muscle_pump?: number | null
+          overall_rating?: number
+          user_id?: string
+          would_repeat?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_feedback_completed_session_id_fkey"
+            columns: ["completed_session_id"]
+            isOneToOne: true
+            referencedRelation: "completed_sessions"
             referencedColumns: ["id"]
           },
         ]
