@@ -3,6 +3,8 @@ import { Trash2, ChevronUp, ChevronDown, Dumbbell, MessageSquare, Film } from "l
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { getExerciseName, getMuscleGroupLabel, getEquipmentLabel } from "@/lib/exercise-utils";
 
 interface SessionExerciseCardProps {
   item: SessionExerciseData;

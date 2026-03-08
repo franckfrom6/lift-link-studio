@@ -6,6 +6,7 @@ import { useExercises } from "@/hooks/useExercises";
 import { MUSCLE_GROUPS } from "@/types/coach";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { getExerciseName, getMuscleGroupLabel, getEquipmentLabel } from "@/lib/exercise-utils";
 
 const CoachExercises = () => {
   const { exercises, loading } = useExercises();
@@ -14,7 +15,8 @@ const CoachExercises = () => {
   const { t } = useTranslation('exercises');
 
   const filtered = exercises.filter((ex) => {
-    const matchesSearch = ex.name.toLowerCase().includes(search.toLowerCase());
+    const name = getExerciseName(ex);
+    const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) || ex.name.toLowerCase().includes(search.toLowerCase());
     const matchesMuscle = !selectedMuscle || ex.muscle_group === selectedMuscle;
     return matchesSearch && matchesMuscle;
   });
@@ -59,7 +61,7 @@ const CoachExercises = () => {
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
               selectedMuscle === mg ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}>
-            {mg}
+            {getMuscleGroupLabel(mg)}
           </button>
         ))}
       </div>
@@ -67,7 +69,7 @@ const CoachExercises = () => {
       <div className="space-y-6">
         {Object.entries(grouped).map(([muscle, exs]) => (
           <div key={muscle}>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-[0.05em] mb-3">{muscle}</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-[0.05em] mb-3">{getMuscleGroupLabel(muscle)}</h3>
             <div className="grid gap-2">
               {exs.map((ex) => (
                 <div key={ex.id} className="glass p-4 flex items-center gap-4">
@@ -75,12 +77,12 @@ const CoachExercises = () => {
                     <Dumbbell className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm">{ex.name}</p>
+                    <p className="font-medium text-sm">{getExerciseName(ex)}</p>
                     <p className="text-xs text-muted-foreground truncate">{ex.description}</p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
                     <Badge variant="secondary" className="text-[10px]">{ex.type === "compound" ? t('compound') : t('isolation')}</Badge>
-                    <Badge variant="outline" className="text-[10px]">{ex.equipment}</Badge>
+                    <Badge variant="outline" className="text-[10px]">{getEquipmentLabel(ex.equipment)}</Badge>
                   </div>
                 </div>
               ))}
