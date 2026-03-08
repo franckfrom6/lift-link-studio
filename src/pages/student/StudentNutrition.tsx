@@ -7,6 +7,7 @@ import { MealLogData } from "@/components/nutrition/DailyNutritionLog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
+import FeatureGate from "@/components/plans/FeatureGate";
 
 const StudentNutrition = () => {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ const StudentNutrition = () => {
   };
 
   return (
+    <FeatureGate feature="nutrition_tracking" showLocked>
     <div className="space-y-5 animate-fade-in max-w-lg mx-auto">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/student")}>
@@ -65,6 +67,7 @@ const StudentNutrition = () => {
         <StudentRecommendationCards type="nutrition" />
       </div>
     </div>
+    </FeatureGate>
   );
 };
 

@@ -4,6 +4,7 @@ import StrengthProgressChart from "@/components/student/StrengthProgressChart";
 import BodyEvolutionSection from "@/components/student/BodyEvolutionSection";
 import ProgressPhotoGallery from "@/components/student/ProgressPhotoGallery";
 import WeeklyInsightCard from "@/components/student/WeeklyInsightCard";
+import FeatureGate from "@/components/plans/FeatureGate";
 
 const StudentProgress = () => {
   const { t } = useTranslation("dashboard");
@@ -15,11 +16,17 @@ const StudentProgress = () => {
         <p className="text-muted-foreground text-sm">{t("track_progress")}</p>
       </div>
 
-      <WeeklyInsightCard />
+      <FeatureGate feature="ai_weekly_insight" showLocked>
+        <WeeklyInsightCard />
+      </FeatureGate>
+
       <WeeklySummaryCard />
       <StrengthProgressChart />
       <BodyEvolutionSection />
-      <ProgressPhotoGallery />
+
+      <FeatureGate feature="progress_photos" showLocked>
+        <ProgressPhotoGallery />
+      </FeatureGate>
     </div>
   );
 };
