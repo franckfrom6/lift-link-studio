@@ -17,6 +17,8 @@ export interface SessionSwap {
 
 export const useSessionSwaps = (weekStartDate?: Date) => {
   const { user } = useAuth();
+  const { effectiveStudentId } = useImpersonation();
+  const studentId = user ? effectiveStudentId(user.id) : null;
   const [swaps, setSwaps] = useState<SessionSwap[]>([]);
   const [loading, setLoading] = useState(false);
 
