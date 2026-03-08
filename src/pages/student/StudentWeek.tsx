@@ -151,13 +151,22 @@ const StudentWeek = () => {
     setSwapModalOpen(true);
   };
 
-  const handleSwapConfirm = (reason: string) => {
+  const handleSwapConfirm = async (reason: string) => {
     if (swapSourceDay === null || swapTargetDay === null) return;
-    setLocalSwaps(prev => [
-      ...prev,
-      { id: crypto.randomUUID(), originalDay: swapSourceDay, newDay: swapTargetDay, reason: reason || null },
-    ]);
-    toast.success(t('session:session_moved'));
+    const sourceSession = effectiveSessions[swapSourceDay];
+    if (!sourceSession) return;
+    const dates = getWeekDates();
+    const result = await createSwap({
+      sessionId: sourceSession.sessionId,
+      originalDay: swapSourceDay + 1,
+      newDay: swapTargetDay + 1,
+      originalDate: dates[swapSourceDay].date,
+      newDate: dates[swapTargetDay].date,
+      reason: reason || undefined,
+    });
+    if (result) {
+      toast.success(t('session:session_moved'));
+    }
     setSwapMode(false);
     setSwapSourceDay(null);
     setSwapTargetDay(null);
