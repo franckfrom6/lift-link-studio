@@ -61,7 +61,7 @@
   },
   "roles": {
     "coach": "Coach",
-    "student": "Élève"
+    "student": "Athlète"
   },
   "recommendations": "Recommandations"
 }
