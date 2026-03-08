@@ -66,6 +66,7 @@ const LiveSession = () => {
         rpe: ex.rpe_target || "",
         load: ex.suggested_weight ? `${ex.suggested_weight}kg` : "",
         video: ex.video_url || "",
+        videoSearchQuery: ex.video_search_query || "",
         channel: "",
         notes: ex.coach_notes || "",
       })),
@@ -373,10 +374,10 @@ const LiveSession = () => {
                       restSeconds={restSeconds}
                       tempo={ex.tempo || null}
                       rpeTarget={ex.rpe || null}
-                      suggestedWeight={null}
+                      suggestedWeight={ex.load ? parseFloat(ex.load) || null : null}
                       coachNotes={ex.notes || null}
                       videoUrl={ex.video || null}
-                      videoSearchQuery={null}
+                      videoSearchQuery={ex.videoSearchQuery || ex.name || null}
                       isActive={isActive}
                       completedSets={sets}
                       onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
