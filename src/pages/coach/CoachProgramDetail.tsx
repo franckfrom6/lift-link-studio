@@ -523,6 +523,19 @@ const CoachProgramDetail = () => {
 
   const dayLabel = (d: number) => t(`common:days.${DAY_KEYS[d]}`, DAY_KEYS[d]);
   const lang = i18n.language;
+  const dateFnsLocale = lang === "fr" ? fr : enUS;
+
+  // Compute the date for a given day_of_week (1=Mon) in a given week_number
+  const programStartMonday = useMemo(() => {
+    if (!program?.created_at) return new Date();
+    return startOfWeek(new Date(program.created_at), { weekStartsOn: 1 });
+  }, [program?.created_at]);
+
+  const getDayDate = useCallback((weekNumber: number, dayOfWeek: number) => {
+    // weekNumber is 1-based, dayOfWeek is 1=Mon..7=Sun
+    const weekStart = addWeeks(programStartMonday, weekNumber - 1);
+    return addDays(weekStart, dayOfWeek - 1);
+  }, [programStartMonday]);
 
   return (
     <div className="space-y-6 animate-fade-in">
