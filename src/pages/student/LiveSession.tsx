@@ -14,6 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useStudentProgram } from "@/hooks/useStudentProgram";
 
 const progressionPhases: ProgressionPhase[] = YANA_PROGRAM.progression.map((p, i) => {
   const weekMatch = p.match(/Semaine[s]?\s+(\d+)(?:\s*[-–]\s*(\d+))?/i);
