@@ -415,6 +415,39 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          feature_key: string
+          id: string
+          is_enabled: boolean
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          feature_key: string
+          id?: string
+          is_enabled?: boolean
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          feature_key?: string
+          id?: string
+          is_enabled?: boolean
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       nutrition_profiles: {
         Row: {
           activity_multiplier: number | null
@@ -475,6 +508,83 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      plan_features: {
+        Row: {
+          feature_key: string
+          id: string
+          is_enabled: boolean
+          limit_type: string | null
+          limit_value: number | null
+          plan_id: string
+        }
+        Insert: {
+          feature_key: string
+          id?: string
+          is_enabled?: boolean
+          limit_type?: string | null
+          limit_value?: number | null
+          plan_id: string
+        }
+        Update: {
+          feature_key?: string
+          id?: string
+          is_enabled?: boolean
+          limit_type?: string | null
+          limit_value?: number | null
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_features_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          created_at: string
+          description_en: string
+          description_fr: string
+          display_name_en: string
+          display_name_fr: string
+          id: string
+          is_active: boolean
+          name: string
+          price_monthly: number | null
+          price_yearly: number | null
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description_en?: string
+          description_fr?: string
+          display_name_en: string
+          display_name_fr: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description_en?: string
+          description_fr?: string
+          display_name_en?: string
+          display_name_fr?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          sort_order?: number
         }
         Relationships: []
       }
@@ -893,6 +1003,59 @@ export type Database = {
             columns: ["week_id"]
             isOneToOne: false
             referencedRelation: "program_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          plan_id: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_ends_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_id: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
             referencedColumns: ["id"]
           },
         ]
