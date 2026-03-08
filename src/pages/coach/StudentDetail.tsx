@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye, MessageSquare } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye, MessageSquare, Pencil } from "lucide-react";
 import AIAdaptationView from "@/components/coach/AIAdaptationView";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import SwapBadge from "@/components/student/SwapBadge";
@@ -395,8 +395,13 @@ const StudentDetail = () => {
             onClick={() => navigate(`/coach/students/${studentId}/program/${program!.id}`)}
             className="w-full glass p-4 text-left hover:bg-secondary/50 transition-colors rounded-xl"
           >
-            <h3 className="font-semibold">{program!.name}</h3>
-            <p className="text-xs text-muted-foreground mt-1">{t("common:active")} · {t("common:view")} →</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">{program!.name}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{t("common:active")} · {t("common:view")} →</p>
+              </div>
+              <Pencil className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            </div>
           </button>
         ) : (
           <div className="glass p-8 text-center space-y-3">

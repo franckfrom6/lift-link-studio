@@ -37,7 +37,11 @@
   "not_found": "Introuvable",
   "student_not_found": "Athlète introuvable",
   "error_occurred": "Une erreur est survenue",
-  "confirm_delete": "Êtes-vous sûr de vouloir supprimer ?",
+  "confirm_delete": "Confirmer la suppression",
+  "delete_confirm_msg": "Supprimer « {{name}} » ? Cette action est irréversible.",
+  "saved": "Sauvegardé",
+  "added": "Ajouté",
+  "deleted": "Supprimé",
   "days": {
     "monday": "Lundi",
     "tuesday": "Mardi",

@@ -37,7 +37,11 @@
   "not_found": "Not found",
   "student_not_found": "Athlete not found",
   "error_occurred": "An error occurred",
-  "confirm_delete": "Are you sure you want to delete?",
+  "confirm_delete": "Confirm deletion",
+  "delete_confirm_msg": "Delete \"{{name}}\"? This action cannot be undone.",
+  "saved": "Saved",
+  "added": "Added",
+  "deleted": "Deleted",
   "days": {
     "monday": "Monday",
     "tuesday": "Tuesday",
