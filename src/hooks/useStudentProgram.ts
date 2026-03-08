@@ -235,19 +235,39 @@ export const useStudentProgram = () => {
     fetchProgram(false);
   }, [fetchProgram]);
 
-  // Realtime: refetch when session_exercises, sessions, or session_sections change
+  // Realtime: refetch when program structure or exercises change
   useEffect(() => {
-    if (!program) return;
+    if (!studentId) return;
 
     const channel = supabase
-      .channel('student-program-sync')
+      .channel(`student-program-sync-${studentId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'programs', filter: `student_id=eq.${studentId}` },
+        () => fetchProgram(true)
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'program_weeks' }, () => fetchProgram(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'program_progression' }, () => fetchProgram(true))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'session_exercises' }, () => fetchProgram(true))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => fetchProgram(true))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'session_sections' }, () => fetchProgram(true))
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [program?.id, fetchProgram]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [studentId, fetchProgram]);
+
+  // Polling fallback: guarantees eventual sync if realtime misses events
+  useEffect(() => {
+    if (!studentId) return;
+
+    const intervalId = window.setInterval(() => {
+      fetchProgram(true);
+    }, 10000);
+
+    return () => window.clearInterval(intervalId);
+  }, [studentId, fetchProgram]);
 
   // Visibility-based refetch: sync when user returns to tab
   useEffect(() => {
