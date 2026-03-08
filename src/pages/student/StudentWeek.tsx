@@ -461,8 +461,8 @@ const StudentWeek = () => {
                     />
                   ))}
                 </div>
-              )}
-            </div>
+                </div>
+              </DraggableDayCard>
           );
         })}
       </div>
