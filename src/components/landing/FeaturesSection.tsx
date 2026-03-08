@@ -36,19 +36,21 @@ const FeatureBlock = ({ n, icon: Icon, reverse, img }: { n: number; icon: any; r
   );
 
   const visualSide = img ? (
-    <div className="flex-shrink-0 w-48 sm:w-56 lg:w-64">
-      <img src={img} alt={t(`feat_${n}_title`)} className="w-full rounded-xl border border-gray-200 shadow-sm" loading="lazy" />
+    <div className="flex-shrink-0 w-32 sm:w-40 lg:w-44">
+      <div className="rounded-xl border border-gray-200 shadow-sm overflow-hidden bg-white">
+        <img src={img} alt={t(`feat_${n}_title`)} className="w-full h-auto max-h-56 object-cover object-top" loading="lazy" />
+      </div>
     </div>
   ) : (
     <div className="flex-shrink-0">
-      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 flex items-center justify-center">
-        <Icon size={28} style={{ color: ACCENT }} className="opacity-50" />
+      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 flex items-center justify-center">
+        <Icon size={22} style={{ color: ACCENT }} className="opacity-50" />
       </div>
     </div>
   );
 
   return (
-    <div ref={ref} className={`flex items-start gap-5 lg:gap-8 scroll-reveal ${reverse ? "lg:flex-row-reverse" : ""}`}>
+    <div ref={ref} className={`flex items-center gap-6 lg:gap-10 scroll-reveal ${reverse ? "lg:flex-row-reverse" : ""}`}>
       {visualSide}
       {textSide}
     </div>
