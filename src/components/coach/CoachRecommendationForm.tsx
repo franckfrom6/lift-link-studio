@@ -163,9 +163,9 @@ const CoachRecommendationForm = ({ open, onClose, onSave, type, students, initia
               </Button>
               {showTemplates && (
                 <div className="mt-2 space-y-1 max-h-48 overflow-y-auto border rounded-md p-2">
-                  {templates.filter((tpl) => tpl.category === category || !category).map((tpl, i) => (
+                  {templates.filter((tpl) => tpl.category === category || !category).map((tpl) => (
                     <button
-                      key={i}
+                      key={tpl.id}
                       className="w-full text-left text-sm p-2 rounded hover:bg-accent transition-colors"
                       onClick={() => handleTemplate(tpl)}
                     >
