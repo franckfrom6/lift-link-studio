@@ -212,7 +212,8 @@ const EnhancedExerciseCard = ({
 
           {isActive && completedSets.length > 0 && (
             <div className="space-y-2">
-              <div className="grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
+              <div className="overflow-x-auto -mx-3 px-3">
+              <div className="grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 min-w-[280px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
                 <span>Set</span>
                 <span>Kg</span>
                 <span>Reps</span>
