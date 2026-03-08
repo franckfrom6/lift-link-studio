@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { BarChart3, Users, Shield, ToggleRight, Bot, ArrowLeft, Loader2 } from "lucide-react";
+import { BarChart3, Users, Shield, ToggleRight, ArrowLeft, Loader2 } from "lucide-react";
+import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
