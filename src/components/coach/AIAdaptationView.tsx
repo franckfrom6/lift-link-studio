@@ -234,7 +234,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
       <div className="glass p-4 space-y-2">
         <p className="text-sm">{result.weekly_summary}</p>
         <Badge variant="outline" className={cn("text-xs", loadClass)}>
-          {i18n.language === "fr" ? "Charge" : "Load"}: {result.load_assessment?.replace(/_/g, " ")}
+          {t('load')}: {result.load_assessment?.replace(/_/g, " ")}
         </Badge>
       </div>
 
