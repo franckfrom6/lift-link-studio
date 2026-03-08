@@ -70,6 +70,7 @@ const App = () => (
                 <Route path="/legal/:slug" element={<LegalPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/join/:code" element={<JoinRedirect />} />
                 <Route path="/onboarding" element={<OnboardingPage />} />
 
                 <Route path="/admin" element={<AuthGuard requireAdmin><AdminLayout /></AuthGuard>}>
