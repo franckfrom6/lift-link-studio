@@ -107,6 +107,10 @@ const KBLayout = () => {
             <ArrowLeft className="w-4 h-4 mr-1" />
             {t("support_title")}
           </Button>
+
+          <Button variant="outline" size="sm" onClick={() => navigate("/coach")}>
+            {t("kb_back_to_app", "Retour à l'app")}
+          </Button>
         </div>
       </header>
 
