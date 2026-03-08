@@ -78,13 +78,13 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
     newDate: Date;
     reason?: string;
   }) => {
-    if (!user) return null;
+    if (!studentId) return null;
 
     const { data, error } = await supabase
       .from("session_swaps")
       .insert({
         session_id: params.sessionId,
-        student_id: user.id,
+        student_id: studentId,
         original_day: params.originalDay,
         new_day: params.newDay,
         original_date: params.originalDate.toISOString().split("T")[0],
