@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { YANA_PROGRAM, ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
+import { YANA_PROGRAM, ProgramExerciseDetail } from "@/data/yana-program";
+import { EXERCISE_ALTERNATIVES } from "@/data/exercise-alternatives";
 import { EnhancedCompletedSet } from "@/components/student/EnhancedExerciseCard";
 import EnhancedExerciseCard from "@/components/student/EnhancedExerciseCard";
+import ExerciseAlternativesSheet from "@/components/student/ExerciseAlternativesSheet";
 import SessionSection from "@/components/student/SessionSection";
 import SessionRecap from "@/components/student/SessionRecap";
 import ProgressionTimeline, { ProgressionPhase } from "@/components/student/ProgressionTimeline";
-import { ArrowLeft, Clock, ListOrdered, User, TrendingUp } from "lucide-react";
+import { ArrowLeft, Clock, User, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -27,6 +29,13 @@ const progressionPhases: ProgressionPhase[] = YANA_PROGRAM.progression.map((p, i
   };
 });
 
+interface Substitution {
+  key: string; // "sIdx-eIdx"
+  originalName: string;
+  newName: string;
+  newEquipment: string;
+}
+
 const LiveSession = () => {
   const navigate = useNavigate();
   const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>({});
@@ -35,6 +44,17 @@ const LiveSession = () => {
   const [elapsed, setElapsed] = useState(0);
   const [activeExerciseKey, setActiveExerciseKey] = useState<string>("0-0");
   const [showProgression, setShowProgression] = useState(false);
+
+  // Substitutions
+  const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
+  const [swapSheetOpen, setSwapSheetOpen] = useState(false);
+  const [swapTargetKey, setSwapTargetKey] = useState<string | null>(null);
+
+  const getExerciseName = (sIdx: number, eIdx: number): string => {
+    const key = `${sIdx}-${eIdx}`;
+    const sub = substitutions.find(s => s.key === key);
+    return sub ? sub.newName : YANA_PROGRAM.sections[sIdx].exercises[eIdx].name;
+  };
 
   const allExercises: ProgramExerciseDetail[] = YANA_PROGRAM.sections.flatMap((s) => s.exercises);
 
@@ -73,9 +93,58 @@ const LiveSession = () => {
   };
 
   const handleClose = () => {
+    // Save to localStorage
+    const sessionData = {
+      date: new Date().toISOString(),
+      duration: elapsed,
+      completedSets,
+      substitutions,
+      exerciseCount: allExercises.length,
+      completedCount,
+    };
+    const history = JSON.parse(localStorage.getItem("session_history") || "[]");
+    history.push(sessionData);
+    localStorage.setItem("session_history", JSON.stringify(history));
+
     toast.success("Séance sauvegardée !");
     navigate("/student");
   };
+
+  const handleOpenSwap = (key: string) => {
+    setSwapTargetKey(key);
+    setSwapSheetOpen(true);
+  };
+
+  const handleSwapSelect = (alternative: { name: string; equipment: string }) => {
+    if (!swapTargetKey) return;
+    const [sIdx, eIdx] = swapTargetKey.split("-").map(Number);
+    const originalName = YANA_PROGRAM.sections[sIdx].exercises[eIdx].name;
+
+    setSubstitutions(prev => {
+      const filtered = prev.filter(s => s.key !== swapTargetKey);
+      return [...filtered, {
+        key: swapTargetKey,
+        originalName,
+        newName: alternative.name,
+        newEquipment: alternative.equipment,
+      }];
+    });
+
+    // Reset completed sets for this exercise
+    setCompletedSets(prev => {
+      const updated = { ...prev };
+      delete updated[swapTargetKey];
+      return updated;
+    });
+
+    toast.success(`${originalName} → ${alternative.name}`);
+    setSwapSheetOpen(false);
+    setSwapTargetKey(null);
+  };
+
+  const swapExerciseOriginalName = swapTargetKey
+    ? YANA_PROGRAM.sections[parseInt(swapTargetKey.split("-")[0])].exercises[parseInt(swapTargetKey.split("-")[1])].name
+    : "";
 
   if (sessionDone) {
     return (
@@ -152,6 +221,13 @@ const LiveSession = () => {
             {completedCount}/{allExercises.length}
           </span>
         </div>
+
+        {/* Substitutions banner */}
+        {substitutions.length > 0 && (
+          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-warning font-medium">
+            <span>⚡ {substitutions.length} exercice{substitutions.length > 1 ? "s" : ""} modifié{substitutions.length > 1 ? "s" : ""}</span>
+          </div>
+        )}
       </div>
 
       {/* Progression panel */}
@@ -184,6 +260,9 @@ const LiveSession = () => {
                 const key = `${sIdx}-${eIdx}`;
                 const isActive = key === activeExerciseKey;
                 const sets = completedSets[key] || [];
+                const displayName = getExerciseName(sIdx, eIdx);
+                const isSubstituted = substitutions.some(s => s.key === key);
+                const hasAlternatives = !!EXERCISE_ALTERNATIVES[ex.name];
 
                 const targetSets = parseInt(ex.sets) || 1;
                 const repsMatch = ex.reps.match(/(\d+)(?:\s*[-–]\s*(\d+))?/);
@@ -204,7 +283,7 @@ const LiveSession = () => {
                     className={cn(!isActive && "cursor-pointer")}
                   >
                     <EnhancedExerciseCard
-                      name={ex.name}
+                      name={displayName}
                       sets={targetSets}
                       repsMin={repsMin}
                       repsMax={repsMax}
@@ -219,6 +298,9 @@ const LiveSession = () => {
                       completedSets={sets}
                       onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
                       onAllSetsComplete={() => handleExerciseComplete(key)}
+                      onSwapExercise={() => handleOpenSwap(key)}
+                      hasAlternatives={hasAlternatives}
+                      isSubstituted={isSubstituted}
                     />
                   </div>
                 );
@@ -238,6 +320,15 @@ const LiveSession = () => {
           Terminer la séance ({completedCount}/{allExercises.length} exercices)
         </Button>
       </div>
+
+      {/* Swap sheet */}
+      <ExerciseAlternativesSheet
+        open={swapSheetOpen}
+        onClose={() => { setSwapSheetOpen(false); setSwapTargetKey(null); }}
+        exerciseName={swapExerciseOriginalName}
+        group={EXERCISE_ALTERNATIVES[swapExerciseOriginalName] || null}
+        onSelect={handleSwapSelect}
+      />
     </div>
   );
 };
