@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { MOCK_STUDENTS } from "@/types/coach";
-import { YANA_PROGRAM } from "@/data/yana-program";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, FileText } from "lucide-react";
-import ProgramView from "@/components/coach/ProgramView";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen } from "lucide-react";
 import AIAdaptationView from "@/components/coach/AIAdaptationView";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import SwapBadge from "@/components/student/SwapBadge";
@@ -18,61 +18,150 @@ import CoachSuggestion from "@/components/coach/CoachSuggestion";
 import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
-import { BookOpen } from "lucide-react";
+import ProgramView from "@/components/coach/ProgramView";
+import { YANA_PROGRAM } from "@/data/yana-program";
 
-// Demo data for Yana
-const DEMO_CHECKIN = {
-  energy_level: 3,
-  sleep_quality: 4,
-  stress_level: 3,
-  muscle_soreness: 4,
-  soreness_location: ["jambes"],
-  availability_notes: "Dispo mercredi et samedi",
-  general_notes: "Beaucoup de Pilates cette semaine, jambes fatiguées",
-  week_start: new Date().toISOString().split("T")[0],
-};
+interface StudentProfile {
+  user_id: string;
+  full_name: string;
+  avatar_url: string | null;
+  goal: string | null;
+  level: string | null;
+  age: number | null;
+  height: number | null;
+  weight: number | null;
+}
 
-const DEMO_EXTERNALS: ExternalSessionData[] = [
-  {
-    id: "ext-1",
-    activity_type: "pilates",
-    activity_label: "Pilates Reformer",
-    provider: "Episod",
-    location: "Bastille",
-    time_start: "12:00",
-    time_end: "13:00",
-    duration_minutes: 60,
-    intensity_perceived: 6,
-    muscle_groups_involved: ["core", "glutes", "flexibility"],
-    notes: "Beaucoup de travail jambes",
-    date: new Date().toISOString().split("T")[0],
-    added_by: "student",
-  },
-  {
-    id: "ext-2",
-    activity_type: "cycling",
-    activity_label: "RPM 45min",
-    provider: "CMG",
-    location: "Opéra",
-    time_start: "18:30",
-    time_end: "19:15",
-    duration_minutes: 45,
-    intensity_perceived: 8,
-    muscle_groups_involved: ["quads", "cardio"],
-    notes: "",
-    date: (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; })(),
-    added_by: "student",
-  },
-];
+interface ProgramInfo {
+  id: string;
+  name: string;
+  status: string;
+}
+
+interface CheckinData {
+  energy_level: number;
+  sleep_quality: number;
+  stress_level: number;
+  muscle_soreness: number;
+  soreness_location: string[] | null;
+  availability_notes: string | null;
+  general_notes: string | null;
+  week_start: string;
+}
 
 const StudentDetail = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation(["dashboard", "common", "program", "calendar"]);
-  const student = MOCK_STUDENTS.find((s) => s.id === studentId);
-  const { swaps, loading: swapsLoading } = useCoachStudentSwaps(studentId === "yana" ? studentId : undefined);
+  const { user } = useAuth();
+
+  const [student, setStudent] = useState<StudentProfile | null>(null);
+  const [program, setProgram] = useState<ProgramInfo | null>(null);
+  const [checkin, setCheckin] = useState<CheckinData | null>(null);
+  const [externals, setExternals] = useState<ExternalSessionData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [coachFormOpen, setCoachFormOpen] = useState(false);
   const [coachExternals, setCoachExternals] = useState<ExternalSessionData[]>([]);
+
+  const { swaps, loading: swapsLoading } = useCoachStudentSwaps(studentId);
+
+  useEffect(() => {
+    if (!studentId || !user) return;
+    fetchStudentData();
+  }, [studentId, user]);
+
+  const fetchStudentData = async () => {
+    if (!studentId) return;
+    setLoading(true);
+
+    // Fetch profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, avatar_url, goal, level, age, height, weight")
+      .eq("user_id", studentId)
+      .maybeSingle();
+
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
+    setStudent(profile);
+
+    // Fetch active program
+    const { data: prog } = await supabase
+      .from("programs")
+      .select("id, name, status")
+      .eq("student_id", studentId)
+      .eq("status", "active")
+      .maybeSingle();
+    setProgram(prog);
+
+    // Fetch this week's check-in
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const weekStart = monday.toISOString().split("T")[0];
+
+    const { data: ci } = await supabase
+      .from("weekly_checkins")
+      .select("energy_level, sleep_quality, stress_level, muscle_soreness, soreness_location, availability_notes, general_notes, week_start")
+      .eq("student_id", studentId)
+      .gte("week_start", weekStart)
+      .order("week_start", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setCheckin(ci);
+
+    // Fetch external sessions this week
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const weekEnd = sunday.toISOString().split("T")[0];
+
+    const { data: ext } = await supabase
+      .from("external_sessions")
+      .select("*")
+      .eq("student_id", studentId)
+      .gte("date", weekStart)
+      .lte("date", weekEnd)
+      .order("date");
+
+    if (ext) {
+      setExternals(ext.map(e => ({
+        id: e.id,
+        activity_type: e.activity_type,
+        activity_label: e.activity_label || undefined,
+        provider: e.provider || undefined,
+        location: e.location || undefined,
+        time_start: e.time_start || undefined,
+        time_end: e.time_end || undefined,
+        duration_minutes: e.duration_minutes || undefined,
+        intensity_perceived: e.intensity_perceived || undefined,
+        muscle_groups_involved: e.muscle_groups_involved || undefined,
+        notes: e.notes || undefined,
+        date: e.date,
+        added_by: "student" as const,
+      })));
+    }
+
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center gap-3">
+          <Skeleton className="w-10 h-10 rounded" />
+          <div className="flex items-center gap-4">
+            <Skeleton className="w-14 h-14 rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!student) {
     return (
@@ -85,10 +174,8 @@ const StudentDetail = () => {
     );
   }
 
-  const hasProgram = studentId === "yana";
-  const isYana = studentId === "yana";
-  const checkin = isYana ? DEMO_CHECKIN : null;
-  const allExternals = isYana ? [...DEMO_EXTERNALS, ...coachExternals] : coachExternals;
+  const allExternals = [...externals, ...coachExternals];
+  const hasProgram = !!program;
 
   const recentSwaps = swaps.filter((s) => {
     const d = new Date(s.created_at);
@@ -107,14 +194,11 @@ const StudentDetail = () => {
         </Button>
         <div className="flex items-center gap-4 flex-1">
           <div className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center text-xl font-semibold text-accent-foreground">
-            {student.avatar}
+            {student.full_name.charAt(0).toUpperCase()}
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold">{student.name}</h1>
-              <Badge variant={student.status === "active" ? "default" : "secondary"}>
-                {student.status === "active" ? t("common:active") : t("common:inactive")}
-              </Badge>
+              <h1 className="text-xl font-bold">{student.full_name}</h1>
               {recentSwaps.length > 0 && (
                 <Badge variant="outline" className="text-warning border-warning/30 bg-warning-bg">
                   <ArrowLeftRight className="w-3 h-3 mr-1" strokeWidth={1.5} />
@@ -122,38 +206,37 @@ const StudentDetail = () => {
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">{t('dashboard:goals.' + student.goal, student.goal)} · {t('dashboard:levels.' + student.level, student.level)}</p>
+            <p className="text-sm text-muted-foreground">
+              {student.goal ? t('dashboard:goals.' + student.goal, student.goal) : '—'} · {student.level ? t('dashboard:levels.' + student.level, student.level) : '—'}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Check-in section */}
-      {isYana && (
+      {checkin && (
         <div className="space-y-3">
           <h2 className="font-bold flex items-center gap-2">
             <Activity className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
             {t("dashboard:week_checkin")}
           </h2>
-          {checkin ? (
-            <div className="space-y-2">
-              <CheckinBadge checkin={checkin} />
-              <CoachSuggestion checkin={checkin} />
-            </div>
-          ) : (
-            <p className="text-sm text-warning">⚠️ {t("dashboard:no_checkin")}</p>
-          )}
+          <div className="space-y-2">
+            <CheckinBadge checkin={checkin} />
+            <CoachSuggestion checkin={checkin} />
+          </div>
         </div>
+      )}
+      {!checkin && !loading && (
+        <p className="text-sm text-warning">⚠️ {t("dashboard:no_checkin")}</p>
       )}
 
       {/* Weekly load */}
-      {isYana && (
-        <div className="glass p-4">
-          <WeeklyLoadBar
-            programmedSessions={1}
-            externalSessions={allExternals}
-          />
-        </div>
-      )}
+      <div className="glass p-4">
+        <WeeklyLoadBar
+          programmedSessions={program ? 1 : 0}
+          externalSessions={allExternals}
+        />
+      </div>
 
       {/* External sessions */}
       <div className="space-y-3">
@@ -180,12 +263,12 @@ const StudentDetail = () => {
         <div className="glass p-4 text-center">
           <Target className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
           <p className="text-xs text-muted-foreground">{t("dashboard:goal")}</p>
-          <p className="text-sm font-semibold mt-0.5">{t('dashboard:goals.' + student.goal, student.goal)}</p>
+          <p className="text-sm font-semibold mt-0.5">{student.goal ? t('dashboard:goals.' + student.goal, student.goal) : '—'}</p>
         </div>
         <div className="glass p-4 text-center">
           <BarChart3 className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
           <p className="text-xs text-muted-foreground">{t("dashboard:level")}</p>
-          <p className="text-sm font-semibold mt-0.5">{t('dashboard:levels.' + student.level, student.level)}</p>
+          <p className="text-sm font-semibold mt-0.5">{student.level ? t('dashboard:levels.' + student.level, student.level) : '—'}</p>
         </div>
         <div className="glass p-4 text-center">
           <ClipboardList className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
@@ -220,13 +303,13 @@ const StudentDetail = () => {
       )}
 
       {/* AI Adaptation */}
-      {isYana && (
+      {program && (
         <div className="space-y-3">
           <AIAdaptationView
-            studentId={student.id}
-            programId="demo-program"
-            weekNumber={3}
-            studentName={student.name}
+            studentId={student.user_id}
+            programId={program.id}
+            weekNumber={1}
+            studentName={student.full_name}
           />
         </div>
       )}
@@ -244,15 +327,13 @@ const StudentDetail = () => {
       </div>
 
       {/* Coach recommendations for this student */}
-      {isYana && (
-        <div className="space-y-3">
-          <h2 className="font-bold flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-            {t("common:recommendations")}
-          </h2>
-          <StudentRecommendationCards type="all" />
-        </div>
-      )}
+      <div className="space-y-3">
+        <h2 className="font-bold flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+          {t("common:recommendations")}
+        </h2>
+        <StudentRecommendationCards type="all" />
+      </div>
 
       {/* Programs section */}
       <div className="space-y-3">
@@ -267,7 +348,10 @@ const StudentDetail = () => {
         </div>
 
         {hasProgram ? (
-          <ProgramView program={YANA_PROGRAM} />
+          <div className="glass p-4">
+            <h3 className="font-semibold">{program!.name}</h3>
+            <p className="text-xs text-muted-foreground mt-1">{t("common:active")}</p>
+          </div>
         ) : (
           <div className="glass p-8 text-center space-y-3">
             <ClipboardList className="w-8 h-8 text-muted-foreground/50 mx-auto" strokeWidth={1.5} />
