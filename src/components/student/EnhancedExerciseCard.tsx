@@ -116,45 +116,66 @@ const EnhancedExerciseCard = ({
       isActive ? "bg-card border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "bg-card/50 border-border/50"
     )}>
       {/* Compact header */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 p-3 text-left"
-      >
-        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-          <Dumbbell className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm truncate">{name}</p>
-          <div className="flex flex-wrap gap-1.5 mt-1">
-            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-              {targetSets}s
-            </span>
-            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-              {repsMin === repsMax ? repsMin : `${repsMin}-${repsMax}`} reps
-            </span>
-            {tempo && (
-              <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-                {tempo}
-              </span>
-            )}
-            {restSeconds > 0 && (
-              <span className="bg-tag-blue-bg text-tag-blue px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-                {restSeconds >= 60 ? `${Math.floor(restSeconds / 60)}'${restSeconds % 60 > 0 ? (restSeconds % 60).toString().padStart(2, '0') + '"' : ''}` : `${restSeconds}s`}
-              </span>
-            )}
-            {rpeTarget && (
-              <span className="bg-tag-orange-bg text-tag-orange px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-                RPE {rpeTarget}
-              </span>
-            )}
+      <div className="flex items-center gap-3 p-3">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-3 flex-1 min-w-0 text-left"
+        >
+          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+            <Dumbbell className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
           </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className="font-semibold text-sm truncate">{name}</p>
+              {isSubstituted && (
+                <span className="bg-warning-bg text-warning px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0">
+                  Modifié
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+                {targetSets}s
+              </span>
+              <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+                {repsMin === repsMax ? repsMin : `${repsMin}-${repsMax}`} reps
+              </span>
+              {tempo && (
+                <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+                  {tempo}
+                </span>
+              )}
+              {restSeconds > 0 && (
+                <span className="bg-tag-blue-bg text-tag-blue px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+                  {restSeconds >= 60 ? `${Math.floor(restSeconds / 60)}'${restSeconds % 60 > 0 ? (restSeconds % 60).toString().padStart(2, '0') + '"' : ''}` : `${restSeconds}s`}
+                </span>
+              )}
+              {rpeTarget && (
+                <span className="bg-tag-orange-bg text-tag-orange px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+                  RPE {rpeTarget}
+                </span>
+              )}
+            </div>
+          </div>
+        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          {hasAlternatives && !allDone && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}
+              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </button>
+          )}
+          {allDone && <Check className="w-5 h-5 text-success shrink-0" strokeWidth={1.5} />}
+          <button onClick={() => setExpanded(!expanded)}>
+            <ChevronDown className={cn(
+              "w-4 h-4 text-muted-foreground transition-transform shrink-0",
+              expanded && "rotate-180"
+            )} strokeWidth={1.5} />
+          </button>
         </div>
-        {allDone && <Check className="w-5 h-5 text-success shrink-0" strokeWidth={1.5} />}
-        <ChevronDown className={cn(
-          "w-4 h-4 text-muted-foreground transition-transform shrink-0",
-          expanded && "rotate-180"
-        )} strokeWidth={1.5} />
-      </button>
+      </div>
 
       {/* Expanded details */}
       {expanded && (
