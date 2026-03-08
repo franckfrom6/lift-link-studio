@@ -6,10 +6,28 @@
   "all_seen": "Toutes les recommandations ont été vues 👍",
   "essential": "Essentiel",
   "suggest_lower_body": "💡 Envisager un allègement volume lower body cette semaine",
-  "suggest_moderate_rpe": "💡 Privilégier les exercices à RPE modéré",
+  "suggest_global_volume": "💡 Envisager une réduction du volume global cette semaine",
+  "suggest_moderate_rpe": "💡 Privilégier les exercices à RPE modéré (6-7)",
+  "suggest_high_stress": "💡 Stress élevé — Privilégier les exercices à RPE modéré et la récupération active",
+  "suggest_poor_sleep": "💡 Sommeil insuffisant — Réduire le volume et surveiller la fatigue intra-séance",
+  "suggest_high_soreness": "💡 Courbatures importantes — Adapter l'échauffement et le volume des zones concernées",
   "suggest_rest": "💡 Journée récupération recommandée",
   "load_ok": "Charge OK",
   "load_high": "Charge élevée",
-  "load_overload": "Surcharge potentielle",
-  "weekly_load": "Charge hebdomadaire"
+  "load_overload": "Surcharge ⚠️",
+  "weekly_load": "Charge hebdo",
+  "programmed_sessions": "{{count}} séance programmée",
+  "programmed_sessions_plural": "{{count}} séances programmées",
+  "external_count": "{{count}} externe",
+  "external_count_plural": "{{count}} externes",
+  "no_checkin": "Pas de check-in",
+  "checkin_sent": "Check-in envoyé ✅",
+  "week_checkin": "Check-in de la semaine",
+  "no_checkin_this_week": "Pas de check-in cette semaine",
+  "moved_label": "Déplacée",
+  "difficulty": {
+    "easy": "Facile",
+    "medium": "Moyen",
+    "hard": "Avancé"
+  }
 }

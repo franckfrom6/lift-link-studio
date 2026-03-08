@@ -44,5 +44,32 @@
   "intensity_moderate": "Moderate",
   "intensity_intense": "Intense",
   "intensity_max": "Max",
-  "added_by_coach": "added by coach"
+  "added_by_coach": "added by coach",
+  "submit_activity": "Add activity",
+  "submit_activity_edit": "Update",
+  "muscle_groups": {
+    "cardio": "Cardio",
+    "quads": "Quads",
+    "glutes": "Glutes",
+    "ischios": "Hamstrings",
+    "core": "Core",
+    "back": "Back",
+    "shoulders": "Shoulders",
+    "arms": "Arms",
+    "chest": "Chest",
+    "legs": "Legs",
+    "full-body": "Full Body",
+    "flexibility": "Flexibility"
+  },
+  "activity_types": {
+    "pilates": "Pilates",
+    "hiit": "HIIT",
+    "cycling": "Cycling",
+    "running": "Running",
+    "bootcamp": "Bootcamp",
+    "swimming": "Swimming",
+    "yoga": "Yoga",
+    "boxing": "Boxing",
+    "other": "Other"
+  }
 }

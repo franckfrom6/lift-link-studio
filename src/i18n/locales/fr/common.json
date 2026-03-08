@@ -33,6 +33,10 @@
   "active": "Actif",
   "inactive": "Inactif",
   "invite": "Inviter",
+  "not_found": "Introuvable",
+  "student_not_found": "Élève introuvable",
+  "error_occurred": "Une erreur est survenue",
+  "confirm_delete": "Êtes-vous sûr de vouloir supprimer ?",
   "days": {
     "monday": "Lundi",
     "tuesday": "Mardi",

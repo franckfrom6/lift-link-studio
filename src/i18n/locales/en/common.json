@@ -33,6 +33,10 @@
   "active": "Active",
   "inactive": "Inactive",
   "invite": "Invite",
+  "not_found": "Not found",
+  "student_not_found": "Student not found",
+  "error_occurred": "An error occurred",
+  "confirm_delete": "Are you sure you want to delete?",
   "days": {
     "monday": "Monday",
     "tuesday": "Tuesday",
