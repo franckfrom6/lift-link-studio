@@ -158,7 +158,7 @@ const InviteClientModal = () => {
             <div className="flex gap-2">
               <Input value={inviteUrl} readOnly className="text-xs" />
               <Button variant="outline" size="icon" onClick={handleCopy}>
-                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>
             <Button variant="secondary" className="w-full" onClick={() => handleClose(false)}>
