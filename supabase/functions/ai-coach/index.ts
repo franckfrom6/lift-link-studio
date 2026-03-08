@@ -71,13 +71,6 @@ const MODEL_FOR_ACTION: Record<string, string> = {
   generate_recommendation: "google/gemini-2.5-flash-lite",
 };
 
-function jsonResp(body: any, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
 async function callLovableAI(
   apiKey: string,
   model: string,
