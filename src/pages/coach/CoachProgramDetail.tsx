@@ -447,12 +447,8 @@ const CoachProgramDetail = () => {
     });
   };
 
-  const toggleSession = (id: string) => {
-    setOpenSessions(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+  const selectSession = (id: string) => {
+    setActiveSessionId(id);
   };
 
   const activateProgram = async () => {
