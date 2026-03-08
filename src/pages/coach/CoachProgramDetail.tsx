@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { startOfWeek, addDays, addWeeks, format } from "date-fns";
+import { fr, enUS } from "date-fns/locale";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
@@ -73,6 +75,7 @@ interface ProgramFull {
   status: string;
   student_id: string;
   studentName?: string;
+  created_at?: string;
   weeks: Week[];
 }
 
@@ -499,6 +502,20 @@ const CoachProgramDetail = () => {
     toast.success(t("program:program_activated"));
   };
 
+  const dayLabel = (d: number) => t(`common:days.${DAY_KEYS[d]}`, DAY_KEYS[d]);
+  const lang = i18n.language;
+  const dateFnsLocale = lang === "fr" ? fr : enUS;
+
+  const programStartMonday = useMemo(() => {
+    if (!program?.created_at) return new Date();
+    return startOfWeek(new Date(program.created_at), { weekStartsOn: 1 });
+  }, [program?.created_at]);
+
+  const getDayDate = useCallback((weekNumber: number, dayOfWeek: number) => {
+    const weekStart = addWeeks(programStartMonday, weekNumber - 1);
+    return addDays(weekStart, dayOfWeek - 1);
+  }, [programStartMonday]);
+
   // ---- RENDER ----
   if (loading) {
     return (
@@ -517,9 +534,6 @@ const CoachProgramDetail = () => {
       </div>
     );
   }
-
-  const dayLabel = (d: number) => t(`common:days.${DAY_KEYS[d]}`, DAY_KEYS[d]);
-  const lang = i18n.language;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -589,6 +603,7 @@ const CoachProgramDetail = () => {
                   const session = week.sessions.find(s => s.day_of_week === day);
                   const hasSession = !!session;
                   const isActive = session?.id === activeSessionId;
+                  const dayDate = getDayDate(week.week_number, day);
                   return (
                     <button
                       key={day}
@@ -596,7 +611,7 @@ const CoachProgramDetail = () => {
                         if (session) setActiveSessionId(session.id);
                         else addSessionToDay(week.id, day);
                       }}
-                      className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center min-h-[60px] ${
+                      className={`flex flex-col items-center gap-0.5 p-2 rounded-lg transition-all text-center min-h-[68px] ${
                         isActive
                           ? "bg-accent border-2 border-accent-foreground/30 shadow-sm"
                           : hasSession
@@ -606,6 +621,9 @@ const CoachProgramDetail = () => {
                     >
                       <span className={`text-[10px] font-semibold uppercase ${isActive ? "text-accent-foreground" : "text-muted-foreground"}`}>
                         {dayLabel(day).slice(0, 3)}
+                      </span>
+                      <span className={`text-[9px] tabular-nums ${isActive ? "text-accent-foreground/80" : "text-muted-foreground/60"}`}>
+                        {format(dayDate, "d MMM", { locale: dateFnsLocale })}
                       </span>
                       {hasSession ? (
                         <span className={`text-[10px] font-medium leading-tight line-clamp-2 ${isActive ? "text-accent-foreground" : "text-accent-foreground/70"}`}>
@@ -645,7 +663,7 @@ const CoachProgramDetail = () => {
                           className="font-semibold"
                         />
                         <p className="text-[11px] text-muted-foreground">
-                          {dayLabel(session.day_of_week)} · {totalExercises} {t("program:exercises_count", { count: totalExercises })} · {session.sections.length} sections
+                          {dayLabel(session.day_of_week)} {format(getDayDate(week.week_number, session.day_of_week), "d MMMM", { locale: dateFnsLocale })} · {totalExercises} {t("program:exercises_count", { count: totalExercises })} · {session.sections.length} sections
                         </p>
                       </div>
                       <button
