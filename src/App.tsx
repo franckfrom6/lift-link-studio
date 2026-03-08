@@ -25,6 +25,7 @@ import StudentProgress from "./pages/student/StudentProgress";
 import StudentProfile from "./pages/student/StudentProfile";
 import LiveSession from "./pages/student/LiveSession";
 import StudentNutrition from "./pages/student/StudentNutrition";
+import StudentRecommendations from "./pages/student/StudentRecommendations";
 
 const queryClient = new QueryClient();
 
