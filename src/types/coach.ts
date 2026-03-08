@@ -11,12 +11,22 @@ export interface MockStudent {
   status: "active" | "inactive";
 }
 
+export interface ProgressionPhaseData {
+  weekLabel: string;
+  description: string;
+  weekStart: number;
+  weekEnd: number;
+  isDeload: boolean;
+  order: number;
+}
+
 export interface ProgramData {
   id: string;
   name: string;
   studentId: string;
   status: "draft" | "active" | "completed";
   weeks: WeekData[];
+  progression?: ProgressionPhaseData[];
 }
 
 export interface WeekData {
