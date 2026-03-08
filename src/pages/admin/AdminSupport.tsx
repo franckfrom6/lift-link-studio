@@ -74,7 +74,7 @@ const AdminSupport = () => {
     const msg = isInternal ? internalNote : reply;
     if (!msg.trim() || !user || !selectedTicket) return;
     setSending(true);
-    await supabase.from("ticket_messages").insert({
+    await db.from("ticket_messages").insert({
       ticket_id: selectedTicket.id,
       sender_id: user.id,
       message: msg.trim(),
