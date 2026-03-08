@@ -4,16 +4,16 @@ const StudentProfile = () => {
   return (
     <div className="space-y-6 animate-fade-in max-w-lg mx-auto">
       <div>
-        <h1 className="text-2xl font-display font-bold">Mon Profil</h1>
+        <h1 className="text-2xl font-bold">Mon Profil</h1>
       </div>
 
-      <div className="glass rounded-xl p-6 space-y-6">
+      <div className="glass p-6 space-y-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center">
-            <User className="w-8 h-8 text-primary" />
+          <div className="w-16 h-16 rounded-2xl bg-accent flex items-center justify-center">
+            <User className="w-8 h-8 text-accent-foreground" strokeWidth={1.5} />
           </div>
           <div>
-            <h2 className="font-display font-bold text-lg">Élève</h2>
+            <h2 className="font-bold text-lg">Élève</h2>
             <p className="text-sm text-muted-foreground">Athlète</p>
           </div>
         </div>

@@ -14,34 +14,34 @@ const ExerciseRow = ({ ex, idx }: { ex: ProgramExerciseDetail; idx: number }) =>
     <div className="border-b border-border/50 last:border-0">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-start gap-3 py-3 px-1 text-left hover:bg-surface/30 transition-colors rounded-lg"
+        className="w-full flex items-start gap-3 py-3 px-1 text-left hover:bg-secondary/50 transition-colors rounded-lg"
       >
-        <span className="text-primary font-bold text-sm min-w-[24px] mt-0.5">{idx + 1}.</span>
+        <span className="text-accent-foreground font-bold text-sm min-w-[24px] mt-0.5">{idx + 1}.</span>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm leading-tight">{ex.name}</p>
           <div className="flex flex-wrap gap-1.5 mt-2">
-            {ex.sets && <Tag label="Séries" value={ex.sets} />}
-            {ex.reps && <Tag label="Reps" value={ex.reps} />}
-            {ex.tempo && <Tag label="Tempo" value={ex.tempo} />}
-            {ex.rest && ex.rest !== "—" && <Tag label="Repos" value={ex.rest} />}
-            {ex.rpe && <Tag label="RPE" value={ex.rpe} accent />}
+            {ex.sets && <Tag label="Séries" value={ex.sets} type="sets" />}
+            {ex.reps && <Tag label="Reps" value={ex.reps} type="sets" />}
+            {ex.tempo && <Tag label="Tempo" value={ex.tempo} type="sets" />}
+            {ex.rest && ex.rest !== "—" && <Tag label="Repos" value={ex.rest} type="rest" />}
+            {ex.rpe && <Tag label="RPE" value={ex.rpe} type="rpe" />}
           </div>
         </div>
-        <ChevronDown className={`w-4 h-4 text-muted-foreground mt-1 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-4 h-4 text-muted-foreground mt-1 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={1.5} />
       </button>
 
       {open && (
         <div className="ml-9 pb-3 space-y-2 animate-fade-in">
           {ex.load && (
             <div className="flex items-center gap-2 text-sm">
-              <Dumbbell className="w-3.5 h-3.5 text-primary" />
+              <Dumbbell className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
               <span className="text-muted-foreground">Charge :</span>
               <span className="font-medium">{ex.load}</span>
             </div>
           )}
           {ex.notes && (
             <div className="flex items-start gap-2 text-sm">
-              <MessageSquare className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+              <MessageSquare className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" strokeWidth={1.5} />
               <span className="text-muted-foreground leading-relaxed">{ex.notes}</span>
             </div>
           )}
@@ -50,9 +50,9 @@ const ExerciseRow = ({ ex, idx }: { ex: ProgramExerciseDetail; idx: number }) =>
               href={ex.video}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-destructive/90 hover:bg-destructive text-destructive-foreground px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors mt-1"
+              className="inline-flex items-center gap-2 bg-tag-red/10 hover:bg-tag-red/20 text-tag-red px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors mt-1"
             >
-              <Play className="w-3 h-3" />
+              <Play className="w-3 h-3" strokeWidth={1.5} />
               Vidéo — {ex.channel}
             </a>
           )}
@@ -62,39 +62,43 @@ const ExerciseRow = ({ ex, idx }: { ex: ProgramExerciseDetail; idx: number }) =>
   );
 };
 
-const Tag = ({ label, value, accent }: { label: string; value: string; accent?: boolean }) => (
-  <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${
-    accent
-      ? "bg-primary/20 text-primary"
-      : "bg-secondary text-secondary-foreground"
-  }`}>
-    {label}: {value}
-  </span>
-);
+const Tag = ({ label, value, type }: { label: string; value: string; type?: "sets" | "rest" | "rpe" }) => {
+  const colorClass = type === "rest"
+    ? "bg-tag-blue-bg text-tag-blue"
+    : type === "rpe"
+    ? "bg-tag-orange-bg text-tag-orange"
+    : "bg-tag-violet-bg text-tag-violet";
+
+  return (
+    <span className={`px-2 py-0.5 rounded-md text-[11px] font-medium ${colorClass}`}>
+      {label}: {value}
+    </span>
+  );
+};
 
 const SectionBlock = ({ section }: { section: ProgramSection }) => {
   const [expanded, setExpanded] = useState(true);
 
   return (
-    <div className="glass rounded-xl overflow-hidden">
+    <div className="glass overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 text-left hover:bg-surface/30 transition-colors"
+        className="w-full flex items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
       >
         <div>
-          <h3 className="font-display font-bold text-sm">{section.name}</h3>
+          <h3 className="font-bold text-sm">{section.name}</h3>
           <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
-            <Clock className="w-3 h-3" />
+            <Clock className="w-3 h-3" strokeWidth={1.5} />
             <span className="text-xs">{section.duration}</span>
           </div>
         </div>
-        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} /> : <ChevronDown className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />}
       </button>
 
       {expanded && (
         <div className="px-4 pb-4">
           {section.notes && (
-            <p className="text-xs text-muted-foreground italic leading-relaxed mb-3 border-l-2 border-primary/30 pl-3">
+            <p className="text-xs text-muted-foreground italic leading-relaxed mb-3 border-l-2 border-accent-foreground/20 pl-3">
               {section.notes}
             </p>
           )}
@@ -117,10 +121,10 @@ const ProgramView = ({ program }: ProgramViewProps) => {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="glass rounded-xl p-5 space-y-3">
+      <div className="glass p-5 space-y-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <h2 className="font-display font-bold text-lg leading-tight">{program.title}</h2>
+            <h2 className="font-bold text-lg leading-tight">{program.title}</h2>
             <p className="text-xs text-muted-foreground">{program.client}</p>
           </div>
           <Badge variant={program.status === "active" ? "default" : "secondary"}>
@@ -129,17 +133,17 @@ const ProgramView = ({ program }: ProgramViewProps) => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Target className="w-3.5 h-3.5 text-primary" />
+          <Target className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
           <span className="text-sm text-muted-foreground">{program.objective}</span>
         </div>
 
         <div className="flex gap-3">
-          <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-lg">
-            <Clock className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1.5 bg-accent text-accent-foreground px-3 py-1.5 rounded-lg">
+            <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
             <span className="text-xs font-semibold">{program.duration}</span>
           </div>
           <div className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-lg">
-            <Dumbbell className="w-3.5 h-3.5" />
+            <Dumbbell className="w-3.5 h-3.5" strokeWidth={1.5} />
             <span className="text-xs font-semibold">{totalExercises} exercices</span>
           </div>
           <div className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-lg">
@@ -155,16 +159,16 @@ const ProgramView = ({ program }: ProgramViewProps) => {
 
       {/* Progression */}
       {program.progression.length > 0 && (
-        <div className="glass rounded-xl overflow-hidden">
+        <div className="glass overflow-hidden">
           <button
             onClick={() => setShowProgression(!showProgression)}
-            className="w-full flex items-center justify-between p-4 text-left hover:bg-surface/30 transition-colors"
+            className="w-full flex items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-primary" />
-              <h3 className="font-display font-bold text-sm">Plan de progression (8 semaines)</h3>
+              <TrendingUp className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+              <h3 className="font-bold text-sm">Plan de progression (8 semaines)</h3>
             </div>
-            {showProgression ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+            {showProgression ? <ChevronUp className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} /> : <ChevronDown className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />}
           </button>
 
           {showProgression && (
@@ -183,8 +187,8 @@ const ProgramView = ({ program }: ProgramViewProps) => {
       )}
 
       {/* Coach note */}
-      <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-center">
-        <p className="text-xs text-primary leading-relaxed">
+      <div className="bg-accent border border-accent-foreground/10 rounded-xl p-4 text-center">
+        <p className="text-xs text-accent-foreground leading-relaxed">
           💡 <strong>Note coach :</strong> Avec le cycling et le HIIT en semaine, les quads sont déjà bien stimulés.
           Cette séance cible volontairement les glutes et ischios avec des mouvements hip-dominant pour compenser et maximiser le développement fessier.
         </p>
