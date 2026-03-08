@@ -1,5 +1,4 @@
-import { Users, Plus, Search, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Users, Search, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
@@ -7,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCoachDashboard } from "@/hooks/useCoachDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
+import InviteClientModal from "@/components/InviteClientModal";
 
 const CoachStudents = () => {
   const [search, setSearch] = useState("");
@@ -25,10 +25,7 @@ const CoachStudents = () => {
           <h1 className="text-2xl font-bold">{t('dashboard:my_students')}</h1>
           <p className="text-muted-foreground text-sm">{t('dashboard:student_count', { count: students.length })}</p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" strokeWidth={1.5} />
-          {t('common:invite')}
-        </Button>
+        <InviteClientModal />
       </div>
 
       <div className="relative">
