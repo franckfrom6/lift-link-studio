@@ -243,6 +243,18 @@ const StudentDetail = () => {
           </div>
         )}
       </div>
+
+      {/* Coach add external session form */}
+      <ExternalSessionForm
+        open={coachFormOpen}
+        onClose={() => setCoachFormOpen(false)}
+        onSubmit={(data) => {
+          setCoachExternals(prev => [...prev, { ...data, id: crypto.randomUUID() }]);
+          toast.success("Activité ajoutée pour l'élève !");
+        }}
+        date={new Date()}
+        addedBy="coach"
+      />
     </div>
   );
 };
