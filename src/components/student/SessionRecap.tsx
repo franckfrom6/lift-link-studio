@@ -1,15 +1,18 @@
 import { CompletedSet } from "@/components/student/ExerciseTracker";
 import { ProgramExerciseDetail } from "@/data/yana-program";
-import { Trophy, Clock, Dumbbell, TrendingUp, MessageSquare } from "lucide-react";
+import { Trophy, Clock, Dumbbell, TrendingUp, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
+import RecommendationSheet from "@/components/nutrition/RecommendationSheet";
 
 interface SessionRecapProps {
   exercises: ProgramExerciseDetail[];
   completedSets: Record<number, CompletedSet[]>;
   duration: number;
   onClose: () => void;
+  muscleGroups?: string[];
+  activityType?: string | null;
 }
 
 const SessionRecap = ({ exercises, completedSets, duration, onClose }: SessionRecapProps) => {
