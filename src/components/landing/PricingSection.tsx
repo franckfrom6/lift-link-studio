@@ -124,7 +124,7 @@ const PricingSection = () => {
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-2xl p-6 ${
+                className={`relative rounded-2xl p-4 sm:p-6 ${
                   isPopular
                     ? "border-2 shadow-lg"
                     : "border border-gray-200"
