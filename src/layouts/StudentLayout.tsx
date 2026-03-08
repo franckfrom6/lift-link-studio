@@ -1,17 +1,12 @@
-import { Outlet, NavLink, useNavigate, Navigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { Dumbbell, Calendar, BarChart3, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useAuth } from "@/contexts/AuthContext";
 
 const StudentLayout = () => {
   const navigate = useNavigate();
-  const { user, loading, signOut } = useAuth();
 
-  if (!loading && !user) return <Navigate to="/auth" replace />;
-
-  const handleSignOut = async () => {
-    await signOut();
+  const handleSignOut = () => {
     navigate("/auth");
   };
 
