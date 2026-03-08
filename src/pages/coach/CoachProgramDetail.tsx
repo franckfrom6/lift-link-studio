@@ -95,7 +95,7 @@ function useDebouncedSave(delay = 600) {
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } catch {
-        toast.error("Erreur de sauvegarde");
+        toast.error("Save error");
       } finally {
         setSaving(false);
       }
@@ -292,7 +292,7 @@ const CoachProgramDetail = () => {
       sort_order: sortOrder,
     }).select().single();
 
-    if (error) { toast.error("Erreur"); return; }
+    if (error) { toast.error(t("common:error")); return; }
 
     setProgram(prev => {
       if (!prev) return prev;
@@ -330,7 +330,7 @@ const CoachProgramDetail = () => {
       rest_seconds: 90,
     }).select("*, exercise:exercises(id, name, name_en, muscle_group, equipment)").single();
 
-    if (error) { toast.error("Erreur"); return; }
+    if (error) { toast.error(t("common:error")); return; }
 
     setProgram(prev => {
       if (!prev) return prev;
@@ -453,14 +453,14 @@ const CoachProgramDetail = () => {
 
   const addSessionToDay = async (weekId: string, dayOfWeek: number) => {
     if (!program) return;
-    const dayNames: Record<number, string> = { 1: "Lundi", 2: "Mardi", 3: "Mercredi", 4: "Jeudi", 5: "Vendredi", 6: "Samedi", 7: "Dimanche" };
-    const name = `Séance ${dayNames[dayOfWeek] || ""}`;
+    const dayName = dayLabel(dayOfWeek);
+    const name = t("program:session_default_name", { day: dayName });
     const { data, error } = await supabase.from("sessions").insert({
       week_id: weekId,
       day_of_week: dayOfWeek,
       name,
     }).select().single();
-    if (error || !data) { toast.error("Erreur"); return; }
+    if (error || !data) { toast.error(t("common:error")); return; }
     setProgram(prev => {
       if (!prev) return prev;
       return {
@@ -595,7 +595,7 @@ const CoachProgramDetail = () => {
                   return <p className="text-sm text-muted-foreground text-center py-8">{t("program:start_with_ai")}</p>;
                 }
                 if (!session) {
-                  return <p className="text-sm text-muted-foreground text-center py-8">{t("common:select_session", "Sélectionnez une séance dans le calendrier ci-dessus")}</p>;
+                  return <p className="text-sm text-muted-foreground text-center py-8">{t("common:select_session")}</p>;
                 }
 
                 const totalExercises = session.sections.reduce((sum, s) => sum + s.exercises.length, 0);
@@ -678,7 +678,7 @@ const CoachProgramDetail = () => {
                             <Input
                               value={section.notes || ""}
                               onChange={(e) => updateSectionField(section.id, "notes", e.target.value || null)}
-                              placeholder="Notes de section..."
+                              placeholder={t("program:section_notes_placeholder")}
                               className="h-7 bg-transparent border-dashed text-xs italic"
                             />
                           </div>
@@ -726,7 +726,7 @@ const CoachProgramDetail = () => {
                                       <InlineNumber value={ex.reps_max} onChange={(v) => updateExerciseField(ex.id, "reps_max", v)} min={1} max={100} />
                                     </div>
                                     <div className="flex items-center gap-1">
-                                      <span className="text-[10px] text-muted-foreground uppercase">Repos</span>
+                                      <span className="text-[10px] text-muted-foreground uppercase">{t("common:rest_label")}</span>
                                       <InlineNumber value={ex.rest_seconds} onChange={(v) => updateExerciseField(ex.id, "rest_seconds", v)} min={0} max={600} step={15} className="w-16" />
                                       <span className="text-[10px] text-muted-foreground">s</span>
                                     </div>
@@ -838,7 +838,7 @@ const CoachProgramDetail = () => {
               <Input
                 value={newSectionName}
                 onChange={(e) => setNewSectionName(e.target.value)}
-                placeholder="Nom de la section (ex: Warm-up, Bloc A...)"
+                placeholder={t("common:section_name_example")}
                 className="flex-1"
                 autoFocus
               />

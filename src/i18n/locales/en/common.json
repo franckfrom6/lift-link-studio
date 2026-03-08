@@ -72,5 +72,9 @@
   "ai_rate_limited": "AI usage limit reached for this month.",
   "ai_error": "AI service error. Please try again.",
   "ai_network_error": "Network error. Check your connection.",
-  "more": "More"
+  "more": "More",
+  "select_session": "Select a session from the calendar above",
+  "rest_label": "Rest",
+  "section_name_example": "Section name (e.g.: Warm-up, Block A...)",
+  "save_error": "Save error"
 }

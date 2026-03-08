@@ -72,5 +72,9 @@
   "ai_rate_limited": "Limite d'utilisation IA atteinte ce mois-ci.",
   "ai_error": "Erreur du service IA. Réessayez.",
   "ai_network_error": "Erreur réseau. Vérifiez votre connexion.",
-  "more": "Plus"
+  "more": "Plus",
+  "select_session": "Sélectionnez une séance dans le calendrier ci-dessus",
+  "rest_label": "Repos",
+  "section_name_example": "Nom de la section (ex: Warm-up, Bloc A...)",
+  "save_error": "Erreur de sauvegarde"
 }
