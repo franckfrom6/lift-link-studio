@@ -18,39 +18,39 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
   const [showExtras, setShowExtras] = useState(false);
 
   return (
-    <div className="glass rounded-xl p-4 space-y-3">
+    <div className="glass p-4 space-y-3">
       {/* Header */}
       <div className="flex items-center gap-2">
         <div className="flex flex-col gap-0.5">
           <button onClick={onMoveUp} disabled={index === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
-            <ChevronUp className="w-3.5 h-3.5" />
+            <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.5} />
           </button>
           <button onClick={onMoveDown} disabled={index === total - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
-            <ChevronDown className="w-3.5 h-3.5" />
+            <ChevronDown className="w-3.5 h-3.5" strokeWidth={1.5} />
           </button>
         </div>
-        <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-          <Dumbbell className="w-4 h-4 text-primary" />
+        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+          <Dumbbell className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm">{item.exercise.name}</p>
           <p className="text-[11px] text-muted-foreground">{item.exercise.muscle_group} · {item.exercise.equipment}</p>
         </div>
-        <button onClick={() => setShowExtras(!showExtras)} className="text-muted-foreground hover:text-primary transition-colors" title="Plus d'options">
-          <Film className="w-4 h-4" />
+        <button onClick={() => setShowExtras(!showExtras)} className="text-muted-foreground hover:text-foreground transition-colors" title="Plus d'options">
+          <Film className="w-4 h-4" strokeWidth={1.5} />
         </button>
-        <button onClick={() => setShowExtras(!showExtras)} className="text-muted-foreground hover:text-primary transition-colors">
-          <MessageSquare className="w-4 h-4" />
+        <button onClick={() => setShowExtras(!showExtras)} className="text-muted-foreground hover:text-foreground transition-colors">
+          <MessageSquare className="w-4 h-4" strokeWidth={1.5} />
         </button>
         <button onClick={onRemove} className="text-muted-foreground hover:text-destructive transition-colors">
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-4 h-4" strokeWidth={1.5} />
         </button>
       </div>
 
       {/* Core params grid */}
       <div className="grid grid-cols-4 gap-2">
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase">Séries</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Séries</label>
           <Input
             type="number"
             value={item.sets}
@@ -60,7 +60,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase">Reps min</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Reps min</label>
           <Input
             type="number"
             value={item.repsMin}
@@ -70,7 +70,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase">Reps max</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Reps max</label>
           <Input
             type="number"
             value={item.repsMax}
@@ -80,7 +80,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase">Repos (s)</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Repos (s)</label>
           <Input
             type="number"
             value={item.restSeconds}
@@ -94,7 +94,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
       {/* Extended params */}
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase">Charge (kg)</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Charge (kg)</label>
           <Input
             type="number"
             value={item.suggestedWeight ?? ""}
@@ -105,7 +105,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase">Tempo</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Tempo</label>
           <Input
             value={item.tempo ?? ""}
             onChange={(e) => onUpdate({ ...item, tempo: e.target.value || undefined })}
@@ -114,7 +114,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase">RPE cible</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">RPE cible</label>
           <Input
             value={item.rpeTarget ?? ""}
             onChange={(e) => onUpdate({ ...item, rpeTarget: e.target.value || undefined })}
@@ -126,9 +126,9 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
 
       {/* Extras */}
       {showExtras && (
-        <div className="space-y-2 pt-1 border-t border-border/30">
+        <div className="space-y-2 pt-1 border-t border-border pt-3">
           <div>
-            <label className="text-[10px] text-muted-foreground font-medium uppercase">Notes du coach</label>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Notes du coach</label>
             <Input
               value={item.coachNotes ?? ""}
               onChange={(e) => onUpdate({ ...item, coachNotes: e.target.value || undefined })}
@@ -137,7 +137,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
             />
           </div>
           <div>
-            <label className="text-[10px] text-muted-foreground font-medium uppercase">URL Vidéo</label>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">URL Vidéo</label>
             <Input
               value={item.videoUrl ?? ""}
               onChange={(e) => onUpdate({ ...item, videoUrl: e.target.value || undefined })}
@@ -146,7 +146,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
             />
           </div>
           <div>
-            <label className="text-[10px] text-muted-foreground font-medium uppercase">Recherche YouTube (fallback)</label>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Recherche YouTube (fallback)</label>
             <Input
               value={item.videoSearchQuery ?? ""}
               onChange={(e) => onUpdate({ ...item, videoSearchQuery: e.target.value || undefined })}

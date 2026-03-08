@@ -30,10 +30,10 @@ const VideoLink = ({ videoUrl, videoSearchQuery, exerciseName, onUpdateUrl, edit
           className="h-8 text-xs bg-surface"
         />
         <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={handleSave}>
-          <Check className="w-3.5 h-3.5 text-primary" />
+          <Check className="w-3.5 h-3.5 text-success" strokeWidth={1.5} />
         </Button>
         <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => setEditing(false)}>
-          <X className="w-3.5 h-3.5" />
+          <X className="w-3.5 h-3.5" strokeWidth={1.5} />
         </Button>
       </div>
     );
@@ -50,9 +50,9 @@ const VideoLink = ({ videoUrl, videoSearchQuery, exerciseName, onUpdateUrl, edit
           href={videoUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 bg-destructive/90 hover:bg-destructive text-destructive-foreground px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+          className="inline-flex items-center gap-1.5 bg-tag-red/10 hover:bg-tag-red/20 text-tag-red px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
         >
-          <Play className="w-3 h-3" />
+          <Play className="w-3 h-3" strokeWidth={1.5} />
           Voir la vidéo
         </a>
       ) : videoSearchQuery ? (
@@ -60,9 +60,9 @@ const VideoLink = ({ videoUrl, videoSearchQuery, exerciseName, onUpdateUrl, edit
           href={searchUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 bg-info/20 hover:bg-info/30 text-info px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+          className="inline-flex items-center gap-1.5 bg-info-bg hover:bg-info/20 text-info px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
         >
-          <Search className="w-3 h-3" />
+          <Search className="w-3 h-3" strokeWidth={1.5} />
           Chercher sur YouTube
         </a>
       ) : null}
@@ -71,7 +71,7 @@ const VideoLink = ({ videoUrl, videoSearchQuery, exerciseName, onUpdateUrl, edit
           onClick={() => setEditing(true)}
           className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
         >
-          <Pencil className="w-3 h-3" />
+          <Pencil className="w-3 h-3" strokeWidth={1.5} />
           {videoUrl ? "Modifier" : "Ajouter vidéo"}
         </button>
       )}

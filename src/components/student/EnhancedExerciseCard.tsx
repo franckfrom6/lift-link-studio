@@ -27,12 +27,10 @@ interface EnhancedExerciseCardProps {
   coachNotes?: string | null;
   videoUrl?: string | null;
   videoSearchQuery?: string | null;
-  // Tracking state
   isActive: boolean;
   completedSets: EnhancedCompletedSet[];
   onCompletedSetsChange: (sets: EnhancedCompletedSet[]) => void;
   onAllSetsComplete: () => void;
-  // Previous week comparison
   previousSets?: { weight: number; reps: number }[];
 }
 
@@ -52,7 +50,6 @@ const EnhancedExerciseCard = ({
   const [showTimer, setShowTimer] = useState(false);
   const [allDone, setAllDone] = useState(completedSets.length >= targetSets && completedSets.every(s => s.reps > 0));
 
-  // Initialize sets if empty
   if (completedSets.length === 0 && isActive) {
     const initial: EnhancedCompletedSet[] = Array.from({ length: targetSets }, (_, i) => ({
       setNumber: i + 1,
@@ -74,7 +71,6 @@ const EnhancedExerciseCard = ({
   const validateSet = (idx: number) => {
     if (idx < completedSets.length - 1) {
       setCurrentSetIdx(idx + 1);
-      // Pre-fill weight from current set
       const updated = [...completedSets];
       if (updated[idx + 1] && updated[idx + 1].weight === 0) {
         updated[idx + 1] = { ...updated[idx + 1], weight: updated[idx].weight };
@@ -113,53 +109,52 @@ const EnhancedExerciseCard = ({
   return (
     <div className={cn(
       "rounded-xl border transition-all",
-      isActive ? "bg-card border-primary/30 shadow-sm" : "bg-card/50 border-border/50"
+      isActive ? "bg-card border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "bg-card/50 border-border/50"
     )}>
       {/* Compact header */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-3 p-3 text-left"
       >
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <Dumbbell className="w-4 h-4 text-primary" />
+        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+          <Dumbbell className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm truncate">{name}</p>
           <div className="flex flex-wrap gap-1.5 mt-1">
-            <span className="bg-tag-violet/15 text-tag-violet px-1.5 py-0.5 rounded text-[10px] font-medium">
+            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
               {targetSets}s
             </span>
-            <span className="bg-tag-violet/15 text-tag-violet px-1.5 py-0.5 rounded text-[10px] font-medium">
+            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
               {repsMin === repsMax ? repsMin : `${repsMin}-${repsMax}`} reps
             </span>
             {tempo && (
-              <span className="bg-tag-violet/15 text-tag-violet px-1.5 py-0.5 rounded text-[10px] font-medium">
+              <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
                 {tempo}
               </span>
             )}
             {restSeconds > 0 && (
-              <span className="bg-tag-blue/15 text-tag-blue px-1.5 py-0.5 rounded text-[10px] font-medium">
+              <span className="bg-tag-blue-bg text-tag-blue px-1.5 py-0.5 rounded-md text-[10px] font-medium">
                 {restSeconds >= 60 ? `${Math.floor(restSeconds / 60)}'${restSeconds % 60 > 0 ? (restSeconds % 60).toString().padStart(2, '0') + '"' : ''}` : `${restSeconds}s`}
               </span>
             )}
             {rpeTarget && (
-              <span className="bg-tag-orange/15 text-tag-orange px-1.5 py-0.5 rounded text-[10px] font-medium">
+              <span className="bg-tag-orange-bg text-tag-orange px-1.5 py-0.5 rounded-md text-[10px] font-medium">
                 RPE {rpeTarget}
               </span>
             )}
           </div>
         </div>
-        {allDone && <Check className="w-5 h-5 text-primary shrink-0" />}
+        {allDone && <Check className="w-5 h-5 text-success shrink-0" strokeWidth={1.5} />}
         <ChevronDown className={cn(
           "w-4 h-4 text-muted-foreground transition-transform shrink-0",
           expanded && "rotate-180"
-        )} />
+        )} strokeWidth={1.5} />
       </button>
 
       {/* Expanded details */}
       {expanded && (
-        <div className="px-3 pb-3 space-y-3 border-t border-border/30 pt-3">
-          {/* Coach info */}
+        <div className="px-3 pb-3 space-y-3 border-t border-border pt-3">
           {(suggestedWeight || coachNotes || videoUrl || videoSearchQuery) && (
             <div className="space-y-2">
               {suggestedWeight && (
@@ -180,7 +175,6 @@ const EnhancedExerciseCard = ({
             </div>
           )}
 
-          {/* Timer */}
           {showTimer && isActive && (
             <CircularRestTimer
               key={currentSetIdx}
@@ -189,10 +183,9 @@ const EnhancedExerciseCard = ({
             />
           )}
 
-          {/* Sets tracking */}
           {isActive && completedSets.length > 0 && (
             <div className="space-y-2">
-              <div className="grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-1">
+              <div className="grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
                 <span>Set</span>
                 <span>Kg</span>
                 <span>Reps</span>
@@ -209,7 +202,7 @@ const EnhancedExerciseCard = ({
                   <div key={i}>
                     <div className={cn(
                       "grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 items-center p-1.5 rounded-lg transition-colors",
-                      isCurrent && "bg-primary/10 ring-1 ring-primary/30",
+                      isCurrent && "bg-accent ring-1 ring-accent-foreground/20",
                       isDone && "opacity-60"
                     )}>
                       <span className="text-sm font-bold text-center">{set.setNumber}</span>
@@ -248,24 +241,23 @@ const EnhancedExerciseCard = ({
                         disabled={!isCurrent}
                         className={cn(
                           "h-9 w-9 rounded-lg flex items-center justify-center mx-auto transition-colors",
-                          set.isFailure ? "bg-destructive/20 text-destructive" : "bg-surface text-muted-foreground",
+                          set.isFailure ? "bg-destructive/10 text-destructive" : "bg-secondary text-muted-foreground",
                           "disabled:opacity-40"
                         )}
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-3.5 h-3.5" strokeWidth={1.5} />
                       </button>
                       {isCurrent ? (
                         <Button size="icon" className="h-9 w-9" onClick={() => validateSet(i)} disabled={!set.reps}>
-                          <Check className="w-3.5 h-3.5" />
+                          <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
                         </Button>
                       ) : (
                         <div className="h-9 w-9 flex items-center justify-center">
-                          {isDone && <Check className="w-3.5 h-3.5 text-primary" />}
+                          {isDone && <Check className="w-3.5 h-3.5 text-success" strokeWidth={1.5} />}
                         </div>
                       )}
                     </div>
 
-                    {/* RPE selector for completed sets */}
                     {isDone && (
                       <div className="pl-9 mt-1 mb-1">
                         <div className="flex items-center gap-2">
@@ -284,7 +276,7 @@ const EnhancedExerciseCard = ({
 
               {!allDone && (
                 <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={addSet}>
-                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
                   Ajouter une série
                 </Button>
               )}

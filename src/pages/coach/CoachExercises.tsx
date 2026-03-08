@@ -26,7 +26,7 @@ const CoachExercises = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -34,13 +34,13 @@ const CoachExercises = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-display font-bold">Bibliothèque d'exercices</h1>
+        <h1 className="text-2xl font-bold">Bibliothèque d'exercices</h1>
         <p className="text-muted-foreground text-sm">{exercises.length} exercices disponibles</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
           <Input
             placeholder="Rechercher un exercice..."
             value={search}
@@ -54,8 +54,8 @@ const CoachExercises = () => {
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setSelectedMuscle(null)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-            !selectedMuscle ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground hover:text-foreground"
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+            !selectedMuscle ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
           }`}
         >
           Tous
@@ -64,8 +64,8 @@ const CoachExercises = () => {
           <button
             key={mg}
             onClick={() => setSelectedMuscle(mg === selectedMuscle ? null : mg)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              selectedMuscle === mg ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground hover:text-foreground"
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              selectedMuscle === mg ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
           >
             {mg}
@@ -77,12 +77,12 @@ const CoachExercises = () => {
       <div className="space-y-6">
         {Object.entries(grouped).map(([muscle, exs]) => (
           <div key={muscle}>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{muscle}</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-[0.05em] mb-3">{muscle}</h3>
             <div className="grid gap-2">
               {exs.map((ex) => (
-                <div key={ex.id} className="glass rounded-xl p-4 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Dumbbell className="w-5 h-5 text-primary" />
+                <div key={ex.id} className="glass p-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                    <Dumbbell className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{ex.name}</p>
@@ -99,8 +99,8 @@ const CoachExercises = () => {
         ))}
 
         {Object.keys(grouped).length === 0 && (
-          <div className="glass rounded-xl p-12 text-center space-y-3">
-            <Dumbbell className="w-8 h-8 text-muted-foreground mx-auto" />
+          <div className="glass p-12 text-center space-y-3">
+            <Dumbbell className="w-8 h-8 text-muted-foreground mx-auto" strokeWidth={1.5} />
             <p className="text-muted-foreground">Aucun exercice trouvé</p>
           </div>
         )}

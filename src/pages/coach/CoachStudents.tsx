@@ -18,17 +18,17 @@ const CoachStudents = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-display font-bold">Mes Élèves</h1>
+          <h1 className="text-2xl font-bold">Mes Élèves</h1>
           <p className="text-muted-foreground text-sm">{MOCK_STUDENTS.length} élèves</p>
         </div>
         <Button>
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4 mr-2" strokeWidth={1.5} />
           Inviter
         </Button>
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
         <Input
           placeholder="Rechercher un élève..."
           value={search}
@@ -42,9 +42,9 @@ const CoachStudents = () => {
           <button
             key={student.id}
             onClick={() => navigate(`/coach/students/${student.id}`)}
-            className="glass rounded-xl p-4 flex items-center gap-4 w-full text-left hover:border-primary/30 transition-all group"
+            className="glass p-4 flex items-center gap-4 w-full text-left hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all group"
           >
-            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-lg font-bold text-primary">
+            <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center text-lg font-semibold text-accent-foreground">
               {student.avatar}
             </div>
             <div className="flex-1 min-w-0">
@@ -58,7 +58,7 @@ const CoachStudents = () => {
                 {student.goal} · {student.level}
               </p>
             </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" strokeWidth={1.5} />
           </button>
         ))}
       </div>

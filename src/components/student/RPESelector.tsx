@@ -7,16 +7,16 @@ interface RPESelectorProps {
 }
 
 const RPE_COLORS: Record<number, string> = {
-  1: "bg-success/20 text-success",
-  2: "bg-success/20 text-success",
-  3: "bg-success/30 text-success",
-  4: "bg-primary/20 text-primary",
-  5: "bg-primary/20 text-primary",
-  6: "bg-primary/30 text-primary",
-  7: "bg-warning/20 text-warning",
-  8: "bg-warning/30 text-warning",
-  9: "bg-destructive/20 text-destructive",
-  10: "bg-destructive/30 text-destructive",
+  1: "bg-success-bg text-success",
+  2: "bg-success-bg text-success",
+  3: "bg-success-bg text-success",
+  4: "bg-tag-violet-bg text-tag-violet",
+  5: "bg-tag-violet-bg text-tag-violet",
+  6: "bg-tag-violet-bg text-tag-violet",
+  7: "bg-tag-orange-bg text-tag-orange",
+  8: "bg-tag-orange-bg text-tag-orange",
+  9: "bg-destructive/10 text-destructive",
+  10: "bg-destructive/10 text-destructive",
 };
 
 const RPESelector = ({ value, onChange, disabled }: RPESelectorProps) => {
@@ -32,7 +32,7 @@ const RPESelector = ({ value, onChange, disabled }: RPESelectorProps) => {
             "w-7 h-7 rounded-md text-[11px] font-bold transition-all",
             value === rpe
               ? RPE_COLORS[rpe] + " ring-1 ring-current scale-110"
-              : "bg-surface text-muted-foreground hover:bg-surface/80",
+              : "bg-secondary text-muted-foreground hover:bg-secondary/80",
             disabled && "opacity-40 cursor-not-allowed"
           )}
         >

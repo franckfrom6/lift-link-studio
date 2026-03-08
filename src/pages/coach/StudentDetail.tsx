@@ -28,15 +28,15 @@ const StudentDetail = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/coach/students")}>
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
         </Button>
         <div className="flex items-center gap-4 flex-1">
-          <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center text-xl font-bold text-primary">
+          <div className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center text-xl font-semibold text-accent-foreground">
             {student.avatar}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-display font-bold">{student.name}</h1>
+              <h1 className="text-xl font-bold">{student.name}</h1>
               <Badge variant={student.status === "active" ? "default" : "secondary"}>
                 {student.status === "active" ? "Actif" : "Inactif"}
               </Badge>
@@ -48,18 +48,18 @@ const StudentDetail = () => {
 
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="glass rounded-xl p-4 text-center">
-          <Target className="w-5 h-5 text-primary mx-auto mb-1" />
+        <div className="glass p-4 text-center">
+          <Target className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
           <p className="text-xs text-muted-foreground">Objectif</p>
           <p className="text-sm font-semibold mt-0.5">{student.goal}</p>
         </div>
-        <div className="glass rounded-xl p-4 text-center">
-          <BarChart3 className="w-5 h-5 text-primary mx-auto mb-1" />
+        <div className="glass p-4 text-center">
+          <BarChart3 className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
           <p className="text-xs text-muted-foreground">Niveau</p>
           <p className="text-sm font-semibold mt-0.5">{student.level}</p>
         </div>
-        <div className="glass rounded-xl p-4 text-center">
-          <ClipboardList className="w-5 h-5 text-primary mx-auto mb-1" />
+        <div className="glass p-4 text-center">
+          <ClipboardList className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
           <p className="text-xs text-muted-foreground">Programmes</p>
           <p className="text-sm font-semibold mt-0.5">{hasProgram ? "1" : "0"}</p>
         </div>
@@ -68,10 +68,10 @@ const StudentDetail = () => {
       {/* Programs section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-display font-bold">Programme actif</h2>
+          <h2 className="font-bold">Programme actif</h2>
           {!hasProgram && (
             <Button size="sm" onClick={() => navigate(`/coach/students/${studentId}/program/new`)}>
-              <Plus className="w-4 h-4 mr-1" />
+              <Plus className="w-4 h-4 mr-1" strokeWidth={1.5} />
               Nouveau programme
             </Button>
           )}
@@ -80,8 +80,8 @@ const StudentDetail = () => {
         {hasProgram ? (
           <ProgramView program={YANA_PROGRAM} />
         ) : (
-          <div className="glass rounded-xl p-8 text-center space-y-3">
-            <ClipboardList className="w-8 h-8 text-muted-foreground/50 mx-auto" />
+          <div className="glass p-8 text-center space-y-3">
+            <ClipboardList className="w-8 h-8 text-muted-foreground/50 mx-auto" strokeWidth={1.5} />
             <p className="text-muted-foreground text-sm">Aucun programme pour cet élève</p>
             <Button
               variant="outline"

@@ -35,7 +35,6 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
   };
 
   const removeSection = (index: number) => {
-    // Move exercises back to unsectioned
     const removedSection = session.sections?.[index];
     const movedExercises = removedSection?.exercises || [];
     onUpdate({
@@ -98,11 +97,11 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
   return (
     <div className="border border-border rounded-xl overflow-hidden">
       {/* Session header */}
-      <div className="flex items-center gap-3 p-3 bg-surface/50">
+      <div className="flex items-center gap-3 p-3 bg-secondary/50">
         <button onClick={() => setCollapsed(!collapsed)} className="text-muted-foreground hover:text-foreground transition-colors">
-          {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          {collapsed ? <ChevronDown className="w-4 h-4" strokeWidth={1.5} /> : <ChevronUp className="w-4 h-4" strokeWidth={1.5} />}
         </button>
-        <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+        <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-xs font-bold text-accent-foreground">
           {DAY_NAMES[session.dayOfWeek]?.slice(0, 2)}
         </div>
         <div className="flex-1 min-w-0">
@@ -117,14 +116,13 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
           </p>
         </div>
         <button onClick={onRemove} className="text-muted-foreground hover:text-destructive transition-colors p-1">
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-4 h-4" strokeWidth={1.5} />
         </button>
       </div>
 
       {/* Content */}
       {!collapsed && (
         <div className="p-3 space-y-4">
-          {/* Sections */}
           {(session.sections || []).map((section, i) => (
             <SessionSectionEditor
               key={section.id}
@@ -135,11 +133,10 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
             />
           ))}
 
-          {/* Unsectioned exercises */}
           {session.exercises.length > 0 && (
             <div className="space-y-3">
               {(session.sections || []).length > 0 && (
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold px-1">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.05em] font-semibold px-1">
                   Exercices hors section
                 </p>
               )}
@@ -158,14 +155,13 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
             </div>
           )}
 
-          {/* Action buttons */}
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="flex-1" onClick={() => { setAddToSectionId(null); setPickerOpen(true); }}>
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4 mr-2" strokeWidth={1.5} />
               Exercice
             </Button>
             <Button variant="outline" size="sm" className="flex-1" onClick={addSection}>
-              <FolderPlus className="w-4 h-4 mr-2" />
+              <FolderPlus className="w-4 h-4 mr-2" strokeWidth={1.5} />
               Section
             </Button>
           </div>

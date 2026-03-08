@@ -55,11 +55,9 @@ const LiveSession = () => {
   const completedCount = Object.values(completedSets).filter(sets => sets.length > 0 && sets.every(s => s.reps > 0)).length;
 
   const handleExerciseComplete = (key: string) => {
-    // Auto-advance to next exercise
     const [sIdx, eIdx] = key.split("-").map(Number);
     let nextKey: string | null = null;
     
-    // Find next exercise
     for (let si = sIdx; si < YANA_PROGRAM.sections.length; si++) {
       const startEi = si === sIdx ? eIdx + 1 : 0;
       for (let ei = startEi; ei < YANA_PROGRAM.sections[si].exercises.length; ei++) {
@@ -88,7 +86,6 @@ const LiveSession = () => {
         <SessionRecap
           exercises={allExercises}
           completedSets={
-            // Convert to old format for recap
             Object.fromEntries(
               Object.entries(completedSets).map(([key, sets]) => {
                 let globalIdx = 0;
@@ -109,10 +106,10 @@ const LiveSession = () => {
   return (
     <div className="max-w-lg mx-auto space-y-4">
       {/* Sticky header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-3 -mx-4 px-4 pt-2 border-b border-border/30">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-3 -mx-4 px-4 pt-2 border-b border-border">
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => navigate("/student")}>
-            <ArrowLeft className="w-4 h-4 mr-1" />
+            <ArrowLeft className="w-4 h-4 mr-1" strokeWidth={1.5} />
             Quitter
           </Button>
           <div className="flex items-center gap-2">
@@ -122,12 +119,12 @@ const LiveSession = () => {
               onClick={() => setShowProgression(!showProgression)}
               className="gap-1.5"
             >
-              <TrendingUp className="w-3.5 h-3.5" />
+              <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />
               Progression
             </Button>
             <div className="flex items-center gap-1.5 bg-surface px-3 py-1.5 rounded-lg">
-              <Clock className="w-3.5 h-3.5 text-primary" />
-              <span className="text-sm font-display font-bold tabular-nums">
+              <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+              <span className="text-sm font-bold tabular-nums">
                 {mins}:{secs.toString().padStart(2, "0")}
               </span>
             </div>
@@ -136,8 +133,8 @@ const LiveSession = () => {
 
         {/* Session info header */}
         <div className="flex items-center gap-3 mt-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-            <User className="w-4 h-4 text-primary" />
+          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+            <User className="w-4 h-4 text-accent-foreground" strokeWidth={1.5} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate">{YANA_PROGRAM.title}</p>
@@ -150,7 +147,7 @@ const LiveSession = () => {
 
         {/* Progress bar */}
         <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 h-1.5 bg-surface rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
             <div
               className="h-full bg-primary rounded-full transition-all duration-500"
               style={{ width: `${(completedCount / allExercises.length) * 100}%` }}
@@ -164,8 +161,8 @@ const LiveSession = () => {
 
       {/* Progression panel */}
       {showProgression && (
-        <div className="bg-card border border-border rounded-xl p-4 animate-fade-in">
-          <h3 className="font-display font-bold text-sm mb-3">Plan de progression</h3>
+        <div className="glass p-4 animate-fade-in">
+          <h3 className="font-bold text-sm mb-3">Plan de progression</h3>
           <ProgressionTimeline phases={progressionPhases} currentWeek={1} />
         </div>
       )}
@@ -175,7 +172,6 @@ const LiveSession = () => {
         {YANA_PROGRAM.sections.map((section, sIdx) => {
           const sectionHasActive = section.exercises.some((_, eIdx) => `${sIdx}-${eIdx}` === activeExerciseKey);
 
-          // Extract icon from section name (emoji)
           const emojiMatch = section.name.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})/u);
           const icon = emojiMatch ? emojiMatch[1] : null;
           const cleanName = icon ? section.name.replace(icon, "").trim() : section.name;
@@ -194,7 +190,6 @@ const LiveSession = () => {
                 const isActive = key === activeExerciseKey;
                 const sets = completedSets[key] || [];
 
-                // Parse exercise data
                 const targetSets = parseInt(ex.sets) || 1;
                 const repsMatch = ex.reps.match(/(\d+)(?:\s*[-–]\s*(\d+))?/);
                 const repsMin = repsMatch ? parseInt(repsMatch[1]) : 0;
