@@ -368,7 +368,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
           <div className="w-full text-center py-3">
             <p className="text-sm text-success font-medium flex items-center justify-center gap-2">
               <Check className="w-4 h-4" />
-              {i18n.language === "fr" ? "Programme appliqué avec succès !" : "Program applied successfully!"}
+              {t('program_applied')}
             </p>
           </div>
         )}
