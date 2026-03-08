@@ -48,14 +48,14 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
 
   // Realtime subscription
   useEffect(() => {
-    if (!user) return;
+    if (!studentId) return;
     const channel = supabase
       .channel("session-swaps-realtime")
       .on("postgres_changes", {
         event: "*",
         schema: "public",
         table: "session_swaps",
-        filter: `student_id=eq.${user.id}`,
+        filter: `student_id=eq.${studentId}`,
       }, () => {
         fetchSwaps();
       })
