@@ -265,12 +265,18 @@ const AuthPage = () => {
                       }
                       if (data?.url) {
                         const oauthUrl = new URL(data.url);
-                        const allowedHosts = ["accounts.google.com"];
-                        if (!allowedHosts.some((h) => oauthUrl.hostname === h)) {
-                          toast.error(t("error_generic"));
+                        const allowedHosts = [
+                          "accounts.google.com",
+                          "wlwzxhihykefzbtvoqtm.supabase.co",
+                        ];
+                        const isAllowed = allowedHosts.includes(oauthUrl.hostname);
+                        if (!isAllowed) {
+                          toast.error("OAuth URL invalide");
                           return;
                         }
                         window.location.href = data.url;
+                      } else {
+                        toast.error("Impossible d'initier la connexion Google");
                       }
                     } else {
                       const { error } = await lovable.auth.signInWithOAuth("google", {
