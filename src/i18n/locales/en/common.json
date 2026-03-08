@@ -63,5 +63,9 @@
     "coach": "Coach",
     "student": "Athlete"
   },
-  "recommendations": "Recommendations"
+  "recommendations": "Recommendations",
+  "ai_plan_required": "Upgrade your plan to use this AI feature.",
+  "ai_rate_limited": "AI usage limit reached for this month.",
+  "ai_error": "AI service error. Please try again.",
+  "ai_network_error": "Network error. Check your connection."
 }
