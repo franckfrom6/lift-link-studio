@@ -47,6 +47,7 @@ const EnhancedExerciseCard = ({
   previousSets,
 }: EnhancedExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useTranslation('exercises');
   const [currentSetIdx, setCurrentSetIdx] = useState(
     completedSets.findIndex(s => s.reps === 0) >= 0
       ? completedSets.findIndex(s => s.reps === 0)
