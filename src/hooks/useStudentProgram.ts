@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -78,9 +78,15 @@ export const useStudentProgram = () => {
   const [error, setError] = useState<string | null>(null);
 
   const studentId = user ? effectiveStudentId(user.id) : null;
+  const isFetchingRef = useRef(false);
 
   const fetchProgram = useCallback(async (isRefresh = false) => {
-    if (!studentId) { setLoading(false); return; }
+    if (!studentId || isFetchingRef.current) {
+      if (!studentId) setLoading(false);
+      return;
+    }
+
+    isFetchingRef.current = true;
     if (isRefresh) {
       setRefreshing(true);
     } else {
@@ -210,6 +216,7 @@ export const useStudentProgram = () => {
       console.error("Error fetching program:", e);
       setError(e.message);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
       setRefreshing(false);
     }
@@ -246,6 +253,34 @@ export const useStudentProgram = () => {
       supabase.removeChannel(channel);
     };
   }, [program?.id, fetchProgram]);
+
+  // Fallback polling: guarantees eventual sync even if realtime events are missed
+  useEffect(() => {
+    if (!studentId) return;
+
+    let pollInterval = 4000;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let isActive = true;
+
+    const poll = async () => {
+      await fetchProgram(true);
+
+      pollInterval = document.visibilityState === "visible"
+        ? 4000
+        : Math.min(pollInterval * 1.5, 30000);
+
+      if (isActive) {
+        timeoutId = setTimeout(poll, pollInterval);
+      }
+    };
+
+    timeoutId = setTimeout(poll, pollInterval);
+
+    return () => {
+      isActive = false;
+      clearTimeout(timeoutId);
+    };
+  }, [studentId, fetchProgram]);
 
   const seedDemo = async () => {
     if (!user) return;
