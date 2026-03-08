@@ -30,7 +30,7 @@ const CoachLayout = () => {
     <div className="min-h-screen bg-background flex">
       <aside className="hidden md:flex flex-col w-[260px] border-r border-border bg-secondary/50 p-4">
         <div className="mb-8 px-2">
-          <Logo variant="full" size="md" />
+          <Logo variant="header" />
         </div>
 
         <nav className="flex-1 space-y-1">
@@ -66,7 +66,7 @@ const CoachLayout = () => {
 
       <div className="flex-1 flex flex-col min-h-screen">
         <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background">
-          <Logo variant="compact" size="sm" />
+          <Logo variant="mobile" />
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
             <ThemeToggle />

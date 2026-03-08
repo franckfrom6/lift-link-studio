@@ -53,7 +53,7 @@ const AuthPage = () => {
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center bg-secondary">
         <div className="relative z-10 px-12 text-center">
           <div className="flex justify-center mb-8">
-            <Logo variant="full" size="lg" />
+            <Logo variant="full" />
           </div>
           <Tagline className="text-xl max-w-md mx-auto leading-relaxed" />
         </div>
@@ -67,7 +67,7 @@ const AuthPage = () => {
 
         <div className="w-full max-w-md space-y-8">
           <div className="lg:hidden flex justify-center mb-4">
-            <Logo variant="full" size="md" />
+            <Logo variant="full" />
           </div>
 
           <div className="space-y-2 text-center">
