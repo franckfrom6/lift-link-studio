@@ -105,12 +105,12 @@ const CoachRecommendationForm = ({ open, onClose, onSave, type, students, initia
     }
   };
 
-  const handleTemplate = (tpl: RecommendationTemplate) => {
+  const handleTemplate = (tpl: DbTemplate) => {
     const lang = i18n.language;
     setTitle(lang === "fr" ? tpl.title_fr : tpl.title_en);
     setContent(lang === "fr" ? tpl.content_fr : tpl.content_en);
     setCategory(tpl.category);
-    setTriggerType(tpl.trigger_type);
+    if (tpl.trigger_type) setTriggerType(tpl.trigger_type);
     if (tpl.trigger_config) setTriggerConfig(tpl.trigger_config);
     if (tpl.duration_minutes) setDurationMin(tpl.duration_minutes.toString());
     setShowTemplates(false);
