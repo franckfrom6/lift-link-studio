@@ -1,7 +1,7 @@
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import SessionSwapModal from "@/components/student/SessionSwapModal";
@@ -17,6 +17,8 @@ import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSessionSwaps } from "@/hooks/useSessionSwaps";
+import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DraggableDayCard } from "@/components/student/DraggableDayCard";
 
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
@@ -140,6 +142,24 @@ const StudentWeek = () => {
   };
 
   const dates = getWeekDates();
+
+  // DnD sensors with activation distance to avoid interfering with clicks
+  const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 8 } });
+  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } });
+  const sensors = useSensors(pointerSensor, touchSensor);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    const sourceDayIndex = active.data.current?.dayIndex as number;
+    const targetDayIndex = over.data.current?.dayIndex as number;
+    if (sourceDayIndex === undefined || targetDayIndex === undefined) return;
+    if (sourceDayIndex === targetDayIndex) return;
+    if (!effectiveSessions[sourceDayIndex]) return;
+    setSwapSourceDay(sourceDayIndex);
+    setSwapTargetDay(targetDayIndex);
+    setSwapModalOpen(true);
+  }, [effectiveSessions]);
 
   const handleDayClickInSwapMode = (dayIndex: number) => {
     if (swapSourceDay === null) return;
@@ -314,137 +334,140 @@ const StudentWeek = () => {
       )}
 
       {/* Days */}
-      <div className="space-y-2">
-        {dates.map((day) => {
-          const isSessionDay = day.hasSession;
-          const sessionInfo = effectiveSessions[day.dayIndex];
-          const sessionCompleted = isSessionDay && day.isPast && weekOffset < 0;
-          const swapInfo = swappedDays[day.dayIndex];
-          const isSwapSource = swapMode && day.dayIndex === swapSourceDay;
-          const isDropTarget = swapMode && day.dayIndex !== swapSourceDay;
-          const dayExternals = getExternalForDay(day.date);
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <div className="space-y-2">
+          {dates.map((day) => {
+            const isSessionDay = day.hasSession;
+            const sessionInfo = effectiveSessions[day.dayIndex];
+            const sessionCompleted = isSessionDay && day.isPast && weekOffset < 0;
+            const swapInfo = swappedDays[day.dayIndex];
+            const isSwapSource = swapMode && day.dayIndex === swapSourceDay;
+            const isDropTarget = swapMode && day.dayIndex !== swapSourceDay;
+            const dayExternals = getExternalForDay(day.date);
 
-          return (
-            <div key={day.name} className="space-y-1">
-              <div
-                role={isSessionDay || swapMode ? "button" : undefined}
-                tabIndex={isSessionDay || swapMode ? 0 : undefined}
-                onClick={() => {
-                  if (swapMode) {
-                    handleDayClickInSwapMode(day.dayIndex);
-                  } else if (isSessionDay && sessionInfo) {
-                    navigate("/student/session", { state: { sessionId: sessionInfo.sessionId } });
-                  }
-                }}
-                className={cn(
-                  "w-full glass p-4 transition-all text-left",
-                  day.isToday && "ring-1 ring-primary/40",
-                  isSessionDay && !swapMode && "hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] cursor-pointer",
-                  !isSessionDay && dayExternals.length === 0 && !swapMode && "opacity-50",
-                  isSwapSource && "ring-2 ring-warning bg-warning-bg",
-                  isDropTarget && "ring-1 ring-dashed ring-warning/50 cursor-pointer hover:ring-warning hover:bg-warning-bg/50",
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold",
-                      day.isToday ? "bg-primary text-primary-foreground"
-                        : isSessionDay ? "bg-accent text-accent-foreground"
-                        : "bg-secondary text-muted-foreground"
-                    )}>
-                      {day.date.getDate()}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <p className="font-medium text-sm">{day.name}</p>
-                        {swapInfo && (
-                          <SwapBadge originalDay={swapInfo.originalDay} newDay={day.dayIndex + 1} reason={swapInfo.reason} />
-                        )}
-                      </div>
-                      {isSessionDay && sessionInfo ? (
-                        <div className="space-y-0.5">
-                          <p className="text-xs font-medium text-foreground">{sessionInfo.name}</p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-muted-foreground">{sessionInfo.exerciseCount} ex.</span>
-                            {sessionInfo.muscleGroups.length > 0 && (
-                              <>
-                                <span className="text-[10px] text-muted-foreground">·</span>
-                                <span className="text-[10px] text-muted-foreground">{sessionInfo.muscleGroups.slice(0, 3).join(", ")}</span>
-                              </>
+            return (
+              <div key={day.name} className="space-y-1">
+                <DraggableDayCard
+                  dayIndex={day.dayIndex}
+                  hasSession={isSessionDay}
+                  className={cn(
+                    "w-full glass p-4 transition-all text-left touch-manipulation",
+                    day.isToday && "ring-1 ring-primary/40",
+                    isSessionDay && !swapMode && "hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] cursor-pointer",
+                    !isSessionDay && dayExternals.length === 0 && !swapMode && "opacity-50",
+                    isSwapSource && "ring-2 ring-warning bg-warning-bg",
+                    isDropTarget && "ring-1 ring-dashed ring-warning/50 cursor-pointer hover:ring-warning hover:bg-warning-bg/50",
+                  )}
+                >
+                  <div
+                    onClick={() => {
+                      if (swapMode) {
+                        handleDayClickInSwapMode(day.dayIndex);
+                      } else if (isSessionDay && sessionInfo) {
+                        navigate("/student/session", { state: { sessionId: sessionInfo.sessionId } });
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold",
+                          day.isToday ? "bg-primary text-primary-foreground"
+                            : isSessionDay ? "bg-accent text-accent-foreground"
+                            : "bg-secondary text-muted-foreground"
+                        )}>
+                          {day.date.getDate()}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-medium text-sm">{day.name}</p>
+                            {swapInfo && (
+                              <SwapBadge originalDay={swapInfo.originalDay} newDay={day.dayIndex + 1} reason={swapInfo.reason} />
                             )}
                           </div>
+                          {isSessionDay && sessionInfo ? (
+                            <div className="space-y-0.5">
+                              <p className="text-xs font-medium text-foreground">{sessionInfo.name}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-muted-foreground">{sessionInfo.exerciseCount} ex.</span>
+                                {sessionInfo.muscleGroups.length > 0 && (
+                                  <>
+                                    <span className="text-[10px] text-muted-foreground">·</span>
+                                    <span className="text-[10px] text-muted-foreground">{sessionInfo.muscleGroups.slice(0, 3).join(", ")}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ) : dayExternals.length > 0 ? (
+                            <div className="space-y-0.5">
+                              {dayExternals.map(ext => (
+                                <ExternalSessionCard key={ext.id} session={ext} compact />
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              {isDropTarget && sourceDayHasSession ? t('calendar:move_here') : t('common:rest')}
+                            </p>
+                          )}
                         </div>
-                      ) : dayExternals.length > 0 ? (
-                        <div className="space-y-0.5">
-                          {dayExternals.map(ext => (
-                            <ExternalSessionCard key={ext.id} session={ext} compact />
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          {isDropTarget && sourceDayHasSession ? t('calendar:move_here') : t('common:rest')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {isSessionDay && !swapMode && (
-                      <Button
-                        variant="ghost" size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={(e) => { e.stopPropagation(); setSwapMode(true); setSwapSourceDay(day.dayIndex); }}
-                      >
-                        <ArrowLeftRight className="w-4 h-4" strokeWidth={1.5} />
-                      </Button>
-                    )}
-                    {!swapMode && (
-                      <Button
-                        variant="ghost" size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={(e) => { e.stopPropagation(); handleAddExternal(day.date); }}
-                      >
-                        <Plus className="w-4 h-4" strokeWidth={1.5} />
-                      </Button>
-                    )}
-                    {isSessionDay && !day.isPast && !swapMode ? (
-                      <div className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg">
-                        <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
-                        <span className="text-xs font-semibold">Go</span>
                       </div>
-                    ) : isSessionDay && sessionCompleted ? (
-                      <CheckCircle className="w-5 h-5 text-success" strokeWidth={1.5} />
-                    ) : null}
-                  </div>
-                </div>
+                      <div className="flex items-center gap-2">
+                        {isSessionDay && !swapMode && (
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={(e) => { e.stopPropagation(); setSwapMode(true); setSwapSourceDay(day.dayIndex); }}
+                          >
+                            <ArrowLeftRight className="w-4 h-4" strokeWidth={1.5} />
+                          </Button>
+                        )}
+                        {!swapMode && (
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={(e) => { e.stopPropagation(); handleAddExternal(day.date); }}
+                          >
+                            <Plus className="w-4 h-4" strokeWidth={1.5} />
+                          </Button>
+                        )}
+                        {isSessionDay && !day.isPast && !swapMode ? (
+                          <div className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg">
+                            <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            <span className="text-xs font-semibold">Go</span>
+                          </div>
+                        ) : isSessionDay && sessionCompleted ? (
+                          <CheckCircle className="w-5 h-5 text-success" strokeWidth={1.5} />
+                        ) : null}
+                      </div>
+                    </div>
 
-                {isSessionDay && dayExternals.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-border space-y-1">
+                    {isSessionDay && dayExternals.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-border space-y-1">
+                        {dayExternals.map(ext => (
+                          <ExternalSessionCard key={ext.id} session={ext} compact />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </DraggableDayCard>
+
+                {!isSessionDay && dayExternals.length > 0 && (
+                  <div className="pl-14 space-y-1">
                     {dayExternals.map(ext => (
-                      <ExternalSessionCard key={ext.id} session={ext} compact />
+                      <ExternalSessionCard
+                        key={ext.id}
+                        session={ext}
+                        onEdit={() => { setEditingExternal(ext); setExternalFormDate(day.date); setExternalFormOpen(true); }}
+                        onDelete={() => handleDeleteExternal(ext.id!)}
+                      />
                     ))}
                   </div>
                 )}
               </div>
-
-              {!isSessionDay && dayExternals.length > 0 && (
-                <div className="pl-14 space-y-1">
-                  {dayExternals.map(ext => (
-                    <ExternalSessionCard
-                      key={ext.id}
-                      session={ext}
-                      onEdit={() => { setEditingExternal(ext); setExternalFormDate(day.date); setExternalFormOpen(true); }}
-                      onDelete={() => handleDeleteExternal(ext.id!)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Swap confirmation modal */}
+            );
+          })}
+        </div>
+      </DndContext>
       {swapSourceDay !== null && swapTargetDay !== null && (
         <SessionSwapModal
           open={swapModalOpen}
