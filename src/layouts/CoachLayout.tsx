@@ -1,6 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { Dumbbell, Users, ClipboardList, LogOut, Settings, LayoutDashboard } from "lucide-react";
+import { Dumbbell, Users, ClipboardList, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const CoachLayout = () => {
