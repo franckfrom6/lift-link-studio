@@ -146,22 +146,30 @@ const StudentDetail = () => {
         <div className="glass p-4">
           <WeeklyLoadBar
             programmedSessions={1}
-            externalSessions={externals}
+            externalSessions={allExternals}
           />
         </div>
       )}
 
       {/* External sessions */}
-      {externals.length > 0 && (
-        <div className="space-y-3">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
           <h2 className="font-bold">Activités externes cette semaine</h2>
+          <Button size="sm" variant="outline" onClick={() => setCoachFormOpen(true)}>
+            <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
+            Ajouter
+          </Button>
+        </div>
+        {allExternals.length > 0 ? (
           <div className="space-y-2">
-            {externals.map((ext) => (
+            {allExternals.map((ext) => (
               <ExternalSessionCard key={ext.id} session={ext} />
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-muted-foreground">Aucune activité externe cette semaine</p>
+        )}
+      </div>
 
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-3">
