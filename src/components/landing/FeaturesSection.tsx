@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { Dumbbell, Timer, CalendarDays, Apple, RefreshCw, TrendingUp } from "lucide-react";
-import featureImg1 from "@/assets/landing-feature-1.png";
 
 const ACCENT = "#6C5CE7";
 
@@ -14,7 +13,7 @@ const features = [
   { icon: TrendingUp, n: 6 },
 ];
 
-const FeatureBlock = ({ n, icon: Icon, reverse, img }: { n: number; icon: any; reverse: boolean; img?: string }) => {
+const FeatureBlock = ({ n, icon: Icon, reverse }: { n: number; icon: any; reverse: boolean }) => {
   const { t } = useTranslation("landing");
   const ref = useScrollReveal();
 
