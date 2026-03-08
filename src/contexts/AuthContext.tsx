@@ -1,18 +1,29 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 type UserRole = "coach" | "student" | null;
 
+interface Profile {
+  id: string;
+  user_id: string;
+  role: UserRole;
+  full_name: string;
+  is_admin: boolean;
+  onboarding_completed: boolean;
+  [key: string]: any;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   role: UserRole;
-  profile: any | null;
+  profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, role: "coach" | "student", fullName: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,20 +38,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<UserRole>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
       .select("*")
       .eq("user_id", userId)
       .single();
     if (data) {
-      setProfile(data);
-      setRole(data.role);
+      setProfile(data as Profile);
+      setRole(data.role as UserRole);
+    } else {
+      setProfile(null);
+      setRole(null);
     }
-  };
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  }, [user, fetchProfile]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -67,23 +87,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchProfile]);
 
-  const signUp = async (email: string, password: string, role: "coach" | "student", fullName: string) => {
+  const signUp = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: window.location.origin,
-        data: { role, full_name: fullName },
       },
     });
     if (!error && data.user) {
-      // Create profile
+      // Create empty profile (role set during onboarding)
       await supabase.from("profiles").insert({
         user_id: data.user.id,
-        role,
-        full_name: fullName,
+        full_name: "",
+        onboarding_completed: false,
       });
     }
     return { error };
@@ -103,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, profile, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, role, profile, loading, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
