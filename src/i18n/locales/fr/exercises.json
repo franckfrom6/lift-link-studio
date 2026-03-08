@@ -5,5 +5,35 @@
   "all": "Tous",
   "no_exercise_found": "Aucun exercice trouvé",
   "compound": "Composé",
-  "isolation": "Isolation"
+  "isolation": "Isolation",
+  "muscle_groups": {
+    "abs": "Abdos",
+    "arms": "Bras",
+    "back": "Dos",
+    "shoulders": "Épaules",
+    "glutes": "Fessiers",
+    "legs": "Jambes",
+    "chest": "Pectoraux"
+  },
+  "equipment": {
+    "bodyweight": "Poids du corps",
+    "dumbbells": "Haltères",
+    "barbell": "Barre",
+    "cable": "Câble",
+    "machine": "Machine"
+  },
+  "sets_label": "Séries",
+  "reps_min": "Reps min",
+  "reps_max": "Reps max",
+  "rest_s": "Repos (s)",
+  "weight_kg": "Charge (kg)",
+  "tempo": "Tempo",
+  "rpe_target": "RPE cible",
+  "coach_notes": "Notes du coach",
+  "video_url": "URL Vidéo",
+  "youtube_search": "Recherche YouTube (fallback)",
+  "target_weight": "Charge cible",
+  "add_set": "Ajouter une série",
+  "modified": "Modifié",
+  "more_options": "Plus d'options"
 }
