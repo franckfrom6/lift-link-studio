@@ -489,6 +489,57 @@ export type Database = {
         }
         Relationships: []
       }
+      kb_articles: {
+        Row: {
+          category: string
+          content_en: string
+          content_fr: string
+          created_at: string
+          id: string
+          is_published: boolean
+          role_target: string
+          slug: string
+          sort_order: number
+          tags: string[] | null
+          title_en: string
+          title_fr: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          category: string
+          content_en: string
+          content_fr: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          role_target?: string
+          slug: string
+          sort_order?: number
+          tags?: string[] | null
+          title_en: string
+          title_fr: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          category?: string
+          content_en?: string
+          content_fr?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          role_target?: string
+          slug?: string
+          sort_order?: number
+          tags?: string[] | null
+          title_en?: string
+          title_fr?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
       nutrition_profiles: {
         Row: {
           activity_multiplier: number | null
@@ -1154,6 +1205,98 @@ export type Database = {
             columns: ["week_id"]
             isOneToOne: false
             referencedRelation: "program_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          app_page: string | null
+          assigned_to: string | null
+          category: string
+          created_at: string
+          description: string
+          device_info: string | null
+          id: string
+          priority: string
+          resolved_at: string | null
+          screenshot_urls: string[] | null
+          status: string
+          subject: string
+          ticket_number: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_page?: string | null
+          assigned_to?: string | null
+          category?: string
+          created_at?: string
+          description: string
+          device_info?: string | null
+          id?: string
+          priority?: string
+          resolved_at?: string | null
+          screenshot_urls?: string[] | null
+          status?: string
+          subject: string
+          ticket_number: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_page?: string | null
+          assigned_to?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          device_info?: string | null
+          id?: string
+          priority?: string
+          resolved_at?: string | null
+          screenshot_urls?: string[] | null
+          status?: string
+          subject?: string
+          ticket_number?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ticket_messages: {
+        Row: {
+          attachment_urls: string[] | null
+          created_at: string
+          id: string
+          is_internal: boolean
+          message: string
+          sender_id: string
+          ticket_id: string
+        }
+        Insert: {
+          attachment_urls?: string[] | null
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          message: string
+          sender_id: string
+          ticket_id: string
+        }
+        Update: {
+          attachment_urls?: string[] | null
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          message?: string
+          sender_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
             referencedColumns: ["id"]
           },
         ]
