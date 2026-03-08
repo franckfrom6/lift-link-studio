@@ -1,29 +1,36 @@
-import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Loader2 } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { YANA_PROGRAM } from "@/data/yana-program";
 import { cn } from "@/lib/utils";
 import SessionSwapModal from "@/components/student/SessionSwapModal";
 import SwapBadge from "@/components/student/SwapBadge";
-import { useSessionSwaps } from "@/hooks/useSessionSwaps";
-import { useStudentProgram, DBSession } from "@/hooks/useStudentProgram";
-import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
+// Sessions mapped by day index (0-indexed). Currently only Wednesday.
+const DEFAULT_SESSIONS: Record<number, { name: string; sessionId: string }> = {
+  3: { name: "Lower Body — Glutes", sessionId: "demo-session-1" },
+};
+
+interface LocalSwap {
+  id: string;
+  originalDay: number;
+  newDay: number;
+  reason: string | null;
+}
+
 const StudentWeek = () => {
-  const { user } = useAuth();
-  const { program, loading, seedDemo } = useStudentProgram();
   const [weekOffset, setWeekOffset] = useState(0);
   const navigate = useNavigate();
   const [swapMode, setSwapMode] = useState(false);
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [swapTargetDay, setSwapTargetDay] = useState<number | null>(null);
-  const [seeding, setSeeding] = useState(false);
+  const [localSwaps, setLocalSwaps] = useState<LocalSwap[]>([]);
 
   const getWeekStart = () => {
     const now = new Date();
@@ -36,40 +43,28 @@ const StudentWeek = () => {
   };
 
   const weekStart = useMemo(getWeekStart, [weekOffset]);
-  const { swaps, createSwap } = useSessionSwaps(weekStart);
 
-  // Build sessions map from DB program (week 1, map day_of_week to 0-indexed)
-  const dbSessions = useMemo(() => {
-    const map: Record<number, { name: string; sessionId: string; session: DBSession }> = {};
-    if (!program || !program.weeks[0]) return map;
-    for (const session of program.weeks[0].sessions) {
-      const idx = session.day_of_week - 1; // day_of_week is 1-indexed
-      map[idx] = { name: session.name, sessionId: session.id, session };
-    }
-    return map;
-  }, [program]);
-
-  // Apply swaps
+  // Build effective sessions map accounting for swaps
   const effectiveSessions = useMemo(() => {
-    const sessions = { ...dbSessions };
-    for (const swap of swaps) {
-      const origIdx = swap.original_day - 1;
-      const newIdx = swap.new_day - 1;
+    const sessions = { ...DEFAULT_SESSIONS };
+    for (const swap of localSwaps) {
+      const origIdx = swap.originalDay;
+      const newIdx = swap.newDay;
       if (sessions[origIdx]) {
         sessions[newIdx] = sessions[origIdx];
         delete sessions[origIdx];
       }
     }
     return sessions;
-  }, [dbSessions, swaps]);
+  }, [localSwaps]);
 
   const swappedDays = useMemo(() => {
     const map: Record<number, { originalDay: number; reason: string | null }> = {};
-    for (const swap of swaps) {
-      map[swap.new_day - 1] = { originalDay: swap.original_day, reason: swap.reason };
+    for (const swap of localSwaps) {
+      map[swap.newDay] = { originalDay: swap.originalDay + 1, reason: swap.reason };
     }
     return map;
-  }, [swaps]);
+  }, [localSwaps]);
 
   const getWeekDates = () => {
     return DAYS.map((name, i) => {
@@ -83,12 +78,7 @@ const StudentWeek = () => {
   };
 
   const dates = getWeekDates();
-
-  const totalExercises = useMemo(() => {
-    if (!program || !program.weeks[0]) return 0;
-    return program.weeks[0].sessions.reduce((acc, s) =>
-      acc + s.sections.reduce((a, sec) => a + sec.exercises.length, 0), 0);
-  }, [program]);
+  const totalExercises = YANA_PROGRAM.sections.reduce((a, s) => a + s.exercises.length, 0);
 
   const handleDayClickInSwapMode = (dayIndex: number) => {
     if (swapSourceDay === null) return;
@@ -101,90 +91,28 @@ const StudentWeek = () => {
     setSwapModalOpen(true);
   };
 
-  const handleSwapConfirm = async (reason: string) => {
+  const handleSwapConfirm = (reason: string) => {
     if (swapSourceDay === null || swapTargetDay === null) return;
-    const sourceDate = dates[swapSourceDay].date;
-    const targetDate = dates[swapTargetDay].date;
-    const session = effectiveSessions[swapSourceDay];
-    if (!session) return;
 
-    const result = await createSwap({
-      sessionId: session.sessionId,
-      originalDay: swapSourceDay + 1,
-      newDay: swapTargetDay + 1,
-      originalDate: sourceDate,
-      newDate: targetDate,
-      reason,
-    });
+    setLocalSwaps(prev => [
+      ...prev,
+      { id: crypto.randomUUID(), originalDay: swapSourceDay, newDay: swapTargetDay, reason: reason || null },
+    ]);
+    toast.success("Séance déplacée !");
 
-    if (result) {
-      toast.success("Séance déplacée !");
-    } else {
-      toast.error("Erreur lors du déplacement");
-    }
     setSwapMode(false);
     setSwapSourceDay(null);
     setSwapTargetDay(null);
     setSwapModalOpen(false);
   };
 
-  const handleSeedDemo = async () => {
-    setSeeding(true);
-    await seedDemo();
-    setSeeding(false);
-    toast.success("Programme démo chargé !");
-  };
-
   const targetHasSession = swapTargetDay !== null && !!effectiveSessions[swapTargetDay];
   const sourceDayHasSession = swapSourceDay !== null && !!effectiveSessions[swapSourceDay];
-
-  // Not logged in
-  if (!user) {
-    return (
-      <div className="max-w-lg mx-auto text-center py-20 space-y-4">
-        <p className="text-muted-foreground">Connectez-vous pour voir votre programme</p>
-        <Button onClick={() => navigate("/auth")}>Se connecter</Button>
-      </div>
-    );
-  }
-
-  // Loading
-  if (loading) {
-    return (
-      <div className="space-y-6 max-w-lg mx-auto">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-24 w-full rounded-xl" />
-        <div className="space-y-2">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // No program — offer seed
-  if (!program) {
-    return (
-      <div className="max-w-lg mx-auto text-center py-20 space-y-4 animate-fade-in">
-        <Dumbbell className="w-12 h-12 text-muted-foreground/40 mx-auto" strokeWidth={1.5} />
-        <h2 className="text-xl font-bold">Aucun programme actif</h2>
-        <p className="text-muted-foreground text-sm">Votre coach ne vous a pas encore assigné de programme.</p>
-        <Button onClick={handleSeedDemo} disabled={seeding}>
-          {seeding ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Chargement...</>
-          ) : (
-            "Charger le programme démo"
-          )}
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 animate-fade-in max-w-lg mx-auto">
       <div>
-        <h1 className="text-2xl font-bold">Salut 💪</h1>
+        <h1 className="text-2xl font-bold">Salut, Yana 💪</h1>
         <p className="text-muted-foreground text-sm mt-1">Votre programme de la semaine</p>
       </div>
 
@@ -192,19 +120,23 @@ const StudentWeek = () => {
       <div className="glass p-5 space-y-3">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="font-bold text-sm">{program.name}</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Semaine 1</p>
+            <h3 className="font-bold text-sm">{YANA_PROGRAM.title}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">{YANA_PROGRAM.objective}</p>
           </div>
           <Badge>Actif</Badge>
         </div>
         <div className="flex gap-3">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Clock className="w-3 h-3" strokeWidth={1.5} />
+            {YANA_PROGRAM.duration}
+          </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Dumbbell className="w-3 h-3" strokeWidth={1.5} />
             {totalExercises} exercices
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Target className="w-3 h-3" strokeWidth={1.5} />
-            {Object.keys(dbSessions).length}x/semaine
+            1x/semaine
           </div>
         </div>
       </div>
@@ -247,7 +179,6 @@ const StudentWeek = () => {
           const swapInfo = swappedDays[day.dayIndex];
           const isSwapSource = swapMode && day.dayIndex === swapSourceDay;
           const isDropTarget = swapMode && day.dayIndex !== swapSourceDay;
-          const sessionData = effectiveSessions[day.dayIndex];
 
           return (
             <button
@@ -255,8 +186,8 @@ const StudentWeek = () => {
               onClick={() => {
                 if (swapMode) {
                   handleDayClickInSwapMode(day.dayIndex);
-                } else if (isSessionDay && weekOffset === 0 && sessionData) {
-                  navigate(`/student/session?sessionId=${sessionData.sessionId}`);
+                } else if (isSessionDay && weekOffset === 0) {
+                  navigate("/student/session");
                 }
               }}
               disabled={!swapMode && !isSessionDay}
@@ -286,12 +217,14 @@ const StudentWeek = () => {
                         <SwapBadge originalDay={swapInfo.originalDay} newDay={day.dayIndex + 1} reason={swapInfo.reason} />
                       )}
                     </div>
-                    {isSessionDay && sessionData ? (
+                    {isSessionDay ? (
                       <div className="space-y-0.5">
-                        <p className="text-xs font-medium text-foreground">{sessionData.name}</p>
-                        <span className="text-[10px] text-muted-foreground">
-                          {sessionData.session.sections.length} blocs · {sessionData.session.sections.reduce((a, s) => a + s.exercises.length, 0)} exos
-                        </span>
+                        <p className="text-xs font-medium text-foreground">Lower Body — Glutes</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground">{YANA_PROGRAM.duration}</span>
+                          <span className="text-[10px] text-muted-foreground">·</span>
+                          <span className="text-[10px] text-muted-foreground">Fessiers, Ischios</span>
+                        </div>
                       </div>
                     ) : (
                       <p className="text-xs text-muted-foreground">
@@ -333,7 +266,7 @@ const StudentWeek = () => {
           open={swapModalOpen}
           onClose={() => { setSwapModalOpen(false); setSwapMode(false); setSwapSourceDay(null); setSwapTargetDay(null); }}
           onConfirm={handleSwapConfirm}
-          sessionName={effectiveSessions[swapSourceDay]?.name || "Séance"}
+          sessionName="Lower Body — Glutes"
           fromDayIndex={swapSourceDay}
           toDayIndex={swapTargetDay}
           fromDate={dates[swapSourceDay].date}
