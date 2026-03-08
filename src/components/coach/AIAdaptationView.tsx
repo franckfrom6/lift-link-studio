@@ -357,10 +357,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
               className="flex-1 gap-2"
             >
               {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {applying
-                ? (i18n.language === "fr" ? "Création en cours..." : "Creating...")
-                : (i18n.language === "fr" ? "Appliquer ce programme" : "Apply this program")
-              }
+              {applying ? t('creating') : t('apply_program')}
             </Button>
             <Button variant="outline" onClick={handleGenerate} disabled={loading} className="gap-2">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
