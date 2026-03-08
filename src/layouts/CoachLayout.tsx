@@ -28,11 +28,8 @@ const CoachLayout = () => {
   return (
     <div className="min-h-screen bg-background flex">
       <aside className="hidden md:flex flex-col w-[260px] border-r border-border bg-secondary/50 p-4">
-        <div className="flex items-center gap-3 mb-8 px-2">
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-            <Dumbbell className="w-4 h-4 text-primary-foreground" strokeWidth={1.5} />
-          </div>
-          <span className="font-bold text-lg tracking-tight">FitForge</span>
+        <div className="mb-8 px-2">
+          <Logo variant="full" size="md" />
         </div>
 
         <nav className="flex-1 space-y-1">
