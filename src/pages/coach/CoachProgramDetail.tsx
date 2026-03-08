@@ -838,7 +838,7 @@ const CoachProgramDetail = () => {
               <Input
                 value={newSectionName}
                 onChange={(e) => setNewSectionName(e.target.value)}
-                placeholder="Nom de la section (ex: Warm-up, Bloc A...)"
+                placeholder={t("common:section_name_example")}
                 className="flex-1"
                 autoFocus
               />
