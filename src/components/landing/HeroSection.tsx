@@ -46,18 +46,6 @@ const HeroSection = () => {
           </div>
           <p className="mt-4 text-sm text-gray-400">{t("hero_free_mention")}</p>
         </div>
-
-        {/* Visual placeholder */}
-        <div className="flex-1 w-full max-w-md lg:max-w-lg">
-          <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 flex items-center justify-center">
-            <div className="text-center px-8">
-              <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-white font-black text-xl" style={{ background: ACCENT }}>
-                F6
-              </div>
-              <p className="text-sm text-gray-400">{t("placeholder_visual")}</p>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );
