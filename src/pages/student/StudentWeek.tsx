@@ -33,7 +33,7 @@ const StudentWeek = () => {
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [swapTargetDay, setSwapTargetDay] = useState<number | null>(null);
-  const [localSwaps, setLocalSwaps] = useState<LocalSwap[]>([]);
+  const { swaps: dbSwaps, createSwap } = useSessionSwaps(weekStart);
 
   const [externalSessions, setExternalSessions] = useState<ExternalSessionData[]>([]);
   const [externalFormOpen, setExternalFormOpen] = useState(false);
