@@ -226,7 +226,7 @@ const LiveSession = () => {
   };
 
   const swapExerciseOriginalName = swapTargetKey
-    ? YANA_PROGRAM.sections[parseInt(swapTargetKey.split("-")[0])].exercises[parseInt(swapTargetKey.split("-")[1])].name
+    ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
 
   if (sessionDone) {
