@@ -192,10 +192,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
       }
 
       setApplied(true);
-      toast.success(i18n.language === "fr" 
-        ? `Semaine ${nextWeekNum} créée avec ${result.proposed_sessions.length} séance(s) !`
-        : `Week ${nextWeekNum} created with ${result.proposed_sessions.length} session(s)!`
-      );
+      toast.success(t('week_created', { number: nextWeekNum, count: result.proposed_sessions.length }));
     } catch (e: any) {
       console.error("Apply error:", e);
       toast.error(e.message || "Error applying program");
