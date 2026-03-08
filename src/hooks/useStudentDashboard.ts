@@ -97,7 +97,7 @@ export const useStudentDashboard = () => {
       const { data: checkins } = await supabase
         .from("weekly_checkins")
         .select("energy_level, sleep_quality, stress_level, muscle_soreness")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .gte("week_start", wsStr)
         .lte("week_start", weStr)
         .limit(1);
