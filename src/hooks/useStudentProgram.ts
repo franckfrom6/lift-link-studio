@@ -207,7 +207,7 @@ export const useStudentProgram = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [studentId]);
 
   useEffect(() => {
     fetchProgram();

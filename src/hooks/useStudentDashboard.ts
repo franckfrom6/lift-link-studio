@@ -117,7 +117,7 @@ export const useStudentDashboard = () => {
     };
 
     fetchSummary();
-  }, [user]);
+  }, [studentId]);
 
   return { summary, loading };
 };
