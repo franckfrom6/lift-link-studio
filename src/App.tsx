@@ -10,7 +10,12 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import PricingPage from "./pages/PricingPage";
-import AdminPanel from "./pages/AdminPanel";
+
+import AdminLayout from "./layouts/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminFeatures from "./pages/admin/AdminFeatures";
+import AdminOverrides from "./pages/admin/AdminOverrides";
 
 import CoachLayout from "./layouts/CoachLayout";
 import CoachDashboard from "./pages/coach/CoachDashboard";
@@ -45,7 +50,13 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
-                <Route path="/admin" element={<AdminPanel />} />
+
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="features" element={<AdminFeatures />} />
+                  <Route path="overrides" element={<AdminOverrides />} />
+                </Route>
 
                 <Route path="/coach" element={<CoachLayout />}>
                   <Route index element={<CoachDashboard />} />
