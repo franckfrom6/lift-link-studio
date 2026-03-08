@@ -39,7 +39,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           <p className="font-semibold text-sm">{item.exercise.name}</p>
           <p className="text-[11px] text-muted-foreground">{item.exercise.muscle_group} · {item.exercise.equipment}</p>
         </div>
-        <button onClick={() => setShowExtras(!showExtras)} className="text-muted-foreground hover:text-foreground transition-colors" title="Plus d'options">
+        <button onClick={() => setShowExtras(!showExtras)} className="text-muted-foreground hover:text-foreground transition-colors" title={t('more_options')}>
           <Film className="w-4 h-4" strokeWidth={1.5} />
         </button>
         <button onClick={() => setShowExtras(!showExtras)} className="text-muted-foreground hover:text-foreground transition-colors">
