@@ -71,9 +71,12 @@ export interface DBProgram {
 
 export const useStudentProgram = () => {
   const { user } = useAuth();
+  const { effectiveStudentId } = useImpersonation();
   const [program, setProgram] = useState<DBProgram | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const studentId = user ? effectiveStudentId(user.id) : null;
 
   const fetchProgram = useCallback(async () => {
     if (!user) { setLoading(false); return; }
