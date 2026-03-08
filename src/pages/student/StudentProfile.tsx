@@ -1,9 +1,6 @@
-import { useAuth } from "@/contexts/AuthContext";
 import { User } from "lucide-react";
 
 const StudentProfile = () => {
-  const { profile } = useAuth();
-
   return (
     <div className="space-y-6 animate-fade-in max-w-lg mx-auto">
       <div>
@@ -16,27 +13,27 @@ const StudentProfile = () => {
             <User className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <h2 className="font-display font-bold text-lg">{profile?.full_name || "Élève"}</h2>
-            <p className="text-sm text-muted-foreground">Élève</p>
+            <h2 className="font-display font-bold text-lg">Élève</h2>
+            <p className="text-sm text-muted-foreground">Athlète</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-surface rounded-lg p-3">
             <p className="text-xs text-muted-foreground">Objectif</p>
-            <p className="font-medium text-sm mt-1">{profile?.goal || "Non défini"}</p>
+            <p className="font-medium text-sm mt-1">Non défini</p>
           </div>
           <div className="bg-surface rounded-lg p-3">
             <p className="text-xs text-muted-foreground">Niveau</p>
-            <p className="font-medium text-sm mt-1">{profile?.level || "Non défini"}</p>
+            <p className="font-medium text-sm mt-1">Non défini</p>
           </div>
           <div className="bg-surface rounded-lg p-3">
             <p className="text-xs text-muted-foreground">Poids</p>
-            <p className="font-medium text-sm mt-1">{profile?.weight ? `${profile.weight} kg` : "Non défini"}</p>
+            <p className="font-medium text-sm mt-1">Non défini</p>
           </div>
           <div className="bg-surface rounded-lg p-3">
             <p className="text-xs text-muted-foreground">Taille</p>
-            <p className="font-medium text-sm mt-1">{profile?.height ? `${profile.height} cm` : "Non défini"}</p>
+            <p className="font-medium text-sm mt-1">Non défini</p>
           </div>
         </div>
       </div>

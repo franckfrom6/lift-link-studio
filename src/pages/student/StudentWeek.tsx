@@ -1,4 +1,3 @@
-import { useAuth } from "@/contexts/AuthContext";
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -6,7 +5,6 @@ import { useState } from "react";
 const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
 const StudentWeek = () => {
-  const { profile } = useAuth();
   const [weekOffset, setWeekOffset] = useState(0);
 
   const getWeekDates = () => {
@@ -29,12 +27,11 @@ const StudentWeek = () => {
     <div className="space-y-6 animate-fade-in max-w-lg mx-auto">
       <div>
         <h1 className="text-2xl font-display font-bold">
-          Salut, <span className="text-gradient">{profile?.full_name?.split(" ")[0] || "Athlète"}</span> 💪
+          Salut, <span className="text-gradient">Athlète</span> 💪
         </h1>
         <p className="text-muted-foreground text-sm mt-1">Votre programme de la semaine</p>
       </div>
 
-      {/* Week navigator */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset - 1)}>
           <ChevronLeft className="w-4 h-4" />
@@ -47,7 +44,6 @@ const StudentWeek = () => {
         </Button>
       </div>
 
-      {/* Days */}
       <div className="space-y-3">
         {dates.map((day) => (
           <div
@@ -60,9 +56,7 @@ const StudentWeek = () => {
               <div className="flex items-center gap-3">
                 <div
                   className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold ${
-                    day.isToday
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-surface text-muted-foreground"
+                    day.isToday ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground"
                   }`}
                 >
                   {day.date.getDate()}
@@ -80,7 +74,6 @@ const StudentWeek = () => {
         ))}
       </div>
 
-      {/* Empty state */}
       <div className="glass rounded-xl p-8 text-center space-y-3">
         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
           <Dumbbell className="w-6 h-6 text-primary" />
