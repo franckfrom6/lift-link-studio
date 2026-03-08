@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, FileText } from "lucide-react";
 import ProgramView from "@/components/coach/ProgramView";
+import AIAdaptationView from "@/components/coach/AIAdaptationView";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import SwapBadge from "@/components/student/SwapBadge";
 import { useCoachStudentSwaps } from "@/hooks/useCoachStudentSwaps";
@@ -215,6 +216,18 @@ const StudentDetail = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* AI Adaptation */}
+      {isYana && (
+        <div className="space-y-3">
+          <AIAdaptationView
+            studentId={student.id}
+            programId="demo-program"
+            weekNumber={3}
+            studentName={student.name}
+          />
         </div>
       )}
 
