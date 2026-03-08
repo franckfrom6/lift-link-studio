@@ -37,9 +37,7 @@ const FeatureBlock = ({ n, icon: Icon, reverse, img }: { n: number; icon: any; r
 
   const visualSide = img ? (
     <div className="flex-shrink-0 w-32 sm:w-40 lg:w-44">
-      <div className="rounded-xl border border-gray-200 shadow-sm overflow-hidden bg-white">
-        <img src={img} alt={t(`feat_${n}_title`)} className="w-full h-auto max-h-56 object-cover object-top" loading="lazy" />
-      </div>
+      <img src={img} alt={t(`feat_${n}_title`)} className="w-full rounded-xl border border-gray-200 shadow-sm" loading="lazy" />
     </div>
   ) : (
     <div className="flex-shrink-0">
