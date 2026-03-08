@@ -525,6 +525,41 @@ const CoachProgramDetail = () => {
 
           {program.weeks.map((week, wi) => (
             <TabsContent key={week.id} value={String(wi)} className="space-y-4 mt-4">
+              {/* Mini weekly calendar strip */}
+              <div className="grid grid-cols-7 gap-1.5 p-3 bg-secondary/20 rounded-xl border border-border/50">
+                {[1, 2, 3, 4, 5, 6, 7].map(day => {
+                  const session = week.sessions.find(s => s.day_of_week === day);
+                  const hasSession = !!session;
+                  return (
+                    <button
+                      key={day}
+                      onClick={() => {
+                        if (session) {
+                          setOpenSessions(prev => new Set([...prev, session.id]));
+                          document.getElementById(`session-${session.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }
+                      }}
+                      className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center min-h-[60px] ${
+                        hasSession
+                          ? "bg-accent/60 border border-accent-foreground/20 hover:bg-accent cursor-pointer"
+                          : "bg-background/50 border border-transparent opacity-50 cursor-default"
+                      }`}
+                    >
+                      <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+                        {dayLabel(day).slice(0, 3)}
+                      </span>
+                      {hasSession ? (
+                        <span className="text-[10px] font-medium text-accent-foreground leading-tight line-clamp-2">
+                          {session.name}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground/40">—</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
               {week.sessions.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">{t("program:start_with_ai")}</p>
               )}
