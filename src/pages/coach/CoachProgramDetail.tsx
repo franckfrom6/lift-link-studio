@@ -460,7 +460,7 @@ const CoachProgramDetail = () => {
       day_of_week: dayOfWeek,
       name,
     }).select().single();
-    if (error || !data) { toast.error("Erreur"); return; }
+    if (error || !data) { toast.error(t("common:error")); return; }
     setProgram(prev => {
       if (!prev) return prev;
       return {
