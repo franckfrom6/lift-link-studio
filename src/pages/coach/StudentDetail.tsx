@@ -121,7 +121,7 @@ const StudentDetail = () => {
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">{student.goal} · {student.level}</p>
+            <p className="text-sm text-muted-foreground">{t('dashboard:goals.' + student.goal, student.goal)} · {t('dashboard:levels.' + student.level, student.level)}</p>
           </div>
         </div>
       </div>
@@ -179,12 +179,12 @@ const StudentDetail = () => {
         <div className="glass p-4 text-center">
           <Target className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
           <p className="text-xs text-muted-foreground">{t("dashboard:goal")}</p>
-          <p className="text-sm font-semibold mt-0.5">{student.goal}</p>
+          <p className="text-sm font-semibold mt-0.5">{t('dashboard:goals.' + student.goal, student.goal)}</p>
         </div>
         <div className="glass p-4 text-center">
           <BarChart3 className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
           <p className="text-xs text-muted-foreground">{t("dashboard:level")}</p>
-          <p className="text-sm font-semibold mt-0.5">{student.level}</p>
+          <p className="text-sm font-semibold mt-0.5">{t('dashboard:levels.' + student.level, student.level)}</p>
         </div>
         <div className="glass p-4 text-center">
           <ClipboardList className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />

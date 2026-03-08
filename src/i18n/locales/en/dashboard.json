@@ -86,5 +86,21 @@
   "feed_swap": "moved a session",
   "feed_external": "logged external activity —",
   "weekly_insight_title": "Your week summary",
-  "generating_insight": "Generating your summary..."
+  "generating_insight": "Generating your summary...",
+  "goals": {
+    "Hypertrophie fessiers": "Glute hypertrophy",
+    "Prise de masse": "Muscle gain",
+    "Remise en forme": "General fitness",
+    "Performance": "Performance",
+    "Sèche": "Cutting",
+    "Perte de poids": "Weight loss",
+    "Recomposition": "Recomposition",
+    "Force": "Strength"
+  },
+  "levels": {
+    "Débutant": "Beginner",
+    "Intermédiaire": "Intermediate",
+    "Avancé": "Advanced",
+    "Avancée": "Advanced"
+  }
 }
