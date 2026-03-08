@@ -27,6 +27,7 @@ interface Substitution {
 
 const LiveSession = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation(['session', 'common']);
   const { user } = useAuth();
   const { program: dbProgram } = useStudentProgram();
@@ -42,13 +43,81 @@ const LiveSession = () => {
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
   const [swapTargetKey, setSwapTargetKey] = useState<string | null>(null);
 
+  const selectedSessionId = (location.state as { sessionId?: string } | null)?.sessionId;
+
+  const selectedSession = useMemo(() => {
+    const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
+    if (sessions.length === 0) return null;
+    return sessions.find((s) => s.id === selectedSessionId) || sessions[0];
+  }, [dbProgram?.weeks, selectedSessionId]);
+
+  const mappedSections = useMemo<ProgramSection[]>(() => {
+    if (!selectedSession) return [];
+    return selectedSession.sections.map((section) => ({
+      name: section.name,
+      duration: section.duration_estimate || "",
+      notes: section.notes || "",
+      exercises: section.exercises.map((ex) => ({
+        name: ex.exercise?.name || "Exercice",
+        sets: String(ex.sets ?? ""),
+        reps: ex.reps_min === ex.reps_max ? String(ex.reps_min) : `${ex.reps_min}-${ex.reps_max}`,
+        tempo: ex.tempo || "",
+        rest: ex.rest_seconds ? String(ex.rest_seconds) : "—",
+        rpe: ex.rpe_target || "",
+        load: ex.suggested_weight ? `${ex.suggested_weight}kg` : "",
+        video: ex.video_url || "",
+        channel: "",
+        notes: ex.coach_notes || "",
+      })),
+    }));
+  }, [selectedSession]);
+
+  const progressionPhases = useMemo<ProgressionPhase[]>(() => {
+    const phases = dbProgram?.progression?.length
+      ? dbProgram.progression.map((p) => ({
+          id: p.id,
+          weekLabel: p.week_label,
+          description: p.description,
+          weekStart: p.week_start,
+          weekEnd: p.week_end,
+          isDeload: p.is_deload,
+          order: p.sort_order,
+        }))
+      : YANA_PROGRAM.progression.map((p, i) => {
+          const weekMatch = p.match(/Semaine[s]?\s+(\d+)(?:\s*[-–]\s*(\d+))?/i);
+          const weekStart = weekMatch ? parseInt(weekMatch[1]) : i + 1;
+          const weekEnd = weekMatch && weekMatch[2] ? parseInt(weekMatch[2]) : weekStart;
+          return {
+            id: `prog-${i}`,
+            weekLabel: p.split(":")[0]?.trim() || `Phase ${i + 1}`,
+            description: p.split(":").slice(1).join(":").trim() || p,
+            weekStart,
+            weekEnd,
+            isDeload: p.toLowerCase().includes("deload"),
+            order: i,
+          };
+        });
+
+    return phases;
+  }, [dbProgram?.progression]);
+
+  const sessionProgram = useMemo(() => {
+    if (!selectedSession || mappedSections.length === 0) return YANA_PROGRAM;
+    return {
+      ...YANA_PROGRAM,
+      title: selectedSession.name,
+      sections: mappedSections,
+      progression: progressionPhases.map((p) => `${p.weekLabel}: ${p.description}`),
+    };
+  }, [selectedSession, mappedSections, progressionPhases]);
+
   const getExerciseName = (sIdx: number, eIdx: number): string => {
     const key = `${sIdx}-${eIdx}`;
     const sub = substitutions.find(s => s.key === key);
-    return sub ? sub.newName : YANA_PROGRAM.sections[sIdx].exercises[eIdx].name;
+    return sub ? sub.newName : sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || "Exercice";
   };
 
-  const allExercises: ProgramExerciseDetail[] = YANA_PROGRAM.sections.flatMap((s) => s.exercises);
+  const allExercises: ProgramExerciseDetail[] = sessionProgram.sections.flatMap((s) => s.exercises);
 
   useEffect(() => {
     if (sessionDone) return;
