@@ -50,10 +50,10 @@ const CoachLayout = () => {
         <div className="border-t border-border pt-4 space-y-1">
           <div className="flex items-center gap-3 px-3 py-2">
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
-              {profile?.full_name?.[0]?.toUpperCase() || "C"}
+              {"C"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{profile?.full_name || "Coach"}</p>
+              <p className="text-sm font-medium truncate">Coach</p>
               <p className="text-xs text-muted-foreground">Coach</p>
             </div>
           </div>

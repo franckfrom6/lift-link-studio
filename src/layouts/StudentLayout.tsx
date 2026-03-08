@@ -1,5 +1,4 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { Dumbbell, Calendar, BarChart3, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
