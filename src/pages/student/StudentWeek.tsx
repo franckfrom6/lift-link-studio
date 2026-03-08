@@ -29,6 +29,7 @@ interface LocalSwap {
 }
 
 const StudentWeek = () => {
+  const { t } = useTranslation(['calendar', 'common', 'session']);
   const [weekOffset, setWeekOffset] = useState(0);
   const navigate = useNavigate();
   const [swapMode, setSwapMode] = useState(false);
