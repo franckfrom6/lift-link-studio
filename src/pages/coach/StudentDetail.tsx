@@ -256,6 +256,23 @@ const StudentDetail = () => {
         <p className="text-sm text-warning">⚠️ {t("dashboard:no_checkin")}</p>
       )}
 
+      {/* Session feedbacks */}
+      {feedbacks.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="font-bold flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            Feedbacks de séance
+          </h2>
+          {feedbacks.map((fb) => (
+            <CoachFeedbackView
+              key={fb.id}
+              feedback={fb}
+              studentName={student.full_name}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Weekly load */}
       <div className="glass p-4">
         <WeeklyLoadBar
