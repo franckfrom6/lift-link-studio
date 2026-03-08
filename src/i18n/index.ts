@@ -34,6 +34,7 @@ import enBilan from './locales/en/bilan.json';
 import enRecommendations from './locales/en/recommendations.json';
 import enPlans from './locales/en/plans.json';
 import enAdmin from './locales/en/admin.json';
+import enFeedback from './locales/en/feedback.json';
 
 i18n
   .use(LanguageDetector)
