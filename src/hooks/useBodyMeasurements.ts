@@ -40,7 +40,7 @@ export const useBodyMeasurements = () => {
 
   useEffect(() => {
     fetchMeasurements();
-  }, [user]);
+  }, [studentId]);
 
   const addMeasurement = async (measurement: Omit<BodyMeasurement, "id">) => {
     if (!user) return;
