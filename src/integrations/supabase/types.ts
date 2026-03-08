@@ -597,6 +597,7 @@ export type Database = {
           goal: string | null
           height: number | null
           id: string
+          is_admin: boolean
           level: string | null
           role: Database["public"]["Enums"]["app_role"]
           specialty: string | null
@@ -612,6 +613,7 @@ export type Database = {
           goal?: string | null
           height?: number | null
           id?: string
+          is_admin?: boolean
           level?: string | null
           role: Database["public"]["Enums"]["app_role"]
           specialty?: string | null
@@ -627,6 +629,7 @@ export type Database = {
           goal?: string | null
           height?: number | null
           id?: string
+          is_admin?: boolean
           level?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           specialty?: string | null
@@ -1156,6 +1159,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "coach" | "student"
