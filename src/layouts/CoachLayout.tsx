@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Dumbbell, Users, ClipboardList, LogOut, LayoutDashboard } from "lucide-react";
+import { Dumbbell, Users, ClipboardList, LogOut, LayoutDashboard, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
