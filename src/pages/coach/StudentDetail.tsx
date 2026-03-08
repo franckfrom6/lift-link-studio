@@ -3,20 +3,60 @@ import { MOCK_STUDENTS } from "@/types/coach";
 import { YANA_PROGRAM } from "@/data/yana-program";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity } from "lucide-react";
 import ProgramView from "@/components/coach/ProgramView";
 import SwapBadge from "@/components/student/SwapBadge";
 import { useCoachStudentSwaps } from "@/hooks/useCoachStudentSwaps";
+import CheckinBadge from "@/components/student/CheckinBadge";
+import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
+import CoachSuggestion from "@/components/coach/CoachSuggestion";
+import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 
 const DAY_NAMES: Record<number, string> = {
   1: "Lundi", 2: "Mardi", 3: "Mercredi", 4: "Jeudi", 5: "Vendredi", 6: "Samedi", 7: "Dimanche",
 };
 
+// Demo data for Yana
+const DEMO_CHECKIN = {
+  energy_level: 3,
+  sleep_quality: 4,
+  stress_level: 3,
+  muscle_soreness: 4,
+  soreness_location: ["jambes"],
+  availability_notes: "Dispo mercredi et samedi",
+  general_notes: "Beaucoup de Pilates cette semaine, jambes fatiguées",
+  week_start: new Date().toISOString().split("T")[0],
+};
+
+const DEMO_EXTERNALS = [
+  {
+    id: "ext-1",
+    activity_type: "pilates",
+    activity_label: "Pilates Reformer",
+    provider: "Episod",
+    duration_minutes: 60,
+    intensity_perceived: 6,
+    muscle_groups_involved: ["core", "glutes", "flexibility"],
+    notes: "Beaucoup de travail jambes",
+    date: new Date().toISOString().split("T")[0],
+  },
+  {
+    id: "ext-2",
+    activity_type: "cycling",
+    activity_label: "RPM 45min",
+    provider: "CMG",
+    duration_minutes: 45,
+    intensity_perceived: 8,
+    muscle_groups_involved: ["quads", "cardio"],
+    notes: "",
+    date: (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; })(),
+  },
+];
+
 const StudentDetail = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
   const student = MOCK_STUDENTS.find((s) => s.id === studentId);
-  // For a real app, pass actual student user_id. Using a placeholder for demo.
   const { swaps, loading: swapsLoading } = useCoachStudentSwaps(studentId === "yana" ? studentId : undefined);
 
   if (!student) {
@@ -31,6 +71,10 @@ const StudentDetail = () => {
   }
 
   const hasProgram = studentId === "yana";
+  const isYana = studentId === "yana";
+  const checkin = isYana ? DEMO_CHECKIN : null;
+  const externals = isYana ? DEMO_EXTERNALS : [];
+
   const recentSwaps = swaps.filter((s) => {
     const d = new Date(s.created_at);
     const now = new Date();
@@ -49,7 +93,7 @@ const StudentDetail = () => {
             {student.avatar}
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold">{student.name}</h1>
               <Badge variant={student.status === "active" ? "default" : "secondary"}>
                 {student.status === "active" ? "Actif" : "Inactif"}
@@ -65,6 +109,46 @@ const StudentDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Check-in section */}
+      {isYana && (
+        <div className="space-y-3">
+          <h2 className="font-bold flex items-center gap-2">
+            <Activity className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            Check-in de la semaine
+          </h2>
+          {checkin ? (
+            <div className="space-y-2">
+              <CheckinBadge checkin={checkin} />
+              <CoachSuggestion checkin={checkin} />
+            </div>
+          ) : (
+            <p className="text-sm text-warning">⚠️ Pas de check-in cette semaine</p>
+          )}
+        </div>
+      )}
+
+      {/* Weekly load */}
+      {isYana && (
+        <div className="glass p-4">
+          <WeeklyLoadBar
+            programmedSessions={1}
+            externalSessions={externals}
+          />
+        </div>
+      )}
+
+      {/* External sessions */}
+      {externals.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="font-bold">Activités externes cette semaine</h2>
+          <div className="space-y-2">
+            {externals.map((ext) => (
+              <ExternalSessionCard key={ext.id} session={ext} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-3">
