@@ -27,7 +27,7 @@ const StrengthProgressChart = () => {
         <h2 className="font-bold text-sm uppercase tracking-wide text-muted-foreground">{t("strength_progress")}</h2>
         <div className="flex gap-2">
           <Select value={selectedExercise || ""} onValueChange={setSelectedExercise}>
-            <SelectTrigger className="h-8 text-xs w-[180px]">
+            <SelectTrigger className="h-8 text-xs w-[140px] sm:w-[180px]">
               <SelectValue placeholder={t("select_exercise")} />
             </SelectTrigger>
             <SelectContent>
@@ -66,37 +66,41 @@ const StrengthProgressChart = () => {
       ) : dataPoints.length === 0 ? (
         <p className="text-center text-sm text-muted-foreground py-8">{t("no_exercise_data")}</p>
       ) : (
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={dataPoints}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-            <XAxis
-              dataKey="date"
-              tick={{ fontSize: 10 }}
-              className="text-muted-foreground"
-              tickFormatter={(v) => {
-                const d = new Date(v);
-                return `${d.getDate()}/${d.getMonth() + 1}`;
-              }}
-            />
-            <YAxis tick={{ fontSize: 10 }} className="text-muted-foreground" />
-            <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
-              labelFormatter={(v) => new Date(v).toLocaleDateString()}
-              formatter={(value: number) => [
-                mode === "maxWeight" ? `${value} kg` : `${value} kg`,
-                mode === "maxWeight" ? t("max_weight") : t("total_volume_label")
-              ]}
-            />
-            <Line
-              type="monotone"
-              dataKey={mode}
-              stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              dot={{ fill: "hsl(var(--primary))", r: 4 }}
-              activeDot={{ r: 6 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="overflow-x-auto">
+          <div className="w-full h-[180px] sm:h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dataPoints}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10 }}
+                  className="text-muted-foreground"
+                  tickFormatter={(v) => {
+                    const d = new Date(v);
+                    return `${d.getDate()}/${d.getMonth() + 1}`;
+                  }}
+                />
+                <YAxis tick={{ fontSize: 10 }} className="text-muted-foreground" />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
+                  labelFormatter={(v) => new Date(v).toLocaleDateString()}
+                  formatter={(value: number) => [
+                    mode === "maxWeight" ? `${value} kg` : `${value} kg`,
+                    mode === "maxWeight" ? t("max_weight") : t("total_volume_label")
+                  ]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey={mode}
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       )}
       <p className="text-[10px] text-muted-foreground text-center">{t("last_sessions")}</p>
     </div>

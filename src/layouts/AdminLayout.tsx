@@ -121,7 +121,7 @@ const AdminLayout = () => {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-1 px-2 text-[10px] font-medium transition-colors ${
+                `flex flex-col items-center gap-0.5 py-1 px-2 text-xs font-medium transition-colors ${
                   isActive ? "text-foreground" : "text-muted-foreground"
                 }`
               }
@@ -132,7 +132,7 @@ const AdminLayout = () => {
           ))}
           {mobileOverflowItems.length > 0 && (
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex flex-col items-center gap-0.5 py-1 px-2 text-[10px] font-medium text-muted-foreground">
+              <DropdownMenuTrigger className="flex flex-col items-center gap-0.5 py-1 px-2 text-xs font-medium text-muted-foreground">
                 <MoreHorizontal className="w-5 h-5" strokeWidth={1.5} />
                 <span className="leading-tight">Plus</span>
               </DropdownMenuTrigger>

@@ -304,7 +304,7 @@ const StudentDetail = () => {
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
         <div className="glass p-4 text-center">
           <Target className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
           <p className="text-xs text-muted-foreground">{t("dashboard:goal")}</p>

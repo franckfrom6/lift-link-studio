@@ -337,7 +337,7 @@ const ProgramEditor = () => {
           </div>
 
           {aiMode === "guided" ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="text-[11px] text-muted-foreground font-medium uppercase">{t("program:ai_objective")}</label>
                 <Input
