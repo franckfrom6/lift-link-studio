@@ -12,6 +12,7 @@ interface AuthGuardProps {
 
 const AuthGuard = ({ children, role, requireAdmin }: AuthGuardProps) => {
   const { user, profile, loading } = useAuth();
+  const { isImpersonating } = useImpersonation();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,6 +33,11 @@ const AuthGuard = ({ children, role, requireAdmin }: AuthGuardProps) => {
       return;
     }
 
+    // Allow coaches to access student routes when impersonating
+    if (role === "student" && profile.role === "coach" && isImpersonating) {
+      return; // Allow through
+    }
+
     // Role mismatch
     if (role && profile.role !== role) {
       const dest = profile.role === "coach" ? "/coach" : "/student";
@@ -45,7 +51,7 @@ const AuthGuard = ({ children, role, requireAdmin }: AuthGuardProps) => {
       navigate(dest, { replace: true });
       return;
     }
-  }, [user, profile, loading, role, requireAdmin, navigate]);
+  }, [user, profile, loading, role, requireAdmin, navigate, isImpersonating]);
 
   if (loading) {
     return (

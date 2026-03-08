@@ -18,6 +18,7 @@ const StudentLayout = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <ImpersonationBanner />
       <header className="flex items-center justify-between p-4 border-b border-border bg-background">
         <Logo variant="mobile" />
         <UserMenu />
