@@ -66,6 +66,7 @@ const LiveSession = () => {
         rpe: ex.rpe_target || "",
         load: ex.suggested_weight ? `${ex.suggested_weight}kg` : "",
         video: ex.video_url || "",
+        videoSearchQuery: ex.video_search_query || "",
         channel: "",
         notes: ex.coach_notes || "",
       })),
