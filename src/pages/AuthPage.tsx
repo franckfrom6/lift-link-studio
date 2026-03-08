@@ -246,10 +246,38 @@ const AuthPage = () => {
                 onClick={async () => {
                   setLoading(true);
                   try {
-                    const { error } = await lovable.auth.signInWithOAuth("google", {
-                      redirect_uri: window.location.origin,
-                    });
-                    if (error) toast.error(error.message || t("error_generic"));
+                    const isCustomDomain =
+                      !window.location.hostname.includes("lovable.app") &&
+                      !window.location.hostname.includes("lovableproject.com");
+
+                    if (isCustomDomain) {
+                      // Bypass auth-bridge for custom domains
+                      const { data, error } = await supabase.auth.signInWithOAuth({
+                        provider: "google",
+                        options: {
+                          redirectTo: window.location.origin,
+                          skipBrowserRedirect: true,
+                        },
+                      });
+                      if (error) {
+                        toast.error(error.message || t("error_generic"));
+                        return;
+                      }
+                      if (data?.url) {
+                        const oauthUrl = new URL(data.url);
+                        const allowedHosts = ["accounts.google.com"];
+                        if (!allowedHosts.some((h) => oauthUrl.hostname === h)) {
+                          toast.error(t("error_generic"));
+                          return;
+                        }
+                        window.location.href = data.url;
+                      }
+                    } else {
+                      const { error } = await lovable.auth.signInWithOAuth("google", {
+                        redirect_uri: window.location.origin,
+                      });
+                      if (error) toast.error(error.message || t("error_generic"));
+                    }
                   } finally {
                     setLoading(false);
                   }
