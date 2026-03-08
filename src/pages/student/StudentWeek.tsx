@@ -55,6 +55,8 @@ const StudentWeek = () => {
   const weekSessions = currentWeek?.sessions || [];
 
   // Build sessions map: day_of_week → session info
+  // Map sessions by 0-based day index (0=Mon, 1=Tue, ..., 6=Sun)
+  // day_of_week in DB is 1-based (1=Mon), so we subtract 1
   const DEFAULT_SESSIONS = useMemo(() => {
     const map: Record<number, { name: string; sessionId: string; exerciseCount: number; muscleGroups: string[] }> = {};
     for (const session of weekSessions) {
@@ -63,7 +65,7 @@ const StudentWeek = () => {
         .filter(Boolean) as string[];
       const uniqueMuscles = [...new Set(muscleGroups)];
       const exerciseCount = session.sections.reduce((a, s) => a + s.exercises.length, 0);
-      map[session.day_of_week] = {
+      map[session.day_of_week - 1] = {
         name: session.name,
         sessionId: session.id,
         exerciseCount,
