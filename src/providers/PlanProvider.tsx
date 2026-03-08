@@ -167,11 +167,11 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     setLoading(false);
-  };
+  }, [user]);
 
   useEffect(() => {
-    fetchPlanData();
-  }, [user]);
+    fetchPlanData().catch(console.error);
+  }, [fetchPlanData]);
 
   // Realtime subscriptions
   useEffect(() => {
