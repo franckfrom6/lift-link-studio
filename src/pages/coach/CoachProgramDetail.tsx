@@ -451,6 +451,30 @@ const CoachProgramDetail = () => {
     setActiveSessionId(id);
   };
 
+  const addSessionToDay = async (weekId: string, dayOfWeek: number) => {
+    if (!program) return;
+    const dayNames: Record<number, string> = { 1: "Lundi", 2: "Mardi", 3: "Mercredi", 4: "Jeudi", 5: "Vendredi", 6: "Samedi", 7: "Dimanche" };
+    const name = `Séance ${dayNames[dayOfWeek] || ""}`;
+    const { data, error } = await supabase.from("sessions").insert({
+      week_id: weekId,
+      day_of_week: dayOfWeek,
+      name,
+    }).select().single();
+    if (error || !data) { toast.error("Erreur"); return; }
+    setProgram(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        weeks: prev.weeks.map(w => w.id === weekId ? {
+          ...w,
+          sessions: [...w.sessions, { ...data, sections: [] }].sort((a, b) => a.day_of_week - b.day_of_week),
+        } : w),
+      };
+    });
+    setActiveSessionId(data.id);
+    toast.success(t("common:added"));
+  };
+
   const activateProgram = async () => {
     if (!program) return;
     await supabase.from("programs").update({ status: "active" }).eq("id", program.id);
@@ -537,13 +561,16 @@ const CoachProgramDetail = () => {
                   return (
                     <button
                       key={day}
-                      onClick={() => { if (session) setActiveSessionId(session.id); }}
+                      onClick={() => {
+                        if (session) setActiveSessionId(session.id);
+                        else addSessionToDay(week.id, day);
+                      }}
                       className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center min-h-[60px] ${
                         isActive
                           ? "bg-accent border-2 border-accent-foreground/30 shadow-sm"
                           : hasSession
                             ? "bg-accent/40 border border-accent-foreground/15 hover:bg-accent/60 cursor-pointer"
-                            : "bg-background/50 border border-transparent opacity-40 cursor-default"
+                            : "bg-background/50 border border-dashed border-border hover:bg-accent/20 hover:border-accent cursor-pointer group"
                       }`}
                     >
                       <span className={`text-[10px] font-semibold uppercase ${isActive ? "text-accent-foreground" : "text-muted-foreground"}`}>
@@ -554,7 +581,7 @@ const CoachProgramDetail = () => {
                           {session.name}
                         </span>
                       ) : (
-                        <span className="text-[10px] text-muted-foreground/40">—</span>
+                        <Plus className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-accent-foreground/60 transition-colors" />
                       )}
                     </button>
                   );
