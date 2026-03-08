@@ -39,16 +39,20 @@ export interface ActivityItem {
 }
 
 export const useCoachDashboard = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [students, setStudents] = useState<StudentOverview[]>([]);
   const [kpis, setKpis] = useState<CoachKPIs>({ activeStudents: 0, sessionsThisWeek: 0, avgAdherence: 0, alertCount: 0 });
   const [feed, setFeed] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     fetchAll();
-  }, [user]);
+  }, [user, authLoading]);
 
   const fetchAll = async () => {
     if (!user) return;
