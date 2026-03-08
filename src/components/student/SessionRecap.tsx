@@ -7,6 +7,8 @@ import RecommendationSheet from "@/components/nutrition/RecommendationSheet";
 import SessionFeedbackWizard, { FeedbackData } from "@/components/student/SessionFeedbackWizard";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SessionRecapProps {
   exercises: ProgramExerciseDetail[];
@@ -15,6 +17,7 @@ interface SessionRecapProps {
   onClose: () => void;
   muscleGroups?: string[];
   activityType?: string | null;
+  completedSessionId?: string;
 }
 
 const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroups, activityType }: SessionRecapProps) => {
