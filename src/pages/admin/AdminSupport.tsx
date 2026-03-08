@@ -46,7 +46,7 @@ const AdminSupport = () => {
     setTickets(data || []);
 
     // Fetch user names
-    const userIds = [...new Set((data || []).map((t: any) => t.user_id))];
+    const userIds = [...new Set((data || []).map((t: any) => t.user_id))] as string[];
     if (userIds.length > 0) {
       const { data: profs } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
       const map: Record<string, string> = {};
