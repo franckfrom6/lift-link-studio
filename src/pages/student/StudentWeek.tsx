@@ -241,32 +241,8 @@ const StudentWeek = () => {
       )}
 
 
-      {/* Program week selector */}
-      {totalWeeks > 1 && (
-        <div className="flex items-center justify-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            disabled={selectedWeekIndex === 0}
-            onClick={() => setSelectedWeekIndex(i => i - 1)}
-          >
-            <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
-          </Button>
-          <span className="text-sm font-medium">
-            {t('calendar:program_week', 'Semaine du programme')} {program!.weeks[selectedWeekIndex]?.week_number}/{totalWeeks}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            disabled={selectedWeekIndex === totalWeeks - 1}
-            onClick={() => setSelectedWeekIndex(i => i + 1)}
-          >
-            <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
-          </Button>
-        </div>
-      )}
+
+
 
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset - 1)}>
