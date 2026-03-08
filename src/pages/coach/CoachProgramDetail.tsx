@@ -663,7 +663,7 @@ const CoachProgramDetail = () => {
                           className="font-semibold"
                         />
                         <p className="text-[11px] text-muted-foreground">
-                          {dayLabel(session.day_of_week)} · {totalExercises} {t("program:exercises_count", { count: totalExercises })} · {session.sections.length} sections
+                          {dayLabel(session.day_of_week)} {format(getDayDate(week.week_number, session.day_of_week), "d MMMM", { locale: dateFnsLocale })} · {totalExercises} {t("program:exercises_count", { count: totalExercises })} · {session.sections.length} sections
                         </p>
                       </div>
                       <button
