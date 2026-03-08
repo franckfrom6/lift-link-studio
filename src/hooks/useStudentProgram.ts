@@ -216,6 +216,7 @@ export const useStudentProgram = () => {
       console.error("Error fetching program:", e);
       setError(e.message);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
       setRefreshing(false);
     }
