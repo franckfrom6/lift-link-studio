@@ -15,8 +15,9 @@ interface SessionRecapProps {
   activityType?: string | null;
 }
 
-const SessionRecap = ({ exercises, completedSets, duration, onClose }: SessionRecapProps) => {
+const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroups, activityType }: SessionRecapProps) => {
   const [feedback, setFeedback] = useState("");
+  const [recoOpen, setRecoOpen] = useState(false);
 
   const totalSets = Object.values(completedSets).reduce((acc, sets) => acc + sets.length, 0);
   const totalReps = Object.values(completedSets).reduce(
