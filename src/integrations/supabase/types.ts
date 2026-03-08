@@ -130,6 +130,54 @@ export type Database = {
           },
         ]
       }
+      daily_nutrition_logs: {
+        Row: {
+          calories: number | null
+          carbs_g: number | null
+          coach_comment: string | null
+          created_at: string
+          date: string
+          description: string
+          fat_g: number | null
+          id: string
+          meal_type: string
+          notes: string | null
+          photo_url: string | null
+          protein_g: number | null
+          student_id: string
+        }
+        Insert: {
+          calories?: number | null
+          carbs_g?: number | null
+          coach_comment?: string | null
+          created_at?: string
+          date: string
+          description?: string
+          fat_g?: number | null
+          id?: string
+          meal_type: string
+          notes?: string | null
+          photo_url?: string | null
+          protein_g?: number | null
+          student_id: string
+        }
+        Update: {
+          calories?: number | null
+          carbs_g?: number | null
+          coach_comment?: string | null
+          created_at?: string
+          date?: string
+          description?: string
+          fat_g?: number | null
+          id?: string
+          meal_type?: string
+          notes?: string | null
+          photo_url?: string | null
+          protein_g?: number | null
+          student_id?: string
+        }
+        Relationships: []
+      }
       exercises: {
         Row: {
           created_at: string
@@ -220,6 +268,69 @@ export type Database = {
           student_id?: string
           time_end?: string | null
           time_start?: string | null
+        }
+        Relationships: []
+      }
+      nutrition_profiles: {
+        Row: {
+          activity_multiplier: number | null
+          age: number | null
+          allergies: string[] | null
+          bmr: number | null
+          calorie_target: number | null
+          carbs_g: number | null
+          dietary_restrictions: string[] | null
+          fat_g: number | null
+          height_cm: number | null
+          id: string
+          objective: string | null
+          protein_g: number | null
+          sex: string | null
+          student_id: string
+          tdee: number | null
+          updated_at: string
+          updated_by: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          activity_multiplier?: number | null
+          age?: number | null
+          allergies?: string[] | null
+          bmr?: number | null
+          calorie_target?: number | null
+          carbs_g?: number | null
+          dietary_restrictions?: string[] | null
+          fat_g?: number | null
+          height_cm?: number | null
+          id?: string
+          objective?: string | null
+          protein_g?: number | null
+          sex?: string | null
+          student_id: string
+          tdee?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          activity_multiplier?: number | null
+          age?: number | null
+          allergies?: string[] | null
+          bmr?: number | null
+          calorie_target?: number | null
+          carbs_g?: number | null
+          dietary_restrictions?: string[] | null
+          fat_g?: number | null
+          height_cm?: number | null
+          id?: string
+          objective?: string | null
+          protein_g?: number | null
+          sex?: string | null
+          student_id?: string
+          tdee?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          weight_kg?: number | null
         }
         Relationships: []
       }
@@ -371,6 +482,45 @@ export type Database = {
           status?: string
           student_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      recovery_recommendations: {
+        Row: {
+          activity_type: string | null
+          content_en: string
+          content_fr: string
+          id: string
+          muscle_groups: string[] | null
+          priority: number
+          recommendation_type: string
+          title_en: string
+          title_fr: string
+          trigger_type: string
+        }
+        Insert: {
+          activity_type?: string | null
+          content_en: string
+          content_fr: string
+          id?: string
+          muscle_groups?: string[] | null
+          priority?: number
+          recommendation_type: string
+          title_en: string
+          title_fr: string
+          trigger_type: string
+        }
+        Update: {
+          activity_type?: string | null
+          content_en?: string
+          content_fr?: string
+          id?: string
+          muscle_groups?: string[] | null
+          priority?: number
+          recommendation_type?: string
+          title_en?: string
+          title_fr?: string
+          trigger_type?: string
         }
         Relationships: []
       }

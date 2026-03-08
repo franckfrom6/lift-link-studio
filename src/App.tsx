@@ -22,6 +22,7 @@ import StudentWeek from "./pages/student/StudentWeek";
 import StudentProgress from "./pages/student/StudentProgress";
 import StudentProfile from "./pages/student/StudentProfile";
 import LiveSession from "./pages/student/LiveSession";
+import StudentNutrition from "./pages/student/StudentNutrition";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
                 <Route path="session" element={<LiveSession />} />
                 <Route path="progress" element={<StudentProgress />} />
                 <Route path="profile" element={<StudentProfile />} />
+                <Route path="nutrition" element={<StudentNutrition />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

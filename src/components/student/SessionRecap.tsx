@@ -1,19 +1,23 @@
 import { CompletedSet } from "@/components/student/ExerciseTracker";
 import { ProgramExerciseDetail } from "@/data/yana-program";
-import { Trophy, Clock, Dumbbell, TrendingUp, MessageSquare } from "lucide-react";
+import { Trophy, Clock, Dumbbell, TrendingUp, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
+import RecommendationSheet from "@/components/nutrition/RecommendationSheet";
 
 interface SessionRecapProps {
   exercises: ProgramExerciseDetail[];
   completedSets: Record<number, CompletedSet[]>;
   duration: number;
   onClose: () => void;
+  muscleGroups?: string[];
+  activityType?: string | null;
 }
 
-const SessionRecap = ({ exercises, completedSets, duration, onClose }: SessionRecapProps) => {
+const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroups, activityType }: SessionRecapProps) => {
   const [feedback, setFeedback] = useState("");
+  const [recoOpen, setRecoOpen] = useState(false);
 
   const totalSets = Object.values(completedSets).reduce((acc, sets) => acc + sets.length, 0);
   const totalReps = Object.values(completedSets).reduce(
@@ -102,9 +106,23 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose }: SessionRe
         />
       </div>
 
-      <Button className="w-full h-12 text-base font-semibold" onClick={onClose}>
-        Terminer et sauvegarder
-      </Button>
+      <div className="flex gap-2">
+        <Button variant="outline" className="flex-1 h-12 font-semibold gap-2" onClick={() => setRecoOpen(true)}>
+          <Sparkles className="w-4 h-4" strokeWidth={1.5} />
+          Voir les recos
+        </Button>
+        <Button className="flex-1 h-12 font-semibold" onClick={onClose}>
+          Terminer
+        </Button>
+      </div>
+
+      <RecommendationSheet
+        open={recoOpen}
+        onClose={() => setRecoOpen(false)}
+        triggerType="post_session"
+        activityType={activityType || null}
+        muscleGroups={muscleGroups || ["glutes", "quads", "hamstrings"]}
+      />
     </div>
   );
 };
