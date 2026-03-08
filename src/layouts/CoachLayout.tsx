@@ -18,6 +18,7 @@ const CoachLayout = () => {
     { to: "/coach/students", icon: Users, label: t('settings:nav_students') },
     { to: "/coach/programs", icon: ClipboardList, label: t('settings:nav_programs') },
     { to: "/coach/exercises", icon: Dumbbell, label: t('settings:nav_exercises') },
+    { to: "/coach/recommendations", icon: BookOpen, label: t('settings:nav_recommendations') },
   ];
 
   return (

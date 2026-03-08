@@ -58,6 +58,7 @@ const App = () => (
                 <Route path="progress" element={<StudentProgress />} />
                 <Route path="profile" element={<StudentProfile />} />
                 <Route path="nutrition" element={<StudentNutrition />} />
+                <Route path="recommendations" element={<StudentRecommendations />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

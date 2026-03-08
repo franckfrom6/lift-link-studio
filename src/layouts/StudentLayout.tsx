@@ -16,6 +16,7 @@ const StudentLayout = () => {
   const navItems = [
     { to: "/student", icon: Calendar, label: t('settings:nav_week'), end: true },
     { to: "/student/progress", icon: BarChart3, label: t('settings:nav_progress') },
+    { to: "/student/recommendations", icon: BookOpen, label: t('settings:nav_recommendations') },
     { to: "/student/profile", icon: User, label: t('settings:nav_profile') },
   ];
 

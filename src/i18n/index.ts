@@ -63,6 +63,7 @@ i18n
         recovery: enRecovery,
         settings: enSettings,
         bilan: enBilan,
+        recommendations: enRecommendations,
       },
     },
     lng: 'fr',
