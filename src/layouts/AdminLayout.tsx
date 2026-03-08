@@ -44,9 +44,7 @@ const AdminLayout = () => {
     <div className="min-h-screen bg-background flex">
       <aside className="hidden md:flex flex-col w-[260px] border-r border-border bg-secondary/50 p-4">
         <div className="flex items-center gap-3 mb-8 px-2">
-          <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center">
-            <Shield className="w-4 h-4 text-destructive" strokeWidth={1.5} />
-          </div>
+          <Logo variant="compact" size="sm" />
           <span className="font-bold text-lg tracking-tight">{t("title")}</span>
         </div>
 

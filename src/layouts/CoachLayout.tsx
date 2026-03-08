@@ -65,12 +65,7 @@ const CoachLayout = () => {
 
       <div className="flex-1 flex flex-col min-h-screen">
         <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Dumbbell className="w-4 h-4 text-primary-foreground" strokeWidth={1.5} />
-            </div>
-            <span className="font-bold">FitForge</span>
-          </div>
+          <Logo variant="compact" size="sm" />
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
             <ThemeToggle />
