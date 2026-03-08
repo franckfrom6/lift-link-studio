@@ -451,6 +451,23 @@ const CoachProgramDetail = () => {
     setActiveSessionId(id);
   };
 
+  const addWeek = async () => {
+    if (!program) return;
+    const weekNumber = program.weeks.length > 0
+      ? Math.max(...program.weeks.map(w => w.week_number)) + 1
+      : 1;
+    const { data, error } = await supabase.from("program_weeks").insert({
+      program_id: program.id,
+      week_number: weekNumber,
+    }).select().single();
+    if (error || !data) { toast.error(t("common:error")); return; }
+    const newWeek: Week = { ...data, sessions: [] };
+    setProgram(prev => prev ? { ...prev, weeks: [...prev.weeks, newWeek] } : prev);
+    setActiveWeek(String(program.weeks.length));
+    setActiveSessionId(null);
+    toast.success(t("program:week_added", `Semaine ${weekNumber} ajoutée`));
+  };
+
   const addSessionToDay = async (weekId: string, dayOfWeek: number) => {
     if (!program) return;
     const dayName = dayLabel(dayOfWeek);
@@ -535,6 +552,15 @@ const CoachProgramDetail = () => {
       </div>
 
       {/* Weeks tabs */}
+      {program.weeks.length === 0 && (
+        <div className="glass rounded-xl p-12 text-center space-y-4">
+          <p className="text-muted-foreground">{t("program:start_with_ai")}</p>
+          <Button onClick={addWeek}>
+            <Plus className="w-4 h-4 mr-2" />
+            {t("program:add_week", { number: 1 })}
+          </Button>
+        </div>
+      )}
       {program.weeks.length > 0 && (
         <Tabs value={activeWeek} onValueChange={(v) => {
           setActiveWeek(v);
@@ -542,13 +568,18 @@ const CoachProgramDetail = () => {
           const firstSession = program.weeks[weekIdx]?.sessions[0];
           setActiveSessionId(firstSession?.id || null);
         }}>
-          <TabsList className="bg-surface">
-            {program.weeks.map((w, i) => (
-              <TabsTrigger key={w.id} value={String(i)} className="text-xs">
-                S{w.week_number}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="flex items-center gap-2">
+            <TabsList className="bg-surface">
+              {program.weeks.map((w, i) => (
+                <TabsTrigger key={w.id} value={String(i)} className="text-xs">
+                  S{w.week_number}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <Button variant="ghost" size="sm" onClick={addWeek} title={t("program:add_week", { number: (program.weeks.length > 0 ? Math.max(...program.weeks.map(w => w.week_number)) + 1 : 1) })}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
 
           {program.weeks.map((week, wi) => (
             <TabsContent key={week.id} value={String(wi)} className="space-y-4 mt-4">

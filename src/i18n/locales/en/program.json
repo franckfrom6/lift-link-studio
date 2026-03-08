@@ -79,5 +79,6 @@
   "apply_program": "Apply this program",
   "regenerate": "Regenerate",
   "program_applied": "Program applied successfully!",
-  "week_created": "Week {{number}} created with {{count}} session(s)!"
+  "week_created": "Week {{number}} created with {{count}} session(s)!",
+  "week_added": "Week {{number}} added"
 }

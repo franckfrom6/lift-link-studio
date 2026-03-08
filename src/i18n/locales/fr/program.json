@@ -79,5 +79,6 @@
   "apply_program": "Appliquer ce programme",
   "regenerate": "Regénérer",
   "program_applied": "Programme appliqué avec succès !",
-  "week_created": "Semaine {{number}} créée avec {{count}} séance(s) !"
+  "week_created": "Semaine {{number}} créée avec {{count}} séance(s) !",
+  "week_added": "Semaine {{number}} ajoutée"
 }
