@@ -242,7 +242,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
       {result.key_changes?.length > 0 && (
         <div className="glass p-4 space-y-2">
           <p className="text-xs font-bold text-muted-foreground">
-            {i18n.language === "fr" ? "Changements principaux" : "Key changes"}
+            {t('key_changes')}
           </p>
           <ul className="space-y-1">
             {result.key_changes.map((change, i) => (
