@@ -278,10 +278,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
       {result.proposed_sessions?.length > 0 && (
         <div className="space-y-3">
           <p className="text-xs font-bold text-muted-foreground">
-            {i18n.language === "fr" 
-              ? `${result.proposed_sessions.length} séance(s) proposée(s)`
-              : `${result.proposed_sessions.length} proposed session(s)`
-            }
+            {t('proposed_sessions', { count: result.proposed_sessions.length })}
           </p>
           
           {result.proposed_sessions.map((session, sIdx) => {
