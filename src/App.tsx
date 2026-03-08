@@ -5,9 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { PlanProvider } from "@/providers/PlanProvider";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
+import PricingPage from "./pages/PricingPage";
+import AdminPanel from "./pages/AdminPanel";
 
 import CoachLayout from "./layouts/CoachLayout";
 import CoachDashboard from "./pages/coach/CoachDashboard";
@@ -37,32 +40,36 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<AuthPage />} />
+            <PlanProvider>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/admin" element={<AdminPanel />} />
 
-              <Route path="/coach" element={<CoachLayout />}>
-                <Route index element={<CoachDashboard />} />
-                <Route path="students" element={<CoachStudents />} />
-                <Route path="students/:studentId" element={<StudentDetail />} />
-                <Route path="students/:studentId/program/new" element={<ProgramEditor />} />
-                <Route path="students/:studentId/bilan" element={<StudentBilan />} />
-                <Route path="programs" element={<CoachPrograms />} />
-                <Route path="exercises" element={<CoachExercises />} />
-                <Route path="recommendations" element={<CoachRecommendations />} />
-              </Route>
+                <Route path="/coach" element={<CoachLayout />}>
+                  <Route index element={<CoachDashboard />} />
+                  <Route path="students" element={<CoachStudents />} />
+                  <Route path="students/:studentId" element={<StudentDetail />} />
+                  <Route path="students/:studentId/program/new" element={<ProgramEditor />} />
+                  <Route path="students/:studentId/bilan" element={<StudentBilan />} />
+                  <Route path="programs" element={<CoachPrograms />} />
+                  <Route path="exercises" element={<CoachExercises />} />
+                  <Route path="recommendations" element={<CoachRecommendations />} />
+                </Route>
 
-              <Route path="/student" element={<StudentLayout />}>
-                <Route index element={<StudentWeek />} />
-                <Route path="session" element={<LiveSession />} />
-                <Route path="progress" element={<StudentProgress />} />
-                <Route path="profile" element={<StudentProfile />} />
-                <Route path="nutrition" element={<StudentNutrition />} />
-                <Route path="recommendations" element={<StudentRecommendations />} />
-              </Route>
+                <Route path="/student" element={<StudentLayout />}>
+                  <Route index element={<StudentWeek />} />
+                  <Route path="session" element={<LiveSession />} />
+                  <Route path="progress" element={<StudentProgress />} />
+                  <Route path="profile" element={<StudentProfile />} />
+                  <Route path="nutrition" element={<StudentNutrition />} />
+                  <Route path="recommendations" element={<StudentRecommendations />} />
+                </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </PlanProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
