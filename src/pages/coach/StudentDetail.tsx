@@ -362,10 +362,13 @@ const StudentDetail = () => {
         </div>
 
         {hasProgram ? (
-          <div className="glass p-4">
+          <button
+            onClick={() => navigate(`/coach/students/${studentId}/program/${program!.id}`)}
+            className="w-full glass p-4 text-left hover:bg-secondary/50 transition-colors rounded-xl"
+          >
             <h3 className="font-semibold">{program!.name}</h3>
-            <p className="text-xs text-muted-foreground mt-1">{t("common:active")}</p>
-          </div>
+            <p className="text-xs text-muted-foreground mt-1">{t("common:active")} · {t("common:view")} →</p>
+          </button>
         ) : (
           <div className="glass p-8 text-center space-y-3">
             <ClipboardList className="w-8 h-8 text-muted-foreground/50 mx-auto" strokeWidth={1.5} />

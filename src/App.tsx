@@ -33,6 +33,7 @@ import StudentDetail from "./pages/coach/StudentDetail";
 import ProgramEditor from "./pages/coach/ProgramEditor";
 import StudentBilan from "./pages/coach/StudentBilan";
 import CoachRecommendations from "./pages/coach/CoachRecommendations";
+import CoachProgramDetail from "./pages/coach/CoachProgramDetail";
 
 import StudentLayout from "./layouts/StudentLayout";
 import StudentWeek from "./pages/student/StudentWeek";
@@ -81,6 +82,7 @@ const App = () => (
                   <Route path="students" element={<CoachStudents />} />
                   <Route path="students/:studentId" element={<StudentDetail />} />
                   <Route path="students/:studentId/program/new" element={<ProgramEditor />} />
+                  <Route path="students/:studentId/program/:programId" element={<CoachProgramDetail />} />
                   <Route path="students/:studentId/bilan" element={<StudentBilan />} />
                   <Route path="programs" element={<CoachPrograms />} />
                   <Route path="exercises" element={<CoachExercises />} />
