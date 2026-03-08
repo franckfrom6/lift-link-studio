@@ -19,6 +19,7 @@ import frPlans from './locales/fr/plans.json';
 import frAdmin from './locales/fr/admin.json';
 import frFeedback from './locales/fr/feedback.json';
 import frSupport from './locales/fr/support.json';
+import frLanding from './locales/fr/landing.json';
 
 import enCommon from './locales/en/common.json';
 import enAuth from './locales/en/auth.json';
