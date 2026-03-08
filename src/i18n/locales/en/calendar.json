@@ -1,6 +1,7 @@
 {
   "hello": "Hey, {{name}} 💪",
   "your_program": "Your program for the week",
+  "program_week": "Program week",
   "this_week": "This week",
   "last_week": "Last week",
   "next_week": "Next week",
