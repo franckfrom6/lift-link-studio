@@ -70,7 +70,7 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [allPlanFeatures, setAllPlanFeatures] = useState<Record<string, PlanFeature[]>>({});
   const [loading, setLoading] = useState(true);
 
-  const fetchPlanData = async () => {
+  const fetchPlanData = React.useCallback(async () => {
     // Always fetch all plans (public data)
     const { data: plans } = await supabase
       .from("plans")
