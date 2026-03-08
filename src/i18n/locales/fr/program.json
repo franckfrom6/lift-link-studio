@@ -68,5 +68,16 @@
   "section_notes_placeholder": "Notes de section (optionnel)...",
   "add_exercise": "Ajouter un exercice",
   "adapted_program_week": "Programme adapté — Semaine {{number}}",
-  "proposed_sessions": "{{count}} séance(s) proposée(s)"
+  "proposed_sessions": "{{count}} séance(s) proposée(s)",
+  "analyzing_generating": "Analyse des feedbacks et génération...",
+  "generate_adapted": "🧠 Générer le programme adapté",
+  "load": "Charge",
+  "key_changes": "Changements principaux",
+  "professional_consultation": "Consultation professionnelle recommandée",
+  "suggested_message": "Message suggéré pour l'athlète",
+  "creating": "Création en cours...",
+  "apply_program": "Appliquer ce programme",
+  "regenerate": "Regénérer",
+  "program_applied": "Programme appliqué avec succès !",
+  "week_created": "Semaine {{number}} créée avec {{count}} séance(s) !"
 }

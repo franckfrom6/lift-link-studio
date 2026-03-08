@@ -68,5 +68,16 @@
   "section_notes_placeholder": "Section notes (optional)...",
   "add_exercise": "Add an exercise",
   "adapted_program_week": "Adapted program — Week {{number}}",
-  "proposed_sessions": "{{count}} proposed session(s)"
+  "proposed_sessions": "{{count}} proposed session(s)",
+  "analyzing_generating": "Analyzing feedback & generating...",
+  "generate_adapted": "🧠 Generate adapted program",
+  "load": "Load",
+  "key_changes": "Key changes",
+  "professional_consultation": "Professional consultation recommended",
+  "suggested_message": "Suggested message for athlete",
+  "creating": "Creating...",
+  "apply_program": "Apply this program",
+  "regenerate": "Regenerate",
+  "program_applied": "Program applied successfully!",
+  "week_created": "Week {{number}} created with {{count}} session(s)!"
 }
