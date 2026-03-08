@@ -20,7 +20,7 @@ export const useCoachStudentSwaps = (studentId?: string) => {
   useEffect(() => {
     if (!studentId) return;
 
-    const fetch = async () => {
+    const fetchData = async () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("session_swaps")
@@ -33,7 +33,13 @@ export const useCoachStudentSwaps = (studentId?: string) => {
       setLoading(false);
     };
 
-    fetch();
+    (async () => {
+      try {
+        await fetchData();
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
+    })();
 
     // Realtime
     const channel = supabase
@@ -43,7 +49,7 @@ export const useCoachStudentSwaps = (studentId?: string) => {
         schema: "public",
         table: "session_swaps",
         filter: `student_id=eq.${studentId}`,
-      }, () => { fetch(); })
+      }, () => { fetchData().catch(console.error); })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };

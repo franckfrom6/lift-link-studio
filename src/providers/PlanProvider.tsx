@@ -70,7 +70,7 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [allPlanFeatures, setAllPlanFeatures] = useState<Record<string, PlanFeature[]>>({});
   const [loading, setLoading] = useState(true);
 
-  const fetchPlanData = async () => {
+  const fetchPlanData = React.useCallback(async () => {
     // Always fetch all plans (public data)
     const { data: plans } = await supabase
       .from("plans")
@@ -167,11 +167,11 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     setLoading(false);
-  };
+  }, [user]);
 
   useEffect(() => {
-    fetchPlanData();
-  }, [user]);
+    fetchPlanData().catch(console.error);
+  }, [fetchPlanData]);
 
   // Realtime subscriptions
   useEffect(() => {
@@ -179,12 +179,14 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const channel = supabase
       .channel("plan-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "user_subscriptions", filter: `user_id=eq.${user.id}` }, () => fetchPlanData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "feature_overrides", filter: `user_id=eq.${user.id}` }, () => fetchPlanData())
-      .subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_subscriptions", filter: `user_id=eq.${user.id}` }, () => fetchPlanData().catch(console.error))
+      .on("postgres_changes", { event: "*", schema: "public", table: "feature_overrides", filter: `user_id=eq.${user.id}` }, () => fetchPlanData().catch(console.error))
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") console.warn("Plan subscription status:", status);
+      });
 
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, fetchPlanData]);
 
   const getFeatureAccess = (featureKey: string): FeatureAccess => {
     if (loading) return { isEnabled: false, limit: null, limitType: null, planRequired: "essential", isLoading: true };

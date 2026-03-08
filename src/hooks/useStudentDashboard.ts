@@ -116,7 +116,13 @@ export const useStudentDashboard = () => {
       setLoading(false);
     };
 
-    fetchSummary();
+    (async () => {
+      try {
+        await fetchSummary();
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
+    })();
   }, [studentId]);
 
   return { summary, loading };
