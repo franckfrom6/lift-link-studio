@@ -59,7 +59,7 @@ const FeaturesSection = () => {
         <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-16">
           {t("features_title")}
         </h2>
-        <div className="space-y-24">
+        <div className="space-y-12">
           {features.map((f, i) => (
             <FeatureBlock key={f.n} n={f.n} icon={f.icon} reverse={i % 2 === 1} />
           ))}
