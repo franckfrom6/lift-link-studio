@@ -32,7 +32,7 @@ const StudentLayout = () => {
         {navItems.map((item) => (
           <NavLink key={item.to} to={item.to} end={(item as any).end}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 py-1 px-4 text-xs font-medium transition-colors ${
+              `flex flex-col items-center gap-1 min-h-[44px] justify-center py-2 px-4 text-xs font-medium transition-colors ${
                 isActive ? "text-foreground" : "text-muted-foreground"
               }`
             }>

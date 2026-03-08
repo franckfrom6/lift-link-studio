@@ -114,7 +114,7 @@ const PricingSection = () => {
         </div>
 
         {/* Cards */}
-        <div className="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+        <div className="grid sm:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
           {plans.map((plan) => {
             const isPopular = plan.name === "advanced";
             const price = yearly ? plan.price_yearly : plan.price_monthly;
@@ -124,7 +124,7 @@ const PricingSection = () => {
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-2xl p-6 ${
+                className={`relative rounded-2xl p-4 sm:p-6 ${
                   isPopular
                     ? "border-2 shadow-lg"
                     : "border border-gray-200"
@@ -145,7 +145,7 @@ const PricingSection = () => {
                     {yearly ? tp("per_year") : tp("per_month")}
                   </span>
                 </div>
-                <ul className="space-y-2.5 mb-8">
+                <ul className="space-y-2 sm:space-y-2.5 mb-8">
                   {features.map((f) => (
                     <li key={f.key} className="flex items-center gap-2 text-sm">
                       {f.included ? (

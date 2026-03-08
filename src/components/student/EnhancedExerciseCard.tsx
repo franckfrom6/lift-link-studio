@@ -162,12 +162,14 @@ const EnhancedExerciseCard = ({
         </button>
         <div className="flex items-center gap-1 shrink-0">
           {hasAlternatives && !allDone && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}
-              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            >
-              <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
-            </button>
+            <div className="flex items-center justify-center w-11 h-11">
+              <button
+                onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}
+                className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+              </button>
+            </div>
           )}
           {allDone && <Check className="w-5 h-5 text-success shrink-0" strokeWidth={1.5} />}
           <button onClick={() => setExpanded(!expanded)}>

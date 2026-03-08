@@ -458,14 +458,16 @@ const ProgramEditor = () => {
       ) : (
         <Tabs value={activeWeek} onValueChange={setActiveWeek}>
           <div className="flex items-center gap-2">
-            <TabsList className="bg-surface">
-              {program.weeks.map((w, i) => (
-                <TabsTrigger key={w.id} value={String(i)} className="text-xs">
-                  S{w.weekNumber}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            <Button variant="ghost" size="sm" onClick={addWeek}>
+            <div className="overflow-x-auto -mx-4 px-4 pb-1 flex-1 min-w-0">
+              <TabsList className="flex w-max min-w-full gap-1 bg-surface">
+                {program.weeks.map((w, i) => (
+                  <TabsTrigger key={w.id} value={String(i)} className="text-xs">
+                    S{w.weekNumber}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+            <Button variant="ghost" size="sm" onClick={addWeek} className="shrink-0">
               <Plus className="w-4 h-4" />
             </Button>
           </div>
