@@ -443,6 +443,50 @@ export type Database = {
           },
         ]
       }
+      session_swaps: {
+        Row: {
+          created_at: string
+          id: string
+          new_date: string
+          new_day: number
+          original_date: string
+          original_day: number
+          reason: string | null
+          session_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_date: string
+          new_day: number
+          original_date: string
+          original_day: number
+          reason?: string | null
+          session_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_date?: string
+          new_day?: number
+          original_date?: string
+          original_day?: number
+          reason?: string | null
+          session_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_swaps_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
           created_at: string
