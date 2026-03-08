@@ -30,6 +30,8 @@ const StudentBilan = () => {
     if (!studentId) return;
     setLoading(true);
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 90000); // 90s timeout
       const { data, error } = await supabase.functions.invoke("generate-bilan", {
         body: {
           student_id: studentId,
@@ -38,6 +40,7 @@ const StudentBilan = () => {
           lang: i18n.language,
         },
       });
+      clearTimeout(timeout);
 
       if (error) throw error;
       if (data?.error) {

@@ -79,9 +79,12 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
     setResult(null);
     setApplied(false);
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 90000); // 90s timeout
       const { data, error } = await supabase.functions.invoke("adapt-next-week", {
         body: { student_id: studentId, program_id: programId, week_number: weekNumber, language: i18n.language },
       });
+      clearTimeout(timeout);
       if (error) throw error;
       setResult(data);
       // Expand all sessions by default
