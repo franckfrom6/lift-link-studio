@@ -71,5 +71,6 @@
   "ai_plan_required": "Passez au plan supérieur pour utiliser cette fonctionnalité IA.",
   "ai_rate_limited": "Limite d'utilisation IA atteinte ce mois-ci.",
   "ai_error": "Erreur du service IA. Réessayez.",
-  "ai_network_error": "Erreur réseau. Vérifiez votre connexion."
+  "ai_network_error": "Erreur réseau. Vérifiez votre connexion.",
+  "more": "Plus"
 }

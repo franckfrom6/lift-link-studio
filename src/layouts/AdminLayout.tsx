@@ -1,10 +1,11 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { BarChart3, Users, Shield, ToggleRight, ArrowLeft, Loader2, MessageSquare, BookOpen } from "lucide-react";
+import { BarChart3, Users, Shield, ToggleRight, ArrowLeft, Loader2, MessageSquare, BookOpen, MoreHorizontal } from "lucide-react";
 import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -42,9 +43,13 @@ const AdminLayout = () => {
 
   const backTo = role === "coach" ? "/coach" : "/student";
 
+  // Mobile: show first 4 items + overflow menu
+  const mobileMainItems = navItems.slice(0, 4);
+  const mobileOverflowItems = navItems.slice(4);
+
   return (
     <div className="min-h-screen bg-background flex">
-      <aside className="hidden md:flex flex-col w-[260px] border-r border-border bg-secondary/50 p-4">
+      <aside className="hidden md:flex flex-col w-[260px] border-r border-border bg-secondary/50 p-4 shrink-0">
         <div className="flex items-center gap-3 mb-8 px-2">
           <Logo variant="compact" />
           <span className="font-bold text-lg tracking-tight">{t("title")}</span>
@@ -85,40 +90,62 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-h-screen">
-        <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background">
+      <div className="flex-1 flex flex-col min-h-screen min-w-0">
+        <header className="md:hidden flex items-center justify-between p-3 border-b border-border bg-background">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-destructive" />
-            <span className="font-bold">{t("title")}</span>
+            <span className="font-bold text-sm">{t("title")}</span>
           </div>
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate(backTo)}
+              className="p-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+            </button>
             <LanguageSwitcher />
             <ThemeToggle />
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden">
           <div className="max-w-6xl mx-auto">
             <Outlet />
           </div>
         </main>
 
-        <nav className="md:hidden flex items-center justify-around border-t border-border bg-background py-2 px-4">
-          {navItems.map((item) => (
+        <nav className="md:hidden flex items-center justify-around border-t border-border bg-background py-1.5 px-0.5 safe-area-bottom">
+          {mobileMainItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 py-1 px-3 text-xs font-medium transition-colors ${
+                `flex flex-col items-center gap-0.5 py-1 px-2 text-[10px] font-medium transition-colors ${
                   isActive ? "text-foreground" : "text-muted-foreground"
                 }`
               }
             >
               <item.icon className="w-5 h-5" strokeWidth={1.5} />
-              {item.label}
+              <span className="truncate max-w-[52px] text-center leading-tight">{item.label}</span>
             </NavLink>
           ))}
+          {mobileOverflowItems.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex flex-col items-center gap-0.5 py-1 px-2 text-[10px] font-medium text-muted-foreground">
+                <MoreHorizontal className="w-5 h-5" strokeWidth={1.5} />
+                <span className="leading-tight">Plus</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top" className="mb-2">
+                {mobileOverflowItems.map((item) => (
+                  <DropdownMenuItem key={item.to} onClick={() => navigate(item.to)} className="gap-2">
+                    <item.icon className="w-4 h-4" strokeWidth={1.5} />
+                    {item.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </nav>
       </div>
     </div>

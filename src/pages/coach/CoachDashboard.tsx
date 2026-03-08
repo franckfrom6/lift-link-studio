@@ -54,15 +54,15 @@ const CoachDashboard = () => {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 md:space-y-8 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("dashboard:hello_coach")}</h1>
-        <p className="text-muted-foreground mt-1">{t("dashboard:activity_overview")}</p>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t("dashboard:hello_coach")}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t("dashboard:activity_overview")}</p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-4">
         <KPICard icon={Users} label={t("dashboard:active_students")} value={kpis.activeStudents} />
         <KPICard icon={Activity} label={t("dashboard:sessions_this_week")} value={kpis.sessionsThisWeek} />
         <KPICard icon={TrendingUp} label={t("dashboard:avg_adherence")} value={`${kpis.avgAdherence}%`} />
@@ -74,21 +74,23 @@ const CoachDashboard = () => {
 
       {/* Student Overview */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="font-bold text-lg">{t("dashboard:my_students")}</h2>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
-              <Input
-                placeholder={t("dashboard:search_student")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-8 h-8 w-40 text-xs"
-              />
-            </div>
+        <h2 className="font-bold text-lg">{t("dashboard:my_students")}</h2>
+        
+        {/* Filters - stack on mobile */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+            <Input
+              placeholder={t("dashboard:search_student")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 h-9 text-xs"
+            />
+          </div>
+          <div className="flex gap-2">
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="h-8 w-32 text-xs">
-                <ArrowUpDown className="w-3 h-3 mr-1" strokeWidth={1.5} />
+              <SelectTrigger className="h-9 w-full sm:w-32 text-xs">
+                <ArrowUpDown className="w-3 h-3 mr-1 shrink-0" strokeWidth={1.5} />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -101,7 +103,7 @@ const CoachDashboard = () => {
             <Button
               variant={alertsOnly ? "default" : "outline"}
               size="sm"
-              className="h-8 text-xs"
+              className="h-9 text-xs shrink-0"
               onClick={() => setAlertsOnly(!alertsOnly)}
             >
               <Filter className="w-3 h-3 mr-1" strokeWidth={1.5} />
@@ -145,52 +147,53 @@ const CoachDashboard = () => {
 // Sub-components
 
 const KPICard = ({ icon: Icon, label, value, variant = "default" }: { icon: any; label: string; value: string | number; variant?: "default" | "warning" }) => (
-  <div className="glass p-4 space-y-1.5">
-    <div className="flex items-center gap-2 text-muted-foreground">
-      <Icon className={cn("w-4 h-4", variant === "warning" && "text-warning")} strokeWidth={1.5} />
-      <span className="text-[11px] font-medium">{label}</span>
+  <div className="glass p-3 sm:p-4 space-y-1">
+    <div className="flex items-center gap-1.5 text-muted-foreground">
+      <Icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0", variant === "warning" && "text-warning")} strokeWidth={1.5} />
+      <span className="text-[10px] sm:text-[11px] font-medium leading-tight">{label}</span>
     </div>
-    <p className={cn("text-2xl font-bold", variant === "warning" && Number(value) > 0 && "text-warning")}>{value}</p>
+    <p className={cn("text-xl sm:text-2xl font-bold", variant === "warning" && Number(value) > 0 && "text-warning")}>{value}</p>
   </div>
 );
 
 const StudentCard = ({ student, onClick, locale, t }: { student: StudentOverview; onClick: () => void; locale: any; t: any }) => {
   const adherence = student.sessionsTotal > 0 ? Math.round((student.sessionsDone / student.sessionsTotal) * 100) : 0;
-  const hasAlerts = student.alerts.filter(a => a !== "swaps").length > 0;
 
   return (
-    <button onClick={onClick} className="glass p-4 w-full text-left hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all group">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-sm font-semibold text-accent-foreground shrink-0">
+    <button onClick={onClick} className="glass p-3 sm:p-4 w-full text-left hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all group">
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-accent flex items-center justify-center text-sm font-semibold text-accent-foreground shrink-0">
           {student.avatar}
         </div>
-        <div className="flex-1 min-w-0 space-y-1.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-sm">{student.name}</span>
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-semibold text-sm truncate">{student.name}</span>
             {student.programName && (
-              <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-md truncate max-w-[140px]">
+              <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-md truncate max-w-[100px] sm:max-w-[140px] hidden xs:inline">
                 {student.programName}
               </span>
             )}
-            {/* Alert badges */}
+          </div>
+          {/* Alert badges - wrap on mobile */}
+          <div className="flex items-center gap-1 flex-wrap">
             {student.alerts.includes("no_session_5d") && (
-              <Badge variant="outline" className="text-[9px] border-warning/40 text-warning bg-warning-bg">{t("dashboard:alert_no_session")}</Badge>
+              <Badge variant="outline" className="text-[9px] border-warning/40 text-warning bg-warning-bg px-1 py-0">{t("dashboard:alert_no_session")}</Badge>
             )}
             {student.alerts.includes("no_checkin") && (
-              <Badge variant="outline" className="text-[9px] border-warning/40 text-warning bg-warning-bg">{t("dashboard:alert_no_checkin")}</Badge>
+              <Badge variant="outline" className="text-[9px] border-warning/40 text-warning bg-warning-bg px-1 py-0">{t("dashboard:alert_no_checkin")}</Badge>
             )}
             {student.alerts.includes("high_fatigue") && (
-              <Badge variant="outline" className="text-[9px] border-destructive/40 text-destructive bg-destructive/10">{t("dashboard:alert_fatigue")}</Badge>
+              <Badge variant="outline" className="text-[9px] border-destructive/40 text-destructive bg-destructive/10 px-1 py-0">{t("dashboard:alert_fatigue")}</Badge>
             )}
             {student.swapsThisWeek > 0 && (
-              <Badge variant="outline" className="text-[9px] border-primary/30 text-primary">🔄 {student.swapsThisWeek}</Badge>
+              <Badge variant="outline" className="text-[9px] border-primary/30 text-primary px-1 py-0">🔄 {student.swapsThisWeek}</Badge>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Adherence bar */}
-            <div className="flex items-center gap-1.5 flex-1 max-w-[160px]">
+            <div className="flex items-center gap-1.5 flex-1 max-w-[120px] sm:max-w-[160px]">
               <Progress value={adherence} className="h-1.5" />
-              <span className="text-[10px] font-medium text-muted-foreground w-8">{student.sessionsDone}/{student.sessionsTotal}</span>
+              <span className="text-[10px] font-medium text-muted-foreground w-7 sm:w-8">{student.sessionsDone}/{student.sessionsTotal}</span>
             </div>
             {/* Check-in emojis */}
             {student.checkin ? (
@@ -202,9 +205,9 @@ const StudentCard = ({ student, onClick, locale, t }: { student: StudentOverview
             ) : (
               <span className="text-[10px] text-muted-foreground">—</span>
             )}
-            {/* Last session */}
+            {/* Last session - hide on very small screens */}
             {student.lastSessionDate && (
-              <span className="text-[10px] text-muted-foreground shrink-0">
+              <span className="text-[10px] text-muted-foreground shrink-0 hidden sm:inline">
                 {formatDistanceToNow(new Date(student.lastSessionDate), { addSuffix: true, locale })}
               </span>
             )}
@@ -224,13 +227,13 @@ const FEED_ICONS: Record<string, string> = {
 };
 
 const FeedItem = ({ item, locale, t }: { item: ActivityItem; locale: any; t: any }) => (
-  <div className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-secondary/50 transition-colors">
+  <div className="flex items-center gap-2 sm:gap-3 py-2 px-2 sm:px-3 rounded-lg hover:bg-secondary/50 transition-colors">
     <span className="text-sm">{FEED_ICONS[item.type]}</span>
-    <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-[10px] font-semibold text-accent-foreground shrink-0">
+    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-accent flex items-center justify-center text-[10px] font-semibold text-accent-foreground shrink-0">
       {item.avatar}
     </div>
     <div className="flex-1 min-w-0">
-      <p className="text-xs">
+      <p className="text-xs truncate">
         <span className="font-medium">{item.studentName}</span>{" "}
         <span className="text-muted-foreground">
           {item.type === "session_completed" && t("dashboard:feed_session_completed")}
@@ -240,7 +243,7 @@ const FeedItem = ({ item, locale, t }: { item: ActivityItem; locale: any; t: any
         </span>
       </p>
     </div>
-    <span className="text-[10px] text-muted-foreground shrink-0">
+    <span className="text-[10px] text-muted-foreground shrink-0 hidden sm:inline">
       {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale })}
     </span>
   </div>
