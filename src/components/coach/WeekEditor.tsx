@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import SessionEditor from "./SessionEditor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface WeekEditorProps {
   week: WeekData;
@@ -12,6 +13,7 @@ interface WeekEditorProps {
 }
 
 const WeekEditor = ({ week, onUpdate, onDuplicate }: WeekEditorProps) => {
+  const { t } = useTranslation('program');
   const [addDay, setAddDay] = useState<string>("");
 
   const usedDays = new Set(week.sessions.map((s) => s.dayOfWeek));
@@ -21,7 +23,7 @@ const WeekEditor = ({ week, onUpdate, onDuplicate }: WeekEditorProps) => {
     const newSession: SessionData = {
       id: crypto.randomUUID(),
       dayOfWeek,
-      name: `Séance ${DAY_NAMES[dayOfWeek]}`,
+      name: t('session_default_name', { day: DAY_NAMES[dayOfWeek] }),
       sections: [],
       exercises: [],
     };
@@ -42,11 +44,11 @@ const WeekEditor = ({ week, onUpdate, onDuplicate }: WeekEditorProps) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-display font-bold text-lg">Semaine {week.weekNumber}</h3>
+        <h3 className="font-display font-bold text-lg">{t('week_title', { number: week.weekNumber })}</h3>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={onDuplicate}>
             <Copy className="w-4 h-4 mr-1" />
-            Dupliquer
+            {t('duplicate')}
           </Button>
         </div>
       </div>
@@ -66,7 +68,7 @@ const WeekEditor = ({ week, onUpdate, onDuplicate }: WeekEditorProps) => {
         <div className="flex gap-2">
           <Select value={addDay} onValueChange={(v) => { setAddDay(v); addSession(Number(v)); setAddDay(""); }}>
             <SelectTrigger className="bg-surface h-9 text-sm">
-              <SelectValue placeholder="Ajouter une séance..." />
+              <SelectValue placeholder={t('add_session_placeholder')} />
             </SelectTrigger>
             <SelectContent>
               {availableDays.map(([d, name]) => (

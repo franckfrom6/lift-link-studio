@@ -63,7 +63,8 @@ const DAYS_FR = ["", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"
 const DAYS_EN = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIAdaptationViewProps) => {
-  const { t, i18n } = useTranslation("feedback");
+  const { t: tFeedback, i18n } = useTranslation("feedback");
+  const { t } = useTranslation("program");
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
@@ -192,10 +193,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
       }
 
       setApplied(true);
-      toast.success(i18n.language === "fr" 
-        ? `Semaine ${nextWeekNum} créée avec ${result.proposed_sessions.length} séance(s) !`
-        : `Week ${nextWeekNum} created with ${result.proposed_sessions.length} session(s)!`
-      );
+      toast.success(t('week_created', { number: nextWeekNum, count: result.proposed_sessions.length }));
     } catch (e: any) {
       console.error("Apply error:", e);
       toast.error(e.message || "Error applying program");
@@ -217,10 +215,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
     return (
       <Button onClick={handleGenerate} disabled={loading} className="w-full gap-2">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
-        {loading 
-          ? (i18n.language === "fr" ? "Analyse des feedbacks et génération..." : "Analyzing feedback & generating...")
-          : (i18n.language === "fr" ? "🧠 Générer le programme adapté" : "🧠 Generate adapted program")
-        }
+        {loading ? t('analyzing_generating') : t('generate_adapted')}
       </Button>
     );
   }
@@ -232,7 +227,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
       <div className="flex items-center gap-2">
         <Bot className="w-5 h-5 text-accent-foreground" />
         <h3 className="font-bold text-sm">
-          {i18n.language === "fr" ? "Programme adapté — Semaine" : "Adapted program — Week"} {weekNumber + 1}
+          {t('adapted_program_week', { number: weekNumber + 1 })}
         </h3>
       </div>
 
@@ -240,7 +235,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
       <div className="glass p-4 space-y-2">
         <p className="text-sm">{result.weekly_summary}</p>
         <Badge variant="outline" className={cn("text-xs", loadClass)}>
-          {i18n.language === "fr" ? "Charge" : "Load"}: {result.load_assessment?.replace(/_/g, " ")}
+          {t('load')}: {result.load_assessment?.replace(/_/g, " ")}
         </Badge>
       </div>
 
@@ -248,7 +243,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
       {result.key_changes?.length > 0 && (
         <div className="glass p-4 space-y-2">
           <p className="text-xs font-bold text-muted-foreground">
-            {i18n.language === "fr" ? "Changements principaux" : "Key changes"}
+            {t('key_changes')}
           </p>
           <ul className="space-y-1">
             {result.key_changes.map((change, i) => (
@@ -272,7 +267,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
               <p className="text-xs">{alert.recommendation}</p>
               {alert.should_see_professional && (
                 <p className="text-xs text-destructive font-medium">
-                  → {i18n.language === "fr" ? "Consultation professionnelle recommandée" : "Professional consultation recommended"}
+                  → {t('professional_consultation')}
                 </p>
               )}
             </div>
@@ -284,10 +279,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
       {result.proposed_sessions?.length > 0 && (
         <div className="space-y-3">
           <p className="text-xs font-bold text-muted-foreground">
-            {i18n.language === "fr" 
-              ? `${result.proposed_sessions.length} séance(s) proposée(s)`
-              : `${result.proposed_sessions.length} proposed session(s)`
-            }
+            {t('proposed_sessions', { count: result.proposed_sessions.length })}
           </p>
           
           {result.proposed_sessions.map((session, sIdx) => {
@@ -350,7 +342,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
       {result.coach_message_suggestion && (
         <div className="glass p-3 space-y-2">
           <p className="text-xs font-bold text-muted-foreground">
-            💬 {i18n.language === "fr" ? "Message suggéré pour l'athlète" : "Suggested message for athlete"}
+            💬 {t('suggested_message')}
           </p>
           <p className="text-sm italic">"{result.coach_message_suggestion}"</p>
         </div>
@@ -366,21 +358,18 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
               className="flex-1 gap-2"
             >
               {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {applying
-                ? (i18n.language === "fr" ? "Création en cours..." : "Creating...")
-                : (i18n.language === "fr" ? "Appliquer ce programme" : "Apply this program")
-              }
+              {applying ? t('creating') : t('apply_program')}
             </Button>
             <Button variant="outline" onClick={handleGenerate} disabled={loading} className="gap-2">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
-              {i18n.language === "fr" ? "Regénérer" : "Regenerate"}
+              {t('regenerate')}
             </Button>
           </>
         ) : (
           <div className="w-full text-center py-3">
             <p className="text-sm text-success font-medium flex items-center justify-center gap-2">
               <Check className="w-4 h-4" />
-              {i18n.language === "fr" ? "Programme appliqué avec succès !" : "Program applied successfully!"}
+              {t('program_applied')}
             </p>
           </div>
         )}

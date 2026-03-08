@@ -11,7 +11,7 @@
   "finish_save": "Finish",
   "view_recos": "View recommendations",
   "finish_session": "Finish session ({{completed}}/{{total}} exercises)",
-  "quit": "Quit",
+  "quit": "Exit",
   "progression": "Progression",
   "progression_plan": "Progression plan",
   "exercises_modified": "{{count}} exercise modified",
