@@ -20,6 +20,7 @@ import StudentLayout from "./layouts/StudentLayout";
 import StudentWeek from "./pages/student/StudentWeek";
 import StudentProgress from "./pages/student/StudentProgress";
 import StudentProfile from "./pages/student/StudentProfile";
+import LiveSession from "./pages/student/LiveSession";
 
 const queryClient = new QueryClient();
 
