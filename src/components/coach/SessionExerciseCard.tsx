@@ -53,7 +53,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
       {/* Core params grid */}
       <div className="grid grid-cols-4 gap-2">
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Séries</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('sets_label')}</label>
           <Input
             type="number"
             value={item.sets}
