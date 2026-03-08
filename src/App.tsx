@@ -46,6 +46,7 @@ import StudentRecommendations from "./pages/student/StudentRecommendations";
 import SupportPage from "./pages/support/SupportPage";
 import TicketForm from "./pages/support/TicketForm";
 import TicketDetail from "./pages/support/TicketDetail";
+import KBLayout from "./pages/support/KBLayout";
 import KBHome from "./pages/support/KBHome";
 import KBArticle from "./pages/support/KBArticle";
 
