@@ -63,7 +63,8 @@ const DAYS_FR = ["", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"
 const DAYS_EN = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIAdaptationViewProps) => {
-  const { t, i18n } = useTranslation("feedback");
+  const { t: tFeedback, i18n } = useTranslation("feedback");
+  const { t } = useTranslation("program");
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
