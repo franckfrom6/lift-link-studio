@@ -43,12 +43,15 @@ interface Substitution {
 const LiveSession = () => {
   const navigate = useNavigate();
   const { t } = useTranslation(['session', 'common']);
+  const { user } = useAuth();
+  const { program: dbProgram } = useStudentProgram();
   const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>({});
   const [sessionDone, setSessionDone] = useState(false);
   const [startTime] = useState(Date.now());
   const [elapsed, setElapsed] = useState(0);
   const [activeExerciseKey, setActiveExerciseKey] = useState<string>("0-0");
   const [showProgression, setShowProgression] = useState(false);
+  const [completedSessionId, setCompletedSessionId] = useState<string | null>(null);
 
   const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
