@@ -358,8 +358,16 @@ const StudentWeek = () => {
                   isSwapSource && "ring-2 ring-warning bg-warning-bg",
                   isDropTarget && "ring-1 ring-dashed ring-warning/50 cursor-pointer hover:ring-warning hover:bg-warning-bg/50",
                 )}
-                )}
               >
+                <div
+                  onClick={() => {
+                    if (swapMode) {
+                      handleDayClickInSwapMode(day.dayIndex);
+                    } else if (isSessionDay && sessionInfo) {
+                      navigate("/student/session", { state: { sessionId: sessionInfo.sessionId } });
+                    }
+                  }}
+                >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={cn(
