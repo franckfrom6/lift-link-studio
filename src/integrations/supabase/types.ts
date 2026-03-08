@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      body_measurements: {
+        Row: {
+          arm_cm: number | null
+          body_fat_pct: number | null
+          chest_cm: number | null
+          created_at: string
+          date: string
+          hips_cm: number | null
+          id: string
+          notes: string | null
+          student_id: string
+          thigh_cm: number | null
+          waist_cm: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          arm_cm?: number | null
+          body_fat_pct?: number | null
+          chest_cm?: number | null
+          created_at?: string
+          date: string
+          hips_cm?: number | null
+          id?: string
+          notes?: string | null
+          student_id: string
+          thigh_cm?: number | null
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          arm_cm?: number | null
+          body_fat_pct?: number | null
+          chest_cm?: number | null
+          created_at?: string
+          date?: string
+          hips_cm?: number | null
+          id?: string
+          notes?: string | null
+          student_id?: string
+          thigh_cm?: number | null
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
       coach_students: {
         Row: {
           coach_id: string
@@ -485,6 +530,36 @@ export type Database = {
           status?: string
           student_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      progress_photos: {
+        Row: {
+          category: string
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          photo_url: string
+          student_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          date: string
+          id?: string
+          notes?: string | null
+          photo_url: string
+          student_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          photo_url?: string
+          student_id?: string
         }
         Relationships: []
       }
