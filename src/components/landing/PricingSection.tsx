@@ -114,7 +114,7 @@ const PricingSection = () => {
         </div>
 
         {/* Cards */}
-        <div className="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+        <div className="grid sm:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
           {plans.map((plan) => {
             const isPopular = plan.name === "advanced";
             const price = yearly ? plan.price_yearly : plan.price_monthly;
