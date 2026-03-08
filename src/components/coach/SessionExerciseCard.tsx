@@ -63,7 +63,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Reps min</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('reps_min')}</label>
           <Input
             type="number"
             value={item.repsMin}
