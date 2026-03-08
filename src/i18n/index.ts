@@ -63,6 +63,7 @@ i18n
         admin: frAdmin,
         feedback: frFeedback,
         support: frSupport,
+        landing: frLanding,
       },
       en: {
         common: enCommon,
