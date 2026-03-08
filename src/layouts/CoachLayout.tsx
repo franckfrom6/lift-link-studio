@@ -61,16 +61,16 @@ const CoachLayout = () => {
           <div className="max-w-4xl mx-auto"><Outlet /></div>
         </main>
 
-        <nav className="md:hidden flex items-center justify-around border-t border-border bg-background py-2 px-4">
+        <nav className="md:hidden flex items-center justify-around border-t border-border bg-background py-2 px-1">
           {navItems.slice(0, 5).map((item) => (
             <NavLink key={item.to} to={item.to} end={(item as any).end}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 py-1 px-3 text-xs font-medium transition-colors ${
+                `flex flex-col items-center gap-0.5 py-1 px-1.5 text-[10px] font-medium transition-colors min-w-0 ${
                   isActive ? "text-foreground" : "text-muted-foreground"
                 }`
               }>
               <item.icon className="w-5 h-5" strokeWidth={1.5} />
-              {item.label}
+              <span className="truncate max-w-[56px] text-center">{item.label}</span>
             </NavLink>
           ))}
         </nav>
