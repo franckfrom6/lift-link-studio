@@ -333,7 +333,7 @@ const StudentWeek = () => {
                 onClick={() => {
                   if (swapMode) {
                     handleDayClickInSwapMode(day.dayIndex);
-                  } else if (isSessionDay && weekOffset === 0) {
+                  } else if (isSessionDay) {
                     navigate("/student/session");
                   }
                 }}
@@ -390,7 +390,7 @@ const StudentWeek = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {isSessionDay && !swapMode && weekOffset === 0 && (
+                    {isSessionDay && !swapMode && (
                       <Button
                         variant="ghost" size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
@@ -408,7 +408,7 @@ const StudentWeek = () => {
                         <Plus className="w-4 h-4" strokeWidth={1.5} />
                       </Button>
                     )}
-                    {isSessionDay && weekOffset === 0 && !day.isPast && !swapMode ? (
+                    {isSessionDay && !day.isPast && !swapMode ? (
                       <div className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg">
                         <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
                         <span className="text-xs font-semibold">Go</span>
