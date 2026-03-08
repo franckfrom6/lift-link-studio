@@ -79,7 +79,7 @@ export const useStudentDashboard = () => {
       const { count: externalCount } = await supabase
         .from("external_sessions")
         .select("id", { count: "exact", head: true })
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .gte("date", wsStr)
         .lte("date", weStr);
 
