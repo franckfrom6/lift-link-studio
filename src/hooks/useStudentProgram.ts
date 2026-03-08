@@ -211,11 +211,12 @@ export const useStudentProgram = () => {
       setError(e.message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [studentId]);
 
   useEffect(() => {
-    fetchProgram();
+    fetchProgram(false);
   }, [fetchProgram]);
 
   // Realtime: refetch when session_exercises, sessions, or session_sections change
