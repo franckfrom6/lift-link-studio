@@ -243,23 +243,28 @@ const StudentWeek = () => {
 
       {/* Program week selector */}
       {totalWeeks > 1 && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground font-medium shrink-0">
-            {t('calendar:program_week', 'Semaine du programme')}
+        <div className="flex items-center justify-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            disabled={selectedWeekIndex === 0}
+            onClick={() => setSelectedWeekIndex(i => i - 1)}
+          >
+            <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
+          <span className="text-sm font-medium">
+            {t('calendar:program_week', 'Semaine du programme')} {program!.weeks[selectedWeekIndex]?.week_number}/{totalWeeks}
           </span>
-          <div className="flex gap-1 flex-wrap">
-            {program!.weeks.map((w, idx) => (
-              <Button
-                key={w.id}
-                variant={idx === selectedWeekIndex ? "default" : "outline"}
-                size="sm"
-                className="h-7 w-9 text-xs px-0"
-                onClick={() => setSelectedWeekIndex(idx)}
-              >
-                {w.week_number}
-              </Button>
-            ))}
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            disabled={selectedWeekIndex === totalWeeks - 1}
+            onClick={() => setSelectedWeekIndex(i => i + 1)}
+          >
+            <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
         </div>
       )}
 
