@@ -136,9 +136,9 @@ const LiveSession = () => {
     const [sIdx, eIdx] = key.split("-").map(Number);
     let nextKey: string | null = null;
     
-    for (let si = sIdx; si < YANA_PROGRAM.sections.length; si++) {
+    for (let si = sIdx; si < sessionProgram.sections.length; si++) {
       const startEi = si === sIdx ? eIdx + 1 : 0;
-      for (let ei = startEi; ei < YANA_PROGRAM.sections[si].exercises.length; ei++) {
+      for (let ei = startEi; ei < sessionProgram.sections[si].exercises.length; ei++) {
         nextKey = `${si}-${ei}`;
         break;
       }
