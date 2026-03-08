@@ -28,28 +28,36 @@ const DEMO_CHECKIN = {
   week_start: new Date().toISOString().split("T")[0],
 };
 
-const DEMO_EXTERNALS = [
+const DEMO_EXTERNALS: ExternalSessionData[] = [
   {
     id: "ext-1",
     activity_type: "pilates",
     activity_label: "Pilates Reformer",
     provider: "Episod",
+    location: "Bastille",
+    time_start: "12:00",
+    time_end: "13:00",
     duration_minutes: 60,
     intensity_perceived: 6,
     muscle_groups_involved: ["core", "glutes", "flexibility"],
     notes: "Beaucoup de travail jambes",
     date: new Date().toISOString().split("T")[0],
+    added_by: "student",
   },
   {
     id: "ext-2",
     activity_type: "cycling",
     activity_label: "RPM 45min",
     provider: "CMG",
+    location: "Opéra",
+    time_start: "18:30",
+    time_end: "19:15",
     duration_minutes: 45,
     intensity_perceived: 8,
     muscle_groups_involved: ["quads", "cardio"],
     notes: "",
     date: (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; })(),
+    added_by: "student",
   },
 ];
 
