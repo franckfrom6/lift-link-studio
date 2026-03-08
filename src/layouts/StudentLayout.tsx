@@ -1,14 +1,11 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { Dumbbell, Calendar, BarChart3, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const StudentLayout = () => {
-  const { signOut, profile } = useAuth();
   const navigate = useNavigate();
 
-  const handleSignOut = async () => {
-    await signOut();
+  const handleSignOut = () => {
     navigate("/auth");
   };
 
@@ -30,7 +27,7 @@ const StudentLayout = () => {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground hidden sm:inline">
-            {profile?.full_name}
+            Élève
           </span>
           <Button variant="ghost" size="icon" onClick={handleSignOut}>
             <LogOut className="w-4 h-4" />
