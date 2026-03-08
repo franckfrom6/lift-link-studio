@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 export interface CheckinData {
   id?: string;
@@ -24,15 +25,6 @@ interface WeeklyCheckinFormProps {
   weekStart: Date;
   initialData?: CheckinData | null;
 }
-
-const SORENESS_LOCATIONS = [
-  { id: "jambes", label: "Jambes" },
-  { id: "dos", label: "Dos" },
-  { id: "epaules", label: "Épaules" },
-  { id: "bras", label: "Bras" },
-  { id: "core", label: "Core" },
-  { id: "haut-corps", label: "Haut du corps" },
-];
 
 interface EmojiSliderProps {
   label: string;
@@ -76,6 +68,7 @@ const EmojiSlider = ({ label, value, onChange, emojis, lowLabel, highLabel }: Em
 };
 
 const WeeklyCheckinForm = ({ open, onClose, onSubmit, weekStart, initialData }: WeeklyCheckinFormProps) => {
+  const { t, i18n } = useTranslation('checkin');
   const [energy, setEnergy] = useState(3);
   const [sleep, setSleep] = useState(3);
   const [stress, setStress] = useState(3);
@@ -83,6 +76,15 @@ const WeeklyCheckinForm = ({ open, onClose, onSubmit, weekStart, initialData }: 
   const [sorenessLocations, setSorenessLocations] = useState<string[]>([]);
   const [availabilityNotes, setAvailabilityNotes] = useState("");
   const [generalNotes, setGeneralNotes] = useState("");
+
+  const SORENESS_LOCATIONS = [
+    { id: "jambes", label: t('areas.legs') },
+    { id: "dos", label: t('areas.back') },
+    { id: "epaules", label: t('areas.shoulders') },
+    { id: "bras", label: t('areas.arms') },
+    { id: "core", label: t('areas.core') },
+    { id: "haut-corps", label: t('areas.upper_body') },
+  ];
 
   useEffect(() => {
     if (initialData) {
@@ -129,53 +131,21 @@ const WeeklyCheckinForm = ({ open, onClose, onSubmit, weekStart, initialData }: 
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent side="bottom" className="max-h-[90vh] rounded-t-2xl overflow-y-auto">
         <SheetHeader className="text-left pb-2">
-          <SheetTitle className="text-base">Check-in hebdo</SheetTitle>
+          <SheetTitle className="text-base">{t('weekly_checkin')}</SheetTitle>
           <p className="text-xs text-muted-foreground">
-            Semaine du {weekStart.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+            {t('week_of', { date: weekStart.toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { day: "numeric", month: "long" }) })}
           </p>
         </SheetHeader>
 
         <div className="space-y-5 mt-4 pb-4">
-          <EmojiSlider
-            label="Énergie"
-            value={energy}
-            onChange={setEnergy}
-            emojis={["😴", "😪", "😐", "🔋", "⚡"]}
-            lowLabel="Épuisé"
-            highLabel="Pleine forme"
-          />
+          <EmojiSlider label={t('energy')} value={energy} onChange={setEnergy} emojis={["😴", "😪", "😐", "🔋", "⚡"]} lowLabel={t('energy_low')} highLabel={t('energy_high')} />
+          <EmojiSlider label={t('sleep')} value={sleep} onChange={setSleep} emojis={["😵", "😣", "😐", "😊", "😴💤"]} lowLabel={t('sleep_low')} highLabel={t('sleep_high')} />
+          <EmojiSlider label={t('stress')} value={stress} onChange={setStress} emojis={["😌", "😐", "😰", "😫", "🤯"]} lowLabel={t('stress_low')} highLabel={t('stress_high')} />
+          <EmojiSlider label={t('soreness')} value={soreness} onChange={setSoreness} emojis={["💪", "😐", "😣", "😖", "🦽"]} lowLabel={t('soreness_low')} highLabel={t('soreness_high')} />
 
-          <EmojiSlider
-            label="Sommeil"
-            value={sleep}
-            onChange={setSleep}
-            emojis={["😵", "😣", "😐", "😊", "😴💤"]}
-            lowLabel="Très mauvais"
-            highLabel="Excellent"
-          />
-
-          <EmojiSlider
-            label="Stress"
-            value={stress}
-            onChange={setStress}
-            emojis={["😌", "😐", "😰", "😫", "🤯"]}
-            lowLabel="Zen"
-            highLabel="Très stressé"
-          />
-
-          <EmojiSlider
-            label="Courbatures"
-            value={soreness}
-            onChange={setSoreness}
-            emojis={["💪", "😐", "😣", "😖", "🦽"]}
-            lowLabel="Aucune"
-            highLabel="Très courbaturé"
-          />
-
-          {/* Soreness locations */}
           {soreness >= 3 && (
             <div className="space-y-2 animate-fade-in">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Zones douloureuses</Label>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('sore_areas')}</Label>
               <div className="flex flex-wrap gap-1.5">
                 {SORENESS_LOCATIONS.map((loc) => (
                   <button
@@ -196,30 +166,18 @@ const WeeklyCheckinForm = ({ open, onClose, onSubmit, weekStart, initialData }: 
             </div>
           )}
 
-          {/* Availability notes */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Disponibilités</Label>
-            <Textarea
-              value={availabilityNotes}
-              onChange={(e) => setAvailabilityNotes(e.target.value)}
-              placeholder="Ex: Dispo que mercredi et samedi cette semaine"
-              rows={2}
-            />
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('availability')}</Label>
+            <Textarea value={availabilityNotes} onChange={(e) => setAvailabilityNotes(e.target.value)} placeholder={t('availability_placeholder')} rows={2} />
           </div>
 
-          {/* General notes */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notes pour ton coach</Label>
-            <Textarea
-              value={generalNotes}
-              onChange={(e) => setGeneralNotes(e.target.value)}
-              placeholder="Quelque chose à signaler ?"
-              rows={2}
-            />
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('notes_for_coach')}</Label>
+            <Textarea value={generalNotes} onChange={(e) => setGeneralNotes(e.target.value)} placeholder={t('notes_placeholder')} rows={2} />
           </div>
 
           <Button className="w-full h-12 font-semibold" onClick={handleSubmit}>
-            {initialData ? "Modifier le check-in" : "✅ Envoyer le check-in"}
+            {initialData ? t('edit_checkin') : t('send_checkin')}
           </Button>
         </div>
       </SheetContent>

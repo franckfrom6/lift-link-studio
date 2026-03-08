@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const progressionPhases: ProgressionPhase[] = YANA_PROGRAM.progression.map((p, i) => {
   const weekMatch = p.match(/Semaine[s]?\s+(\d+)(?:\s*[-–]\s*(\d+))?/i);
@@ -30,7 +31,7 @@ const progressionPhases: ProgressionPhase[] = YANA_PROGRAM.progression.map((p, i
 });
 
 interface Substitution {
-  key: string; // "sIdx-eIdx"
+  key: string;
   originalName: string;
   newName: string;
   newEquipment: string;
@@ -38,6 +39,7 @@ interface Substitution {
 
 const LiveSession = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation(['session', 'common']);
   const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>({});
   const [sessionDone, setSessionDone] = useState(false);
   const [startTime] = useState(Date.now());
@@ -45,7 +47,6 @@ const LiveSession = () => {
   const [activeExerciseKey, setActiveExerciseKey] = useState<string>("0-0");
   const [showProgression, setShowProgression] = useState(false);
 
-  // Substitutions
   const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
   const [swapTargetKey, setSwapTargetKey] = useState<string | null>(null);
@@ -88,12 +89,11 @@ const LiveSession = () => {
       setActiveExerciseKey(nextKey);
     } else {
       setSessionDone(true);
-      toast.success("Séance terminée ! 💪");
+      toast.success(t('session:session_done'));
     }
   };
 
   const handleClose = () => {
-    // Save to localStorage
     const sessionData = {
       date: new Date().toISOString(),
       duration: elapsed,
@@ -106,7 +106,7 @@ const LiveSession = () => {
     history.push(sessionData);
     localStorage.setItem("session_history", JSON.stringify(history));
 
-    toast.success("Séance sauvegardée !");
+    toast.success(t('session:session_saved'));
     navigate("/student");
   };
 
@@ -130,7 +130,6 @@ const LiveSession = () => {
       }];
     });
 
-    // Reset completed sets for this exercise
     setCompletedSets(prev => {
       const updated = { ...prev };
       delete updated[swapTargetKey];
@@ -176,7 +175,7 @@ const LiveSession = () => {
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => navigate("/student")}>
             <ArrowLeft className="w-4 h-4 mr-1" strokeWidth={1.5} />
-            Quitter
+            {t('session:quit')}
           </Button>
           <div className="flex items-center gap-2">
             <Button
@@ -186,7 +185,7 @@ const LiveSession = () => {
               className="gap-1.5"
             >
               <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />
-              Progression
+              {t('session:progression')}
             </Button>
             <div className="flex items-center gap-1.5 bg-surface px-3 py-1.5 rounded-lg">
               <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
@@ -222,23 +221,20 @@ const LiveSession = () => {
           </span>
         </div>
 
-        {/* Substitutions banner */}
         {substitutions.length > 0 && (
           <div className="mt-2 flex items-center gap-1.5 text-[10px] text-warning font-medium">
-            <span>⚡ {substitutions.length} exercice{substitutions.length > 1 ? "s" : ""} modifié{substitutions.length > 1 ? "s" : ""}</span>
+            <span>⚡ {substitutions.length > 1 ? t('session:exercises_modified_plural', { count: substitutions.length }) : t('session:exercises_modified', { count: substitutions.length })}</span>
           </div>
         )}
       </div>
 
-      {/* Progression panel */}
       {showProgression && (
         <div className="glass p-4 animate-fade-in">
-          <h3 className="font-bold text-sm mb-3">Plan de progression</h3>
+          <h3 className="font-bold text-sm mb-3">{t('session:progression_plan')}</h3>
           <ProgressionTimeline phases={progressionPhases} currentWeek={1} />
         </div>
       )}
 
-      {/* Sections with exercises */}
       <div className="space-y-4">
         {YANA_PROGRAM.sections.map((section, sIdx) => {
           const sectionHasActive = section.exercises.some((_, eIdx) => `${sIdx}-${eIdx}` === activeExerciseKey);
@@ -310,18 +306,16 @@ const LiveSession = () => {
         })}
       </div>
 
-      {/* Finish button */}
       <div className="py-4">
         <Button
           className="w-full h-12 text-base font-semibold"
-          onClick={() => { setSessionDone(true); toast.success("Séance terminée ! 💪"); }}
+          onClick={() => { setSessionDone(true); toast.success(t('session:session_done')); }}
           disabled={completedCount === 0}
         >
-          Terminer la séance ({completedCount}/{allExercises.length} exercices)
+          {t('session:finish_session', { completed: completedCount, total: allExercises.length })}
         </Button>
       </div>
 
-      {/* Swap sheet */}
       <ExerciseAlternativesSheet
         open={swapSheetOpen}
         onClose={() => { setSwapSheetOpen(false); setSwapTargetKey(null); }}

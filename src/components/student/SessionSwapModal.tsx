@@ -10,10 +10,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-
-const DAY_NAMES: Record<number, string> = {
-  0: "Lundi", 1: "Mardi", 2: "Mercredi", 3: "Jeudi", 4: "Vendredi", 5: "Samedi", 6: "Dimanche",
-};
+import { useTranslation } from "react-i18next";
 
 interface SessionSwapModalProps {
   open: boolean;
@@ -33,7 +30,11 @@ const SessionSwapModal = ({
   sessionName, fromDayIndex, toDayIndex, fromDate, toDate,
   isMutualSwap, targetSessionName,
 }: SessionSwapModalProps) => {
+  const { t, i18n } = useTranslation(['calendar', 'common']);
   const [reason, setReason] = useState("");
+
+  const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const getDayName = (idx: number) => t(`common:days.${dayKeys[idx]}`);
 
   const handleConfirm = () => {
     onConfirm(reason.trim());
@@ -46,24 +47,24 @@ const SessionSwapModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowLeftRight className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
-            {isMutualSwap ? "Échanger les séances" : "Déplacer la séance"}
+            {isMutualSwap ? t('calendar:swap_sessions') : t('calendar:move_session')}
           </DialogTitle>
           <DialogDescription>
             {isMutualSwap
-              ? `Échanger "${sessionName}" et "${targetSessionName}" ?`
-              : `Déplacer "${sessionName}" vers un autre jour ?`}
+              ? t('calendar:swap_confirm', { session1: sessionName, session2: targetSessionName })
+              : t('calendar:move_confirm', { session: sessionName })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex items-center justify-center gap-3 py-4">
           <div className="text-center">
-            <div className="text-xs text-muted-foreground mb-1">{DAY_NAMES[fromDayIndex]}</div>
+            <div className="text-xs text-muted-foreground mb-1">{getDayName(fromDayIndex)}</div>
             <div className="text-sm font-semibold">{fromDate.getDate()}/{fromDate.getMonth() + 1}</div>
             <div className="text-xs font-medium text-foreground mt-0.5">{sessionName}</div>
           </div>
           <ArrowRight className="w-5 h-5 text-muted-foreground shrink-0" strokeWidth={1.5} />
           <div className="text-center">
-            <div className="text-xs text-muted-foreground mb-1">{DAY_NAMES[toDayIndex]}</div>
+            <div className="text-xs text-muted-foreground mb-1">{getDayName(toDayIndex)}</div>
             <div className="text-sm font-semibold">{toDate.getDate()}/{toDate.getMonth() + 1}</div>
             {isMutualSwap && targetSessionName && (
               <div className="text-xs font-medium text-foreground mt-0.5">{targetSessionName}</div>
@@ -74,20 +75,20 @@ const SessionSwapModal = ({
         <div className="space-y-2">
           <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <MessageSquare className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Raison (optionnel)
+            {t('calendar:reason_optional')}
           </label>
           <Textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Ex : Réunion client toute la journée"
+            placeholder={t('calendar:reason_placeholder')}
             className="h-20 text-sm resize-none"
           />
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={onClose}>Annuler</Button>
+          <Button variant="outline" onClick={onClose}>{t('common:cancel')}</Button>
           <Button onClick={handleConfirm}>
-            {isMutualSwap ? "Échanger" : "Déplacer"}
+            {isMutualSwap ? t('calendar:swap') : t('calendar:move')}
           </Button>
         </DialogFooter>
       </DialogContent>

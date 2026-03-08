@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ExerciseAlternative, AlternativeGroup } from "@/data/exercise-alternatives";
+import { useTranslation } from "react-i18next";
 
 interface ExerciseAlternativesSheetProps {
   open: boolean;
@@ -13,16 +14,18 @@ interface ExerciseAlternativesSheetProps {
   onSelect: (alternative: ExerciseAlternative) => void;
 }
 
-const difficultyConfig = {
-  easy: { label: "Facile", color: "bg-success/10 text-success" },
-  medium: { label: "Moyen", color: "bg-warning-bg text-warning" },
-  hard: { label: "Avancé", color: "bg-destructive/10 text-destructive" },
-};
-
 const ExerciseAlternativesSheet = ({
   open, onClose, exerciseName, group, onSelect,
 }: ExerciseAlternativesSheetProps) => {
+  const { t } = useTranslation(['session', 'common', 'recovery']);
+
   if (!group) return null;
+
+  const difficultyConfig = {
+    easy: { label: t('recovery:difficulty.easy'), color: "bg-success/10 text-success" },
+    medium: { label: t('recovery:difficulty.medium'), color: "bg-warning-bg text-warning" },
+    hard: { label: t('recovery:difficulty.hard'), color: "bg-destructive/10 text-destructive" },
+  };
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -30,7 +33,7 @@ const ExerciseAlternativesSheet = ({
         <SheetHeader className="text-left pb-2">
           <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
             <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Remplacer l'exercice
+            {t('session:replace_exercise')}
           </div>
           <SheetTitle className="text-base">{exerciseName}</SheetTitle>
           <Badge variant="secondary" className="w-fit text-[10px]">
@@ -69,7 +72,7 @@ const ExerciseAlternativesSheet = ({
 
         <div className="pt-2 border-t border-border">
           <Button variant="ghost" className="w-full text-muted-foreground" onClick={onClose}>
-            Annuler
+            {t('common:cancel')}
           </Button>
         </div>
       </SheetContent>

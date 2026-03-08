@@ -6,10 +6,28 @@
   "all_seen": "All recommendations seen 👍",
   "essential": "Essential",
   "suggest_lower_body": "💡 Consider reducing lower body volume this week",
-  "suggest_moderate_rpe": "💡 Prefer moderate RPE exercises",
+  "suggest_global_volume": "💡 Consider reducing overall volume this week",
+  "suggest_moderate_rpe": "💡 Prefer moderate RPE exercises (6-7)",
+  "suggest_high_stress": "💡 High stress — Prefer moderate RPE exercises and active recovery",
+  "suggest_poor_sleep": "💡 Poor sleep — Reduce volume and monitor intra-session fatigue",
+  "suggest_high_soreness": "💡 Significant soreness — Adjust warm-up and volume for affected areas",
   "suggest_rest": "💡 Recovery day recommended",
   "load_ok": "Load OK",
   "load_high": "High load",
-  "load_overload": "Potential overload",
-  "weekly_load": "Weekly load"
+  "load_overload": "Overload ⚠️",
+  "weekly_load": "Weekly load",
+  "programmed_sessions": "{{count}} programmed session",
+  "programmed_sessions_plural": "{{count}} programmed sessions",
+  "external_count": "{{count}} external",
+  "external_count_plural": "{{count}} externals",
+  "no_checkin": "No check-in",
+  "checkin_sent": "Check-in sent ✅",
+  "week_checkin": "Weekly check-in",
+  "no_checkin_this_week": "No check-in this week",
+  "moved_label": "Moved",
+  "difficulty": {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Advanced"
+  }
 }

@@ -21,5 +21,7 @@
   "failure": "Failure",
   "sets_unit": "séries",
   "reps_unit": "reps",
-  "vol_unit": "kg vol."
+  "vol_unit": "kg vol.",
+  "replace_exercise": "Remplacer l'exercice",
+  "video_label": "Vidéo"
 }

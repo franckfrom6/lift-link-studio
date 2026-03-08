@@ -52,5 +52,20 @@
   "dinner": "Dîner",
   "pre_workout": "Pré-training",
   "post_workout": "Post-training",
-  "profile_saved": "Profil nutritionnel enregistré !"
+  "profile_saved": "Profil nutritionnel enregistré !",
+  "notes_label": "Notes (optionnel)",
+  "notes_placeholder": "Ex: Repas un peu léger",
+  "restrictions": {
+    "gluten_free": "Sans gluten",
+    "vegetarian": "Végétarien",
+    "vegan": "Végan",
+    "lactose_free": "Sans lactose",
+    "halal": "Halal",
+    "kosher": "Casher",
+    "pescetarian": "Pescétarien"
+  },
+  "prot_short": "Prot. (g)",
+  "carbs_short": "Gluc. (g)",
+  "fats_short": "Lip. (g)",
+  "meal_photo_alt": "Repas"
 }
