@@ -1,9 +1,8 @@
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { YANA_PROGRAM } from "@/data/yana-program";
 import { cn } from "@/lib/utils";
 import SessionSwapModal from "@/components/student/SessionSwapModal";
 import SwapBadge from "@/components/student/SwapBadge";
@@ -14,10 +13,9 @@ import CheckinBadge from "@/components/student/CheckinBadge";
 import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-
-const DEFAULT_SESSIONS: Record<number, { name: string; sessionId: string }> = {
-  3: { name: "Lower Body — Glutes", sessionId: "demo-session-1" },
-};
+import { useStudentProgram } from "@/hooks/useStudentProgram";
+import { useAuth } from "@/contexts/AuthContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface LocalSwap {
   id: string;
@@ -28,6 +26,8 @@ interface LocalSwap {
 
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
+  const { user } = useAuth();
+  const { program, loading: programLoading } = useStudentProgram();
   const DAYS = [
     t("common:days.mon"), t("common:days.tue"), t("common:days.wed"),
     t("common:days.thu"), t("common:days.fri"), t("common:days.sat"), t("common:days.sun"),
@@ -40,15 +40,36 @@ const StudentWeek = () => {
   const [swapTargetDay, setSwapTargetDay] = useState<number | null>(null);
   const [localSwaps, setLocalSwaps] = useState<LocalSwap[]>([]);
 
-  // External sessions (local state for now)
   const [externalSessions, setExternalSessions] = useState<ExternalSessionData[]>([]);
   const [externalFormOpen, setExternalFormOpen] = useState(false);
   const [externalFormDate, setExternalFormDate] = useState<Date>(new Date());
   const [editingExternal, setEditingExternal] = useState<ExternalSessionData | null>(null);
 
-  // Weekly check-in (local state)
   const [checkins, setCheckins] = useState<Record<string, CheckinData>>({});
   const [checkinFormOpen, setCheckinFormOpen] = useState(false);
+
+  // Get current week's sessions from DB program
+  const currentWeek = program?.weeks?.[0]; // First week for now
+  const weekSessions = currentWeek?.sessions || [];
+
+  // Build sessions map: day_of_week → session info
+  const DEFAULT_SESSIONS = useMemo(() => {
+    const map: Record<number, { name: string; sessionId: string; exerciseCount: number; muscleGroups: string[] }> = {};
+    for (const session of weekSessions) {
+      const muscleGroups = session.sections
+        .flatMap(s => s.exercises.map(e => e.exercise?.muscle_group))
+        .filter(Boolean) as string[];
+      const uniqueMuscles = [...new Set(muscleGroups)];
+      const exerciseCount = session.sections.reduce((a, s) => a + s.exercises.length, 0);
+      map[session.day_of_week] = {
+        name: session.name,
+        sessionId: session.id,
+        exerciseCount,
+        muscleGroups: uniqueMuscles,
+      };
+    }
+    return map;
+  }, [weekSessions]);
 
   const getWeekStart = () => {
     const now = new Date();
@@ -73,7 +94,7 @@ const StudentWeek = () => {
       }
     }
     return sessions;
-  }, [localSwaps]);
+  }, [localSwaps, DEFAULT_SESSIONS]);
 
   const swappedDays = useMemo(() => {
     const map: Record<number, { originalDay: number; reason: string | null }> = {};
@@ -98,6 +119,9 @@ const StudentWeek = () => {
   }, [externalSessions, weekStart]);
 
   const programmedCount = Object.keys(effectiveSessions).length;
+  const totalExercises = weekSessions.reduce(
+    (a, s) => a + s.sections.reduce((b, sec) => b + sec.exercises.length, 0), 0
+  );
 
   const getWeekDates = () => {
     return DAYS.map((name, i) => {
@@ -111,7 +135,6 @@ const StudentWeek = () => {
   };
 
   const dates = getWeekDates();
-  const totalExercises = YANA_PROGRAM.sections.reduce((a, s) => a + s.exercises.length, 0);
 
   const handleDayClickInSwapMode = (dayIndex: number) => {
     if (swapSourceDay === null) return;
@@ -166,37 +189,54 @@ const StudentWeek = () => {
   const targetHasSession = swapTargetDay !== null && !!effectiveSessions[swapTargetDay];
   const sourceDayHasSession = swapSourceDay !== null && !!effectiveSessions[swapSourceDay];
 
+  const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "";
+
+  if (programLoading) {
+    return (
+      <div className="space-y-5 animate-fade-in max-w-lg mx-auto">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 animate-fade-in max-w-lg mx-auto">
       <div>
-        <h1 className="text-2xl font-bold">{t('calendar:hello', { name: 'Yana' })}</h1>
+        <h1 className="text-2xl font-bold">{t('calendar:hello', { name: userName })}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t('calendar:your_program')}</p>
       </div>
 
       {/* Current program card */}
-      <div className="glass p-5 space-y-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="font-bold text-sm">{YANA_PROGRAM.title}</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">{YANA_PROGRAM.objective}</p>
+      {program ? (
+        <div className="glass p-5 space-y-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-bold text-sm">{program.name}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {program.weeks.length} {t('common:weeks', 'semaines')}
+              </p>
+            </div>
+            <Badge>{t('common:active')}</Badge>
           </div>
-          <Badge>{t('common:active')}</Badge>
+          <div className="flex gap-3">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Dumbbell className="w-3 h-3" strokeWidth={1.5} />
+              {totalExercises} {t('calendar:exercises')}
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Target className="w-3 h-3" strokeWidth={1.5} />
+              {programmedCount}{t('calendar:per_week')}
+            </div>
+          </div>
         </div>
-        <div className="flex gap-3">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Clock className="w-3 h-3" strokeWidth={1.5} />
-            {YANA_PROGRAM.duration}
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Dumbbell className="w-3 h-3" strokeWidth={1.5} />
-            {totalExercises} {t('calendar:exercises')}
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Target className="w-3 h-3" strokeWidth={1.5} />
-            1{t('calendar:per_week')}
-          </div>
+      ) : (
+        <div className="glass p-8 text-center space-y-2">
+          <Dumbbell className="w-8 h-8 text-muted-foreground/50 mx-auto" strokeWidth={1.5} />
+          <p className="text-muted-foreground text-sm">{t('calendar:no_program', 'Aucun programme actif')}</p>
         </div>
-      </div>
+      )}
 
       {/* Week navigator + Nutrition shortcut */}
       <div className="flex items-center justify-between">
@@ -254,6 +294,7 @@ const StudentWeek = () => {
       <div className="space-y-2">
         {dates.map((day) => {
           const isSessionDay = day.hasSession;
+          const sessionInfo = effectiveSessions[day.dayIndex];
           const sessionCompleted = isSessionDay && day.isPast && weekOffset < 0;
           const swapInfo = swappedDays[day.dayIndex];
           const isSwapSource = swapMode && day.dayIndex === swapSourceDay;
@@ -298,13 +339,17 @@ const StudentWeek = () => {
                           <SwapBadge originalDay={swapInfo.originalDay} newDay={day.dayIndex + 1} reason={swapInfo.reason} />
                         )}
                       </div>
-                      {isSessionDay ? (
+                      {isSessionDay && sessionInfo ? (
                         <div className="space-y-0.5">
-                          <p className="text-xs font-medium text-foreground">Lower Body — Glutes</p>
+                          <p className="text-xs font-medium text-foreground">{sessionInfo.name}</p>
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-muted-foreground">{YANA_PROGRAM.duration}</span>
-                            <span className="text-[10px] text-muted-foreground">·</span>
-                            <span className="text-[10px] text-muted-foreground">{t("calendar:muscle_groups.glutes")}, {t("calendar:muscle_groups.ischios")}</span>
+                            <span className="text-[10px] text-muted-foreground">{sessionInfo.exerciseCount} ex.</span>
+                            {sessionInfo.muscleGroups.length > 0 && (
+                              <>
+                                <span className="text-[10px] text-muted-foreground">·</span>
+                                <span className="text-[10px] text-muted-foreground">{sessionInfo.muscleGroups.slice(0, 3).join(", ")}</span>
+                              </>
+                            )}
                           </div>
                         </div>
                       ) : dayExternals.length > 0 ? (
@@ -350,7 +395,6 @@ const StudentWeek = () => {
                   </div>
                 </div>
 
-                {/* External sessions under the main row */}
                 {isSessionDay && dayExternals.length > 0 && (
                   <div className="mt-2 pt-2 border-t border-border space-y-1">
                     {dayExternals.map(ext => (
@@ -360,7 +404,6 @@ const StudentWeek = () => {
                 )}
               </div>
 
-              {/* Editable external sessions list */}
               {!isSessionDay && dayExternals.length > 0 && (
                 <div className="pl-14 space-y-1">
                   {dayExternals.map(ext => (
@@ -384,7 +427,7 @@ const StudentWeek = () => {
           open={swapModalOpen}
           onClose={() => { setSwapModalOpen(false); setSwapMode(false); setSwapSourceDay(null); setSwapTargetDay(null); }}
           onConfirm={handleSwapConfirm}
-          sessionName="Lower Body — Glutes"
+          sessionName={effectiveSessions[swapSourceDay]?.name || "Session"}
           fromDayIndex={swapSourceDay}
           toDayIndex={swapTargetDay}
           fromDate={dates[swapSourceDay].date}
@@ -394,7 +437,6 @@ const StudentWeek = () => {
         />
       )}
 
-      {/* External session form */}
       <ExternalSessionForm
         open={externalFormOpen}
         onClose={() => { setExternalFormOpen(false); setEditingExternal(null); }}
@@ -403,7 +445,6 @@ const StudentWeek = () => {
         initialData={editingExternal}
       />
 
-      {/* Weekly check-in form */}
       <WeeklyCheckinForm
         open={checkinFormOpen}
         onClose={() => setCheckinFormOpen(false)}

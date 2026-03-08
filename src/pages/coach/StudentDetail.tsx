@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye, MessageSquare } from "lucide-react";
 import AIAdaptationView from "@/components/coach/AIAdaptationView";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import SwapBadge from "@/components/student/SwapBadge";
@@ -21,6 +21,7 @@ import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
 import ProgramView from "@/components/coach/ProgramView";
 import { YANA_PROGRAM } from "@/data/yana-program";
+import CoachFeedbackView from "@/components/coach/CoachFeedbackView";
 
 interface StudentProfile {
   user_id: string;
@@ -61,6 +62,7 @@ const StudentDetail = () => {
   const [program, setProgram] = useState<ProgramInfo | null>(null);
   const [checkin, setCheckin] = useState<CheckinData | null>(null);
   const [externals, setExternals] = useState<ExternalSessionData[]>([]);
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [coachFormOpen, setCoachFormOpen] = useState(false);
   const [coachExternals, setCoachExternals] = useState<ExternalSessionData[]>([]);
@@ -144,6 +146,16 @@ const StudentDetail = () => {
         added_by: "student" as const,
       })));
     }
+
+    // Fetch session feedbacks for this student
+    const { data: fbData } = await supabase
+      .from("session_feedback")
+      .select("*, completed_sessions!inner(student_id, started_at, session_id)")
+      .eq("completed_sessions.student_id", studentId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    setFeedbacks(fbData || []);
 
     setLoading(false);
   };
@@ -242,6 +254,23 @@ const StudentDetail = () => {
       )}
       {!checkin && !loading && (
         <p className="text-sm text-warning">⚠️ {t("dashboard:no_checkin")}</p>
+      )}
+
+      {/* Session feedbacks */}
+      {feedbacks.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="font-bold flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            Feedbacks de séance
+          </h2>
+          {feedbacks.map((fb) => (
+            <CoachFeedbackView
+              key={fb.id}
+              feedback={fb}
+              studentName={student.full_name}
+            />
+          ))}
+        </div>
       )}
 
       {/* Weekly load */}

@@ -14,6 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useStudentProgram } from "@/hooks/useStudentProgram";
 
 const progressionPhases: ProgressionPhase[] = YANA_PROGRAM.progression.map((p, i) => {
   const weekMatch = p.match(/Semaine[s]?\s+(\d+)(?:\s*[-–]\s*(\d+))?/i);
@@ -40,12 +43,15 @@ interface Substitution {
 const LiveSession = () => {
   const navigate = useNavigate();
   const { t } = useTranslation(['session', 'common']);
+  const { user } = useAuth();
+  const { program: dbProgram } = useStudentProgram();
   const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>({});
   const [sessionDone, setSessionDone] = useState(false);
   const [startTime] = useState(Date.now());
   const [elapsed, setElapsed] = useState(0);
   const [activeExerciseKey, setActiveExerciseKey] = useState<string>("0-0");
   const [showProgression, setShowProgression] = useState(false);
+  const [completedSessionId, setCompletedSessionId] = useState<string | null>(null);
 
   const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
@@ -88,8 +94,33 @@ const LiveSession = () => {
     if (nextKey) {
       setActiveExerciseKey(nextKey);
     } else {
-      setSessionDone(true);
-      toast.success(t('session:session_done'));
+      finishSession();
+    }
+  };
+
+  const finishSession = async () => {
+    setSessionDone(true);
+    toast.success(t('session:session_done'));
+
+    // Save completed session to DB
+    if (!user) return;
+    // Use first session from DB program if available, otherwise use a placeholder
+    const dbSessionId = dbProgram?.weeks?.[0]?.sessions?.[0]?.id;
+    if (!dbSessionId) return;
+
+    try {
+      const { data: cs, error } = await supabase.from("completed_sessions").insert({
+        student_id: user.id,
+        session_id: dbSessionId,
+        duration: elapsed,
+        started_at: new Date(startTime).toISOString(),
+        completed_at: new Date().toISOString(),
+      }).select("id").single();
+
+      if (error) throw error;
+      if (cs) setCompletedSessionId(cs.id);
+    } catch (e) {
+      console.error("Error saving completed session:", e);
     }
   };
 
@@ -163,6 +194,7 @@ const LiveSession = () => {
           }
           duration={elapsed}
           onClose={handleClose}
+          completedSessionId={completedSessionId || undefined}
         />
       </div>
     );
@@ -309,7 +341,7 @@ const LiveSession = () => {
       <div className="py-4">
         <Button
           className="w-full h-12 text-base font-semibold"
-          onClick={() => { setSessionDone(true); toast.success(t('session:session_done')); }}
+          onClick={() => finishSession()}
           disabled={completedCount === 0}
         >
           {t('session:finish_session', { completed: completedCount, total: allExercises.length })}

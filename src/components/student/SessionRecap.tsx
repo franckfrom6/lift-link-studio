@@ -7,6 +7,8 @@ import RecommendationSheet from "@/components/nutrition/RecommendationSheet";
 import SessionFeedbackWizard, { FeedbackData } from "@/components/student/SessionFeedbackWizard";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SessionRecapProps {
   exercises: ProgramExerciseDetail[];
@@ -15,10 +17,12 @@ interface SessionRecapProps {
   onClose: () => void;
   muscleGroups?: string[];
   activityType?: string | null;
+  completedSessionId?: string;
 }
 
-const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroups, activityType }: SessionRecapProps) => {
+const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroups, activityType, completedSessionId }: SessionRecapProps) => {
   const { t } = useTranslation(['session', 'feedback']);
+  const { user } = useAuth();
   const [recoOpen, setRecoOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
@@ -34,10 +38,36 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
   const mins = Math.floor(duration / 60);
   const secs = duration % 60;
 
-  const handleFeedbackSubmit = (feedback: FeedbackData) => {
-    // In a real implementation, save to session_feedback table
-    console.log("Feedback submitted:", feedback);
-    toast.success(t('feedback:feedback_sent'));
+  const handleFeedbackSubmit = async (feedback: FeedbackData) => {
+    if (!user || !completedSessionId) {
+      console.warn("Cannot save feedback: missing user or completedSessionId");
+      toast.success(t('feedback:feedback_sent'));
+      setFeedbackDone(true);
+      setShowFeedback(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from("session_feedback").insert({
+        completed_session_id: completedSessionId,
+        user_id: user.id,
+        overall_rating: feedback.overall_rating,
+        exercises_too_easy: feedback.exercises_too_easy,
+        exercises_too_hard: feedback.exercises_too_hard,
+        exercises_pain: feedback.exercises_pain,
+        joint_discomfort: feedback.joint_discomfort,
+        joint_discomfort_location: feedback.joint_discomfort_location,
+        joint_discomfort_details: feedback.joint_discomfort_details,
+        mood_after: feedback.mood_after,
+        free_comment: feedback.free_comment,
+        would_repeat: feedback.would_repeat,
+      });
+      if (error) throw error;
+      toast.success(t('feedback:feedback_sent'));
+    } catch (e: any) {
+      console.error("Feedback save error:", e);
+      toast.error("Erreur lors de l'envoi du feedback");
+    }
     setFeedbackDone(true);
     setShowFeedback(false);
   };
