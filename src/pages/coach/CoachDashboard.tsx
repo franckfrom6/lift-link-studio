@@ -1,9 +1,12 @@
-import { Users, ClipboardList, Plus, TrendingUp } from "lucide-react";
+import { Users, ClipboardList, Plus, TrendingUp, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { MOCK_STUDENTS } from "@/types/coach";
 
 const CoachDashboard = () => {
   const navigate = useNavigate();
+  const activeStudents = MOCK_STUDENTS.filter((s) => s.status === "active");
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -20,7 +23,7 @@ const CoachDashboard = () => {
             <Users className="w-4 h-4" />
             <span className="text-sm font-medium">Élèves actifs</span>
           </div>
-          <p className="text-3xl font-display font-bold">0</p>
+          <p className="text-3xl font-display font-bold">{activeStudents.length}</p>
         </div>
         <div className="glass rounded-xl p-5 space-y-2">
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -38,18 +41,34 @@ const CoachDashboard = () => {
         </div>
       </div>
 
-      <div className="glass rounded-xl p-12 text-center space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-          <Users className="w-8 h-8 text-primary" />
+      {/* Recent students */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display font-bold text-lg">Élèves récents</h2>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/coach/students")}>
+            Voir tous
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
         </div>
-        <h3 className="text-xl font-display font-semibold">Aucun élève pour l'instant</h3>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          Invitez votre premier élève pour commencer à créer des programmes personnalisés.
-        </p>
-        <Button onClick={() => navigate("/coach/students")} className="mt-2">
-          <Plus className="w-4 h-4 mr-2" />
-          Inviter un élève
-        </Button>
+        <div className="grid gap-2">
+          {activeStudents.slice(0, 3).map((student) => (
+            <button
+              key={student.id}
+              onClick={() => navigate(`/coach/students/${student.id}`)}
+              className="glass rounded-xl p-4 flex items-center gap-3 w-full text-left hover:border-primary/30 transition-all group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
+                {student.avatar}
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm">{student.name}</p>
+                <p className="text-xs text-muted-foreground">{student.goal}</p>
+              </div>
+              <Badge variant="secondary" className="text-[10px]">{student.level}</Badge>
+              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
