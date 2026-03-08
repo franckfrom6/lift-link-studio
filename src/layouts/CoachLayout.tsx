@@ -81,7 +81,7 @@ const CoachLayout = () => {
           ))}
           {mobileOverflowItems.length > 0 && (
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex flex-col items-center gap-0.5 py-1 px-2 text-[10px] font-medium text-muted-foreground">
+              <DropdownMenuTrigger className="flex flex-col items-center gap-0.5 py-1 px-2 text-xs font-medium text-muted-foreground">
                 <MoreHorizontal className="w-5 h-5" strokeWidth={1.5} />
                 <span className="leading-tight">{t('common:more', 'Plus')}</span>
               </DropdownMenuTrigger>

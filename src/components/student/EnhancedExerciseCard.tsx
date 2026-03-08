@@ -229,7 +229,7 @@ const EnhancedExerciseCard = ({
                 return (
                   <div key={i}>
                     <div className={cn(
-                      "grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 items-center p-1.5 rounded-lg transition-colors",
+                      "grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 min-w-[280px] items-center p-1.5 rounded-lg transition-colors",
                       isCurrent && "bg-accent ring-1 ring-accent-foreground/20",
                       isDone && "opacity-60"
                     )}>

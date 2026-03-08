@@ -45,7 +45,7 @@ const StudentProfile = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
               <div className="bg-surface rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">{t('dashboard:goal')}</p>
                 <p className="font-medium text-sm mt-1">{nutritionProfile?.objective ? t(`nutrition:${nutritionProfile.objective}`) : t('dashboard:not_defined')}</p>

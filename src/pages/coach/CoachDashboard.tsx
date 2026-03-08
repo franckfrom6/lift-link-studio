@@ -169,7 +169,7 @@ const StudentCard = ({ student, onClick, locale, t }: { student: StudentOverview
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-semibold text-sm truncate">{student.name}</span>
             {student.programName && (
-              <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-md truncate max-w-[100px] sm:max-w-[140px] hidden xs:inline">
+              <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-md truncate max-w-[100px] sm:max-w-[140px] hidden sm:inline">
                 {student.programName}
               </span>
             )}
