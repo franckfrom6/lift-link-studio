@@ -1,8 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { MOCK_STUDENTS } from "@/types/coach";
+import { YANA_PROGRAM } from "@/data/yana-program";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, ClipboardList, Target, BarChart3 } from "lucide-react";
+import ProgramView from "@/components/coach/ProgramView";
 
 const StudentDetail = () => {
   const { studentId } = useParams();
@@ -19,6 +21,8 @@ const StudentDetail = () => {
       </div>
     );
   }
+
+  const hasProgram = studentId === "yana";
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -57,31 +61,37 @@ const StudentDetail = () => {
         <div className="glass rounded-xl p-4 text-center">
           <ClipboardList className="w-5 h-5 text-primary mx-auto mb-1" />
           <p className="text-xs text-muted-foreground">Programmes</p>
-          <p className="text-sm font-semibold mt-0.5">0</p>
+          <p className="text-sm font-semibold mt-0.5">{hasProgram ? "1" : "0"}</p>
         </div>
       </div>
 
       {/* Programs section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-display font-bold">Programmes</h2>
-          <Button size="sm" onClick={() => navigate(`/coach/students/${studentId}/program/new`)}>
-            <Plus className="w-4 h-4 mr-1" />
-            Nouveau programme
-          </Button>
+          <h2 className="font-display font-bold">Programme actif</h2>
+          {!hasProgram && (
+            <Button size="sm" onClick={() => navigate(`/coach/students/${studentId}/program/new`)}>
+              <Plus className="w-4 h-4 mr-1" />
+              Nouveau programme
+            </Button>
+          )}
         </div>
 
-        <div className="glass rounded-xl p-8 text-center space-y-3">
-          <ClipboardList className="w-8 h-8 text-muted-foreground/50 mx-auto" />
-          <p className="text-muted-foreground text-sm">Aucun programme pour cet élève</p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/coach/students/${studentId}/program/new`)}
-          >
-            Créer le premier programme
-          </Button>
-        </div>
+        {hasProgram ? (
+          <ProgramView program={YANA_PROGRAM} />
+        ) : (
+          <div className="glass rounded-xl p-8 text-center space-y-3">
+            <ClipboardList className="w-8 h-8 text-muted-foreground/50 mx-auto" />
+            <p className="text-muted-foreground text-sm">Aucun programme pour cet élève</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/coach/students/${studentId}/program/new`)}
+            >
+              Créer le premier programme
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

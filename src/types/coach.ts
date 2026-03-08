@@ -74,6 +74,7 @@ export const EQUIPMENT_TYPES = [
 ];
 
 export const MOCK_STUDENTS: MockStudent[] = [
+  { id: "yana", name: "Yana", avatar: "Y", goal: "Hypertrophie fessiers", level: "Avancée", status: "active" },
   { id: "s1", name: "Thomas Martin", avatar: "T", goal: "Prise de masse", level: "Intermédiaire", status: "active" },
   { id: "s2", name: "Julie Dupont", avatar: "J", goal: "Remise en forme", level: "Débutant", status: "active" },
   { id: "s3", name: "Karim Bensaid", avatar: "K", goal: "Performance", level: "Avancé", status: "active" },
