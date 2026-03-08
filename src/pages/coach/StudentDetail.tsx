@@ -201,6 +201,18 @@ const StudentDetail = () => {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold">{student.full_name}</h1>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1"
+                onClick={() => {
+                  startImpersonation({ id: student.user_id, fullName: student.full_name });
+                  navigate("/student");
+                }}
+              >
+                <Eye className="w-3 h-3" strokeWidth={1.5} />
+                {t("settings:view_as_student", "Voir comme l'élève")}
+              </Button>
               {recentSwaps.length > 0 && (
                 <Badge variant="outline" className="text-warning border-warning/30 bg-warning-bg">
                   <ArrowLeftRight className="w-3 h-3 mr-1" strokeWidth={1.5} />
