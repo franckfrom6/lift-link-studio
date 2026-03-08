@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { YANA_PROGRAM, ProgramExerciseDetail } from "@/data/yana-program";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { YANA_PROGRAM, ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
 import { EXERCISE_ALTERNATIVES } from "@/data/exercise-alternatives";
 import { EnhancedCompletedSet } from "@/components/student/EnhancedExerciseCard";
 import EnhancedExerciseCard from "@/components/student/EnhancedExerciseCard";
@@ -18,21 +18,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 
-const progressionPhases: ProgressionPhase[] = YANA_PROGRAM.progression.map((p, i) => {
-  const weekMatch = p.match(/Semaine[s]?\s+(\d+)(?:\s*[-–]\s*(\d+))?/i);
-  const weekStart = weekMatch ? parseInt(weekMatch[1]) : i + 1;
-  const weekEnd = weekMatch && weekMatch[2] ? parseInt(weekMatch[2]) : weekStart;
-  return {
-    id: `prog-${i}`,
-    weekLabel: p.split(":")[0]?.trim() || `Phase ${i + 1}`,
-    description: p.split(":").slice(1).join(":").trim() || p,
-    weekStart,
-    weekEnd,
-    isDeload: p.toLowerCase().includes("deload"),
-    order: i,
-  };
-});
-
 interface Substitution {
   key: string;
   originalName: string;
@@ -42,6 +27,7 @@ interface Substitution {
 
 const LiveSession = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation(['session', 'common']);
   const { user } = useAuth();
   const { program: dbProgram } = useStudentProgram();
@@ -57,13 +43,81 @@ const LiveSession = () => {
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
   const [swapTargetKey, setSwapTargetKey] = useState<string | null>(null);
 
+  const selectedSessionId = (location.state as { sessionId?: string } | null)?.sessionId;
+
+  const selectedSession = useMemo(() => {
+    const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
+    if (sessions.length === 0) return null;
+    return sessions.find((s) => s.id === selectedSessionId) || sessions[0];
+  }, [dbProgram?.weeks, selectedSessionId]);
+
+  const mappedSections = useMemo<ProgramSection[]>(() => {
+    if (!selectedSession) return [];
+    return selectedSession.sections.map((section) => ({
+      name: section.name,
+      duration: section.duration_estimate || "",
+      notes: section.notes || "",
+      exercises: section.exercises.map((ex) => ({
+        name: ex.exercise?.name || "Exercice",
+        sets: String(ex.sets ?? ""),
+        reps: ex.reps_min === ex.reps_max ? String(ex.reps_min) : `${ex.reps_min}-${ex.reps_max}`,
+        tempo: ex.tempo || "",
+        rest: ex.rest_seconds ? String(ex.rest_seconds) : "—",
+        rpe: ex.rpe_target || "",
+        load: ex.suggested_weight ? `${ex.suggested_weight}kg` : "",
+        video: ex.video_url || "",
+        channel: "",
+        notes: ex.coach_notes || "",
+      })),
+    }));
+  }, [selectedSession]);
+
+  const progressionPhases = useMemo<ProgressionPhase[]>(() => {
+    const phases = dbProgram?.progression?.length
+      ? dbProgram.progression.map((p) => ({
+          id: p.id,
+          weekLabel: p.week_label,
+          description: p.description,
+          weekStart: p.week_start,
+          weekEnd: p.week_end,
+          isDeload: p.is_deload,
+          order: p.sort_order,
+        }))
+      : YANA_PROGRAM.progression.map((p, i) => {
+          const weekMatch = p.match(/Semaine[s]?\s+(\d+)(?:\s*[-–]\s*(\d+))?/i);
+          const weekStart = weekMatch ? parseInt(weekMatch[1]) : i + 1;
+          const weekEnd = weekMatch && weekMatch[2] ? parseInt(weekMatch[2]) : weekStart;
+          return {
+            id: `prog-${i}`,
+            weekLabel: p.split(":")[0]?.trim() || `Phase ${i + 1}`,
+            description: p.split(":").slice(1).join(":").trim() || p,
+            weekStart,
+            weekEnd,
+            isDeload: p.toLowerCase().includes("deload"),
+            order: i,
+          };
+        });
+
+    return phases;
+  }, [dbProgram?.progression]);
+
+  const sessionProgram = useMemo(() => {
+    if (!selectedSession || mappedSections.length === 0) return YANA_PROGRAM;
+    return {
+      ...YANA_PROGRAM,
+      title: selectedSession.name,
+      sections: mappedSections,
+      progression: progressionPhases.map((p) => `${p.weekLabel}: ${p.description}`),
+    };
+  }, [selectedSession, mappedSections, progressionPhases]);
+
   const getExerciseName = (sIdx: number, eIdx: number): string => {
     const key = `${sIdx}-${eIdx}`;
     const sub = substitutions.find(s => s.key === key);
-    return sub ? sub.newName : YANA_PROGRAM.sections[sIdx].exercises[eIdx].name;
+    return sub ? sub.newName : sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || "Exercice";
   };
 
-  const allExercises: ProgramExerciseDetail[] = YANA_PROGRAM.sections.flatMap((s) => s.exercises);
+  const allExercises: ProgramExerciseDetail[] = sessionProgram.sections.flatMap((s) => s.exercises);
 
   useEffect(() => {
     if (sessionDone) return;
@@ -82,9 +136,9 @@ const LiveSession = () => {
     const [sIdx, eIdx] = key.split("-").map(Number);
     let nextKey: string | null = null;
     
-    for (let si = sIdx; si < YANA_PROGRAM.sections.length; si++) {
+    for (let si = sIdx; si < sessionProgram.sections.length; si++) {
       const startEi = si === sIdx ? eIdx + 1 : 0;
-      for (let ei = startEi; ei < YANA_PROGRAM.sections[si].exercises.length; ei++) {
+      for (let ei = startEi; ei < sessionProgram.sections[si].exercises.length; ei++) {
         nextKey = `${si}-${ei}`;
         break;
       }
@@ -104,8 +158,7 @@ const LiveSession = () => {
 
     // Save completed session to DB
     if (!user) return;
-    // Use first session from DB program if available, otherwise use a placeholder
-    const dbSessionId = dbProgram?.weeks?.[0]?.sessions?.[0]?.id;
+    const dbSessionId = selectedSession?.id;
     if (!dbSessionId) return;
 
     try {
@@ -149,7 +202,7 @@ const LiveSession = () => {
   const handleSwapSelect = (alternative: { name: string; equipment: string }) => {
     if (!swapTargetKey) return;
     const [sIdx, eIdx] = swapTargetKey.split("-").map(Number);
-    const originalName = YANA_PROGRAM.sections[sIdx].exercises[eIdx].name;
+    const originalName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || "Exercice";
 
     setSubstitutions(prev => {
       const filtered = prev.filter(s => s.key !== swapTargetKey);
@@ -173,7 +226,7 @@ const LiveSession = () => {
   };
 
   const swapExerciseOriginalName = swapTargetKey
-    ? YANA_PROGRAM.sections[parseInt(swapTargetKey.split("-")[0])].exercises[parseInt(swapTargetKey.split("-")[1])].name
+    ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
 
   if (sessionDone) {
@@ -186,7 +239,7 @@ const LiveSession = () => {
               Object.entries(completedSets).map(([key, sets]) => {
                 let globalIdx = 0;
                 const [sIdx, eIdx] = key.split("-").map(Number);
-                for (let i = 0; i < sIdx; i++) globalIdx += YANA_PROGRAM.sections[i].exercises.length;
+                for (let i = 0; i < sIdx; i++) globalIdx += sessionProgram.sections[i].exercises.length;
                 globalIdx += eIdx;
                 return [globalIdx, sets.map(s => ({ setNumber: s.setNumber, weight: s.weight, reps: s.reps, isFailure: s.isFailure }))];
               })
@@ -233,11 +286,11 @@ const LiveSession = () => {
             <User className="w-4 h-4 text-accent-foreground" strokeWidth={1.5} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate">{YANA_PROGRAM.title}</p>
-            <p className="text-[11px] text-muted-foreground">{YANA_PROGRAM.client}</p>
+            <p className="text-sm font-semibold truncate">{sessionProgram.title}</p>
+            <p className="text-[11px] text-muted-foreground">{sessionProgram.client}</p>
           </div>
           <Badge variant="outline" className="shrink-0 text-[10px]">
-            {YANA_PROGRAM.duration}
+            {sessionProgram.duration}
           </Badge>
         </div>
 
@@ -268,7 +321,7 @@ const LiveSession = () => {
       )}
 
       <div className="space-y-4">
-        {YANA_PROGRAM.sections.map((section, sIdx) => {
+        {sessionProgram.sections.map((section, sIdx) => {
           const sectionHasActive = section.exercises.some((_, eIdx) => `${sIdx}-${eIdx}` === activeExerciseKey);
 
           const emojiMatch = section.name.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})/u);
