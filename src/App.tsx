@@ -9,7 +9,8 @@ import { PlanProvider } from "@/providers/PlanProvider";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import AuthGuard from "@/components/AuthGuard";
 import AuthRedirect from "@/components/AuthRedirect";
-import Index from "./pages/Index";
+import LandingPage from "./pages/LandingPage";
+import LegalPage from "./pages/LegalPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import OnboardingPage from "./pages/OnboardingPage";
@@ -63,8 +64,9 @@ const App = () => (
             <ImpersonationProvider>
             <PlanProvider>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/auth" element={<AuthRedirect><AuthPage /></AuthRedirect>} />
+                <Route path="/legal/:slug" element={<LegalPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/onboarding" element={<OnboardingPage />} />
