@@ -1,8 +1,23 @@
-import { Users, ClipboardList, Plus, TrendingUp, ChevronRight } from "lucide-react";
+import { Users, ClipboardList, Plus, TrendingUp, ChevronRight, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { MOCK_STUDENTS } from "@/types/coach";
+import CoachCheckinSummary from "@/components/coach/CoachCheckinSummary";
+
+// Demo check-in data for Yana
+const DEMO_CHECKINS: Record<string, any> = {
+  yana: {
+    energy_level: 3,
+    sleep_quality: 4,
+    stress_level: 3,
+    muscle_soreness: 4,
+    soreness_location: ["jambes"],
+    availability_notes: "Dispo mercredi et samedi",
+    general_notes: "Beaucoup de Pilates cette semaine, jambes fatiguées",
+    week_start: new Date().toISOString().split("T")[0],
+  },
+};
 
 const CoachDashboard = () => {
   const navigate = useNavigate();
@@ -30,14 +45,35 @@ const CoachDashboard = () => {
             <ClipboardList className="w-5 h-5" strokeWidth={1.5} />
             <span className="text-sm font-medium">Programmes actifs</span>
           </div>
-          <p className="text-3xl font-bold">0</p>
+          <p className="text-3xl font-bold">1</p>
         </div>
         <div className="glass p-5 space-y-2">
           <div className="flex items-center gap-2 text-muted-foreground">
             <TrendingUp className="w-5 h-5" strokeWidth={1.5} />
             <span className="text-sm font-medium">Séances cette semaine</span>
           </div>
-          <p className="text-3xl font-bold">0</p>
+          <p className="text-3xl font-bold">1</p>
+        </div>
+      </div>
+
+      {/* Weekly check-ins overview */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-lg flex items-center gap-2">
+            <Activity className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            Check-ins de la semaine
+          </h2>
+        </div>
+        <div className="space-y-2">
+          {activeStudents.map((student) => (
+            <CoachCheckinSummary
+              key={student.id}
+              studentName={student.name}
+              avatar={student.avatar}
+              checkin={DEMO_CHECKINS[student.id] || null}
+              onClick={() => navigate(`/coach/students/${student.id}`)}
+            />
+          ))}
         </div>
       </div>
 
