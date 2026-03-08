@@ -228,17 +228,17 @@ export const useStudentProgram = () => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'session_exercises' },
-        () => fetchProgram()
+        () => fetchProgram(true)
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'sessions' },
-        () => fetchProgram()
+        () => fetchProgram(true)
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'session_sections' },
-        () => fetchProgram()
+        () => fetchProgram(true)
       )
       .subscribe();
 
