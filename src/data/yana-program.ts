@@ -14,6 +14,7 @@ export interface ProgramExerciseDetail {
   rpe: string;
   load: string;
   video: string;
+  videoSearchQuery?: string;
   channel: string;
   notes: string;
 }
