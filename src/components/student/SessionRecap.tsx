@@ -38,10 +38,36 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
   const mins = Math.floor(duration / 60);
   const secs = duration % 60;
 
-  const handleFeedbackSubmit = (feedback: FeedbackData) => {
-    // In a real implementation, save to session_feedback table
-    console.log("Feedback submitted:", feedback);
-    toast.success(t('feedback:feedback_sent'));
+  const handleFeedbackSubmit = async (feedback: FeedbackData) => {
+    if (!user || !completedSessionId) {
+      console.warn("Cannot save feedback: missing user or completedSessionId");
+      toast.success(t('feedback:feedback_sent'));
+      setFeedbackDone(true);
+      setShowFeedback(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from("session_feedback").insert({
+        completed_session_id: completedSessionId,
+        user_id: user.id,
+        overall_rating: feedback.overall_rating,
+        exercises_too_easy: feedback.exercises_too_easy,
+        exercises_too_hard: feedback.exercises_too_hard,
+        exercises_pain: feedback.exercises_pain,
+        joint_discomfort: feedback.joint_discomfort,
+        joint_discomfort_location: feedback.joint_discomfort_location,
+        joint_discomfort_details: feedback.joint_discomfort_details,
+        mood_after: feedback.mood_after,
+        free_comment: feedback.free_comment,
+        would_repeat: feedback.would_repeat,
+      });
+      if (error) throw error;
+      toast.success(t('feedback:feedback_sent'));
+    } catch (e: any) {
+      console.error("Feedback save error:", e);
+      toast.error("Erreur lors de l'envoi du feedback");
+    }
     setFeedbackDone(true);
     setShowFeedback(false);
   };
