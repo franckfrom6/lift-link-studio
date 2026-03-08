@@ -563,6 +563,12 @@ const CoachProgramDetail = () => {
             {t("program:activate_program")}
           </Button>
         )}
+        {program.status === "active" && (
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={publishProgram}>
+            <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
+            {t("program:publish", "Publier")}
+          </Button>
+        )}
       </div>
 
       {/* Weeks tabs */}
