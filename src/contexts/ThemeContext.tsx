@@ -24,7 +24,7 @@ const getSystemTheme = (): "light" | "dark" => {
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window === "undefined") return "light";
-    return (localStorage.getItem("fitforge-theme") as Theme) || "light";
+    return (localStorage.getItem("f6gym-theme") as Theme) || "light";
   });
 
   const resolvedTheme = theme === "system" ? getSystemTheme() : theme;
