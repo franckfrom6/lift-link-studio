@@ -603,6 +603,7 @@ const CoachProgramDetail = () => {
                   const session = week.sessions.find(s => s.day_of_week === day);
                   const hasSession = !!session;
                   const isActive = session?.id === activeSessionId;
+                  const dayDate = getDayDate(week.week_number, day);
                   return (
                     <button
                       key={day}
@@ -610,7 +611,7 @@ const CoachProgramDetail = () => {
                         if (session) setActiveSessionId(session.id);
                         else addSessionToDay(week.id, day);
                       }}
-                      className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center min-h-[60px] ${
+                      className={`flex flex-col items-center gap-0.5 p-2 rounded-lg transition-all text-center min-h-[68px] ${
                         isActive
                           ? "bg-accent border-2 border-accent-foreground/30 shadow-sm"
                           : hasSession
@@ -620,6 +621,9 @@ const CoachProgramDetail = () => {
                     >
                       <span className={`text-[10px] font-semibold uppercase ${isActive ? "text-accent-foreground" : "text-muted-foreground"}`}>
                         {dayLabel(day).slice(0, 3)}
+                      </span>
+                      <span className={`text-[9px] tabular-nums ${isActive ? "text-accent-foreground/80" : "text-muted-foreground/60"}`}>
+                        {format(dayDate, "d MMM", { locale: dateFnsLocale })}
                       </span>
                       {hasSession ? (
                         <span className={`text-[10px] font-medium leading-tight line-clamp-2 ${isActive ? "text-accent-foreground" : "text-accent-foreground/70"}`}>
