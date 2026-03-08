@@ -81,5 +81,7 @@
   "macro_carbs": "Carbs",
   "macro_fat": "Fats",
   "macro_calories": "Calories",
-  "video_link": "Video"
+  "video_link": "Video",
+  "public_library": "📚 Recommendation Library",
+  "public_library_desc": "Ready-to-use templates — click to see details, use to create your own recommendation"
 }

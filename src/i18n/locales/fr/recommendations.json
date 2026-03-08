@@ -81,5 +81,7 @@
   "macro_carbs": "Glucides",
   "macro_fat": "Lipides",
   "macro_calories": "Calories",
-  "video_link": "Vidéo"
+  "video_link": "Vidéo",
+  "public_library": "📚 Bibliothèque de recommandations",
+  "public_library_desc": "Templates prêts à l'emploi — cliquez pour voir le détail, utilisez pour créer votre propre recommandation"
 }
