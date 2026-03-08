@@ -53,7 +53,7 @@ const StudentBilan = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "AI error");
 
-      if (error) throw error;
+      if (data?.error) {
       if (data?.error) {
         if (data.error.includes("Rate limit")) {
           toast.error(t("rate_limit"));
