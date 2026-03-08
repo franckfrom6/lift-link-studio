@@ -128,7 +128,7 @@ const StudentWeek = () => {
       ...prev,
       { id: crypto.randomUUID(), originalDay: swapSourceDay, newDay: swapTargetDay, reason: reason || null },
     ]);
-    toast.success("Séance déplacée !");
+    toast.success(t('session:session_moved'));
     setSwapMode(false);
     setSwapSourceDay(null);
     setSwapTargetDay(null);
@@ -144,21 +144,21 @@ const StudentWeek = () => {
   const handleExternalSubmit = (data: ExternalSessionData) => {
     if (data.id) {
       setExternalSessions(prev => prev.map(s => s.id === data.id ? data : s));
-      toast.success("Activité modifiée !");
+      toast.success(t('calendar:activity_modified'));
     } else {
       setExternalSessions(prev => [...prev, { ...data, id: crypto.randomUUID() }]);
-      toast.success("Activité ajoutée !");
+      toast.success(t('calendar:activity_added'));
     }
   };
 
   const handleDeleteExternal = (id: string) => {
     setExternalSessions(prev => prev.filter(s => s.id !== id));
-    toast.success("Activité supprimée");
+    toast.success(t('calendar:activity_deleted'));
   };
 
   const handleCheckinSubmit = (data: CheckinData) => {
     setCheckins(prev => ({ ...prev, [weekKey]: data }));
-    toast.success("Check-in envoyé ! ✅");
+    toast.success(t('checkin:checkin_sent'));
   };
 
   const targetHasSession = swapTargetDay !== null && !!effectiveSessions[swapTargetDay];
