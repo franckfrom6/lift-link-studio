@@ -79,10 +79,23 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
     setResult(null);
     setApplied(false);
     try {
-      const { data, error } = await supabase.functions.invoke("adapt-next-week", {
-        body: { student_id: studentId, program_id: programId, week_number: weekNumber, language: i18n.language },
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/adapt-next-week`;
+      const session = (await supabase.auth.getSession()).data.session;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 90000);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ student_id: studentId, program_id: programId, week_number: weekNumber, language: i18n.language }),
+        signal: controller.signal,
       });
-      if (error) throw error;
+      clearTimeout(timeout);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "AI error");
       setResult(data);
       // Expand all sessions by default
       if (data?.proposed_sessions) {
