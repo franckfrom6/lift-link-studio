@@ -726,7 +726,7 @@ const CoachProgramDetail = () => {
                                       <InlineNumber value={ex.reps_max} onChange={(v) => updateExerciseField(ex.id, "reps_max", v)} min={1} max={100} />
                                     </div>
                                     <div className="flex items-center gap-1">
-                                      <span className="text-[10px] text-muted-foreground uppercase">Repos</span>
+                                      <span className="text-[10px] text-muted-foreground uppercase">{t("common:rest_label")}</span>
                                       <InlineNumber value={ex.rest_seconds} onChange={(v) => updateExerciseField(ex.id, "rest_seconds", v)} min={0} max={600} step={15} className="w-16" />
                                       <span className="text-[10px] text-muted-foreground">s</span>
                                     </div>
