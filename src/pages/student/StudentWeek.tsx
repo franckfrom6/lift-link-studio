@@ -13,6 +13,7 @@ import WeeklyCheckinForm, { CheckinData } from "@/components/student/WeeklyCheck
 import CheckinBadge from "@/components/student/CheckinBadge";
 import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
