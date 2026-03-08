@@ -16,6 +16,7 @@ import AuthPage from "./pages/AuthPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PricingPage from "./pages/PricingPage";
+import JoinRedirect from "./pages/JoinRedirect";
 
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
