@@ -34,7 +34,8 @@ const InviteClientModal = () => {
       if (error) {
         toast.error(t("error_generic"));
       } else {
-        const url = `${window.location.origin}/auth?invite=${data.id}`;
+        const shortId = data.id.replace(/-/g, '').slice(0, 8);
+        const url = `${window.location.origin}/join/f6gym-${shortId}`;
         setInviteUrl(url);
         toast.success(t("invite_success"));
       }
