@@ -194,6 +194,7 @@ const LiveSession = () => {
           }
           duration={elapsed}
           onClose={handleClose}
+          completedSessionId={completedSessionId || undefined}
         />
       </div>
     );
