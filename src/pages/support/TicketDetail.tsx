@@ -32,9 +32,9 @@ const TicketDetail = () => {
 
   const fetchData = async () => {
     if (!ticketId) return;
-    const { data: t } = await supabase.from("support_tickets").select("*").eq("id", ticketId).single();
+    const { data: t } = await db.from("support_tickets").select("*").eq("id", ticketId).single();
     setTicket(t);
-    const { data: m } = await supabase.from("ticket_messages").select("*").eq("ticket_id", ticketId).order("created_at", { ascending: true });
+    const { data: m } = await db.from("ticket_messages").select("*").eq("ticket_id", ticketId).order("created_at", { ascending: true });
     setMessages(m || []);
   };
 
