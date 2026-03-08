@@ -266,7 +266,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
               <p className="text-xs">{alert.recommendation}</p>
               {alert.should_see_professional && (
                 <p className="text-xs text-destructive font-medium">
-                  → {i18n.language === "fr" ? "Consultation professionnelle recommandée" : "Professional consultation recommended"}
+                  → {t('professional_consultation')}
                 </p>
               )}
             </div>
