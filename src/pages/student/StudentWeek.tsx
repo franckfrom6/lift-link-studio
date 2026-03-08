@@ -252,7 +252,9 @@ const StudentWeek = () => {
 
           return (
             <div key={day.name} className="space-y-1">
-              <button
+              <div
+                role={isSessionDay || swapMode ? "button" : undefined}
+                tabIndex={isSessionDay || swapMode ? 0 : undefined}
                 onClick={() => {
                   if (swapMode) {
                     handleDayClickInSwapMode(day.dayIndex);
@@ -260,12 +262,11 @@ const StudentWeek = () => {
                     navigate("/student/session");
                   }
                 }}
-                disabled={!swapMode && !isSessionDay && dayExternals.length === 0}
                 className={cn(
                   "w-full glass p-4 transition-all text-left",
                   day.isToday && "ring-1 ring-primary/40",
                   isSessionDay && !swapMode && "hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] cursor-pointer",
-                  !isSessionDay && dayExternals.length === 0 && !swapMode && "opacity-50 cursor-default",
+                  !isSessionDay && dayExternals.length === 0 && !swapMode && "opacity-50",
                   isSwapSource && "ring-2 ring-warning bg-warning-bg",
                   isDropTarget && "ring-1 ring-dashed ring-warning/50 cursor-pointer hover:ring-warning hover:bg-warning-bg/50",
                 )}
@@ -347,7 +348,7 @@ const StudentWeek = () => {
                     ))}
                   </div>
                 )}
-              </button>
+              </div>
 
               {/* Editable external sessions list (expanded view for days with externals only, non-session days) */}
               {!isSessionDay && dayExternals.length > 0 && (
