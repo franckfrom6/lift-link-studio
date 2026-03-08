@@ -3,11 +3,9 @@ import { Dumbbell, Calendar, BarChart3, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const StudentLayout = () => {
-  const { signOut, profile } = useAuth();
   const navigate = useNavigate();
 
-  const handleSignOut = async () => {
-    await signOut();
+  const handleSignOut = () => {
     navigate("/auth");
   };
 
