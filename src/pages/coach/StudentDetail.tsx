@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MOCK_STUDENTS } from "@/types/coach";
 import { YANA_PROGRAM } from "@/data/yana-program";
