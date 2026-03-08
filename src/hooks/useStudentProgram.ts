@@ -74,13 +74,18 @@ export const useStudentProgram = () => {
   const { effectiveStudentId } = useImpersonation();
   const [program, setProgram] = useState<DBProgram | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const studentId = user ? effectiveStudentId(user.id) : null;
 
-  const fetchProgram = useCallback(async () => {
+  const fetchProgram = useCallback(async (isRefresh = false) => {
     if (!studentId) { setLoading(false); return; }
-    setLoading(true);
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
 
     try {
