@@ -304,7 +304,7 @@ const EnhancedExerciseCard = ({
               {!allDone && (
                 <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={addSet}>
                   <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
-                  Ajouter une série
+                  {t('add_set')}
                 </Button>
               )}
             </div>
