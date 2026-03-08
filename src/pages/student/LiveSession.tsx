@@ -321,7 +321,7 @@ const LiveSession = () => {
       )}
 
       <div className="space-y-4">
-        {YANA_PROGRAM.sections.map((section, sIdx) => {
+        {sessionProgram.sections.map((section, sIdx) => {
           const sectionHasActive = section.exercises.some((_, eIdx) => `${sIdx}-${eIdx}` === activeExerciseKey);
 
           const emojiMatch = section.name.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})/u);
