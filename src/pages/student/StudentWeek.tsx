@@ -107,7 +107,7 @@ const StudentWeek = () => {
       map[swap.newDay] = { originalDay: swap.originalDay + 1, reason: swap.reason };
     }
     return map;
-  }, [localSwaps]);
+  }, [mappedSwaps]);
 
   const getExternalForDay = (date: Date) => {
     const dateStr = date.toISOString().split("T")[0];
