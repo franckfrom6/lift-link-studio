@@ -66,7 +66,7 @@ const AdminSupport = () => {
 
   const openTicket = async (ticket: any) => {
     setSelectedTicket(ticket);
-    const { data } = await supabase.from("ticket_messages").select("*").eq("ticket_id", ticket.id).order("created_at", { ascending: true });
+    const { data } = await db.from("ticket_messages").select("*").eq("ticket_id", ticket.id).order("created_at", { ascending: true });
     setMessages(data || []);
   };
 
