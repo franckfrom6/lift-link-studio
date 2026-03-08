@@ -94,8 +94,33 @@ const LiveSession = () => {
     if (nextKey) {
       setActiveExerciseKey(nextKey);
     } else {
-      setSessionDone(true);
-      toast.success(t('session:session_done'));
+      finishSession();
+    }
+  };
+
+  const finishSession = async () => {
+    setSessionDone(true);
+    toast.success(t('session:session_done'));
+
+    // Save completed session to DB
+    if (!user) return;
+    // Use first session from DB program if available, otherwise use a placeholder
+    const dbSessionId = dbProgram?.weeks?.[0]?.sessions?.[0]?.id;
+    if (!dbSessionId) return;
+
+    try {
+      const { data: cs, error } = await supabase.from("completed_sessions").insert({
+        student_id: user.id,
+        session_id: dbSessionId,
+        duration: elapsed,
+        started_at: new Date(startTime).toISOString(),
+        completed_at: new Date().toISOString(),
+      }).select("id").single();
+
+      if (error) throw error;
+      if (cs) setCompletedSessionId(cs.id);
+    } catch (e) {
+      console.error("Error saving completed session:", e);
     }
   };
 
