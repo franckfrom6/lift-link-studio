@@ -172,6 +172,57 @@ export type Database = {
         }
         Relationships: []
       }
+      external_sessions: {
+        Row: {
+          activity_label: string | null
+          activity_type: string
+          created_at: string
+          date: string
+          duration_minutes: number | null
+          id: string
+          intensity_perceived: number | null
+          location: string | null
+          muscle_groups_involved: string[] | null
+          notes: string | null
+          provider: string | null
+          student_id: string
+          time_end: string | null
+          time_start: string | null
+        }
+        Insert: {
+          activity_label?: string | null
+          activity_type?: string
+          created_at?: string
+          date: string
+          duration_minutes?: number | null
+          id?: string
+          intensity_perceived?: number | null
+          location?: string | null
+          muscle_groups_involved?: string[] | null
+          notes?: string | null
+          provider?: string | null
+          student_id: string
+          time_end?: string | null
+          time_start?: string | null
+        }
+        Update: {
+          activity_label?: string | null
+          activity_type?: string
+          created_at?: string
+          date?: string
+          duration_minutes?: number | null
+          id?: string
+          intensity_perceived?: number | null
+          location?: string | null
+          muscle_groups_involved?: string[] | null
+          notes?: string | null
+          provider?: string | null
+          student_id?: string
+          time_end?: string | null
+          time_start?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number | null
@@ -521,6 +572,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      weekly_checkins: {
+        Row: {
+          availability_notes: string | null
+          created_at: string
+          energy_level: number
+          general_notes: string | null
+          id: string
+          muscle_soreness: number
+          sleep_quality: number
+          soreness_location: string[] | null
+          stress_level: number
+          student_id: string
+          week_start: string
+        }
+        Insert: {
+          availability_notes?: string | null
+          created_at?: string
+          energy_level: number
+          general_notes?: string | null
+          id?: string
+          muscle_soreness: number
+          sleep_quality: number
+          soreness_location?: string[] | null
+          stress_level: number
+          student_id: string
+          week_start: string
+        }
+        Update: {
+          availability_notes?: string | null
+          created_at?: string
+          energy_level?: number
+          general_notes?: string | null
+          id?: string
+          muscle_soreness?: number
+          sleep_quality?: number
+          soreness_location?: string[] | null
+          stress_level?: number
+          student_id?: string
+          week_start?: string
+        }
+        Relationships: []
       }
     }
     Views: {
