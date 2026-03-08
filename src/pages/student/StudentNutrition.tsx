@@ -7,6 +7,7 @@ import { MealLogData } from "@/components/nutrition/DailyNutritionLog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
+import FeatureGate from "@/components/plans/FeatureGate";
 
 const StudentNutrition = () => {
   const navigate = useNavigate();
