@@ -27,7 +27,7 @@ const StrengthProgressChart = () => {
         <h2 className="font-bold text-sm uppercase tracking-wide text-muted-foreground">{t("strength_progress")}</h2>
         <div className="flex gap-2">
           <Select value={selectedExercise || ""} onValueChange={setSelectedExercise}>
-            <SelectTrigger className="h-8 text-xs w-[180px]">
+            <SelectTrigger className="h-8 text-xs w-[140px] sm:w-[180px]">
               <SelectValue placeholder={t("select_exercise")} />
             </SelectTrigger>
             <SelectContent>
