@@ -239,7 +239,7 @@ const LiveSession = () => {
               Object.entries(completedSets).map(([key, sets]) => {
                 let globalIdx = 0;
                 const [sIdx, eIdx] = key.split("-").map(Number);
-                for (let i = 0; i < sIdx; i++) globalIdx += YANA_PROGRAM.sections[i].exercises.length;
+                for (let i = 0; i < sIdx; i++) globalIdx += sessionProgram.sections[i].exercises.length;
                 globalIdx += eIdx;
                 return [globalIdx, sets.map(s => ({ setNumber: s.setNumber, weight: s.weight, reps: s.reps, isFailure: s.isFailure }))];
               })
