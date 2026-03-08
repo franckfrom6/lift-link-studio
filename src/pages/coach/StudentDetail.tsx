@@ -5,7 +5,7 @@ import { YANA_PROGRAM } from "@/data/yana-program";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, FileText } from "lucide-react";
 import ProgramView from "@/components/coach/ProgramView";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import SwapBadge from "@/components/student/SwapBadge";
