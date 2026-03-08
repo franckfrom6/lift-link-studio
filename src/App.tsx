@@ -2,13 +2,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { PlanProvider } from "@/providers/PlanProvider";
+import AuthGuard from "@/components/AuthGuard";
+import AuthRedirect from "@/components/AuthRedirect";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
+import OnboardingPage from "./pages/OnboardingPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PricingPage from "./pages/PricingPage";
 
 import AdminLayout from "./layouts/AdminLayout";
@@ -56,10 +60,12 @@ const App = () => (
             <PlanProvider>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/auth" element={<AuthRedirect><AuthPage /></AuthRedirect>} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/onboarding" element={<OnboardingPage />} />
 
-                <Route path="/admin" element={<AdminLayout />}>
+                <Route path="/admin" element={<AuthGuard requireAdmin><AdminLayout /></AuthGuard>}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="users" element={<AdminUsers />} />
                   <Route path="features" element={<AdminFeatures />} />
@@ -68,7 +74,7 @@ const App = () => (
                   <Route path="kb" element={<AdminKB />} />
                 </Route>
 
-                <Route path="/coach" element={<CoachLayout />}>
+                <Route path="/coach" element={<AuthGuard role="coach"><CoachLayout /></AuthGuard>}>
                   <Route index element={<CoachDashboard />} />
                   <Route path="students" element={<CoachStudents />} />
                   <Route path="students/:studentId" element={<StudentDetail />} />
@@ -79,7 +85,7 @@ const App = () => (
                   <Route path="recommendations" element={<CoachRecommendations />} />
                 </Route>
 
-                <Route path="/student" element={<StudentLayout />}>
+                <Route path="/student" element={<AuthGuard role="student"><StudentLayout /></AuthGuard>}>
                   <Route index element={<StudentWeek />} />
                   <Route path="session" element={<LiveSession />} />
                   <Route path="progress" element={<StudentProgress />} />
