@@ -334,6 +334,7 @@ const StudentWeek = () => {
       )}
 
       {/* Days */}
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="space-y-2">
         {dates.map((day) => {
           const isSessionDay = day.hasSession;
