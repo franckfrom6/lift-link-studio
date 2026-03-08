@@ -3,13 +3,21 @@ import { MOCK_STUDENTS } from "@/types/coach";
 import { YANA_PROGRAM } from "@/data/yana-program";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, ClipboardList, Target, BarChart3 } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight } from "lucide-react";
 import ProgramView from "@/components/coach/ProgramView";
+import SwapBadge from "@/components/student/SwapBadge";
+import { useCoachStudentSwaps } from "@/hooks/useCoachStudentSwaps";
+
+const DAY_NAMES: Record<number, string> = {
+  1: "Lundi", 2: "Mardi", 3: "Mercredi", 4: "Jeudi", 5: "Vendredi", 6: "Samedi", 7: "Dimanche",
+};
 
 const StudentDetail = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
   const student = MOCK_STUDENTS.find((s) => s.id === studentId);
+  // For a real app, pass actual student user_id. Using a placeholder for demo.
+  const { swaps, loading: swapsLoading } = useCoachStudentSwaps(studentId === "yana" ? studentId : undefined);
 
   if (!student) {
     return (
@@ -23,6 +31,12 @@ const StudentDetail = () => {
   }
 
   const hasProgram = studentId === "yana";
+  const recentSwaps = swaps.filter((s) => {
+    const d = new Date(s.created_at);
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return d >= weekAgo;
+  });
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -40,6 +54,12 @@ const StudentDetail = () => {
               <Badge variant={student.status === "active" ? "default" : "secondary"}>
                 {student.status === "active" ? "Actif" : "Inactif"}
               </Badge>
+              {recentSwaps.length > 0 && (
+                <Badge variant="outline" className="text-warning border-warning/30 bg-warning-bg">
+                  <ArrowLeftRight className="w-3 h-3 mr-1" strokeWidth={1.5} />
+                  {recentSwaps.length} swap{recentSwaps.length > 1 ? "s" : ""}
+                </Badge>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">{student.goal} · {student.level}</p>
           </div>
@@ -64,6 +84,31 @@ const StudentDetail = () => {
           <p className="text-sm font-semibold mt-0.5">{hasProgram ? "1" : "0"}</p>
         </div>
       </div>
+
+      {/* Swap history */}
+      {swaps.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="font-bold flex items-center gap-2">
+            <ArrowLeftRight className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            Historique des déplacements
+          </h2>
+          <div className="space-y-2">
+            {swaps.slice(0, 5).map((swap) => (
+              <div key={swap.id} className="glass p-3 flex items-center gap-3">
+                <SwapBadge originalDay={swap.original_day} newDay={swap.new_day} variant="full" />
+                {swap.reason && (
+                  <span className="text-xs text-muted-foreground truncate flex-1">
+                    — {swap.reason}
+                  </span>
+                )}
+                <span className="text-[10px] text-muted-foreground shrink-0">
+                  {new Date(swap.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Programs section */}
       <div className="space-y-3">
