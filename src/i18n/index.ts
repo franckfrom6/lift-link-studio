@@ -17,6 +17,7 @@ import frBilan from './locales/fr/bilan.json';
 import frRecommendations from './locales/fr/recommendations.json';
 import frPlans from './locales/fr/plans.json';
 import frAdmin from './locales/fr/admin.json';
+import frFeedback from './locales/fr/feedback.json';
 
 import enCommon from './locales/en/common.json';
 import enAuth from './locales/en/auth.json';
