@@ -28,6 +28,7 @@ import enExercises from './locales/en/exercises.json';
 import enRecovery from './locales/en/recovery.json';
 import enSettings from './locales/en/settings.json';
 import enBilan from './locales/en/bilan.json';
+import enRecommendations from './locales/en/recommendations.json';
 
 i18n
   .use(LanguageDetector)
