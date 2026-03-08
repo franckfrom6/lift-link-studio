@@ -451,6 +451,23 @@ const CoachProgramDetail = () => {
     setActiveSessionId(id);
   };
 
+  const addWeek = async () => {
+    if (!program) return;
+    const weekNumber = program.weeks.length > 0
+      ? Math.max(...program.weeks.map(w => w.week_number)) + 1
+      : 1;
+    const { data, error } = await supabase.from("program_weeks").insert({
+      program_id: program.id,
+      week_number: weekNumber,
+    }).select().single();
+    if (error || !data) { toast.error(t("common:error")); return; }
+    const newWeek: Week = { ...data, sessions: [] };
+    setProgram(prev => prev ? { ...prev, weeks: [...prev.weeks, newWeek] } : prev);
+    setActiveWeek(String(program.weeks.length));
+    setActiveSessionId(null);
+    toast.success(t("program:week_added", `Semaine ${weekNumber} ajoutée`));
+  };
+
   const addSessionToDay = async (weekId: string, dayOfWeek: number) => {
     if (!program) return;
     const dayName = dayLabel(dayOfWeek);
