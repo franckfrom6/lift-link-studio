@@ -20,8 +20,9 @@ interface SessionRecapProps {
   completedSessionId?: string;
 }
 
-const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroups, activityType }: SessionRecapProps) => {
+const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroups, activityType, completedSessionId }: SessionRecapProps) => {
   const { t } = useTranslation(['session', 'feedback']);
+  const { user } = useAuth();
   const [recoOpen, setRecoOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
