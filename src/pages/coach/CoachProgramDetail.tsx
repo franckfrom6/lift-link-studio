@@ -330,7 +330,7 @@ const CoachProgramDetail = () => {
       rest_seconds: 90,
     }).select("*, exercise:exercises(id, name, name_en, muscle_group, equipment)").single();
 
-    if (error) { toast.error("Erreur"); return; }
+    if (error) { toast.error(t("common:error")); return; }
 
     setProgram(prev => {
       if (!prev) return prev;
