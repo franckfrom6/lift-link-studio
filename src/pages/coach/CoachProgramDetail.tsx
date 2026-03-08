@@ -595,7 +595,7 @@ const CoachProgramDetail = () => {
                   return <p className="text-sm text-muted-foreground text-center py-8">{t("program:start_with_ai")}</p>;
                 }
                 if (!session) {
-                  return <p className="text-sm text-muted-foreground text-center py-8">{t("common:select_session", "Sélectionnez une séance dans le calendrier ci-dessus")}</p>;
+                  return <p className="text-sm text-muted-foreground text-center py-8">{t("common:select_session")}</p>;
                 }
 
                 const totalExercises = session.sections.reduce((sum, s) => sum + s.exercises.length, 0);
