@@ -16,11 +16,13 @@ interface WeeklySummary {
 
 export const useStudentDashboard = () => {
   const { user } = useAuth();
+  const { effectiveStudentId } = useImpersonation();
   const [summary, setSummary] = useState<WeeklySummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const studentId = user ? effectiveStudentId(user.id) : null;
 
   useEffect(() => {
-    if (!user) return;
+    if (!studentId) return;
     const fetchSummary = async () => {
       const now = new Date();
       const weekStart = startOfWeek(now, { weekStartsOn: 1 });
