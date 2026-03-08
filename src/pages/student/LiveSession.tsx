@@ -158,8 +158,7 @@ const LiveSession = () => {
 
     // Save completed session to DB
     if (!user) return;
-    // Use first session from DB program if available, otherwise use a placeholder
-    const dbSessionId = dbProgram?.weeks?.[0]?.sessions?.[0]?.id;
+    const dbSessionId = selectedSession?.id;
     if (!dbSessionId) return;
 
     try {
