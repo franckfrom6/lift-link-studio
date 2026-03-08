@@ -18,13 +18,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSessionSwaps } from "@/hooks/useSessionSwaps";
 
-interface LocalSwap {
-  id: string;
-  originalDay: number;
-  newDay: number;
-  reason: string | null;
-}
-
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
   const { user } = useAuth();
