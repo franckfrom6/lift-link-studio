@@ -17,6 +17,7 @@ import CoachExercises from "./pages/coach/CoachExercises";
 import StudentDetail from "./pages/coach/StudentDetail";
 import ProgramEditor from "./pages/coach/ProgramEditor";
 import StudentBilan from "./pages/coach/StudentBilan";
+import CoachRecommendations from "./pages/coach/CoachRecommendations";
 
 import StudentLayout from "./layouts/StudentLayout";
 import StudentWeek from "./pages/student/StudentWeek";
