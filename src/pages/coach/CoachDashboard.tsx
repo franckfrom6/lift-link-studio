@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AIUsageDashboard from "@/components/ai/AIUsageDashboard";
 import { Users, TrendingUp, Activity, AlertTriangle, ClipboardList, ChevronRight, Filter, ArrowUpDown, Search, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
