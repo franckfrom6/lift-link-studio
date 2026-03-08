@@ -1,4 +1,4 @@
-import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo, useEffect } from "react";
@@ -27,7 +27,7 @@ interface LocalSwap {
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
   const { user } = useAuth();
-  const { program, loading: programLoading } = useStudentProgram();
+  const { program, loading: programLoading, refreshing } = useStudentProgram();
   const DAYS = [
     t("common:days.mon"), t("common:days.tue"), t("common:days.wed"),
     t("common:days.thu"), t("common:days.fri"), t("common:days.sat"), t("common:days.sun"),
@@ -204,7 +204,13 @@ const StudentWeek = () => {
   }
 
   return (
-    <div className="space-y-5 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-5 animate-fade-in max-w-lg mx-auto relative">
+      {refreshing && (
+        <div className="absolute top-0 right-0 z-10 flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full animate-pulse">
+          <RefreshCw className="h-3 w-3 animate-spin" />
+          {t('common:refreshing', 'Mise à jour…')}
+        </div>
+      )}
       <div>
         <h1 className="text-2xl font-bold">{t('calendar:hello', { name: userName })}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t('calendar:your_program')}</p>

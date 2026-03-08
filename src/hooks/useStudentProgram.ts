@@ -74,13 +74,18 @@ export const useStudentProgram = () => {
   const { effectiveStudentId } = useImpersonation();
   const [program, setProgram] = useState<DBProgram | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const studentId = user ? effectiveStudentId(user.id) : null;
 
-  const fetchProgram = useCallback(async () => {
+  const fetchProgram = useCallback(async (isRefresh = false) => {
     if (!studentId) { setLoading(false); return; }
-    setLoading(true);
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -206,11 +211,12 @@ export const useStudentProgram = () => {
       setError(e.message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [studentId]);
 
   useEffect(() => {
-    fetchProgram();
+    fetchProgram(false);
   }, [fetchProgram]);
 
   // Realtime: refetch when session_exercises, sessions, or session_sections change
@@ -222,17 +228,17 @@ export const useStudentProgram = () => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'session_exercises' },
-        () => fetchProgram()
+        () => fetchProgram(true)
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'sessions' },
-        () => fetchProgram()
+        () => fetchProgram(true)
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'session_sections' },
-        () => fetchProgram()
+        () => fetchProgram(true)
       )
       .subscribe();
 
@@ -254,5 +260,5 @@ export const useStudentProgram = () => {
     }
   };
 
-  return { program, loading, error, refetch: fetchProgram, seedDemo };
+  return { program, loading, refreshing, error, refetch: fetchProgram, seedDemo };
 };
