@@ -109,8 +109,7 @@ export function useGenerateProgram() {
       };
 
       // Convert progression
-      const progression: ProgressionPhase[] = (ai.progression || []).map((p: any, i: number) => ({
-        id: crypto.randomUUID(),
+      const progression: ProgressionPhaseData[] = (ai.progression || []).map((p: any, i: number) => ({
         weekLabel: p.week_label,
         description: p.description,
         weekStart: p.week_start,
@@ -122,7 +121,7 @@ export function useGenerateProgram() {
       programData.progression = progression;
 
       toast.success("Programme généré par l'IA ! Vous pouvez maintenant l'éditer.");
-      return { program: programData, progression };
+      return programData;
     } catch (e: any) {
       console.error("AI generate error:", e);
       toast.error("Erreur lors de la génération : " + (e.message || "Erreur inconnue"));
