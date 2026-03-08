@@ -53,8 +53,9 @@ interface CheckinData {
 const StudentDetail = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation(["dashboard", "common", "program", "calendar"]);
+  const { t, i18n } = useTranslation(["dashboard", "common", "program", "calendar", "settings"]);
   const { user } = useAuth();
+  const { startImpersonation } = useImpersonation();
 
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [program, setProgram] = useState<ProgramInfo | null>(null);
