@@ -202,7 +202,7 @@ const LiveSession = () => {
   const handleSwapSelect = (alternative: { name: string; equipment: string }) => {
     if (!swapTargetKey) return;
     const [sIdx, eIdx] = swapTargetKey.split("-").map(Number);
-    const originalName = YANA_PROGRAM.sections[sIdx].exercises[eIdx].name;
+    const originalName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || "Exercice";
 
     setSubstitutions(prev => {
       const filtered = prev.filter(s => s.key !== swapTargetKey);
