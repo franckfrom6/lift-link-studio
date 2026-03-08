@@ -42,7 +42,6 @@ const AdminUsers = () => {
   const [overrides, setOverrides] = useState<any[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Override form
   const [newKey, setNewKey] = useState("");
   const [newEnabled, setNewEnabled] = useState(true);
   const [newReason, setNewReason] = useState("");
@@ -146,37 +145,39 @@ const AdminUsers = () => {
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center gap-2">
         <Users className="w-5 h-5 text-muted-foreground" />
-        <h1 className="text-2xl font-bold">{t("users")}</h1>
-        <Badge variant="secondary" className="ml-2">{filtered.length}</Badge>
+        <h1 className="text-xl sm:text-2xl font-bold">{t("users")}</h1>
+        <Badge variant="secondary" className="ml-1">{filtered.length}</Badge>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[200px]">
+      {/* Filters - stack on mobile */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder={t("search_users")} value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
         </div>
-        <Select value={filterRole} onValueChange={(v) => { setFilterRole(v); setPage(0); }}>
-          <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("filter_all")}</SelectItem>
-            <SelectItem value="coach">Coach</SelectItem>
-            <SelectItem value="student">{i18n.language === "fr" ? "Élève" : "Student"}</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterPlan} onValueChange={(v) => { setFilterPlan(v); setPage(0); }}>
-          <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("filter_all")}</SelectItem>
-            <SelectItem value="free">Free</SelectItem>
-            <SelectItem value="essential">Essential</SelectItem>
-            <SelectItem value="advanced">Advanced</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Select value={filterRole} onValueChange={(v) => { setFilterRole(v); setPage(0); }}>
+            <SelectTrigger className="w-full sm:w-[120px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("filter_all")}</SelectItem>
+              <SelectItem value="coach">Coach</SelectItem>
+              <SelectItem value="student">{i18n.language === "fr" ? "Élève" : "Student"}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterPlan} onValueChange={(v) => { setFilterPlan(v); setPage(0); }}>
+            <SelectTrigger className="w-full sm:w-[130px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("filter_all")}</SelectItem>
+              <SelectItem value="free">Free</SelectItem>
+              <SelectItem value="essential">Essential</SelectItem>
+              <SelectItem value="advanced">Advanced</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
+      {/* Mobile: card list / Desktop: table */}
+      <div className="hidden sm:block border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
@@ -184,9 +185,9 @@ const AdminUsers = () => {
                 <th className="text-left p-3 font-medium">{t("name")}</th>
                 <th className="text-left p-3 font-medium">{t("role")}</th>
                 <th className="text-left p-3 font-medium">{t("plan")}</th>
-                <th className="text-left p-3 font-medium">{t("status")}</th>
-                <th className="text-left p-3 font-medium">{t("registered")}</th>
-                <th className="text-left p-3 font-medium">{t("clients")}</th>
+                <th className="text-left p-3 font-medium hidden md:table-cell">{t("status")}</th>
+                <th className="text-left p-3 font-medium hidden lg:table-cell">{t("registered")}</th>
+                <th className="text-left p-3 font-medium hidden lg:table-cell">{t("clients")}</th>
                 <th className="text-right p-3 font-medium">{t("actions")}</th>
               </tr>
             </thead>
@@ -195,11 +196,11 @@ const AdminUsers = () => {
                 <tr key={u.user_id} className="hover:bg-muted/30 transition-colors">
                   <td className="p-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
                         {u.full_name.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <p className="font-medium">{u.full_name}</p>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{u.full_name}</p>
                         {u.is_admin && <Badge variant="destructive" className="text-[9px] px-1 py-0">Admin</Badge>}
                       </div>
                     </div>
@@ -208,13 +209,13 @@ const AdminUsers = () => {
                     <Badge variant="outline" className="text-xs">{u.role}</Badge>
                   </td>
                   <td className="p-3"><PlanBadge plan={u.plan_name || "free"} showTooltip={false} /></td>
-                  <td className="p-3">
+                  <td className="p-3 hidden md:table-cell">
                     <Badge variant={u.subscription_status === "active" ? "default" : "secondary"} className="text-xs">
                       {t(`status_${u.subscription_status}`)}
                     </Badge>
                   </td>
-                  <td className="p-3 text-muted-foreground text-xs">{format(new Date(u.created_at), "dd/MM/yyyy")}</td>
-                  <td className="p-3 text-center">{u.role === "coach" ? u.client_count : "—"}</td>
+                  <td className="p-3 text-muted-foreground text-xs hidden lg:table-cell">{format(new Date(u.created_at), "dd/MM/yyyy")}</td>
+                  <td className="p-3 text-center hidden lg:table-cell">{u.role === "coach" ? u.client_count : "—"}</td>
                   <td className="p-3 text-right">
                     <Button variant="ghost" size="sm" onClick={() => openUser(u)}>{t("view")}</Button>
                   </td>
@@ -223,6 +224,32 @@ const AdminUsers = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="sm:hidden space-y-2">
+        {paged.map((u) => (
+          <button
+            key={u.user_id}
+            onClick={() => openUser(u)}
+            className="w-full glass p-3 flex items-center gap-3 text-left"
+          >
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary shrink-0">
+              {u.full_name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="font-medium text-sm truncate">{u.full_name}</p>
+                {u.is_admin && <Badge variant="destructive" className="text-[9px] px-1 py-0">Admin</Badge>}
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <Badge variant="outline" className="text-[10px] px-1 py-0">{u.role}</Badge>
+                <PlanBadge plan={u.plan_name || "free"} showTooltip={false} />
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </button>
+        ))}
       </div>
 
       {/* Pagination */}
@@ -251,7 +278,6 @@ const AdminUsers = () => {
               </SheetHeader>
 
               <div className="space-y-6 mt-4">
-                {/* Profile */}
                 <div className="space-y-2">
                   <h3 className="font-semibold text-sm">{t("profile")}</h3>
                   <div className="grid grid-cols-2 gap-2 text-sm">
@@ -268,10 +294,9 @@ const AdminUsers = () => {
                   </div>
                 </div>
 
-                {/* Subscription */}
                 <div className="space-y-2">
                   <h3 className="font-semibold text-sm">{t("subscription")}</h3>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <PlanBadge plan={selectedUser.plan_name || "free"} showTooltip={false} />
                     <Badge variant={selectedUser.subscription_status === "active" ? "default" : "secondary"}>
                       {t(`status_${selectedUser.subscription_status}`)}
@@ -295,7 +320,6 @@ const AdminUsers = () => {
                   </div>
                 </div>
 
-                {/* Overrides */}
                 <div className="space-y-2">
                   <h3 className="font-semibold text-sm">{t("feature_overrides")}</h3>
                   {overrides.length === 0 ? (
@@ -303,13 +327,12 @@ const AdminUsers = () => {
                   ) : (
                     <div className="space-y-1">
                       {overrides.map((o: any) => (
-                        <div key={o.id} className="flex items-center gap-2 text-xs bg-muted p-2 rounded">
-                          <span className="flex-1 font-medium">{getFeatureLabel(o.feature_key)}</span>
+                        <div key={o.id} className="flex items-center gap-2 text-xs bg-muted p-2 rounded flex-wrap">
+                          <span className="flex-1 font-medium min-w-0 truncate">{getFeatureLabel(o.feature_key)}</span>
                           <Badge variant={o.is_enabled ? "default" : "secondary"}>
                             {o.is_enabled ? "ON" : "OFF"}
                           </Badge>
-                          {o.reason && <span className="text-muted-foreground truncate max-w-[80px]">{o.reason}</span>}
-                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => deleteOverride(o.id)}>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => deleteOverride(o.id)}>
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>

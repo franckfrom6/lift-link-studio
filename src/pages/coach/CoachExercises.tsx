@@ -36,29 +36,28 @@ const CoachExercises = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold">{t('exercise_library')}</h1>
         <p className="text-muted-foreground text-sm">{t('exercises_available', { count: exercises.length })}</p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-          <Input placeholder={t('search_exercise')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 h-11 bg-surface" />
-        </div>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+        <Input placeholder={t('search_exercise')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 h-11 bg-surface" />
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* Muscle group filters - scrollable on mobile */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap scrollbar-none">
         <button onClick={() => setSelectedMuscle(null)}
-          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
             !selectedMuscle ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
           }`}>
           {t('all')}
         </button>
         {MUSCLE_GROUPS.map((mg) => (
           <button key={mg} onClick={() => setSelectedMuscle(mg === selectedMuscle ? null : mg)}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
               selectedMuscle === mg ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}>
             {getMuscleGroupLabel(mg)}
@@ -72,15 +71,15 @@ const CoachExercises = () => {
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-[0.05em] mb-3">{getMuscleGroupLabel(muscle)}</h3>
             <div className="grid gap-2">
               {exs.map((ex) => (
-                <div key={ex.id} className="glass p-4 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                    <Dumbbell className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
+                <div key={ex.id} className="glass p-3 sm:p-4 flex items-center gap-3">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                    <Dumbbell className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm">{getExerciseName(ex)}</p>
+                    <p className="font-medium text-sm truncate">{getExerciseName(ex)}</p>
                     <p className="text-xs text-muted-foreground truncate">{ex.description}</p>
                   </div>
-                  <div className="flex gap-1.5 shrink-0">
+                  <div className="flex flex-col sm:flex-row gap-1 shrink-0">
                     <Badge variant="secondary" className="text-[10px]">{ex.type === "compound" ? t('compound') : t('isolation')}</Badge>
                     <Badge variant="outline" className="text-[10px]">{getEquipmentLabel(ex.equipment)}</Badge>
                   </div>
