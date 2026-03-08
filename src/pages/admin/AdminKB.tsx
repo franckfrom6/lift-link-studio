@@ -26,7 +26,7 @@ const AdminKB = () => {
   });
 
   const fetchArticles = async () => {
-    const { data } = await supabase.from("kb_articles").select("*").order("sort_order");
+    const { data } = await db.from("kb_articles").select("*").order("sort_order");
     setArticles(data || []);
   };
 
