@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Calendar, Dumbbell, ChevronDown, ChevronUp, Plus, Trash2,
-  GripVertical, Check, Pencil, FolderPlus, Loader2, Save
+  GripVertical, Check, Pencil, FolderPlus, Loader2, Save, Send
 } from "lucide-react";
 import { toast } from "sonner";
 import ExercisePicker from "@/components/coach/ExercisePicker";
@@ -502,6 +502,12 @@ const CoachProgramDetail = () => {
     toast.success(t("program:program_activated"));
   };
 
+  const publishProgram = async () => {
+    if (!program) return;
+    await supabase.from("programs").update({ updated_at: new Date().toISOString() }).eq("id", program.id);
+    toast.success(t("program:published", "Programme publié — visible par l'élève"));
+  };
+
   const dayLabel = (d: number) => t(`common:days.${DAY_KEYS[d]}`, DAY_KEYS[d]);
   const lang = i18n.language;
   const dateFnsLocale = lang === "fr" ? fr : enUS;
@@ -561,6 +567,12 @@ const CoachProgramDetail = () => {
         {program.status === "draft" && (
           <Button size="sm" onClick={activateProgram}>
             {t("program:activate_program")}
+          </Button>
+        )}
+        {program.status === "active" && (
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={publishProgram}>
+            <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
+            {t("program:publish", "Publier")}
           </Button>
         )}
       </div>
