@@ -1,13 +1,15 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Dumbbell, Users, ClipboardList, LogOut, LayoutDashboard, BookOpen, CreditCard } from "lucide-react";
+import { Dumbbell, Users, ClipboardList, LogOut, LayoutDashboard, BookOpen, CreditCard, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/contexts/AuthContext";
 
 const CoachLayout = () => {
   const navigate = useNavigate();
   const { t } = useTranslation(['settings', 'common']);
+  const { profile } = useAuth();
 
   const handleSignOut = () => {
     navigate("/auth");
@@ -20,6 +22,7 @@ const CoachLayout = () => {
     { to: "/coach/exercises", icon: Dumbbell, label: t('settings:nav_exercises') },
     { to: "/coach/recommendations", icon: BookOpen, label: t('settings:nav_recommendations') },
     { to: "/pricing", icon: CreditCard, label: t('settings:nav_plans') },
+    ...(profile?.is_admin ? [{ to: "/admin", icon: Shield, label: "Admin" }] : []),
   ];
 
   return (
