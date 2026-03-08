@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { Dumbbell, Search, Filter } from "lucide-react";
+import { Dumbbell, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useExercises } from "@/hooks/useExercises";
-import { MUSCLE_GROUPS, EQUIPMENT_TYPES } from "@/types/coach";
+import { MUSCLE_GROUPS } from "@/types/coach";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const CoachExercises = () => {
   const { exercises, loading } = useExercises();
   const [search, setSearch] = useState("");
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
+  const { t } = useTranslation('exercises');
 
   const filtered = exercises.filter((ex) => {
     const matchesSearch = ex.name.toLowerCase().includes(search.toLowerCase());
@@ -34,46 +36,34 @@ const CoachExercises = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold">Bibliothèque d'exercices</h1>
-        <p className="text-muted-foreground text-sm">{exercises.length} exercices disponibles</p>
+        <h1 className="text-2xl font-bold">{t('exercise_library')}</h1>
+        <p className="text-muted-foreground text-sm">{t('exercises_available', { count: exercises.length })}</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-          <Input
-            placeholder="Rechercher un exercice..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-11 bg-surface"
-          />
+          <Input placeholder={t('search_exercise')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 h-11 bg-surface" />
         </div>
       </div>
 
-      {/* Muscle group filter chips */}
       <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setSelectedMuscle(null)}
+        <button onClick={() => setSelectedMuscle(null)}
           className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
             !selectedMuscle ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Tous
+          }`}>
+          {t('all')}
         </button>
         {MUSCLE_GROUPS.map((mg) => (
-          <button
-            key={mg}
-            onClick={() => setSelectedMuscle(mg === selectedMuscle ? null : mg)}
+          <button key={mg} onClick={() => setSelectedMuscle(mg === selectedMuscle ? null : mg)}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
               selectedMuscle === mg ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
-            }`}
-          >
+            }`}>
             {mg}
           </button>
         ))}
       </div>
 
-      {/* Exercise list grouped by muscle */}
       <div className="space-y-6">
         {Object.entries(grouped).map(([muscle, exs]) => (
           <div key={muscle}>
@@ -89,7 +79,7 @@ const CoachExercises = () => {
                     <p className="text-xs text-muted-foreground truncate">{ex.description}</p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
-                    <Badge variant="secondary" className="text-[10px]">{ex.type === "compound" ? "Composé" : "Isolation"}</Badge>
+                    <Badge variant="secondary" className="text-[10px]">{ex.type === "compound" ? t('compound') : t('isolation')}</Badge>
                     <Badge variant="outline" className="text-[10px]">{ex.equipment}</Badge>
                   </div>
                 </div>
@@ -101,7 +91,7 @@ const CoachExercises = () => {
         {Object.keys(grouped).length === 0 && (
           <div className="glass p-12 text-center space-y-3">
             <Dumbbell className="w-8 h-8 text-muted-foreground mx-auto" strokeWidth={1.5} />
-            <p className="text-muted-foreground">Aucun exercice trouvé</p>
+            <p className="text-muted-foreground">{t('no_exercise_found')}</p>
           </div>
         )}
       </div>
