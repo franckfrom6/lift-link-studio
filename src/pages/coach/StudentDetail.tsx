@@ -219,6 +219,18 @@ const StudentDetail = () => {
         </div>
       )}
 
+      {/* AI Adaptation */}
+      {isYana && (
+        <div className="space-y-3">
+          <AIAdaptationView
+            studentId={student.id}
+            programId="demo-program"
+            weekNumber={3}
+            studentName={student.name}
+          />
+        </div>
+      )}
+
       {/* AI Bilan + Report buttons */}
       <div className="flex gap-2">
         <Button
