@@ -25,12 +25,23 @@ export interface WeekData {
   sessions: SessionData[];
 }
 
+export interface SessionSectionData {
+  id: string;
+  name: string;
+  icon?: string;
+  sortOrder: number;
+  durationEstimate?: string;
+  notes?: string;
+  exercises: SessionExerciseData[];
+}
+
 export interface SessionData {
   id: string;
   dayOfWeek: number;
   name: string;
   notes?: string;
-  exercises: SessionExerciseData[];
+  sections: SessionSectionData[];
+  exercises: SessionExerciseData[]; // exercises without a section (backwards compat)
 }
 
 export interface SessionExerciseData {
@@ -43,6 +54,11 @@ export interface SessionExerciseData {
   restSeconds: number;
   suggestedWeight?: number;
   coachNotes?: string;
+  tempo?: string;
+  rpeTarget?: string;
+  videoUrl?: string;
+  videoSearchQuery?: string;
+  sectionId?: string;
 }
 
 export const DAY_NAMES: Record<number, string> = {

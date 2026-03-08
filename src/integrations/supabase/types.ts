@@ -86,6 +86,7 @@ export type Database = {
           id: string
           is_failure: boolean
           reps: number
+          rpe_actual: number | null
           session_exercise_id: string
           set_number: number
           weight: number | null
@@ -96,6 +97,7 @@ export type Database = {
           id?: string
           is_failure?: boolean
           reps: number
+          rpe_actual?: number | null
           session_exercise_id: string
           set_number: number
           weight?: number | null
@@ -106,6 +108,7 @@ export type Database = {
           id?: string
           is_failure?: boolean
           reps?: number
+          rpe_actual?: number | null
           session_exercise_id?: string
           set_number?: number
           weight?: number | null
@@ -217,6 +220,50 @@ export type Database = {
         }
         Relationships: []
       }
+      program_progression: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_deload: boolean
+          program_id: string
+          sort_order: number
+          week_end: number
+          week_label: string
+          week_start: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          is_deload?: boolean
+          program_id: string
+          sort_order?: number
+          week_end: number
+          week_label: string
+          week_start: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_deload?: boolean
+          program_id?: string
+          sort_order?: number
+          week_end?: number
+          week_label?: string
+          week_start?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_progression_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       program_weeks: {
         Row: {
           created_at: string
@@ -285,10 +332,15 @@ export type Database = {
           reps_max: number
           reps_min: number
           rest_seconds: number
+          rpe_target: string | null
+          section_id: string | null
           session_id: string
           sets: number
           sort_order: number
           suggested_weight: number | null
+          tempo: string | null
+          video_search_query: string | null
+          video_url: string | null
         }
         Insert: {
           coach_notes?: string | null
@@ -298,10 +350,15 @@ export type Database = {
           reps_max?: number
           reps_min?: number
           rest_seconds?: number
+          rpe_target?: string | null
+          section_id?: string | null
           session_id: string
           sets?: number
           sort_order: number
           suggested_weight?: number | null
+          tempo?: string | null
+          video_search_query?: string | null
+          video_url?: string | null
         }
         Update: {
           coach_notes?: string | null
@@ -311,10 +368,15 @@ export type Database = {
           reps_max?: number
           reps_min?: number
           rest_seconds?: number
+          rpe_target?: string | null
+          section_id?: string | null
           session_id?: string
           sets?: number
           sort_order?: number
           suggested_weight?: number | null
+          tempo?: string | null
+          video_search_query?: string | null
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -325,7 +387,55 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "session_exercises_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "session_sections"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "session_exercises_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_sections: {
+        Row: {
+          created_at: string
+          duration_estimate: string | null
+          icon: string | null
+          id: string
+          name: string
+          notes: string | null
+          session_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          duration_estimate?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          session_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          duration_estimate?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          session_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_sections_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "sessions"

@@ -41,6 +41,11 @@
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+    --tag-violet: 263 70% 73%;
+    --tag-blue: 213 94% 68%;
+    --tag-orange: 25 95% 53%;
   }
 
   .dark {
@@ -78,6 +83,11 @@
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+    --tag-violet: 263 70% 73%;
+    --tag-blue: 213 94% 68%;
+    --tag-orange: 25 95% 53%;
   }
 }
 
