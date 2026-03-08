@@ -131,7 +131,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
       {showExtras && (
         <div className="space-y-2 pt-1 border-t border-border pt-3">
           <div>
-            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Notes du coach</label>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('coach_notes')}</label>
             <Input
               value={item.coachNotes ?? ""}
               onChange={(e) => onUpdate({ ...item, coachNotes: e.target.value || undefined })}
