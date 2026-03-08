@@ -33,6 +33,7 @@ import StudentDetail from "./pages/coach/StudentDetail";
 import ProgramEditor from "./pages/coach/ProgramEditor";
 import StudentBilan from "./pages/coach/StudentBilan";
 import CoachRecommendations from "./pages/coach/CoachRecommendations";
+import CoachProgramDetail from "./pages/coach/CoachProgramDetail";
 
 import StudentLayout from "./layouts/StudentLayout";
 import StudentWeek from "./pages/student/StudentWeek";
