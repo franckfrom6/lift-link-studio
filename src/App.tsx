@@ -3,8 +3,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
 
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -29,43 +27,25 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<AuthPage />} />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<AuthPage />} />
 
-            {/* Coach routes */}
-            <Route
-              path="/coach"
-              element={
-                <ProtectedRoute requiredRole="coach">
-                  <CoachLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<CoachDashboard />} />
-              <Route path="students" element={<CoachStudents />} />
-              <Route path="programs" element={<CoachPrograms />} />
-              <Route path="exercises" element={<CoachExercises />} />
-            </Route>
+          <Route path="/coach" element={<CoachLayout />}>
+            <Route index element={<CoachDashboard />} />
+            <Route path="students" element={<CoachStudents />} />
+            <Route path="programs" element={<CoachPrograms />} />
+            <Route path="exercises" element={<CoachExercises />} />
+          </Route>
 
-            {/* Student routes */}
-            <Route
-              path="/student"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <StudentLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<StudentWeek />} />
-              <Route path="progress" element={<StudentProgress />} />
-              <Route path="profile" element={<StudentProfile />} />
-            </Route>
+          <Route path="/student" element={<StudentLayout />}>
+            <Route index element={<StudentWeek />} />
+            <Route path="progress" element={<StudentProgress />} />
+            <Route path="profile" element={<StudentProfile />} />
+          </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
