@@ -33,6 +33,7 @@ const StudentWeek = () => {
     t("common:days.thu"), t("common:days.fri"), t("common:days.sat"), t("common:days.sun"),
   ];
   const [weekOffset, setWeekOffset] = useState(0);
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState(0);
   const navigate = useNavigate();
   const [swapMode, setSwapMode] = useState(false);
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
@@ -48,8 +49,9 @@ const StudentWeek = () => {
   const [checkins, setCheckins] = useState<Record<string, CheckinData>>({});
   const [checkinFormOpen, setCheckinFormOpen] = useState(false);
 
-  // Get current week's sessions from DB program
-  const currentWeek = program?.weeks?.[0]; // First week for now
+  // Get selected week's sessions from DB program
+  const totalWeeks = program?.weeks?.length || 0;
+  const currentWeek = program?.weeks?.[selectedWeekIndex];
   const weekSessions = currentWeek?.sessions || [];
 
   // Build sessions map: day_of_week → session info
