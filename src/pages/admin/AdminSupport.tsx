@@ -91,7 +91,7 @@ const AdminSupport = () => {
 
   const updateStatus = async (status: string) => {
     if (!selectedTicket) return;
-    await supabase.from("support_tickets").update({ 
+    await db.from("support_tickets").update({ 
       status, 
       ...(status === "resolved" ? { resolved_at: new Date().toISOString() } : {}),
       ...(status === "in_progress" ? { assigned_to: user?.id } : {}),

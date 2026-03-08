@@ -17,11 +17,10 @@ const KBArticle = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase.from("kb_articles").select("*").eq("slug", slug).single();
+      const { data } = await db.from("kb_articles").select("*").eq("slug", slug).single();
       if (data) {
         setArticle(data);
-        // Increment view count
-        await supabase.from("kb_articles").update({ view_count: (data.view_count || 0) + 1 }).eq("id", data.id);
+        await db.from("kb_articles").update({ view_count: (data.view_count || 0) + 1 }).eq("id", data.id);
       }
     };
     fetch();

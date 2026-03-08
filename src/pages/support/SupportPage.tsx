@@ -38,7 +38,7 @@ const SupportPage = () => {
         .order("created_at", { ascending: false });
       setTickets(data || []);
 
-      const { data: articles } = await supabase
+      const { data: articles } = await db
         .from("kb_articles")
         .select("category")
         .eq("is_published", true);

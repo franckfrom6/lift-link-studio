@@ -22,7 +22,7 @@ const ContextualHelp = ({ slug, className }: ContextualHelpProps) => {
   useEffect(() => {
     if (!open) return;
     const fetch = async () => {
-      const { data } = await supabase.from("kb_articles").select("*").eq("slug", slug).eq("is_published", true).single();
+      const { data } = await db.from("kb_articles").select("*").eq("slug", slug).eq("is_published", true).single();
       setArticle(data);
     };
     fetch();

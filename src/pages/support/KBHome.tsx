@@ -20,7 +20,7 @@ const KBHome = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      let query = supabase.from("kb_articles").select("*").eq("is_published", true).order("sort_order");
+      let query = db.from("kb_articles").select("*").eq("is_published", true).order("sort_order");
       if (categoryFilter) query = query.eq("category", categoryFilter);
       const { data } = await query;
       setArticles(data || []);

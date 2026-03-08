@@ -54,7 +54,7 @@ const TicketDetail = () => {
   const handleSend = async () => {
     if (!newMessage.trim() || !user || !ticketId) return;
     setSending(true);
-    const { error } = await supabase.from("ticket_messages").insert({
+    const { error } = await db.from("ticket_messages").insert({
       ticket_id: ticketId,
       sender_id: user.id,
       message: newMessage.trim(),

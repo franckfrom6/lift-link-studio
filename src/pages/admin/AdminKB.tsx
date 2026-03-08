@@ -60,9 +60,9 @@ const AdminKB = () => {
     };
 
     if (editing?.id) {
-      await supabase.from("kb_articles").update(payload).eq("id", editing.id);
+      await db.from("kb_articles").update(payload).eq("id", editing.id);
     } else {
-      await supabase.from("kb_articles").insert(payload);
+      await db.from("kb_articles").insert(payload);
     }
     setSaving(false);
     toast.success(t("admin_article_saved"));
