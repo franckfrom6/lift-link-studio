@@ -67,7 +67,7 @@ export const useStrengthProgress = () => {
       if (opts.length > 0) setSelectedExercise(opts[0].exerciseId);
     };
     fetch();
-  }, [user]);
+  }, [studentId]);
 
   // Fetch data points for selected exercise
   useEffect(() => {
