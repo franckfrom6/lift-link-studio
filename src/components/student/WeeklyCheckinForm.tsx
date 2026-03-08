@@ -49,7 +49,7 @@ const EmojiSlider = ({ label, value, onChange, emojis, lowLabel, highLabel }: Em
             type="button"
             onClick={() => onChange(level)}
             className={cn(
-              "flex-1 h-10 rounded-lg text-base font-bold transition-all border",
+              "flex-1 h-12 rounded-lg text-base font-bold transition-all border",
               value === level
                 ? "border-primary bg-accent scale-105 shadow-sm"
                 : "border-border text-muted-foreground hover:border-primary/30"
