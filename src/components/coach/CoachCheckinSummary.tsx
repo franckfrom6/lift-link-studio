@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { CheckinData } from "../student/WeeklyCheckinForm";
+import { useTranslation } from "react-i18next";
 
 interface CoachCheckinSummaryProps {
   studentName: string;
@@ -27,14 +28,14 @@ const statusColors = {
 };
 
 const CoachCheckinSummary = ({ studentName, avatar, checkin, onClick }: CoachCheckinSummaryProps) => {
+  const { t } = useTranslation('recovery');
+
   if (!checkin) {
     return (
       <button onClick={onClick} className="glass p-3 flex items-center gap-3 w-full text-left hover:shadow-sm transition-all">
-        <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-sm font-semibold text-accent-foreground">
-          {avatar}
-        </div>
+        <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-sm font-semibold text-accent-foreground">{avatar}</div>
         <span className="text-sm font-medium flex-1">{studentName}</span>
-        <span className="text-[10px] text-warning font-medium">⚠️ Pas de check-in</span>
+        <span className="text-[10px] text-warning font-medium">⚠️ {t('no_checkin')}</span>
       </button>
     );
   }
@@ -42,21 +43,11 @@ const CoachCheckinSummary = ({ studentName, avatar, checkin, onClick }: CoachChe
   const status = getStatus(checkin);
 
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full p-3 rounded-xl border flex items-center gap-3 text-left hover:opacity-80 transition-all",
-        statusColors[status]
-      )}
-    >
-      <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-sm font-semibold text-accent-foreground">
-        {avatar}
-      </div>
+    <button onClick={onClick} className={cn("w-full p-3 rounded-xl border flex items-center gap-3 text-left hover:opacity-80 transition-all", statusColors[status])}>
+      <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-sm font-semibold text-accent-foreground">{avatar}</div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium">{studentName}</p>
-        {checkin.general_notes && (
-          <p className="text-[10px] text-muted-foreground truncate">{checkin.general_notes}</p>
-        )}
+        {checkin.general_notes && <p className="text-[10px] text-muted-foreground truncate">{checkin.general_notes}</p>}
       </div>
       <div className="flex items-center gap-1 text-sm">
         <span>{ENERGY_EMOJIS[checkin.energy_level - 1]}</span>

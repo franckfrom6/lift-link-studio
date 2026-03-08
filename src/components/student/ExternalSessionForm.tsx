@@ -8,9 +8,10 @@ import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import ActivityTypeSelector from "./ActivityTypeSelector";
 import {
-  ACTIVITY_TYPES, ActivityType, MUSCLE_GROUP_OPTIONS, MUSCLE_GROUP_LABELS,
+  ACTIVITY_TYPES, ActivityType, MUSCLE_GROUP_OPTIONS,
   DEFAULT_PROVIDERS, getIntensityColor,
 } from "@/data/activity-types";
+import { useTranslation } from "react-i18next";
 
 export interface ExternalSessionData {
   id?: string;
@@ -40,6 +41,7 @@ interface ExternalSessionFormProps {
 const DURATION_OPTIONS = [30, 45, 60, 75, 90];
 
 const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, addedBy = "student" }: ExternalSessionFormProps) => {
+  const { t, i18n } = useTranslation(['calendar', 'common']);
   const [activityType, setActivityType] = useState("pilates");
   const [label, setLabel] = useState("");
   const [provider, setProvider] = useState("");
@@ -91,7 +93,6 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
     );
   };
 
-  // Auto-calculate duration from time range
   useEffect(() => {
     if (timeStart && timeEnd) {
       const [sh, sm] = timeStart.split(":").map(Number);
@@ -120,186 +121,109 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
     onClose();
   };
 
-  const intensityLabel = intensity <= 3 ? "Light" : intensity <= 6 ? "Modéré" : intensity <= 8 ? "Intense" : "Max";
+  const intensityLabel = intensity <= 3 ? t('calendar:intensity_light') : intensity <= 6 ? t('calendar:intensity_moderate') : intensity <= 8 ? t('calendar:intensity_intense') : t('calendar:intensity_max');
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent side="bottom" className="max-h-[90vh] rounded-t-2xl overflow-y-auto">
         <SheetHeader className="text-left pb-2">
           <SheetTitle className="text-base">
-            {initialData ? "Modifier l'activité" : "Ajouter une activité"}
+            {initialData ? t('calendar:edit_activity') : t('calendar:add_activity')}
           </SheetTitle>
           <p className="text-xs text-muted-foreground">
-            {date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+            {date.toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { weekday: "long", day: "numeric", month: "long" })}
             {addedBy === "coach" && (
-              <span className="ml-1 text-primary font-medium">· ajoutée par le coach</span>
+              <span className="ml-1 text-primary font-medium">· {t('calendar:added_by_coach')}</span>
             )}
           </p>
         </SheetHeader>
 
         <div className="space-y-5 mt-4 pb-4">
-          {/* Activity type */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type d'activité</Label>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('calendar:activity_type')}</Label>
             <ActivityTypeSelector value={activityType} onChange={handleTypeChange} />
           </div>
 
-          {/* Label */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nom (optionnel)</Label>
-            <Input
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              placeholder="Ex: RPM 45min, Bootcamp Athletic"
-              className="h-10"
-            />
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('calendar:name_optional')}</Label>
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t('calendar:name_placeholder')} className="h-10" />
           </div>
 
-          {/* Time range */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Horaires (optionnel)</Label>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('calendar:time_range')}</Label>
             <div className="flex items-center gap-2">
-              <Input
-                type="time"
-                value={timeStart}
-                onChange={(e) => setTimeStart(e.target.value)}
-                className="h-10 flex-1"
-              />
+              <Input type="time" value={timeStart} onChange={(e) => setTimeStart(e.target.value)} className="h-10 flex-1" />
               <span className="text-muted-foreground text-sm">→</span>
-              <Input
-                type="time"
-                value={timeEnd}
-                onChange={(e) => setTimeEnd(e.target.value)}
-                className="h-10 flex-1"
-              />
+              <Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} className="h-10 flex-1" />
             </div>
           </div>
 
-          {/* Provider + Location */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5 relative">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Enseigne</Label>
-              <Input
-                value={provider}
-                onChange={(e) => setProvider(e.target.value)}
-                onFocus={() => setShowProviderSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowProviderSuggestions(false), 200)}
-                placeholder="Ex: Episod"
-                className="h-10"
-              />
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('calendar:provider_label')}</Label>
+              <Input value={provider} onChange={(e) => setProvider(e.target.value)} onFocus={() => setShowProviderSuggestions(true)} onBlur={() => setTimeout(() => setShowProviderSuggestions(false), 200)} placeholder={t('calendar:provider_placeholder')} className="h-10" />
               {showProviderSuggestions && !provider && (
                 <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-popover border border-border rounded-lg shadow-lg p-1.5 space-y-0.5">
                   {DEFAULT_PROVIDERS.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onMouseDown={() => { setProvider(p); setShowProviderSuggestions(false); }}
-                      className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent transition-colors"
-                    >
-                      {p}
-                    </button>
+                    <button key={p} type="button" onMouseDown={() => { setProvider(p); setShowProviderSuggestions(false); }} className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent transition-colors">{p}</button>
                   ))}
                 </div>
               )}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lieu</Label>
-              <Input
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Ex: Bastille"
-                className="h-10"
-              />
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('calendar:location_label')}</Label>
+              <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('calendar:location_placeholder')} className="h-10" />
             </div>
           </div>
 
-          {/* Duration */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Durée</Label>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('calendar:duration_label')}</Label>
               {timeStart && timeEnd && (
-                <span className="text-[10px] text-muted-foreground">Calculée auto</span>
+                <span className="text-[10px] text-muted-foreground">{t('calendar:auto_calculated')}</span>
               )}
             </div>
             <div className="flex gap-2">
               {DURATION_OPTIONS.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setDuration(d)}
-                  className={cn(
-                    "flex-1 py-2 rounded-lg text-sm font-medium border transition-all",
-                    duration === d
-                      ? "border-primary bg-accent text-foreground"
-                      : "border-border text-muted-foreground hover:border-primary/30"
-                  )}
-                >
-                  {d}'
-                </button>
+                <button key={d} type="button" onClick={() => setDuration(d)} className={cn("flex-1 py-2 rounded-lg text-sm font-medium border transition-all", duration === d ? "border-primary bg-accent text-foreground" : "border-border text-muted-foreground hover:border-primary/30")}>{d}'</button>
               ))}
             </div>
           </div>
 
-          {/* Intensity */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Intensité perçue</Label>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('calendar:perceived_intensity')}</Label>
               <span className={cn("text-sm font-bold", getIntensityColor(intensity))}>
                 {intensity}/10 · {intensityLabel}
               </span>
             </div>
-            <Slider
-              value={[intensity]}
-              onValueChange={([v]) => setIntensity(v)}
-              min={1}
-              max={10}
-              step={1}
-              className="w-full"
-            />
+            <Slider value={[intensity]} onValueChange={([v]) => setIntensity(v)} min={1} max={10} step={1} className="w-full" />
             <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>Light</span>
-              <span>Modéré</span>
-              <span>Intense</span>
-              <span>Max</span>
+              <span>{t('calendar:intensity_light')}</span>
+              <span>{t('calendar:intensity_moderate')}</span>
+              <span>{t('calendar:intensity_intense')}</span>
+              <span>{t('calendar:intensity_max')}</span>
             </div>
           </div>
 
-          {/* Muscle groups */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Muscles sollicités</Label>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('calendar:muscles_involved')}</Label>
             <div className="flex flex-wrap gap-1.5">
               {MUSCLE_GROUP_OPTIONS.map((group) => (
-                <button
-                  key={group}
-                  type="button"
-                  onClick={() => toggleMuscleGroup(group)}
-                  className={cn(
-                    "px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all",
-                    muscleGroups.includes(group)
-                      ? "border-primary bg-accent text-foreground"
-                      : "border-border text-muted-foreground hover:border-primary/30"
-                  )}
-                >
-                  {MUSCLE_GROUP_LABELS[group] || group}
+                <button key={group} type="button" onClick={() => toggleMuscleGroup(group)} className={cn("px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all", muscleGroups.includes(group) ? "border-primary bg-accent text-foreground" : "border-border text-muted-foreground hover:border-primary/30")}>
+                  {t(`calendar:muscle_groups.${group}`, group)}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Notes */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notes (optionnel)</Label>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: Beaucoup de squats aujourd'hui"
-              rows={2}
-            />
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('calendar:notes_optional')}</Label>
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('calendar:notes_placeholder')} rows={2} />
           </div>
 
-          {/* Submit */}
           <Button className="w-full h-12 font-semibold" onClick={handleSubmit}>
-            {initialData ? "Modifier" : "Ajouter l'activité"}
+            {initialData ? t('calendar:submit_activity_edit') : t('calendar:submit_activity')}
           </Button>
         </div>
       </SheetContent>

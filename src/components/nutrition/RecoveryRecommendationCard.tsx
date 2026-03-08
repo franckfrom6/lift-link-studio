@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { X, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 export interface RecoveryRecommendation {
   id: string;
@@ -30,6 +31,7 @@ const TYPE_STYLES: Record<string, { bg: string; border: string; icon: string }> 
 };
 
 const RecoveryRecommendationCard = ({ recommendation, onDismiss, onSave, lang = "fr" }: RecoveryRecommendationCardProps) => {
+  const { t } = useTranslation('recovery');
   const style = TYPE_STYLES[recommendation.recommendation_type] || TYPE_STYLES.recovery;
   const title = lang === "fr" ? recommendation.title_fr : recommendation.title_en;
   const content = lang === "fr" ? recommendation.content_fr : recommendation.content_en;
@@ -57,7 +59,7 @@ const RecoveryRecommendationCard = ({ recommendation, onDismiss, onSave, lang = 
       <p className="text-sm text-muted-foreground leading-relaxed">{content}</p>
       {recommendation.priority === 1 && (
         <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-primary bg-accent px-2 py-0.5 rounded-md">
-          Essentiel
+          {t('essential')}
         </span>
       )}
     </div>
