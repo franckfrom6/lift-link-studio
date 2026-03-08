@@ -68,6 +68,8 @@ const StudentDetail = () => {
   const navigate = useNavigate();
   const student = MOCK_STUDENTS.find((s) => s.id === studentId);
   const { swaps, loading: swapsLoading } = useCoachStudentSwaps(studentId === "yana" ? studentId : undefined);
+  const [coachFormOpen, setCoachFormOpen] = useState(false);
+  const [coachExternals, setCoachExternals] = useState<ExternalSessionData[]>([]);
 
   if (!student) {
     return (
