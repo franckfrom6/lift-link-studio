@@ -35,20 +35,17 @@ const FeatureBlock = ({ n, icon: Icon, reverse }: { n: number; icon: any; revers
   );
 
   const visualSide = (
-    <div className="flex-1 w-full">
-      <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 flex items-center justify-center">
-        <div className="text-center">
-          <Icon size={40} style={{ color: ACCENT }} className="mx-auto mb-3 opacity-40" />
-          <p className="text-xs text-gray-400">{t("placeholder_visual")}</p>
-        </div>
+    <div className="flex-shrink-0">
+      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 flex items-center justify-center">
+        <Icon size={28} style={{ color: ACCENT }} className="opacity-50" />
       </div>
     </div>
   );
 
   return (
-    <div ref={ref} className={`flex flex-col ${reverse ? "lg:flex-row-reverse" : "lg:flex-row"} items-center gap-10 lg:gap-16 scroll-reveal`}>
-      {textSide}
+    <div ref={ref} className={`flex items-start gap-5 lg:gap-8 scroll-reveal ${reverse ? "lg:flex-row-reverse" : ""}`}>
       {visualSide}
+      {textSide}
     </div>
   );
 };
