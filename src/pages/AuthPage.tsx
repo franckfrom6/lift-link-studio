@@ -12,8 +12,6 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
-import { Separator } from "@/components/ui/separator";
 
 const getPasswordStrength = (pw: string): "weak" | "medium" | "strong" => {
   if (pw.length < 8) return "weak";
