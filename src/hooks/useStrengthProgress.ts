@@ -71,7 +71,7 @@ export const useStrengthProgress = () => {
 
   // Fetch data points for selected exercise
   useEffect(() => {
-    if (!user || !selectedExercise) return;
+    if (!studentId || !selectedExercise) return;
     setLoading(true);
     
     const fetchData = async () => {
