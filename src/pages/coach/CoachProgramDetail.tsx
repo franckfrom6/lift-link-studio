@@ -678,7 +678,7 @@ const CoachProgramDetail = () => {
                             <Input
                               value={section.notes || ""}
                               onChange={(e) => updateSectionField(section.id, "notes", e.target.value || null)}
-                              placeholder="Notes de section..."
+                              placeholder={t("program:section_notes_placeholder")}
                               className="h-7 bg-transparent border-dashed text-xs italic"
                             />
                           </div>
