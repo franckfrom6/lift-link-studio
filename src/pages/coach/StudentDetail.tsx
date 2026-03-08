@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { MOCK_STUDENTS } from "@/types/coach";
 import { YANA_PROGRAM } from "@/data/yana-program";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity } from "lucide-react";
 import ProgramView from "@/components/coach/ProgramView";
