@@ -102,8 +102,10 @@ const App = () => (
                 <Route path="/support" element={<SupportPage />} />
                 <Route path="/support/new" element={<TicketForm />} />
                 <Route path="/support/ticket/:ticketId" element={<TicketDetail />} />
-                <Route path="/support/help" element={<KBHome />} />
-                <Route path="/support/help/:slug" element={<KBArticle />} />
+                <Route path="/support/help" element={<KBLayout />}>
+                  <Route index element={<KBHome />} />
+                  <Route path=":slug" element={<KBArticle />} />
+                </Route>
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
