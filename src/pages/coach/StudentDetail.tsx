@@ -202,17 +202,21 @@ const StudentDetail = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/coach/students")}>
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <Button variant="ghost" size="icon" className="shrink-0 mt-1" onClick={() => navigate("/coach/students")}>
           <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
         </Button>
-        <div className="flex items-center gap-4 flex-1">
-          <div className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center text-xl font-semibold text-accent-foreground">
+        <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-accent flex items-center justify-center text-lg sm:text-xl font-semibold text-accent-foreground shrink-0">
             {student.full_name.charAt(0).toUpperCase()}
           </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold">{student.full_name}</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl font-bold truncate">{student.full_name}</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {student.goal ? t('dashboard:goals.' + student.goal, student.goal) : '—'} · {student.level ? t('dashboard:levels.' + student.level, student.level) : '—'}
+            </p>
+            <div className="flex items-center gap-2 flex-wrap mt-2">
               <Button
                 size="sm"
                 variant="outline"
@@ -223,18 +227,16 @@ const StudentDetail = () => {
                 }}
               >
                 <Eye className="w-3 h-3" strokeWidth={1.5} />
-                {t("settings:view_as_student", "Voir comme l'élève")}
+                <span className="hidden sm:inline">{t("settings:view_as_student", "Voir comme l'élève")}</span>
+                <span className="sm:hidden">{t("settings:view_as_student_short", "Voir")}</span>
               </Button>
               {recentSwaps.length > 0 && (
-                <Badge variant="outline" className="text-warning border-warning/30 bg-warning-bg">
+                <Badge variant="outline" className="text-warning border-warning/30 bg-warning-bg text-xs">
                   <ArrowLeftRight className="w-3 h-3 mr-1" strokeWidth={1.5} />
                   {recentSwaps.length} swap{recentSwaps.length > 1 ? "s" : ""}
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              {student.goal ? t('dashboard:goals.' + student.goal, student.goal) : '—'} · {student.level ? t('dashboard:levels.' + student.level, student.level) : '—'}
-            </p>
           </div>
         </div>
       </div>
