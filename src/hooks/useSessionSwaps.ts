@@ -23,7 +23,7 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
   const [loading, setLoading] = useState(false);
 
   const fetchSwaps = useCallback(async () => {
-    if (!user || !weekStartDate) return;
+    if (!studentId || !weekStartDate) return;
     setLoading(true);
 
     const weekEnd = new Date(weekStartDate);
@@ -32,7 +32,7 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
     const { data, error } = await supabase
       .from("session_swaps")
       .select("*")
-      .eq("student_id", user.id)
+      .eq("student_id", studentId)
       .gte("new_date", weekStartDate.toISOString().split("T")[0])
       .lte("new_date", weekEnd.toISOString().split("T")[0]);
 
