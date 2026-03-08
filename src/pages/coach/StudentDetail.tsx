@@ -147,6 +147,16 @@ const StudentDetail = () => {
       })));
     }
 
+    // Fetch session feedbacks for this student
+    const { data: fbData } = await supabase
+      .from("session_feedback")
+      .select("*, completed_sessions!inner(student_id, started_at, session_id)")
+      .eq("completed_sessions.student_id", studentId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    setFeedbacks(fbData || []);
+
     setLoading(false);
   };
 
