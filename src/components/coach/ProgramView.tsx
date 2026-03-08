@@ -192,7 +192,7 @@ const ProgramView = ({ program }: ProgramViewProps) => {
       {/* Coach note */}
       <div className="bg-accent border border-accent-foreground/10 rounded-xl p-4 text-center">
         <p className="text-xs text-accent-foreground leading-relaxed">
-          💡 <strong>{t("program:coach_note")} :</strong> {program.coachNote || ""}
+          💡 <strong>{t("program:coach_note")} :</strong> {(program as any).coachNote || ""}
         </p>
       </div>
     </div>
