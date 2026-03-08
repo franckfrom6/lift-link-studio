@@ -603,6 +603,33 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_invitations: {
+        Row: {
+          coach_id: string
+          created_at: string
+          email: string
+          id: string
+          status: string
+          student_name: string | null
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          email: string
+          id?: string
+          status?: string
+          student_name?: string | null
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          status?: string
+          student_name?: string | null
+        }
+        Relationships: []
+      }
       plan_features: {
         Row: {
           feature_key: string
@@ -691,7 +718,8 @@ export type Database = {
           id: string
           is_admin: boolean
           level: string | null
-          role: Database["public"]["Enums"]["app_role"]
+          onboarding_completed: boolean
+          role: Database["public"]["Enums"]["app_role"] | null
           specialty: string | null
           updated_at: string
           user_id: string
@@ -707,7 +735,8 @@ export type Database = {
           id?: string
           is_admin?: boolean
           level?: string | null
-          role: Database["public"]["Enums"]["app_role"]
+          onboarding_completed?: boolean
+          role?: Database["public"]["Enums"]["app_role"] | null
           specialty?: string | null
           updated_at?: string
           user_id: string
@@ -723,7 +752,8 @@ export type Database = {
           id?: string
           is_admin?: boolean
           level?: string | null
-          role?: Database["public"]["Enums"]["app_role"]
+          onboarding_completed?: boolean
+          role?: Database["public"]["Enums"]["app_role"] | null
           specialty?: string | null
           updated_at?: string
           user_id?: string
