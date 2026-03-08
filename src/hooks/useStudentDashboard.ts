@@ -87,7 +87,7 @@ export const useStudentDashboard = () => {
       const { data: nutritionLogs } = await supabase
         .from("daily_nutrition_logs")
         .select("date")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .gte("date", wsStr)
         .lte("date", weStr);
       const uniqueDays = new Set(nutritionLogs?.map(l => l.date));
