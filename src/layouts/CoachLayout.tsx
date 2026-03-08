@@ -23,6 +23,7 @@ const CoachLayout = () => {
     { to: "/coach/exercises", icon: Dumbbell, label: t('settings:nav_exercises') },
     { to: "/coach/recommendations", icon: BookOpen, label: t('settings:nav_recommendations') },
     { to: "/pricing", icon: CreditCard, label: t('settings:nav_plans') },
+    { to: "/support", icon: HelpCircle, label: t('settings:nav_support') },
     ...(profile?.is_admin ? [{ to: "/admin", icon: Shield, label: "Admin" }] : []),
   ];
 

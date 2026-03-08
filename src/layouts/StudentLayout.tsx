@@ -19,6 +19,7 @@ const StudentLayout = () => {
     { to: "/student/progress", icon: BarChart3, label: t('settings:nav_progress') },
     { to: "/student/recommendations", icon: BookOpen, label: t('settings:nav_recommendations') },
     { to: "/student/profile", icon: User, label: t('settings:nav_profile') },
+    { to: "/support", icon: HelpCircle, label: t('settings:nav_support') },
   ];
 
   return (

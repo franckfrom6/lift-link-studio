@@ -18,6 +18,7 @@ import frRecommendations from './locales/fr/recommendations.json';
 import frPlans from './locales/fr/plans.json';
 import frAdmin from './locales/fr/admin.json';
 import frFeedback from './locales/fr/feedback.json';
+import frSupport from './locales/fr/support.json';
 
 import enCommon from './locales/en/common.json';
 import enAuth from './locales/en/auth.json';
@@ -35,6 +36,7 @@ import enRecommendations from './locales/en/recommendations.json';
 import enPlans from './locales/en/plans.json';
 import enAdmin from './locales/en/admin.json';
 import enFeedback from './locales/en/feedback.json';
+import enSupport from './locales/en/support.json';
 
 i18n
   .use(LanguageDetector)
@@ -58,6 +60,7 @@ i18n
         plans: frPlans,
         admin: frAdmin,
         feedback: frFeedback,
+        support: frSupport,
       },
       en: {
         common: enCommon,
@@ -76,6 +79,7 @@ i18n
         plans: enPlans,
         admin: enAdmin,
         feedback: enFeedback,
+        support: enSupport,
       },
     },
     lng: 'fr',

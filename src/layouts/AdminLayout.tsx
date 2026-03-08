@@ -36,6 +36,8 @@ const AdminLayout = () => {
     { to: "/admin/users", icon: Users, label: t("users") },
     { to: "/admin/features", icon: Shield, label: t("features_plans") },
     { to: "/admin/overrides", icon: ToggleRight, label: t("overrides") },
+    { to: "/admin/support", icon: MessageSquare, label: "Support" },
+    { to: "/admin/kb", icon: BookOpen, label: "KB" },
   ];
 
   const backTo = role === "coach" ? "/coach" : "/student";
