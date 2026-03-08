@@ -286,11 +286,11 @@ const LiveSession = () => {
             <User className="w-4 h-4 text-accent-foreground" strokeWidth={1.5} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate">{YANA_PROGRAM.title}</p>
-            <p className="text-[11px] text-muted-foreground">{YANA_PROGRAM.client}</p>
+            <p className="text-sm font-semibold truncate">{sessionProgram.title}</p>
+            <p className="text-[11px] text-muted-foreground">{sessionProgram.client}</p>
           </div>
           <Badge variant="outline" className="shrink-0 text-[10px]">
-            {YANA_PROGRAM.duration}
+            {sessionProgram.duration}
           </Badge>
         </div>
 
