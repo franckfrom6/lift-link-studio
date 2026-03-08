@@ -2,6 +2,7 @@ import { Outlet, NavLink } from "react-router-dom";
 import { Calendar, BarChart3, User, BookOpen, HelpCircle } from "lucide-react";
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
+import ImpersonationBanner from "@/components/ImpersonationBanner";
 import { useTranslation } from "react-i18next";
 
 const StudentLayout = () => {
