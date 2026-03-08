@@ -3,11 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye } from "lucide-react";
 import AIAdaptationView from "@/components/coach/AIAdaptationView";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import SwapBadge from "@/components/student/SwapBadge";
@@ -52,8 +53,9 @@ interface CheckinData {
 const StudentDetail = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation(["dashboard", "common", "program", "calendar"]);
+  const { t, i18n } = useTranslation(["dashboard", "common", "program", "calendar", "settings"]);
   const { user } = useAuth();
+  const { startImpersonation } = useImpersonation();
 
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [program, setProgram] = useState<ProgramInfo | null>(null);
@@ -199,6 +201,18 @@ const StudentDetail = () => {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold">{student.full_name}</h1>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1"
+                onClick={() => {
+                  startImpersonation({ id: student.user_id, fullName: student.full_name });
+                  navigate("/student");
+                }}
+              >
+                <Eye className="w-3 h-3" strokeWidth={1.5} />
+                {t("settings:view_as_student", "Voir comme l'élève")}
+              </Button>
               {recentSwaps.length > 0 && (
                 <Badge variant="outline" className="text-warning border-warning/30 bg-warning-bg">
                   <ArrowLeftRight className="w-3 h-3 mr-1" strokeWidth={1.5} />

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 
 export interface DBExercise {
   id: string;
@@ -70,12 +71,15 @@ export interface DBProgram {
 
 export const useStudentProgram = () => {
   const { user } = useAuth();
+  const { effectiveStudentId } = useImpersonation();
   const [program, setProgram] = useState<DBProgram | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const studentId = user ? effectiveStudentId(user.id) : null;
+
   const fetchProgram = useCallback(async () => {
-    if (!user) { setLoading(false); return; }
+    if (!studentId) { setLoading(false); return; }
     setLoading(true);
     setError(null);
 
@@ -84,7 +88,7 @@ export const useStudentProgram = () => {
       const { data: programs, error: pErr } = await supabase
         .from("programs")
         .select("*")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .eq("status", "active")
         .limit(1);
 
@@ -203,7 +207,7 @@ export const useStudentProgram = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [studentId]);
 
   useEffect(() => {
     fetchProgram();

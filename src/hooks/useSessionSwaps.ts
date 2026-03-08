@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 
 export interface SessionSwap {
   id: string;
@@ -16,11 +17,13 @@ export interface SessionSwap {
 
 export const useSessionSwaps = (weekStartDate?: Date) => {
   const { user } = useAuth();
+  const { effectiveStudentId } = useImpersonation();
+  const studentId = user ? effectiveStudentId(user.id) : null;
   const [swaps, setSwaps] = useState<SessionSwap[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchSwaps = useCallback(async () => {
-    if (!user || !weekStartDate) return;
+    if (!studentId || !weekStartDate) return;
     setLoading(true);
 
     const weekEnd = new Date(weekStartDate);
@@ -29,7 +32,7 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
     const { data, error } = await supabase
       .from("session_swaps")
       .select("*")
-      .eq("student_id", user.id)
+      .eq("student_id", studentId)
       .gte("new_date", weekStartDate.toISOString().split("T")[0])
       .lte("new_date", weekEnd.toISOString().split("T")[0]);
 
@@ -37,7 +40,7 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
       setSwaps(data as SessionSwap[]);
     }
     setLoading(false);
-  }, [user, weekStartDate]);
+  }, [studentId, weekStartDate]);
 
   useEffect(() => {
     fetchSwaps();
@@ -45,21 +48,21 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
 
   // Realtime subscription
   useEffect(() => {
-    if (!user) return;
+    if (!studentId) return;
     const channel = supabase
       .channel("session-swaps-realtime")
       .on("postgres_changes", {
         event: "*",
         schema: "public",
         table: "session_swaps",
-        filter: `student_id=eq.${user.id}`,
+        filter: `student_id=eq.${studentId}`,
       }, () => {
         fetchSwaps();
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, fetchSwaps]);
+  }, [studentId, fetchSwaps]);
 
   const createSwap = async (params: {
     sessionId: string;

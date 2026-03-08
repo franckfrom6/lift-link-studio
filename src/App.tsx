@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { PlanProvider } from "@/providers/PlanProvider";
+import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import AuthGuard from "@/components/AuthGuard";
 import AuthRedirect from "@/components/AuthRedirect";
 import Index from "./pages/Index";
@@ -57,6 +58,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <ImpersonationProvider>
             <PlanProvider>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -103,6 +105,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </PlanProvider>
+            </ImpersonationProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 
 interface ExerciseDataPoint {
   date: string;
@@ -17,6 +18,8 @@ interface ExerciseOption {
 
 export const useStrengthProgress = () => {
   const { user } = useAuth();
+  const { effectiveStudentId } = useImpersonation();
+  const studentId = user ? effectiveStudentId(user.id) : null;
   const [exercises, setExercises] = useState<ExerciseOption[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [dataPoints, setDataPoints] = useState<ExerciseDataPoint[]>([]);
@@ -24,12 +27,12 @@ export const useStrengthProgress = () => {
 
   // Fetch exercises the student has done
   useEffect(() => {
-    if (!user) return;
+    if (!studentId) return;
     const fetch = async () => {
       const { data: completedSessions } = await supabase
         .from("completed_sessions")
         .select("id")
-        .eq("student_id", user.id);
+        .eq("student_id", studentId);
       
       if (!completedSessions || completedSessions.length === 0) return;
       
@@ -64,11 +67,11 @@ export const useStrengthProgress = () => {
       if (opts.length > 0) setSelectedExercise(opts[0].exerciseId);
     };
     fetch();
-  }, [user]);
+  }, [studentId]);
 
   // Fetch data points for selected exercise
   useEffect(() => {
-    if (!user || !selectedExercise) return;
+    if (!studentId || !selectedExercise) return;
     setLoading(true);
     
     const fetchData = async () => {
@@ -88,7 +91,7 @@ export const useStrengthProgress = () => {
       const { data: completedSessions } = await supabase
         .from("completed_sessions")
         .select("id, started_at, session_id")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .order("started_at", { ascending: true });
 
       if (!completedSessions || completedSessions.length === 0) {
@@ -141,7 +144,7 @@ export const useStrengthProgress = () => {
     };
 
     fetchData();
-  }, [user, selectedExercise]);
+  }, [studentId, selectedExercise]);
 
   return { exercises, selectedExercise, setSelectedExercise, dataPoints, loading };
 };

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { startOfWeek, endOfWeek, format } from "date-fns";
 
 interface WeeklySummary {
@@ -15,11 +16,13 @@ interface WeeklySummary {
 
 export const useStudentDashboard = () => {
   const { user } = useAuth();
+  const { effectiveStudentId } = useImpersonation();
   const [summary, setSummary] = useState<WeeklySummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const studentId = user ? effectiveStudentId(user.id) : null;
 
   useEffect(() => {
-    if (!user) return;
+    if (!studentId) return;
     const fetchSummary = async () => {
       const now = new Date();
       const weekStart = startOfWeek(now, { weekStartsOn: 1 });
@@ -31,7 +34,7 @@ export const useStudentDashboard = () => {
       const { data: completedSessions } = await supabase
         .from("completed_sessions")
         .select("id, session_id, started_at")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .gte("started_at", weekStart.toISOString())
         .lte("started_at", weekEnd.toISOString());
 
@@ -39,7 +42,7 @@ export const useStudentDashboard = () => {
       const { data: programs } = await supabase
         .from("programs")
         .select("id")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .eq("status", "active")
         .limit(1);
 
@@ -76,7 +79,7 @@ export const useStudentDashboard = () => {
       const { count: externalCount } = await supabase
         .from("external_sessions")
         .select("id", { count: "exact", head: true })
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .gte("date", wsStr)
         .lte("date", weStr);
 
@@ -84,7 +87,7 @@ export const useStudentDashboard = () => {
       const { data: nutritionLogs } = await supabase
         .from("daily_nutrition_logs")
         .select("date")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .gte("date", wsStr)
         .lte("date", weStr);
       const uniqueDays = new Set(nutritionLogs?.map(l => l.date));
@@ -94,7 +97,7 @@ export const useStudentDashboard = () => {
       const { data: checkins } = await supabase
         .from("weekly_checkins")
         .select("energy_level, sleep_quality, stress_level, muscle_soreness")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .gte("week_start", wsStr)
         .lte("week_start", weStr)
         .limit(1);
@@ -114,7 +117,7 @@ export const useStudentDashboard = () => {
     };
 
     fetchSummary();
-  }, [user]);
+  }, [studentId]);
 
   return { summary, loading };
 };

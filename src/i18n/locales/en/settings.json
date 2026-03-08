@@ -8,5 +8,8 @@
   "nav_profile": "Profile",
   "nav_recommendations": "Recos",
   "nav_plans": "Plans",
-  "nav_support": "Support"
+  "nav_support": "Support",
+  "view_as_student": "View as athlete",
+  "viewing_as": "Viewing as {{name}}",
+  "back_to_coach": "Back to coach"
 }
