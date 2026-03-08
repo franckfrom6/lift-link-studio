@@ -234,6 +234,13 @@ export const useStudentProgram = () => {
     fetchProgram(false);
   }, [fetchProgram]);
 
+  // Debounced refetch for unfiltered realtime events
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedFetch = useCallback(() => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => fetchProgram(true), 2000);
+  }, [fetchProgram]);
+
   // Realtime: refetch when program structure or exercises change
   useEffect(() => {
     if (!studentId) return;
@@ -245,28 +252,18 @@ export const useStudentProgram = () => {
         { event: '*', schema: 'public', table: 'programs', filter: `student_id=eq.${studentId}` },
         () => fetchProgram(true)
       )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'program_weeks' }, () => fetchProgram(true))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'program_progression' }, () => fetchProgram(true))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_exercises' }, () => fetchProgram(true))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => fetchProgram(true))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_sections' }, () => fetchProgram(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'program_weeks' }, () => debouncedFetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'program_progression' }, () => debouncedFetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_exercises' }, () => debouncedFetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => debouncedFetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_sections' }, () => debouncedFetch())
       .subscribe();
 
     return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       supabase.removeChannel(channel);
     };
-  }, [studentId, fetchProgram]);
-
-  // Polling fallback: guarantees eventual sync if realtime misses events
-  useEffect(() => {
-    if (!studentId) return;
-
-    const intervalId = window.setInterval(() => {
-      fetchProgram(true);
-    }, 10000);
-
-    return () => window.clearInterval(intervalId);
-  }, [studentId, fetchProgram]);
+  }, [studentId, fetchProgram, debouncedFetch]);
 
   // Visibility-based refetch: sync when user returns to tab
   useEffect(() => {

@@ -174,23 +174,47 @@ export const useCoachDashboard = () => {
       .gte("date", wsStr)
       .lte("date", weStr);
 
-    // 10. Sessions total per student (from first week of active program)
+    // 10. Sessions total per student (batched: 2 queries instead of N*2)
     let sessionsPerStudent = new Map<string, number>();
     if (programs && programs.length > 0) {
-      for (const prog of programs) {
-        const { data: weeks } = await supabase
-          .from("program_weeks")
-          .select("id")
-          .eq("program_id", prog.id)
-          .order("week_number")
-          .limit(1);
-        if (weeks && weeks.length > 0) {
-          const { count } = await supabase
-            .from("sessions")
-            .select("id", { count: "exact", head: true })
-            .eq("week_id", weeks[0].id);
-          sessionsPerStudent.set(prog.student_id, count || 0);
+      const programIds = programs.map((p) => p.id);
+      
+      // Single query: get all first weeks
+      const { data: allFirstWeeks } = await supabase
+        .from("program_weeks")
+        .select("id, program_id, week_number")
+        .in("program_id", programIds)
+        .order("week_number");
+
+      // De-duplicate: keep only the first week per program
+      const firstWeekByProgram = new Map<string, string>();
+      allFirstWeeks?.forEach((w) => {
+        if (!firstWeekByProgram.has(w.program_id)) {
+          firstWeekByProgram.set(w.program_id, w.id);
         }
+      });
+
+      const firstWeekIds = [...firstWeekByProgram.values()];
+      if (firstWeekIds.length > 0) {
+        // Single query: get all sessions for those weeks
+        const { data: allSessions } = await supabase
+          .from("sessions")
+          .select("week_id")
+          .in("week_id", firstWeekIds);
+
+        // Count sessions per week_id
+        const countByWeekId = new Map<string, number>();
+        allSessions?.forEach((s) => {
+          countByWeekId.set(s.week_id, (countByWeekId.get(s.week_id) || 0) + 1);
+        });
+
+        // Map back to student_id
+        programs.forEach((prog) => {
+          const weekId = firstWeekByProgram.get(prog.id);
+          if (weekId) {
+            sessionsPerStudent.set(prog.student_id, countByWeekId.get(weekId) || 0);
+          }
+        });
       }
     }
 
