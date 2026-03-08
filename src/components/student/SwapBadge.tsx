@@ -6,10 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-const DAY_NAMES: Record<number, string> = {
-  1: "Lundi", 2: "Mardi", 3: "Mercredi", 4: "Jeudi", 5: "Vendredi", 6: "Samedi", 7: "Dimanche",
-};
+import { useTranslation } from "react-i18next";
 
 interface SwapBadgeProps {
   originalDay: number;
@@ -20,6 +17,10 @@ interface SwapBadgeProps {
 }
 
 const SwapBadge = ({ originalDay, newDay, reason, className, variant = "compact" }: SwapBadgeProps) => {
+  const { t } = useTranslation(['common', 'recovery']);
+  const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const getDayName = (idx: number) => t(`common:days.${dayKeys[idx - 1]}`);
+
   const badge = (
     <div className={cn(
       "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
@@ -28,7 +29,7 @@ const SwapBadge = ({ originalDay, newDay, reason, className, variant = "compact"
     )}>
       <ArrowLeftRight className="w-3 h-3" strokeWidth={1.5} />
       {variant === "full" && (
-        <span>{DAY_NAMES[originalDay]} → {DAY_NAMES[newDay]}</span>
+        <span>{getDayName(originalDay)} → {getDayName(newDay)}</span>
       )}
     </div>
   );
@@ -39,7 +40,7 @@ const SwapBadge = ({ originalDay, newDay, reason, className, variant = "compact"
         <Tooltip>
           <TooltipTrigger asChild>{badge}</TooltipTrigger>
           <TooltipContent side="top" className="text-xs max-w-[200px]">
-            <p className="font-medium">Déplacée : {DAY_NAMES[originalDay]} → {DAY_NAMES[newDay]}</p>
+            <p className="font-medium">{t('recovery:moved_label')} : {getDayName(originalDay)} → {getDayName(newDay)}</p>
             {reason && <p className="text-muted-foreground mt-0.5">{reason}</p>}
           </TooltipContent>
         </Tooltip>

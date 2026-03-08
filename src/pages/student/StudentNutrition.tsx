@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import DailyNutritionLog from "@/components/nutrition/DailyNutritionLog";
 import { MealLogData } from "@/components/nutrition/DailyNutritionLog";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const StudentNutrition = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation('nutrition');
   const [date] = useState(new Date());
   const [meals, setMeals] = useState<MealLogData[]>([]);
 
-  // Demo targets (would come from nutrition_profiles)
   const targets = {
     calorie_target: 2100,
     protein_g: 120,
@@ -21,17 +22,17 @@ const StudentNutrition = () => {
 
   const handleAddMeal = (data: MealLogData) => {
     setMeals(prev => [...prev, { ...data, id: crypto.randomUUID() }]);
-    toast.success("Repas ajouté !");
+    toast.success(t('meal_added'));
   };
 
   const handleEditMeal = (data: MealLogData) => {
     setMeals(prev => prev.map(m => m.id === data.id ? data : m));
-    toast.success("Repas modifié !");
+    toast.success(t('meal_modified'));
   };
 
   const handleDeleteMeal = (id: string) => {
     setMeals(prev => prev.filter(m => m.id !== id));
-    toast.success("Repas supprimé");
+    toast.success(t('meal_deleted'));
   };
 
   return (
@@ -41,9 +42,9 @@ const StudentNutrition = () => {
           <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
         </Button>
         <div>
-          <h1 className="text-xl font-bold">🍽 Nutrition du jour</h1>
+          <h1 className="text-xl font-bold">{t('daily_nutrition')}</h1>
           <p className="text-xs text-muted-foreground">
-            {date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+            {date.toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { weekday: "long", day: "numeric", month: "long" })}
           </p>
         </div>
       </div>
