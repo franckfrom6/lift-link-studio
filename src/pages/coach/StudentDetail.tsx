@@ -62,6 +62,7 @@ const StudentDetail = () => {
   const [program, setProgram] = useState<ProgramInfo | null>(null);
   const [checkin, setCheckin] = useState<CheckinData | null>(null);
   const [externals, setExternals] = useState<ExternalSessionData[]>([]);
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [coachFormOpen, setCoachFormOpen] = useState(false);
   const [coachExternals, setCoachExternals] = useState<ExternalSessionData[]>([]);
