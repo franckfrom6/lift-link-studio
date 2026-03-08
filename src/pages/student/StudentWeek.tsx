@@ -167,8 +167,8 @@ const StudentWeek = () => {
   return (
     <div className="space-y-5 animate-fade-in max-w-lg mx-auto">
       <div>
-        <h1 className="text-2xl font-bold">Salut, Yana 💪</h1>
-        <p className="text-muted-foreground text-sm mt-1">Votre programme de la semaine</p>
+        <h1 className="text-2xl font-bold">{t('calendar:hello', { name: 'Yana' })}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t('calendar:your_program')}</p>
       </div>
 
       {/* Current program card */}
@@ -178,7 +178,7 @@ const StudentWeek = () => {
             <h3 className="font-bold text-sm">{YANA_PROGRAM.title}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">{YANA_PROGRAM.objective}</p>
           </div>
-          <Badge>Actif</Badge>
+          <Badge>{t('common:active')}</Badge>
         </div>
         <div className="flex gap-3">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -187,11 +187,11 @@ const StudentWeek = () => {
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Dumbbell className="w-3 h-3" strokeWidth={1.5} />
-            {totalExercises} exercices
+            {totalExercises} {t('calendar:exercises')}
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Target className="w-3 h-3" strokeWidth={1.5} />
-            1x/semaine
+            1{t('calendar:per_week')}
           </div>
         </div>
       </div>
@@ -203,11 +203,11 @@ const StudentWeek = () => {
         </Button>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">
-            {weekOffset === 0 ? "Cette semaine" : weekOffset === -1 ? "Semaine dernière" : weekOffset === 1 ? "Semaine prochaine" : `Semaine ${weekOffset > 0 ? "+" : ""}${weekOffset}`}
+            {weekOffset === 0 ? t('calendar:this_week') : weekOffset === -1 ? t('calendar:last_week') : weekOffset === 1 ? t('calendar:next_week') : t('calendar:week_offset', { offset: weekOffset })}
           </span>
           <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => navigate("/student/nutrition")}>
             <Utensils className="w-3 h-3" strokeWidth={1.5} />
-            Nutrition
+            {t('calendar:nutrition')}
           </Button>
         </div>
         <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset + 1)}>
