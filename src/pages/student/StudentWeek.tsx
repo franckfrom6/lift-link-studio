@@ -194,14 +194,20 @@ const StudentWeek = () => {
         </div>
       </div>
 
-      {/* Week navigator */}
+      {/* Week navigator + Nutrition shortcut */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset - 1)}>
           <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
         </Button>
-        <span className="text-sm font-medium">
-          {weekOffset === 0 ? "Cette semaine" : weekOffset === -1 ? "Semaine dernière" : weekOffset === 1 ? "Semaine prochaine" : `Semaine ${weekOffset > 0 ? "+" : ""}${weekOffset}`}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">
+            {weekOffset === 0 ? "Cette semaine" : weekOffset === -1 ? "Semaine dernière" : weekOffset === 1 ? "Semaine prochaine" : `Semaine ${weekOffset > 0 ? "+" : ""}${weekOffset}`}
+          </span>
+          <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => navigate("/student/nutrition")}>
+            <Utensils className="w-3 h-3" strokeWidth={1.5} />
+            Nutrition
+          </Button>
+        </div>
         <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset + 1)}>
           <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
         </Button>
