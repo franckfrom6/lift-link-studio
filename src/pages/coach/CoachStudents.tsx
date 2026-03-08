@@ -46,7 +46,7 @@ const CoachStudents = () => {
                   {student.status === "active" ? t('common:active') : t('common:inactive')}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">{student.goal} · {student.level}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t('dashboard:goals.' + student.goal, student.goal)} · {t('dashboard:levels.' + student.level, student.level)}</p>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" strokeWidth={1.5} />
           </button>

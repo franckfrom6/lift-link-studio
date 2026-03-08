@@ -121,7 +121,7 @@ const StudentDetail = () => {
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">{student.goal} · {student.level}</p>
+            <p className="text-sm text-muted-foreground">{t('dashboard:goals.' + student.goal, student.goal)} · {t('dashboard:levels.' + student.level, student.level)}</p>
           </div>
         </div>
       </div>
