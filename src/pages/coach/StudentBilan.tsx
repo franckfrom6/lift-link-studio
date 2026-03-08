@@ -65,7 +65,7 @@ const StudentBilan = () => {
     if (!bilan || !rawData) return;
     const doc = generateBilanPDF(bilan, rawData, coachNotes || undefined);
     doc.save(`bilan-${rawData.student_name.replace(/\s+/g, "-").toLowerCase()}-${dateEnd}.pdf`);
-    toast.success("PDF téléchargé !");
+    toast.success(t("pdf_downloaded"));
   };
 
   return (

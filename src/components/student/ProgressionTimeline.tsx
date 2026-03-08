@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -17,6 +18,7 @@ interface ProgressionTimelineProps {
 }
 
 const ProgressionTimeline = ({ phases, currentWeek }: ProgressionTimelineProps) => {
+  const { t } = useTranslation("program");
   const sorted = [...phases].sort((a, b) => a.order - b.order);
 
   return (
@@ -63,7 +65,7 @@ const ProgressionTimeline = ({ phases, currentWeek }: ProgressionTimelineProps) 
                   </Badge>
                 )}
                 {isCurrent && (
-                  <Badge className="text-[10px] px-1.5 py-0">En cours</Badge>
+                  <Badge className="text-[10px] px-1.5 py-0">{t("status.active")}</Badge>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">

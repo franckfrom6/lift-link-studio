@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,17 +27,18 @@ interface MealCardProps {
   onDelete: () => void;
 }
 
-const MEAL_TYPES = [
-  { id: "breakfast", label: "Petit-déjeuner", icon: "🌅", time: "7-9h" },
-  { id: "lunch", label: "Déjeuner", icon: "☀️", time: "12-14h" },
-  { id: "snack", label: "Collation", icon: "🍎", time: "" },
-  { id: "dinner", label: "Dîner", icon: "🌙", time: "19-21h" },
-  { id: "pre_workout", label: "Pré-training", icon: "⚡", time: "" },
-  { id: "post_workout", label: "Post-training", icon: "💪", time: "" },
+const MEAL_TYPE_KEYS = [
+  { id: "breakfast", icon: "🌅" },
+  { id: "lunch", icon: "☀️" },
+  { id: "snack", icon: "🍎" },
+  { id: "dinner", icon: "🌙" },
+  { id: "pre_workout", icon: "⚡" },
+  { id: "post_workout", icon: "💪" },
 ];
 
 const MealCard = ({ meal, onEdit, onDelete }: MealCardProps) => {
-  const mealType = MEAL_TYPES.find(m => m.id === meal.meal_type);
+  const { t } = useTranslation("nutrition");
+  const mealType = MEAL_TYPE_KEYS.find(m => m.id === meal.meal_type);
   const hasMacros = meal.calories || meal.protein_g || meal.carbs_g || meal.fat_g;
 
   return (
@@ -45,7 +47,7 @@ const MealCard = ({ meal, onEdit, onDelete }: MealCardProps) => {
         <div className="flex items-center gap-2">
           <span className="text-lg">{mealType?.icon || "🍽"}</span>
           <div>
-            <p className="text-xs font-semibold text-muted-foreground">{mealType?.label || meal.meal_type}</p>
+            <p className="text-xs font-semibold text-muted-foreground">{t(meal.meal_type)}</p>
             <p className="text-sm">{meal.description || "—"}</p>
           </div>
         </div>
@@ -61,7 +63,7 @@ const MealCard = ({ meal, onEdit, onDelete }: MealCardProps) => {
         )}
       </div>
       {meal.photo_url && (
-        <img src={meal.photo_url} alt="Repas" className="w-full h-32 object-cover rounded-lg" />
+        <img src={meal.photo_url} alt={t("meal_photo_alt")} className="w-full h-32 object-cover rounded-lg" />
       )}
     </div>
   );
@@ -75,6 +77,7 @@ interface MealFormSheetProps {
 }
 
 const MealFormSheet = ({ open, onClose, onSubmit, initialData }: MealFormSheetProps) => {
+  const { t } = useTranslation("nutrition");
   const [mealType, setMealType] = useState(initialData?.meal_type || "lunch");
   const [description, setDescription] = useState(initialData?.description || "");
   const [calories, setCalories] = useState(initialData?.calories?.toString() || "");
@@ -101,21 +104,21 @@ const MealFormSheet = ({ open, onClose, onSubmit, initialData }: MealFormSheetPr
     <Sheet open={open} onOpenChange={v => !v && onClose()}>
       <SheetContent side="bottom" className="max-h-[90vh] rounded-t-2xl overflow-y-auto">
         <SheetHeader className="text-left pb-2">
-          <SheetTitle className="text-base">{initialData ? "Modifier le repas" : "Ajouter un repas"}</SheetTitle>
+          <SheetTitle className="text-base">{initialData ? t("edit_meal") : t("add_meal")}</SheetTitle>
         </SheetHeader>
 
         <div className="space-y-4 mt-4 pb-4">
           {/* Meal type */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type de repas</Label>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("meal_type")}</Label>
             <div className="grid grid-cols-3 gap-1.5">
-              {MEAL_TYPES.map(mt => (
+              {MEAL_TYPE_KEYS.map(mt => (
                 <button key={mt.id} onClick={() => setMealType(mt.id)}
                   className={cn("py-2 rounded-lg text-xs font-medium border transition-all text-center",
                     mealType === mt.id ? "border-primary bg-accent text-foreground" : "border-border text-muted-foreground hover:border-primary/30"
                   )}>
                   <span className="text-base block">{mt.icon}</span>
-                  {mt.label}
+                  {t(mt.id)}
                 </button>
               ))}
             </div>
@@ -123,33 +126,33 @@ const MealFormSheet = ({ open, onClose, onSubmit, initialData }: MealFormSheetPr
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Qu'as-tu mangé ?</Label>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("what_did_you_eat")}</Label>
             <Textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="Ex: Poulet grillé, riz basmati, haricots verts"
+              placeholder={t("meal_placeholder")}
               rows={2}
             />
           </div>
 
           {/* Macros (optional) */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Macros (optionnel)</Label>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("macros_optional")}</Label>
             <div className="grid grid-cols-4 gap-2">
               <div className="space-y-0.5">
-                <label className="text-[10px] text-muted-foreground">Calories</label>
+                <label className="text-[10px] text-muted-foreground">{t("calories")}</label>
                 <Input type="number" value={calories} onChange={e => setCalories(e.target.value)} placeholder="kcal" className="h-9 text-sm" />
               </div>
               <div className="space-y-0.5">
-                <label className="text-[10px]" style={{ color: "hsl(217 91% 60%)" }}>Prot. (g)</label>
+                <label className="text-[10px]" style={{ color: "hsl(217 91% 60%)" }}>{t("prot_short")}</label>
                 <Input type="number" value={protein} onChange={e => setProtein(e.target.value)} className="h-9 text-sm" />
               </div>
               <div className="space-y-0.5">
-                <label className="text-[10px]" style={{ color: "hsl(45 93% 47%)" }}>Gluc. (g)</label>
+                <label className="text-[10px]" style={{ color: "hsl(45 93% 47%)" }}>{t("carbs_short")}</label>
                 <Input type="number" value={carbs} onChange={e => setCarbs(e.target.value)} className="h-9 text-sm" />
               </div>
               <div className="space-y-0.5">
-                <label className="text-[10px]" style={{ color: "hsl(0 72% 51%)" }}>Lip. (g)</label>
+                <label className="text-[10px]" style={{ color: "hsl(0 72% 51%)" }}>{t("fats_short")}</label>
                 <Input type="number" value={fat} onChange={e => setFat(e.target.value)} className="h-9 text-sm" />
               </div>
             </div>
@@ -157,12 +160,12 @@ const MealFormSheet = ({ open, onClose, onSubmit, initialData }: MealFormSheetPr
 
           {/* Notes */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notes (optionnel)</Label>
-            <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Ex: Repas un peu léger" className="h-10" />
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("notes_label")}</Label>
+            <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder={t("notes_placeholder")} className="h-10" />
           </div>
 
           <Button className="w-full h-12 font-semibold" onClick={handleSubmit}>
-            {initialData ? "Modifier" : "Ajouter le repas"}
+            {initialData ? t("edit_meal") : t("add_meal")}
           </Button>
         </div>
       </SheetContent>
@@ -180,6 +183,7 @@ interface DailyNutritionLogProps {
 }
 
 const DailyNutritionLog = ({ date, meals, onAddMeal, onEditMeal, onDeleteMeal, targets }: DailyNutritionLogProps) => {
+  const { t, i18n } = useTranslation("nutrition");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MealLogData | null>(null);
 
@@ -210,6 +214,8 @@ const DailyNutritionLog = ({ date, meals, onAddMeal, onEditMeal, onDeleteMeal, t
     );
   };
 
+  const dateFmt = i18n.language === "fr" ? "fr-FR" : "en-US";
+
   return (
     <div className="space-y-4">
       {/* Daily summary */}
@@ -217,7 +223,7 @@ const DailyNutritionLog = ({ date, meals, onAddMeal, onEditMeal, onDeleteMeal, t
         <div className="glass p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+              {date.toLocaleDateString(dateFmt, { weekday: "long", day: "numeric", month: "long" })}
             </span>
             <span className={cn("text-xs font-bold",
               getProgressStatus(totals.calories, targets.calorie_target) === "success" ? "text-success" :
@@ -229,21 +235,21 @@ const DailyNutritionLog = ({ date, meals, onAddMeal, onEditMeal, onDeleteMeal, t
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1">
               <div className="flex justify-between text-[10px]">
-                <span style={{ color: "hsl(217 91% 60%)" }}>Protéines</span>
+                <span style={{ color: "hsl(217 91% 60%)" }}>{t("protein")}</span>
                 <span className="font-bold">{totals.protein}/{targets.protein_g}g</span>
               </div>
               <ProgressBar current={totals.protein} target={targets.protein_g} color="hsl(217 91% 60%)" />
             </div>
             <div className="space-y-1">
               <div className="flex justify-between text-[10px]">
-                <span style={{ color: "hsl(45 93% 47%)" }}>Glucides</span>
+                <span style={{ color: "hsl(45 93% 47%)" }}>{t("carbs")}</span>
                 <span className="font-bold">{totals.carbs}/{targets.carbs_g}g</span>
               </div>
               <ProgressBar current={totals.carbs} target={targets.carbs_g} color="hsl(45 93% 47%)" />
             </div>
             <div className="space-y-1">
               <div className="flex justify-between text-[10px]">
-                <span style={{ color: "hsl(0 72% 51%)" }}>Lipides</span>
+                <span style={{ color: "hsl(0 72% 51%)" }}>{t("fats")}</span>
                 <span className="font-bold">{totals.fat}/{targets.fat_g}g</span>
               </div>
               <ProgressBar current={totals.fat} target={targets.fat_g} color="hsl(0 72% 51%)" />
@@ -254,7 +260,7 @@ const DailyNutritionLog = ({ date, meals, onAddMeal, onEditMeal, onDeleteMeal, t
 
       {/* Meals list */}
       <div className="space-y-2">
-        {MEAL_TYPES.map(mt => {
+        {MEAL_TYPE_KEYS.map(mt => {
           const mealEntries = meals.filter(m => m.meal_type === mt.id);
           if (mealEntries.length === 0) return null;
           return mealEntries.map(meal => (
@@ -270,7 +276,7 @@ const DailyNutritionLog = ({ date, meals, onAddMeal, onEditMeal, onDeleteMeal, t
         {meals.length === 0 && (
           <div className="text-center py-8 text-muted-foreground text-sm">
             <Utensils className="w-6 h-6 mx-auto mb-2 opacity-50" strokeWidth={1.5} />
-            Aucun repas enregistré
+            {t("no_meals")}
           </div>
         )}
       </div>
@@ -278,7 +284,7 @@ const DailyNutritionLog = ({ date, meals, onAddMeal, onEditMeal, onDeleteMeal, t
       {/* Add button */}
       <Button variant="outline" className="w-full" onClick={() => { setEditing(null); setFormOpen(true); }}>
         <Plus className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
-        Ajouter un repas
+        {t("add_meal")}
       </Button>
 
       {/* Form sheet */}
