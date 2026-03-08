@@ -14,6 +14,7 @@ import frExercises from './locales/fr/exercises.json';
 import frRecovery from './locales/fr/recovery.json';
 import frSettings from './locales/fr/settings.json';
 import frBilan from './locales/fr/bilan.json';
+import frRecommendations from './locales/fr/recommendations.json';
 
 import enCommon from './locales/en/common.json';
 import enAuth from './locales/en/auth.json';
