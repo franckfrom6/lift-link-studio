@@ -1,4 +1,4 @@
-import { Trash2, Pencil } from "lucide-react";
+import { Trash2, Pencil, MapPin, Clock, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ACTIVITY_TYPES, getIntensityColor, MUSCLE_GROUP_LABELS } from "@/data/activity-types";
 import { ExternalSessionData } from "./ExternalSessionForm";
@@ -19,20 +19,29 @@ const ExternalSessionCard = ({ session, onEdit, onDelete, compact }: ExternalSes
       <div className="flex items-center gap-2 text-[11px]">
         <span>{emoji}</span>
         <span className="font-medium truncate">{session.activity_label || type?.label}</span>
-        {session.duration_minutes && (
+        {session.time_start && (
+          <span className="text-muted-foreground">{session.time_start}</span>
+        )}
+        {session.duration_minutes > 0 && (
           <span className="text-muted-foreground">{session.duration_minutes}'</span>
         )}
-        {session.intensity_perceived && (
+        {session.intensity_perceived > 0 && (
           <span className={cn("font-bold", getIntensityColor(session.intensity_perceived))}>
             {session.intensity_perceived}/10
           </span>
+        )}
+        {session.added_by === "coach" && (
+          <span className="text-[9px] text-primary font-bold">Coach</span>
         )}
       </div>
     );
   }
 
   return (
-    <div className="flex items-start gap-2.5 p-2.5 rounded-lg border border-dashed border-border bg-surface/50">
+    <div className={cn(
+      "flex items-start gap-2.5 p-2.5 rounded-lg border border-dashed bg-surface/50",
+      session.added_by === "coach" ? "border-primary/30" : "border-border"
+    )}>
       <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-base shrink-0">
         {emoji}
       </div>
@@ -44,12 +53,21 @@ const ExternalSessionCard = ({ session, onEdit, onDelete, compact }: ExternalSes
           {session.provider && (
             <span className="text-[10px] text-muted-foreground">· {session.provider}</span>
           )}
+          {session.added_by === "coach" && (
+            <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[9px] font-bold">Coach</span>
+          )}
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
-          {session.duration_minutes && (
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          {session.time_start && (
+            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+              <Clock className="w-2.5 h-2.5" strokeWidth={1.5} />
+              {session.time_start}{session.time_end ? ` → ${session.time_end}` : ""}
+            </span>
+          )}
+          {session.duration_minutes > 0 && (
             <span className="text-[10px] text-muted-foreground">{session.duration_minutes} min</span>
           )}
-          {session.intensity_perceived && (
+          {session.intensity_perceived > 0 && (
             <>
               <span className="text-[10px] text-muted-foreground">·</span>
               <span className={cn("text-[10px] font-bold", getIntensityColor(session.intensity_perceived))}>
@@ -58,14 +76,27 @@ const ExternalSessionCard = ({ session, onEdit, onDelete, compact }: ExternalSes
             </>
           )}
         </div>
-        {session.muscle_groups_involved.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1">
-            {session.muscle_groups_involved.slice(0, 3).map(g => (
-              <span key={g} className="bg-secondary text-muted-foreground px-1.5 py-0.5 rounded text-[9px]">
-                {MUSCLE_GROUP_LABELS[g] || g}
+        {(session.location || (session.muscle_groups_involved && session.muscle_groups_involved.length > 0)) && (
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {session.location && (
+              <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                <MapPin className="w-2.5 h-2.5" strokeWidth={1.5} />
+                {session.location}
               </span>
-            ))}
+            )}
+            {session.muscle_groups_involved && session.muscle_groups_involved.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {session.muscle_groups_involved.slice(0, 4).map(g => (
+                  <span key={g} className="bg-secondary text-muted-foreground px-1.5 py-0.5 rounded text-[9px]">
+                    {MUSCLE_GROUP_LABELS[g] || g}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
+        )}
+        {session.notes && (
+          <p className="text-[10px] text-muted-foreground mt-1 italic truncate">📝 {session.notes}</p>
         )}
       </div>
       {(onEdit || onDelete) && (
