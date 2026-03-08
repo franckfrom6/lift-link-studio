@@ -1,10 +1,11 @@
-import { SessionData, SessionExerciseData, DAY_NAMES, Exercise } from "@/types/coach";
-import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { SessionData, SessionExerciseData, SessionSectionData, DAY_NAMES, Exercise } from "@/types/coach";
+import { Plus, Trash2, ChevronDown, ChevronUp, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SessionExerciseCard from "./SessionExerciseCard";
 import { useState } from "react";
 import ExercisePicker from "./ExercisePicker";
+import SessionSectionEditor from "./SessionSectionEditor";
 
 interface SessionEditorProps {
   session: SessionData;
@@ -15,18 +16,59 @@ interface SessionEditorProps {
 const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [addToSectionId, setAddToSectionId] = useState<string | null>(null);
 
-  const addExercise = (exercise: Exercise) => {
+  const addSection = () => {
+    const newSection: SessionSectionData = {
+      id: crypto.randomUUID(),
+      name: `Section ${(session.sections?.length || 0) + 1}`,
+      sortOrder: (session.sections?.length || 0),
+      exercises: [],
+    };
+    onUpdate({ ...session, sections: [...(session.sections || []), newSection] });
+  };
+
+  const updateSection = (index: number, updated: SessionSectionData) => {
+    const sections = [...(session.sections || [])];
+    sections[index] = updated;
+    onUpdate({ ...session, sections });
+  };
+
+  const removeSection = (index: number) => {
+    // Move exercises back to unsectioned
+    const removedSection = session.sections?.[index];
+    const movedExercises = removedSection?.exercises || [];
+    onUpdate({
+      ...session,
+      sections: (session.sections || []).filter((_, i) => i !== index),
+      exercises: [...session.exercises, ...movedExercises],
+    });
+  };
+
+  const addExercise = (exercise: Exercise, sectionId?: string | null) => {
     const newExercise: SessionExerciseData = {
       id: crypto.randomUUID(),
       exercise,
-      sortOrder: session.exercises.length,
+      sortOrder: 0,
       sets: 3,
       repsMin: 8,
       repsMax: 12,
       restSeconds: 90,
+      sectionId: sectionId || undefined,
     };
-    onUpdate({ ...session, exercises: [...session.exercises, newExercise] });
+
+    if (sectionId) {
+      const sections = [...(session.sections || [])];
+      const sIdx = sections.findIndex(s => s.id === sectionId);
+      if (sIdx >= 0) {
+        newExercise.sortOrder = sections[sIdx].exercises.length;
+        sections[sIdx] = { ...sections[sIdx], exercises: [...sections[sIdx].exercises, newExercise] };
+        onUpdate({ ...session, sections });
+      }
+    } else {
+      newExercise.sortOrder = session.exercises.length;
+      onUpdate({ ...session, exercises: [...session.exercises, newExercise] });
+    }
   };
 
   const updateExercise = (index: number, updated: SessionExerciseData) => {
@@ -48,6 +90,11 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
     onUpdate({ ...session, exercises: exs });
   };
 
+  const allExerciseIds = [
+    ...session.exercises.map(e => e.exercise.id),
+    ...(session.sections || []).flatMap(s => s.exercises.map(e => e.exercise.id)),
+  ];
+
   return (
     <div className="border border-border rounded-xl overflow-hidden">
       {/* Session header */}
@@ -66,7 +113,7 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
             placeholder="Nom de la séance"
           />
           <p className="text-[11px] text-muted-foreground">
-            {DAY_NAMES[session.dayOfWeek]} · {session.exercises.length} exercice{session.exercises.length !== 1 ? "s" : ""}
+            {DAY_NAMES[session.dayOfWeek]} · {session.exercises.length + (session.sections || []).reduce((a, s) => a + s.exercises.length, 0)} exercice{session.exercises.length !== 1 ? "s" : ""} · {(session.sections || []).length} section{(session.sections || []).length !== 1 ? "s" : ""}
           </p>
         </div>
         <button onClick={onRemove} className="text-muted-foreground hover:text-destructive transition-colors p-1">
@@ -74,34 +121,62 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
         </button>
       </div>
 
-      {/* Exercises list */}
+      {/* Content */}
       {!collapsed && (
-        <div className="p-3 space-y-3">
-          {session.exercises.map((exItem, i) => (
-            <SessionExerciseCard
-              key={exItem.id}
-              item={exItem}
-              index={i}
-              total={session.exercises.length}
-              onUpdate={(u) => updateExercise(i, u)}
-              onRemove={() => removeExercise(i)}
-              onMoveUp={() => moveExercise(i, -1)}
-              onMoveDown={() => moveExercise(i, 1)}
+        <div className="p-3 space-y-4">
+          {/* Sections */}
+          {(session.sections || []).map((section, i) => (
+            <SessionSectionEditor
+              key={section.id}
+              section={section}
+              onUpdate={(u) => updateSection(i, u)}
+              onRemove={() => removeSection(i)}
+              onAddExercise={() => { setAddToSectionId(section.id); setPickerOpen(true); }}
             />
           ))}
 
-          <Button variant="outline" size="sm" className="w-full" onClick={() => setPickerOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Ajouter un exercice
-          </Button>
+          {/* Unsectioned exercises */}
+          {session.exercises.length > 0 && (
+            <div className="space-y-3">
+              {(session.sections || []).length > 0 && (
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold px-1">
+                  Exercices hors section
+                </p>
+              )}
+              {session.exercises.map((exItem, i) => (
+                <SessionExerciseCard
+                  key={exItem.id}
+                  item={exItem}
+                  index={i}
+                  total={session.exercises.length}
+                  onUpdate={(u) => updateExercise(i, u)}
+                  onRemove={() => removeExercise(i)}
+                  onMoveUp={() => moveExercise(i, -1)}
+                  onMoveDown={() => moveExercise(i, 1)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => { setAddToSectionId(null); setPickerOpen(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Exercice
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1" onClick={addSection}>
+              <FolderPlus className="w-4 h-4 mr-2" />
+              Section
+            </Button>
+          </div>
         </div>
       )}
 
       <ExercisePicker
         open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onSelect={addExercise}
-        excludeIds={session.exercises.map((e) => e.exercise.id)}
+        onClose={() => { setPickerOpen(false); setAddToSectionId(null); }}
+        onSelect={(ex) => addExercise(ex, addToSectionId)}
+        excludeIds={allExerciseIds}
       />
     </div>
   );

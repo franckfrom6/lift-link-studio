@@ -1,5 +1,5 @@
 import { SessionExerciseData } from "@/types/coach";
-import { GripVertical, Trash2, ChevronUp, ChevronDown, Dumbbell, MessageSquare } from "lucide-react";
+import { Trash2, ChevronUp, ChevronDown, Dumbbell, MessageSquare, Film } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -15,7 +15,7 @@ interface SessionExerciseCardProps {
 }
 
 const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp, onMoveDown }: SessionExerciseCardProps) => {
-  const [showNotes, setShowNotes] = useState(!!item.coachNotes);
+  const [showExtras, setShowExtras] = useState(false);
 
   return (
     <div className="glass rounded-xl p-4 space-y-3">
@@ -36,7 +36,10 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           <p className="font-semibold text-sm">{item.exercise.name}</p>
           <p className="text-[11px] text-muted-foreground">{item.exercise.muscle_group} · {item.exercise.equipment}</p>
         </div>
-        <button onClick={() => setShowNotes(!showNotes)} className="text-muted-foreground hover:text-primary transition-colors">
+        <button onClick={() => setShowExtras(!showExtras)} className="text-muted-foreground hover:text-primary transition-colors" title="Plus d'options">
+          <Film className="w-4 h-4" />
+        </button>
+        <button onClick={() => setShowExtras(!showExtras)} className="text-muted-foreground hover:text-primary transition-colors">
           <MessageSquare className="w-4 h-4" />
         </button>
         <button onClick={onRemove} className="text-muted-foreground hover:text-destructive transition-colors">
@@ -44,7 +47,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
         </button>
       </div>
 
-      {/* Params grid */}
+      {/* Core params grid */}
       <div className="grid grid-cols-4 gap-2">
         <div>
           <label className="text-[10px] text-muted-foreground font-medium uppercase">Séries</label>
@@ -53,8 +56,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
             value={item.sets}
             onChange={(e) => onUpdate({ ...item, sets: Number(e.target.value) || 1 })}
             className="h-9 text-center bg-surface text-sm font-semibold"
-            min={1}
-            max={20}
+            min={1} max={20}
           />
         </div>
         <div>
@@ -64,8 +66,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
             value={item.repsMin}
             onChange={(e) => onUpdate({ ...item, repsMin: Number(e.target.value) || 1 })}
             className="h-9 text-center bg-surface text-sm font-semibold"
-            min={1}
-            max={100}
+            min={1} max={100}
           />
         </div>
         <div>
@@ -75,8 +76,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
             value={item.repsMax}
             onChange={(e) => onUpdate({ ...item, repsMax: Number(e.target.value) || 1 })}
             className="h-9 text-center bg-surface text-sm font-semibold"
-            min={1}
-            max={100}
+            min={1} max={100}
           />
         </div>
         <div>
@@ -86,38 +86,74 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
             value={item.restSeconds}
             onChange={(e) => onUpdate({ ...item, restSeconds: Number(e.target.value) || 30 })}
             className="h-9 text-center bg-surface text-sm font-semibold"
-            min={0}
-            step={15}
+            min={0} step={15}
           />
         </div>
       </div>
 
-      {/* Optional weight */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* Extended params */}
+      <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase">Charge suggérée (kg)</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase">Charge (kg)</label>
           <Input
             type="number"
             value={item.suggestedWeight ?? ""}
             onChange={(e) => onUpdate({ ...item, suggestedWeight: e.target.value ? Number(e.target.value) : undefined })}
             placeholder="—"
             className="h-9 bg-surface text-sm"
-            min={0}
-            step={2.5}
+            min={0} step={2.5}
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase">Tempo</label>
+          <Input
+            value={item.tempo ?? ""}
+            onChange={(e) => onUpdate({ ...item, tempo: e.target.value || undefined })}
+            placeholder="2-0-1-2"
+            className="h-9 bg-surface text-sm text-center"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase">RPE cible</label>
+          <Input
+            value={item.rpeTarget ?? ""}
+            onChange={(e) => onUpdate({ ...item, rpeTarget: e.target.value || undefined })}
+            placeholder="8-9"
+            className="h-9 bg-surface text-sm text-center"
           />
         </div>
       </div>
 
-      {/* Notes */}
-      {showNotes && (
-        <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase">Notes du coach</label>
-          <Input
-            value={item.coachNotes ?? ""}
-            onChange={(e) => onUpdate({ ...item, coachNotes: e.target.value || undefined })}
-            placeholder="Ex: Contrôler la descente, 2s négatif..."
-            className="h-9 bg-surface text-sm"
-          />
+      {/* Extras */}
+      {showExtras && (
+        <div className="space-y-2 pt-1 border-t border-border/30">
+          <div>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase">Notes du coach</label>
+            <Input
+              value={item.coachNotes ?? ""}
+              onChange={(e) => onUpdate({ ...item, coachNotes: e.target.value || undefined })}
+              placeholder="Ex: Contrôler la descente, 2s négatif..."
+              className="h-9 bg-surface text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase">URL Vidéo</label>
+            <Input
+              value={item.videoUrl ?? ""}
+              onChange={(e) => onUpdate({ ...item, videoUrl: e.target.value || undefined })}
+              placeholder="https://youtube.com/watch?v=..."
+              className="h-9 bg-surface text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase">Recherche YouTube (fallback)</label>
+            <Input
+              value={item.videoSearchQuery ?? ""}
+              onChange={(e) => onUpdate({ ...item, videoSearchQuery: e.target.value || undefined })}
+              placeholder="hip thrust barbell form"
+              className="h-9 bg-surface text-sm"
+            />
+          </div>
         </div>
       )}
     </div>
