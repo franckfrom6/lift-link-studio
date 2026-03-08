@@ -30,17 +30,28 @@ const StudentBilan = () => {
     if (!studentId) return;
     setLoading(true);
     try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-bilan`;
+      const session = (await supabase.auth.getSession()).data.session;
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 90000); // 90s timeout
-      const { data, error } = await supabase.functions.invoke("generate-bilan", {
-        body: {
+      const timeout = setTimeout(() => controller.abort(), 90000);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
           student_id: studentId,
           date_start: dateStart,
           date_end: dateEnd,
           lang: i18n.language,
-        },
+        }),
+        signal: controller.signal,
       });
       clearTimeout(timeout);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "AI error");
 
       if (error) throw error;
       if (data?.error) {
