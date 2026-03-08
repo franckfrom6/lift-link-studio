@@ -1,11 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { Dumbbell, Timer, CalendarDays, Apple, RefreshCw, TrendingUp } from "lucide-react";
+import featureImg1 from "@/assets/landing-feature-1.png";
 
 const ACCENT = "#6C5CE7";
 
 const features = [
-  { icon: Dumbbell, n: 1 },
+  { icon: Dumbbell, n: 1, img: featureImg1 },
   { icon: Timer, n: 2 },
   { icon: CalendarDays, n: 3 },
   { icon: Apple, n: 4 },
@@ -13,7 +14,7 @@ const features = [
   { icon: TrendingUp, n: 6 },
 ];
 
-const FeatureBlock = ({ n, icon: Icon, reverse }: { n: number; icon: any; reverse: boolean }) => {
+const FeatureBlock = ({ n, icon: Icon, reverse, img }: { n: number; icon: any; reverse: boolean; img?: string }) => {
   const { t } = useTranslation("landing");
   const ref = useScrollReveal();
 
@@ -34,7 +35,11 @@ const FeatureBlock = ({ n, icon: Icon, reverse }: { n: number; icon: any; revers
     </div>
   );
 
-  const visualSide = (
+  const visualSide = img ? (
+    <div className="flex-shrink-0 w-48 sm:w-56 lg:w-64">
+      <img src={img} alt={t(`feat_${n}_title`)} className="w-full rounded-xl border border-gray-200 shadow-sm" loading="lazy" />
+    </div>
+  ) : (
     <div className="flex-shrink-0">
       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 flex items-center justify-center">
         <Icon size={28} style={{ color: ACCENT }} className="opacity-50" />
@@ -61,7 +66,7 @@ const FeaturesSection = () => {
         </h2>
         <div className="space-y-12">
           {features.map((f, i) => (
-            <FeatureBlock key={f.n} n={f.n} icon={f.icon} reverse={i % 2 === 1} />
+            <FeatureBlock key={f.n} n={f.n} icon={f.icon} reverse={i % 2 === 1} img={f.img} />
           ))}
         </div>
       </div>
