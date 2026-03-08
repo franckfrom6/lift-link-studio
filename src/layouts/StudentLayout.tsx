@@ -27,7 +27,7 @@ const StudentLayout = () => {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground hidden sm:inline">
-            {profile?.full_name}
+            Élève
           </span>
           <Button variant="ghost" size="icon" onClick={handleSignOut}>
             <LogOut className="w-4 h-4" />
