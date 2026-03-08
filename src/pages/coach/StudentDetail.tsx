@@ -86,7 +86,7 @@ const StudentDetail = () => {
   const hasProgram = studentId === "yana";
   const isYana = studentId === "yana";
   const checkin = isYana ? DEMO_CHECKIN : null;
-  const externals = isYana ? DEMO_EXTERNALS : [];
+  const allExternals = isYana ? [...DEMO_EXTERNALS, ...coachExternals] : coachExternals;
 
   const recentSwaps = swaps.filter((s) => {
     const d = new Date(s.created_at);
