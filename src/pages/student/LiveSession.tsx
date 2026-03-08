@@ -341,7 +341,7 @@ const LiveSession = () => {
       <div className="py-4">
         <Button
           className="w-full h-12 text-base font-semibold"
-          onClick={() => { setSessionDone(true); toast.success(t('session:session_done')); }}
+          onClick={() => finishSession()}
           disabled={completedCount === 0}
         >
           {t('session:finish_session', { completed: completedCount, total: allExercises.length })}
