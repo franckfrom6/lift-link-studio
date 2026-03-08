@@ -73,6 +73,7 @@ interface ProgramFull {
   status: string;
   student_id: string;
   studentName?: string;
+  created_at?: string;
   weeks: Week[];
 }
 
