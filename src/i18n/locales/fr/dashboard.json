@@ -86,5 +86,21 @@
   "feed_swap": "a déplacé une séance",
   "feed_external": "a logué une activité externe —",
   "weekly_insight_title": "Résumé de ta semaine",
-  "generating_insight": "Génération de ton résumé..."
+  "generating_insight": "Génération de ton résumé...",
+  "goals": {
+    "Hypertrophie fessiers": "Hypertrophie fessiers",
+    "Prise de masse": "Prise de masse",
+    "Remise en forme": "Remise en forme",
+    "Performance": "Performance",
+    "Sèche": "Sèche",
+    "Perte de poids": "Perte de poids",
+    "Recomposition": "Recomposition",
+    "Force": "Force"
+  },
+  "levels": {
+    "Débutant": "Débutant",
+    "Intermédiaire": "Intermédiaire",
+    "Avancé": "Avancé",
+    "Avancée": "Avancée"
+  }
 }
