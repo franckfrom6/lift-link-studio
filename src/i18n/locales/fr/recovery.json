@@ -1,0 +1,15 @@
+{
+  "post_session_title": "Recommandations post-séance",
+  "high_fatigue_title": "Recommandations — Fatigue élevée",
+  "deload_title": "Recommandations — Semaine de deload",
+  "subtitle": "Conseils personnalisés pour optimiser ta récupération",
+  "all_seen": "Toutes les recommandations ont été vues 👍",
+  "essential": "Essentiel",
+  "suggest_lower_body": "💡 Envisager un allègement volume lower body cette semaine",
+  "suggest_moderate_rpe": "💡 Privilégier les exercices à RPE modéré",
+  "suggest_rest": "💡 Journée récupération recommandée",
+  "load_ok": "Charge OK",
+  "load_high": "Charge élevée",
+  "load_overload": "Surcharge potentielle",
+  "weekly_load": "Charge hebdomadaire"
+}

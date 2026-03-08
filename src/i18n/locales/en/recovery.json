@@ -1,0 +1,15 @@
+{
+  "post_session_title": "Post-session recommendations",
+  "high_fatigue_title": "Recommendations — High fatigue",
+  "deload_title": "Recommendations — Deload week",
+  "subtitle": "Personalized tips to optimize your recovery",
+  "all_seen": "All recommendations seen 👍",
+  "essential": "Essential",
+  "suggest_lower_body": "💡 Consider reducing lower body volume this week",
+  "suggest_moderate_rpe": "💡 Prefer moderate RPE exercises",
+  "suggest_rest": "💡 Recovery day recommended",
+  "load_ok": "Load OK",
+  "load_high": "High load",
+  "load_overload": "Potential overload",
+  "weekly_load": "Weekly load"
+}

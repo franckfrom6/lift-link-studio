@@ -1,0 +1,9 @@
+{
+  "exercise_library": "Exercise Library",
+  "exercises_available": "{{count}} exercises available",
+  "search_exercise": "Search exercise...",
+  "all": "All",
+  "no_exercise_found": "No exercise found",
+  "compound": "Compound",
+  "isolation": "Isolation"
+}

@@ -1,0 +1,10 @@
+{
+  "programs": "Programmes",
+  "create_program": "Créer le premier programme",
+  "new_program": "Nouveau programme",
+  "active_program": "Programme actif",
+  "no_programs": "Aucun programme",
+  "no_programs_desc": "Sélectionnez un élève depuis la page Élèves pour lui créer un programme.",
+  "create_manage": "Créez et gérez les programmes de vos élèves",
+  "no_program_for_student": "Aucun programme pour cet élève"
+}

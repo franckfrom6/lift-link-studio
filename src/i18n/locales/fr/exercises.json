@@ -1,0 +1,9 @@
+{
+  "exercise_library": "Bibliothèque d'exercices",
+  "exercises_available": "{{count}} exercices disponibles",
+  "search_exercise": "Rechercher un exercice...",
+  "all": "Tous",
+  "no_exercise_found": "Aucun exercice trouvé",
+  "compound": "Composé",
+  "isolation": "Isolation"
+}
