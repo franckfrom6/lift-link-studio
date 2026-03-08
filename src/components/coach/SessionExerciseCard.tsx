@@ -108,7 +108,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Tempo</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('tempo')}</label>
           <Input
             value={item.tempo ?? ""}
             onChange={(e) => onUpdate({ ...item, tempo: e.target.value || undefined })}
