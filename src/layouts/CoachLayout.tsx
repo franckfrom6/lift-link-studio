@@ -3,11 +3,9 @@ import { Dumbbell, Users, ClipboardList, LogOut, LayoutDashboard } from "lucide-
 import { Button } from "@/components/ui/button";
 
 const CoachLayout = () => {
-  const { signOut, profile } = useAuth();
   const navigate = useNavigate();
 
-  const handleSignOut = async () => {
-    await signOut();
+  const handleSignOut = () => {
     navigate("/auth");
   };
 
