@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.weekly-insight]
 verify_jwt = false
+
+[functions.generate-recommendation]
+verify_jwt = false

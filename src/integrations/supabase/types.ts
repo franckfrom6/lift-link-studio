@@ -59,6 +59,102 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_nutrition_recommendations: {
+        Row: {
+          category: string
+          coach_id: string
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          priority: number
+          student_id: string | null
+          title: string
+          trigger_config: Json | null
+          trigger_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          coach_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          student_id?: string | null
+          title: string
+          trigger_config?: Json | null
+          trigger_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          coach_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          student_id?: string | null
+          title?: string
+          trigger_config?: Json | null
+          trigger_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      coach_recovery_recommendations: {
+        Row: {
+          category: string
+          coach_id: string
+          content: string
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          is_active: boolean
+          priority: number
+          student_id: string | null
+          title: string
+          trigger_config: Json | null
+          trigger_type: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          category?: string
+          coach_id: string
+          content: string
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          is_active?: boolean
+          priority?: number
+          student_id?: string | null
+          title: string
+          trigger_config?: Json | null
+          trigger_type?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          category?: string
+          coach_id?: string
+          content?: string
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          is_active?: boolean
+          priority?: number
+          student_id?: string | null
+          title?: string
+          trigger_config?: Json | null
+          trigger_type?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       coach_students: {
         Row: {
           coach_id: string

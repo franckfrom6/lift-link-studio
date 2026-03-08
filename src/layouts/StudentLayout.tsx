@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Dumbbell, Calendar, BarChart3, User, LogOut } from "lucide-react";
+import { Dumbbell, Calendar, BarChart3, User, LogOut, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -16,6 +16,7 @@ const StudentLayout = () => {
   const navItems = [
     { to: "/student", icon: Calendar, label: t('settings:nav_week'), end: true },
     { to: "/student/progress", icon: BarChart3, label: t('settings:nav_progress') },
+    { to: "/student/recommendations", icon: BookOpen, label: t('settings:nav_recommendations') },
     { to: "/student/profile", icon: User, label: t('settings:nav_profile') },
   ];
 

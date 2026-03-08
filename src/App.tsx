@@ -17,6 +17,7 @@ import CoachExercises from "./pages/coach/CoachExercises";
 import StudentDetail from "./pages/coach/StudentDetail";
 import ProgramEditor from "./pages/coach/ProgramEditor";
 import StudentBilan from "./pages/coach/StudentBilan";
+import CoachRecommendations from "./pages/coach/CoachRecommendations";
 
 import StudentLayout from "./layouts/StudentLayout";
 import StudentWeek from "./pages/student/StudentWeek";
@@ -24,6 +25,7 @@ import StudentProgress from "./pages/student/StudentProgress";
 import StudentProfile from "./pages/student/StudentProfile";
 import LiveSession from "./pages/student/LiveSession";
 import StudentNutrition from "./pages/student/StudentNutrition";
+import StudentRecommendations from "./pages/student/StudentRecommendations";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +49,7 @@ const App = () => (
                 <Route path="students/:studentId/bilan" element={<StudentBilan />} />
                 <Route path="programs" element={<CoachPrograms />} />
                 <Route path="exercises" element={<CoachExercises />} />
+                <Route path="recommendations" element={<CoachRecommendations />} />
               </Route>
 
               <Route path="/student" element={<StudentLayout />}>
@@ -55,6 +58,7 @@ const App = () => (
                 <Route path="progress" element={<StudentProgress />} />
                 <Route path="profile" element={<StudentProfile />} />
                 <Route path="nutrition" element={<StudentNutrition />} />
+                <Route path="recommendations" element={<StudentRecommendations />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

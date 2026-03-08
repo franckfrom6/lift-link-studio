@@ -14,6 +14,7 @@ import frExercises from './locales/fr/exercises.json';
 import frRecovery from './locales/fr/recovery.json';
 import frSettings from './locales/fr/settings.json';
 import frBilan from './locales/fr/bilan.json';
+import frRecommendations from './locales/fr/recommendations.json';
 
 import enCommon from './locales/en/common.json';
 import enAuth from './locales/en/auth.json';
@@ -27,6 +28,7 @@ import enExercises from './locales/en/exercises.json';
 import enRecovery from './locales/en/recovery.json';
 import enSettings from './locales/en/settings.json';
 import enBilan from './locales/en/bilan.json';
+import enRecommendations from './locales/en/recommendations.json';
 
 i18n
   .use(LanguageDetector)
@@ -46,6 +48,7 @@ i18n
         recovery: frRecovery,
         settings: frSettings,
         bilan: frBilan,
+        recommendations: frRecommendations,
       },
       en: {
         common: enCommon,
@@ -60,6 +63,7 @@ i18n
         recovery: enRecovery,
         settings: enSettings,
         bilan: enBilan,
+        recommendations: enRecommendations,
       },
     },
     lng: 'fr',
