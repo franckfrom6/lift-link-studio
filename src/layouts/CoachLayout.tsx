@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { Dumbbell, Users, ClipboardList, LogOut, LayoutDashboard, BookOpen, CreditCard, Shield } from "lucide-react";
+import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -28,11 +29,8 @@ const CoachLayout = () => {
   return (
     <div className="min-h-screen bg-background flex">
       <aside className="hidden md:flex flex-col w-[260px] border-r border-border bg-secondary/50 p-4">
-        <div className="flex items-center gap-3 mb-8 px-2">
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-            <Dumbbell className="w-4 h-4 text-primary-foreground" strokeWidth={1.5} />
-          </div>
-          <span className="font-bold text-lg tracking-tight">FitForge</span>
+        <div className="mb-8 px-2">
+          <Logo variant="full" size="md" />
         </div>
 
         <nav className="flex-1 space-y-1">
@@ -68,12 +66,7 @@ const CoachLayout = () => {
 
       <div className="flex-1 flex flex-col min-h-screen">
         <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Dumbbell className="w-4 h-4 text-primary-foreground" strokeWidth={1.5} />
-            </div>
-            <span className="font-bold">FitForge</span>
-          </div>
+          <Logo variant="compact" size="sm" />
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
             <ThemeToggle />

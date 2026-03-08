@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Dumbbell, Calendar, BarChart3, User, LogOut, BookOpen } from "lucide-react";
+import { Calendar, BarChart3, User, LogOut, BookOpen } from "lucide-react";
+import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -23,12 +24,7 @@ const StudentLayout = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center justify-between p-4 border-b border-border bg-background">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Dumbbell className="w-4 h-4 text-primary-foreground" strokeWidth={1.5} />
-          </div>
-          <span className="font-bold">FitForge</span>
-        </div>
+          <Logo variant="compact" size="sm" />
         <div className="flex items-center gap-1">
           <span className="text-sm text-muted-foreground hidden sm:inline">{t('common:roles.student')}</span>
           <LanguageSwitcher />
