@@ -502,6 +502,12 @@ const CoachProgramDetail = () => {
     toast.success(t("program:program_activated"));
   };
 
+  const publishProgram = async () => {
+    if (!program) return;
+    await supabase.from("programs").update({ updated_at: new Date().toISOString() }).eq("id", program.id);
+    toast.success(t("program:published", "Programme publié — visible par l'élève"));
+  };
+
   const dayLabel = (d: number) => t(`common:days.${DAY_KEYS[d]}`, DAY_KEYS[d]);
   const lang = i18n.language;
   const dateFnsLocale = lang === "fr" ? fr : enUS;
