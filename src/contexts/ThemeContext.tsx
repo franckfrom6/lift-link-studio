@@ -50,7 +50,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
-    localStorage.setItem("fitforge-theme", t);
+    localStorage.setItem("f6gym-theme", t);
   };
 
   return (

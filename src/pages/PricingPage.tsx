@@ -14,7 +14,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-const CONTACT_EMAIL = "contact@fitforge.app";
+const CONTACT_EMAIL = "contact@f6gym.app";
 
 const PLAN_FEATURES: Record<string, { key: string; free: string; essential: string; advanced: string }[]> = {
   coach: [
