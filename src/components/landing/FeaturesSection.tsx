@@ -34,11 +34,7 @@ const FeatureBlock = ({ n, icon: Icon, reverse }: { n: number; icon: any; revers
     </div>
   );
 
-  const visualSide = img ? (
-    <div className="flex-shrink-0 w-32 sm:w-40 lg:w-44">
-      <img src={img} alt={t(`feat_${n}_title`)} className="w-full rounded-xl border border-gray-200 shadow-sm" loading="lazy" />
-    </div>
-  ) : (
+  const visualSide = (
     <div className="flex-shrink-0">
       <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 flex items-center justify-center">
         <Icon size={22} style={{ color: ACCENT }} className="opacity-50" />
@@ -65,7 +61,7 @@ const FeaturesSection = () => {
         </h2>
         <div className="space-y-12">
           {features.map((f, i) => (
-            <FeatureBlock key={f.n} n={f.n} icon={f.icon} reverse={i % 2 === 1} img={f.img} />
+            <FeatureBlock key={f.n} n={f.n} icon={f.icon} reverse={i % 2 === 1} />
           ))}
         </div>
       </div>
