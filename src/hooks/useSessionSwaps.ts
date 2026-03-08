@@ -62,7 +62,7 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, fetchSwaps]);
+  }, [studentId, fetchSwaps]);
 
   const createSwap = async (params: {
     sessionId: string;

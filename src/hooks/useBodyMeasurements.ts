@@ -43,9 +43,9 @@ export const useBodyMeasurements = () => {
   }, [studentId]);
 
   const addMeasurement = async (measurement: Omit<BodyMeasurement, "id">) => {
-    if (!user) return;
+    if (!studentId) return;
     const { error } = await supabase.from("body_measurements").insert({
-      student_id: user.id,
+      student_id: studentId,
       ...measurement,
     });
     if (!error) {

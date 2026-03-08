@@ -34,7 +34,7 @@ export const useProgressPhotos = () => {
 
   useEffect(() => {
     fetchPhotos();
-  }, [user]);
+  }, [studentId]);
 
   const uploadPhoto = async (file: File, category: string, date: string, notes?: string) => {
     if (!user) return;

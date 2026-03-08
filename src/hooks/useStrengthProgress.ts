@@ -144,7 +144,7 @@ export const useStrengthProgress = () => {
     };
 
     fetchData();
-  }, [user, selectedExercise]);
+  }, [studentId, selectedExercise]);
 
   return { exercises, selectedExercise, setSelectedExercise, dataPoints, loading };
 };
