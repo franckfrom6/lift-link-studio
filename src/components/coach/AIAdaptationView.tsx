@@ -226,7 +226,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
       <div className="flex items-center gap-2">
         <Bot className="w-5 h-5 text-accent-foreground" />
         <h3 className="font-bold text-sm">
-          {i18n.language === "fr" ? "Programme adapté — Semaine" : "Adapted program — Week"} {weekNumber + 1}
+          {t('adapted_program_week', { number: weekNumber + 1 })}
         </h3>
       </div>
 
