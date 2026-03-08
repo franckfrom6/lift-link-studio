@@ -18,6 +18,7 @@ interface SessionExerciseCardProps {
 
 const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp, onMoveDown }: SessionExerciseCardProps) => {
   const [showExtras, setShowExtras] = useState(false);
+  const { t } = useTranslation('exercises');
 
   return (
     <div className="glass p-4 space-y-3">
