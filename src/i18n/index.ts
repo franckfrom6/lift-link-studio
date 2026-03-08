@@ -48,6 +48,7 @@ i18n
         recovery: frRecovery,
         settings: frSettings,
         bilan: frBilan,
+        recommendations: frRecommendations,
       },
       en: {
         common: enCommon,
