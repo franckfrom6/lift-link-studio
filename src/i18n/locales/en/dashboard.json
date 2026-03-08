@@ -84,5 +84,7 @@
   "feed_session_completed": "completed a session",
   "feed_checkin": "sent check-in —",
   "feed_swap": "moved a session",
-  "feed_external": "logged external activity —"
+  "feed_external": "logged external activity —",
+  "weekly_insight_title": "Your week summary",
+  "generating_insight": "Generating your summary..."
 }

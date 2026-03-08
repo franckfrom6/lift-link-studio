@@ -84,5 +84,7 @@
   "feed_session_completed": "a complété une séance",
   "feed_checkin": "a envoyé son check-in —",
   "feed_swap": "a déplacé une séance",
-  "feed_external": "a logué une activité externe —"
+  "feed_external": "a logué une activité externe —",
+  "weekly_insight_title": "Résumé de ta semaine",
+  "generating_insight": "Génération de ton résumé..."
 }

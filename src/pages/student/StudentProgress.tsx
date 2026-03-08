@@ -3,6 +3,7 @@ import WeeklySummaryCard from "@/components/student/WeeklySummaryCard";
 import StrengthProgressChart from "@/components/student/StrengthProgressChart";
 import BodyEvolutionSection from "@/components/student/BodyEvolutionSection";
 import ProgressPhotoGallery from "@/components/student/ProgressPhotoGallery";
+import WeeklyInsightCard from "@/components/student/WeeklyInsightCard";
 
 const StudentProgress = () => {
   const { t } = useTranslation("dashboard");
@@ -14,6 +15,7 @@ const StudentProgress = () => {
         <p className="text-muted-foreground text-sm">{t("track_progress")}</p>
       </div>
 
+      <WeeklyInsightCard />
       <WeeklySummaryCard />
       <StrengthProgressChart />
       <BodyEvolutionSection />
