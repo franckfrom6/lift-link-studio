@@ -1,0 +1,10 @@
+{
+  "programs": "Programs",
+  "create_program": "Create first program",
+  "new_program": "New program",
+  "active_program": "Active program",
+  "no_programs": "No programs",
+  "no_programs_desc": "Select an athlete from the Athletes page to create a program.",
+  "create_manage": "Create and manage your athletes' programs",
+  "no_program_for_student": "No program for this athlete"
+}
