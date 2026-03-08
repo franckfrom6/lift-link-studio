@@ -246,43 +246,15 @@ const AuthPage = () => {
                 onClick={async () => {
                   setLoading(true);
                   try {
-                    const isCustomDomain =
-                      !window.location.hostname.includes("lovable.app") &&
-                      !window.location.hostname.includes("lovableproject.com");
+                    const { error } = await lovable.auth.signInWithOAuth("google", {
+                      redirect_uri: window.location.origin,
+                      extraParams: {
+                        prompt: "select_account",
+                      },
+                    });
 
-                    if (isCustomDomain) {
-                      // Bypass auth-bridge for custom domains
-                      const { data, error } = await supabase.auth.signInWithOAuth({
-                        provider: "google",
-                        options: {
-                          redirectTo: window.location.origin,
-                          skipBrowserRedirect: true,
-                        },
-                      });
-                      if (error) {
-                        toast.error(error.message || t("error_generic"));
-                        return;
-                      }
-                      if (data?.url) {
-                        const oauthUrl = new URL(data.url);
-                        const allowedHosts = [
-                          "accounts.google.com",
-                          "wlwzxhihykefzbtvoqtm.supabase.co",
-                        ];
-                        const isAllowed = allowedHosts.includes(oauthUrl.hostname);
-                        if (!isAllowed) {
-                          toast.error("OAuth URL invalide");
-                          return;
-                        }
-                        window.location.href = data.url;
-                      } else {
-                        toast.error("Impossible d'initier la connexion Google");
-                      }
-                    } else {
-                      const { error } = await lovable.auth.signInWithOAuth("google", {
-                        redirect_uri: window.location.origin,
-                      });
-                      if (error) toast.error(error.message || t("error_generic"));
+                    if (error) {
+                      toast.error(error.message || t("error_generic"));
                     }
                   } finally {
                     setLoading(false);
