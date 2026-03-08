@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Dumbbell, HeartPulse } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,14 +16,46 @@ const OnboardingPage = () => {
   const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
-  const [step, setStep] = useState<"role" | "profile">(profile?.role ? "profile" : "role");
-  const [selectedRole, setSelectedRole] = useState<"coach" | "student" | null>(profile?.role as any ?? null);
+
+  // Check if this is an invite flow (student)
+  const inviteToken = localStorage.getItem("f6gym-invite");
+  const isInviteFlow = !!inviteToken;
+
+  const [step, setStep] = useState<"role" | "profile">(
+    isInviteFlow ? "profile" : (profile?.role ? "profile" : "role")
+  );
+  const [selectedRole, setSelectedRole] = useState<"coach" | "student" | null>(
+    isInviteFlow ? "student" : (profile?.role as any ?? null)
+  );
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
 
+  // Auto-assign student role if invite flow
+  useEffect(() => {
+    if (isInviteFlow && user && !profile?.role) {
+      const assignStudentRole = async () => {
+        setLoading(true);
+        try {
+          await supabase.from("profiles").update({ role: "student" }).eq("user_id", user.id);
+          await refreshProfile();
+        } catch {
+          toast.error(t("error_generic"));
+        } finally {
+          setLoading(false);
+        }
+      };
+      assignStudentRole();
+    }
+  }, [isInviteFlow, user, profile?.role]);
+
   const handleRoleSelect = async (role: "coach" | "student") => {
+    // Only coaches can select role from onboarding — block student selection without invite
+    if (role === "student") {
+      toast.error(t("signup_student_need_invite"));
+      return;
+    }
     if (!user) return;
     setSelectedRole(role);
     setLoading(true);
@@ -48,6 +80,12 @@ const OnboardingPage = () => {
         full_name: name,
         onboarding_completed: true,
       }).eq("user_id", user.id);
+
+      // Clean up invite token
+      if (inviteToken) {
+        localStorage.removeItem("f6gym-invite");
+      }
+
       await refreshProfile();
       navigate(selectedRole === "coach" ? "/coach" : "/student", { replace: true });
     } catch {
@@ -72,28 +110,18 @@ const OnboardingPage = () => {
         {step === "role" ? (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-center">{t("onboarding_role_title")}</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <p className="text-center text-sm text-muted-foreground">{t("signup_coach_only_notice")}</p>
+            <div className="flex justify-center">
               <button
                 onClick={() => handleRoleSelect("coach")}
                 disabled={loading}
-                className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border hover:border-primary hover:bg-accent/50 transition-all text-center group"
+                className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border hover:border-primary hover:bg-accent/50 transition-all text-center group w-64"
               >
                 <div className="w-14 h-14 rounded-full bg-accent flex items-center justify-center group-hover:bg-primary/10 transition-colors">
                   <Dumbbell className="w-7 h-7 text-accent-foreground" />
                 </div>
                 <span className="text-lg font-semibold">{t("onboarding_role_coach")}</span>
                 <span className="text-sm text-muted-foreground">{t("onboarding_role_coach_desc")}</span>
-              </button>
-              <button
-                onClick={() => handleRoleSelect("student")}
-                disabled={loading}
-                className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border hover:border-primary hover:bg-accent/50 transition-all text-center group"
-              >
-                <div className="w-14 h-14 rounded-full bg-accent flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                  <HeartPulse className="w-7 h-7 text-accent-foreground" />
-                </div>
-                <span className="text-lg font-semibold">{t("onboarding_role_student")}</span>
-                <span className="text-sm text-muted-foreground">{t("onboarding_role_student_desc")}</span>
               </button>
             </div>
             {loading && (
@@ -105,6 +133,9 @@ const OnboardingPage = () => {
         ) : (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-center">{t("onboarding_profile_title")}</h2>
+            {isInviteFlow && (
+              <p className="text-center text-sm text-muted-foreground">{t("invite_onboarding_notice")}</p>
+            )}
             <form onSubmit={handleProfileSubmit} className="space-y-4">
               {selectedRole === "coach" ? (
                 <div className="space-y-2">
