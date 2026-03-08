@@ -347,23 +347,17 @@ const StudentWeek = () => {
 
           return (
             <div key={day.name} className="space-y-1">
-              <div
-                role={isSessionDay || swapMode ? "button" : undefined}
-                tabIndex={isSessionDay || swapMode ? 0 : undefined}
-                onClick={() => {
-                  if (swapMode) {
-                    handleDayClickInSwapMode(day.dayIndex);
-                  } else if (isSessionDay && sessionInfo) {
-                    navigate("/student/session", { state: { sessionId: sessionInfo.sessionId } });
-                  }
-                }}
+              <DraggableDayCard
+                dayIndex={day.dayIndex}
+                hasSession={isSessionDay}
                 className={cn(
-                  "w-full glass p-4 transition-all text-left",
+                  "w-full glass p-4 transition-all text-left touch-manipulation",
                   day.isToday && "ring-1 ring-primary/40",
                   isSessionDay && !swapMode && "hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] cursor-pointer",
                   !isSessionDay && dayExternals.length === 0 && !swapMode && "opacity-50",
                   isSwapSource && "ring-2 ring-warning bg-warning-bg",
                   isDropTarget && "ring-1 ring-dashed ring-warning/50 cursor-pointer hover:ring-warning hover:bg-warning-bg/50",
+                )}
                 )}
               >
                 <div className="flex items-center justify-between">
