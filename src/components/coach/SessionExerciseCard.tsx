@@ -140,7 +140,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
             />
           </div>
           <div>
-            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">URL Vidéo</label>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('video_url')}</label>
             <Input
               value={item.videoUrl ?? ""}
               onChange={(e) => onUpdate({ ...item, videoUrl: e.target.value || undefined })}
