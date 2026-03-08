@@ -1,7 +1,7 @@
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import SessionSwapModal from "@/components/student/SessionSwapModal";
@@ -17,6 +17,8 @@ import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSessionSwaps } from "@/hooks/useSessionSwaps";
+import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DraggableDayCard } from "@/components/student/DraggableDayCard";
 
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
