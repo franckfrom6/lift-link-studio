@@ -260,5 +260,5 @@ export const useStudentProgram = () => {
     }
   };
 
-  return { program, loading, error, refetch: fetchProgram, seedDemo };
+  return { program, loading, refreshing, error, refetch: fetchProgram, seedDemo };
 };
