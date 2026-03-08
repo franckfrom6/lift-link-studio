@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import CircularRestTimer from "./CircularRestTimer";
 import VideoLink from "./VideoLink";
 import RPESelector from "./RPESelector";
+import { useTranslation } from "react-i18next";
 
 export interface EnhancedCompletedSet {
   setNumber: number;
@@ -46,6 +47,7 @@ const EnhancedExerciseCard = ({
   previousSets,
 }: EnhancedExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useTranslation('exercises');
   const [currentSetIdx, setCurrentSetIdx] = useState(
     completedSets.findIndex(s => s.reps === 0) >= 0
       ? completedSets.findIndex(s => s.reps === 0)
@@ -129,7 +131,7 @@ const EnhancedExerciseCard = ({
               <p className="font-semibold text-sm truncate">{name}</p>
               {isSubstituted && (
                 <span className="bg-warning-bg text-warning px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0">
-                  Modifié
+                  {t('modified')}
                 </span>
               )}
             </div>
@@ -184,7 +186,7 @@ const EnhancedExerciseCard = ({
             <div className="space-y-2">
               {suggestedWeight && (
                 <p className="text-xs text-muted-foreground">
-                  💪 <span className="font-medium">Charge cible :</span> {suggestedWeight} kg
+                  💪 <span className="font-medium">{t('target_weight')} :</span> {suggestedWeight} kg
                 </p>
               )}
               {coachNotes && (
@@ -302,7 +304,7 @@ const EnhancedExerciseCard = ({
               {!allDone && (
                 <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={addSet}>
                   <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
-                  Ajouter une série
+                  {t('add_set')}
                 </Button>
               )}
             </div>

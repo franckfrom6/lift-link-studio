@@ -5,5 +5,35 @@
   "all": "All",
   "no_exercise_found": "No exercise found",
   "compound": "Compound",
-  "isolation": "Isolation"
+  "isolation": "Isolation",
+  "muscle_groups": {
+    "abs": "Abs",
+    "arms": "Arms",
+    "back": "Back",
+    "shoulders": "Shoulders",
+    "glutes": "Glutes",
+    "legs": "Legs",
+    "chest": "Chest"
+  },
+  "equipment": {
+    "bodyweight": "Bodyweight",
+    "dumbbells": "Dumbbells",
+    "barbell": "Barbell",
+    "cable": "Cable",
+    "machine": "Machine"
+  },
+  "sets_label": "Sets",
+  "reps_min": "Reps min",
+  "reps_max": "Reps max",
+  "rest_s": "Rest (s)",
+  "weight_kg": "Weight (kg)",
+  "tempo": "Tempo",
+  "rpe_target": "Target RPE",
+  "coach_notes": "Coach notes",
+  "video_url": "Video URL",
+  "youtube_search": "YouTube search (fallback)",
+  "target_weight": "Target weight",
+  "add_set": "Add a set",
+  "modified": "Modified",
+  "more_options": "More options"
 }

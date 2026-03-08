@@ -3,6 +3,8 @@ import { Trash2, ChevronUp, ChevronDown, Dumbbell, MessageSquare, Film } from "l
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { getExerciseName, getMuscleGroupLabel, getEquipmentLabel } from "@/lib/exercise-utils";
 
 interface SessionExerciseCardProps {
   item: SessionExerciseData;
@@ -16,6 +18,7 @@ interface SessionExerciseCardProps {
 
 const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp, onMoveDown }: SessionExerciseCardProps) => {
   const [showExtras, setShowExtras] = useState(false);
+  const { t } = useTranslation('exercises');
 
   return (
     <div className="glass p-4 space-y-3">
@@ -36,7 +39,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           <p className="font-semibold text-sm">{item.exercise.name}</p>
           <p className="text-[11px] text-muted-foreground">{item.exercise.muscle_group} · {item.exercise.equipment}</p>
         </div>
-        <button onClick={() => setShowExtras(!showExtras)} className="text-muted-foreground hover:text-foreground transition-colors" title="Plus d'options">
+        <button onClick={() => setShowExtras(!showExtras)} className="text-muted-foreground hover:text-foreground transition-colors" title={t('more_options')}>
           <Film className="w-4 h-4" strokeWidth={1.5} />
         </button>
         <button onClick={() => setShowExtras(!showExtras)} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -50,7 +53,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
       {/* Core params grid */}
       <div className="grid grid-cols-4 gap-2">
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Séries</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('sets_label')}</label>
           <Input
             type="number"
             value={item.sets}
@@ -60,7 +63,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Reps min</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('reps_min')}</label>
           <Input
             type="number"
             value={item.repsMin}
@@ -70,7 +73,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Reps max</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('reps_max')}</label>
           <Input
             type="number"
             value={item.repsMax}
@@ -80,7 +83,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Repos (s)</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('rest_s')}</label>
           <Input
             type="number"
             value={item.restSeconds}
@@ -94,7 +97,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
       {/* Extended params */}
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Charge (kg)</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('weight_kg')}</label>
           <Input
             type="number"
             value={item.suggestedWeight ?? ""}
@@ -105,7 +108,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Tempo</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('tempo')}</label>
           <Input
             value={item.tempo ?? ""}
             onChange={(e) => onUpdate({ ...item, tempo: e.target.value || undefined })}
@@ -114,7 +117,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">RPE cible</label>
+          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('rpe_target')}</label>
           <Input
             value={item.rpeTarget ?? ""}
             onChange={(e) => onUpdate({ ...item, rpeTarget: e.target.value || undefined })}
@@ -128,7 +131,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
       {showExtras && (
         <div className="space-y-2 pt-1 border-t border-border pt-3">
           <div>
-            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Notes du coach</label>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('coach_notes')}</label>
             <Input
               value={item.coachNotes ?? ""}
               onChange={(e) => onUpdate({ ...item, coachNotes: e.target.value || undefined })}
@@ -137,7 +140,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
             />
           </div>
           <div>
-            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">URL Vidéo</label>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('video_url')}</label>
             <Input
               value={item.videoUrl ?? ""}
               onChange={(e) => onUpdate({ ...item, videoUrl: e.target.value || undefined })}
@@ -146,7 +149,7 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
             />
           </div>
           <div>
-            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">Recherche YouTube (fallback)</label>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('youtube_search')}</label>
             <Input
               value={item.videoSearchQuery ?? ""}
               onChange={(e) => onUpdate({ ...item, videoSearchQuery: e.target.value || undefined })}
