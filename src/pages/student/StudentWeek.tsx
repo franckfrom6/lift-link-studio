@@ -408,7 +408,7 @@ const StudentWeek = () => {
                         <Plus className="w-4 h-4" strokeWidth={1.5} />
                       </Button>
                     )}
-                    {isSessionDay && weekOffset === 0 && !day.isPast && !swapMode ? (
+                    {isSessionDay && !day.isPast && !swapMode ? (
                       <div className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg">
                         <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
                         <span className="text-xs font-semibold">Go</span>
