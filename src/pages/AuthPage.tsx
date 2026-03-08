@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,16 +38,28 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation("auth");
   const { signIn, signUp } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get("invite");
+
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">(inviteToken ? "signup" : "login");
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  // Store invite token for use during onboarding
+  useEffect(() => {
+    if (inviteToken) {
+      localStorage.setItem("f6gym-invite", inviteToken);
+    }
+  }, [inviteToken]);
+
   const strength = useMemo(() => getPasswordStrength(password), [password]);
   const isSignupValid = email && password.length >= 8 && password === passwordConfirm;
   const isLoginValid = email && password.length >= 1;
+
+  const isInviteFlow = !!inviteToken;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +130,13 @@ const AuthPage = () => {
             <Logo variant="full" />
           </div>
 
+          {/* Invite banner for student signup */}
+          {isInviteFlow && mode === "signup" && (
+            <div className="rounded-lg bg-primary/10 border border-primary/20 p-4 text-center">
+              <p className="text-sm font-medium text-primary">{t("invite_signup_banner")}</p>
+            </div>
+          )}
+
           {mode === "forgot" ? (
             <>
               <div className="space-y-2 text-center">
@@ -144,10 +163,10 @@ const AuthPage = () => {
             <>
               <div className="space-y-2 text-center">
                 <h2 className="text-2xl font-bold">
-                  {mode === "login" ? t("login_title") : t("signup_title")}
+                  {mode === "login" ? t("login_title") : isInviteFlow ? t("invite_signup_title") : t("signup_title")}
                 </h2>
                 <p className="text-muted-foreground text-sm">
-                  {mode === "login" ? t("login_subtitle") : t("signup_subtitle")}
+                  {mode === "login" ? t("login_subtitle") : isInviteFlow ? t("invite_signup_subtitle") : t("signup_subtitle")}
                 </p>
               </div>
 
@@ -211,18 +230,32 @@ const AuthPage = () => {
               </form>
 
               <div className="space-y-2 text-center text-sm text-muted-foreground">
-                <p>
-                  {mode === "login" ? t("no_account") : t("has_account")}{" "}
-                  <button onClick={() => setMode(mode === "login" ? "signup" : "login")} className="text-primary font-medium hover:underline">
-                    {mode === "login" ? t("signup_link") : t("login_link")}
-                  </button>
-                </p>
+                {/* In invite flow, don't show "create account" link — only login toggle */}
+                {isInviteFlow ? (
+                  <p>
+                    {t("has_account")}{" "}
+                    <button onClick={() => setMode("login")} className="text-primary font-medium hover:underline">
+                      {t("login_link")}
+                    </button>
+                  </p>
+                ) : (
+                  <p>
+                    {mode === "login" ? t("no_account") : t("has_account")}{" "}
+                    <button onClick={() => setMode(mode === "login" ? "signup" : "login")} className="text-primary font-medium hover:underline">
+                      {mode === "login" ? t("signup_link") : t("login_link")}
+                    </button>
+                  </p>
+                )}
                 {mode === "login" && (
                   <p>
                     <button onClick={() => setMode("forgot")} className="text-primary font-medium hover:underline">
                       {t("forgot_password")}
                     </button>
                   </p>
+                )}
+                {/* Coach-only signup notice */}
+                {mode === "signup" && !isInviteFlow && (
+                  <p className="text-xs text-muted-foreground mt-2">{t("signup_coach_only_notice")}</p>
                 )}
               </div>
             </>
