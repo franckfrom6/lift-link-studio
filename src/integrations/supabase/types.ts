@@ -189,6 +189,7 @@ export type Database = {
           is_default: boolean
           muscle_group: string
           name: string
+          name_en: string | null
           secondary_muscle: string | null
           type: string
         }
@@ -202,6 +203,7 @@ export type Database = {
           is_default?: boolean
           muscle_group: string
           name: string
+          name_en?: string | null
           secondary_muscle?: string | null
           type: string
         }
@@ -215,6 +217,7 @@ export type Database = {
           is_default?: boolean
           muscle_group?: string
           name?: string
+          name_en?: string | null
           secondary_muscle?: string | null
           type?: string
         }
