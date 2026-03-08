@@ -31,7 +31,7 @@ const SupportPage = () => {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const { data } = await supabase
+      const { data } = await db
         .from("support_tickets")
         .select("*")
         .eq("user_id", user.id)
