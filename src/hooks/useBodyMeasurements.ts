@@ -20,16 +20,18 @@ export interface BodyMeasurement {
 
 export const useBodyMeasurements = () => {
   const { user } = useAuth();
+  const { effectiveStudentId } = useImpersonation();
   const { t } = useTranslation("dashboard");
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [loading, setLoading] = useState(true);
+  const studentId = user ? effectiveStudentId(user.id) : null;
 
   const fetchMeasurements = async () => {
-    if (!user) return;
+    if (!studentId) return;
     const { data } = await supabase
       .from("body_measurements")
       .select("*")
-      .eq("student_id", user.id)
+      .eq("student_id", studentId)
       .order("date", { ascending: false })
       .limit(50);
     if (data) setMeasurements(data as BodyMeasurement[]);
