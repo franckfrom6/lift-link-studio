@@ -15,16 +15,18 @@ export interface ProgressPhoto {
 
 export const useProgressPhotos = () => {
   const { user } = useAuth();
+  const { effectiveStudentId } = useImpersonation();
   const { t } = useTranslation("dashboard");
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [loading, setLoading] = useState(true);
+  const studentId = user ? effectiveStudentId(user.id) : null;
 
   const fetchPhotos = async () => {
-    if (!user) return;
+    if (!studentId) return;
     const { data } = await supabase
       .from("progress_photos")
       .select("*")
-      .eq("student_id", user.id)
+      .eq("student_id", studentId)
       .order("date", { ascending: false });
     if (data) setPhotos(data as ProgressPhoto[]);
     setLoading(false);
