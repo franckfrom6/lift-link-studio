@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { YANA_PROGRAM, ProgramExerciseDetail } from "@/data/yana-program";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { YANA_PROGRAM, ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
 import { EXERCISE_ALTERNATIVES } from "@/data/exercise-alternatives";
 import { EnhancedCompletedSet } from "@/components/student/EnhancedExerciseCard";
 import EnhancedExerciseCard from "@/components/student/EnhancedExerciseCard";
@@ -17,21 +17,6 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
-
-const progressionPhases: ProgressionPhase[] = YANA_PROGRAM.progression.map((p, i) => {
-  const weekMatch = p.match(/Semaine[s]?\s+(\d+)(?:\s*[-–]\s*(\d+))?/i);
-  const weekStart = weekMatch ? parseInt(weekMatch[1]) : i + 1;
-  const weekEnd = weekMatch && weekMatch[2] ? parseInt(weekMatch[2]) : weekStart;
-  return {
-    id: `prog-${i}`,
-    weekLabel: p.split(":")[0]?.trim() || `Phase ${i + 1}`,
-    description: p.split(":").slice(1).join(":").trim() || p,
-    weekStart,
-    weekEnd,
-    isDeload: p.toLowerCase().includes("deload"),
-    order: i,
-  };
-});
 
 interface Substitution {
   key: string;
