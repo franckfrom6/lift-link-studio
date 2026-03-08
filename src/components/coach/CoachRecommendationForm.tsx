@@ -54,7 +54,16 @@ const CoachRecommendationForm = ({ open, onClose, onSave, type, students, initia
   const { t, i18n } = useTranslation("recommendations");
   const categories = type === "nutrition" ? NUTRITION_CATEGORIES : RECOVERY_CATEGORIES;
   const triggerTypes = type === "nutrition" ? NUTRITION_TRIGGER_TYPES : RECOVERY_TRIGGER_TYPES;
-  const templates = type === "nutrition" ? NUTRITION_TEMPLATES : RECOVERY_TEMPLATES;
+
+  const [templates, setTemplates] = useState<DbTemplate[]>([]);
+  useEffect(() => {
+    supabase
+      .from("recommendation_templates")
+      .select("*")
+      .eq("type", type)
+      .order("sort_order")
+      .then(({ data }) => { if (data) setTemplates(data as any); });
+  }, [type]);
 
   const [title, setTitle] = useState(initial?.title || "");
   const [content, setContent] = useState(initial?.content || "");
