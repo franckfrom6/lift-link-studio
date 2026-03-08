@@ -31,6 +31,9 @@ interface EnhancedExerciseCardProps {
   completedSets: EnhancedCompletedSet[];
   onCompletedSetsChange: (sets: EnhancedCompletedSet[]) => void;
   onAllSetsComplete: () => void;
+  onSwapExercise?: () => void;
+  hasAlternatives?: boolean;
+  isSubstituted?: boolean;
   previousSets?: { weight: number; reps: number }[];
 }
 
