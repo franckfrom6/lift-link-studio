@@ -559,13 +559,18 @@ const CoachProgramDetail = () => {
           const firstSession = program.weeks[weekIdx]?.sessions[0];
           setActiveSessionId(firstSession?.id || null);
         }}>
-          <TabsList className="bg-surface">
-            {program.weeks.map((w, i) => (
-              <TabsTrigger key={w.id} value={String(i)} className="text-xs">
-                S{w.week_number}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="flex items-center gap-2">
+            <TabsList className="bg-surface">
+              {program.weeks.map((w, i) => (
+                <TabsTrigger key={w.id} value={String(i)} className="text-xs">
+                  S{w.week_number}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <Button variant="ghost" size="sm" onClick={addWeek} title={t("program:add_week", { number: (program.weeks.length > 0 ? Math.max(...program.weeks.map(w => w.week_number)) + 1 : 1) })}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
 
           {program.weeks.map((week, wi) => (
             <TabsContent key={week.id} value={String(wi)} className="space-y-4 mt-4">
