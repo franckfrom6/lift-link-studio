@@ -569,7 +569,7 @@ const CoachProgramDetail = () => {
                 const totalExercises = session.sections.reduce((sum, s) => sum + s.exercises.length, 0);
 
                 return (
-                  <div key={session.id} className="border border-border rounded-xl overflow-hidden">
+                  <div key={session.id} id={`session-${session.id}`} className="border border-border rounded-xl overflow-hidden">
                     {/* Session header */}
                     <div className="flex items-center gap-3 p-4 bg-secondary/30">
                       <button onClick={() => toggleSession(session.id)} className="text-muted-foreground hover:text-foreground">
