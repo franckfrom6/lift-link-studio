@@ -14,8 +14,13 @@ const AuthPage = () => {
   const [fullName, setFullName] = useState("");
   const [selectedRole, setSelectedRole] = useState<"coach" | "student">("student");
   const [submitting, setSubmitting] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, role, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  if (!loading && user && role) {
+    return <Navigate to={role === "coach" ? "/coach" : "/student"} replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
