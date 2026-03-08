@@ -30,7 +30,7 @@ const TicketForm = () => {
     const deviceInfo = `${navigator.userAgent.slice(0, 100)} / ${window.screen.width}×${window.screen.height}`;
     const appPage = window.location.pathname;
 
-    const { error } = await supabase.from("support_tickets").insert({
+    const { error } = await (supabase as any).from("support_tickets").insert({
       user_id: user.id,
       category,
       subject,
