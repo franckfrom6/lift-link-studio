@@ -451,6 +451,30 @@ const CoachProgramDetail = () => {
     setActiveSessionId(id);
   };
 
+  const addSessionToDay = async (weekId: string, dayOfWeek: number) => {
+    if (!program) return;
+    const dayNames: Record<number, string> = { 1: "Lundi", 2: "Mardi", 3: "Mercredi", 4: "Jeudi", 5: "Vendredi", 6: "Samedi", 7: "Dimanche" };
+    const name = `Séance ${dayNames[dayOfWeek] || ""}`;
+    const { data, error } = await supabase.from("sessions").insert({
+      week_id: weekId,
+      day_of_week: dayOfWeek,
+      name,
+    }).select().single();
+    if (error || !data) { toast.error("Erreur"); return; }
+    setProgram(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        weeks: prev.weeks.map(w => w.id === weekId ? {
+          ...w,
+          sessions: [...w.sessions, { ...data, sections: [] }].sort((a, b) => a.day_of_week - b.day_of_week),
+        } : w),
+      };
+    });
+    setActiveSessionId(data.id);
+    toast.success(t("common:added"));
+  };
+
   const activateProgram = async () => {
     if (!program) return;
     await supabase.from("programs").update({ status: "active" }).eq("id", program.id);
