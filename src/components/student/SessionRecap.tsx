@@ -2,10 +2,11 @@ import { CompletedSet } from "@/components/student/ExerciseTracker";
 import { ProgramExerciseDetail } from "@/data/yana-program";
 import { Trophy, Clock, Dumbbell, TrendingUp, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import RecommendationSheet from "@/components/nutrition/RecommendationSheet";
+import SessionFeedbackWizard, { FeedbackData } from "@/components/student/SessionFeedbackWizard";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 interface SessionRecapProps {
   exercises: ProgramExerciseDetail[];
@@ -17,9 +18,10 @@ interface SessionRecapProps {
 }
 
 const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroups, activityType }: SessionRecapProps) => {
-  const { t } = useTranslation('session');
-  const [feedback, setFeedback] = useState("");
+  const { t } = useTranslation(['session', 'feedback']);
   const [recoOpen, setRecoOpen] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackDone, setFeedbackDone] = useState(false);
 
   const totalSets = Object.values(completedSets).reduce((acc, sets) => acc + sets.length, 0);
   const totalReps = Object.values(completedSets).reduce(
@@ -32,40 +34,63 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
   const mins = Math.floor(duration / 60);
   const secs = duration % 60;
 
+  const handleFeedbackSubmit = (feedback: FeedbackData) => {
+    // In a real implementation, save to session_feedback table
+    console.log("Feedback submitted:", feedback);
+    toast.success(t('feedback:feedback_sent'));
+    setFeedbackDone(true);
+    setShowFeedback(false);
+  };
+
+  const feedbackExercises = exercises.map((ex, i) => ({
+    id: String(i),
+    name: ex.name,
+  }));
+
+  if (showFeedback && !feedbackDone) {
+    return (
+      <SessionFeedbackWizard
+        exercises={feedbackExercises}
+        onSubmit={handleFeedbackSubmit}
+        onSkip={() => { setShowFeedback(false); setFeedbackDone(true); }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center space-y-3 py-4">
         <div className="w-16 h-16 rounded-2xl bg-success-bg flex items-center justify-center mx-auto">
           <Trophy className="w-8 h-8 text-success" strokeWidth={1.5} />
         </div>
-        <h1 className="text-2xl font-bold">{t('session_done')}</h1>
-        <p className="text-muted-foreground">{t('excellent_work')}</p>
+        <h1 className="text-2xl font-bold">{t('session:session_done')}</h1>
+        <p className="text-muted-foreground">{t('session:excellent_work')}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="glass p-4 text-center">
           <Clock className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
           <p className="text-2xl font-bold">{mins}:{secs.toString().padStart(2, "0")}</p>
-          <p className="text-xs text-muted-foreground">{t('duration')}</p>
+          <p className="text-xs text-muted-foreground">{t('session:duration')}</p>
         </div>
         <div className="glass p-4 text-center">
           <Dumbbell className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
           <p className="text-2xl font-bold">{Math.round(totalVolume).toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">{t('volume')}</p>
+          <p className="text-xs text-muted-foreground">{t('session:volume')}</p>
         </div>
         <div className="glass p-4 text-center">
           <TrendingUp className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
           <p className="text-2xl font-bold">{totalSets}</p>
-          <p className="text-xs text-muted-foreground">{t('sets')}</p>
+          <p className="text-xs text-muted-foreground">{t('session:sets')}</p>
         </div>
         <div className="glass p-4 text-center">
           <p className="text-2xl font-bold">{totalReps}</p>
-          <p className="text-xs text-muted-foreground">{t('reps')}</p>
+          <p className="text-xs text-muted-foreground">{t('session:reps')}</p>
         </div>
       </div>
 
       <div className="glass p-4 space-y-3">
-        <h3 className="font-bold text-sm">{t('exercise_detail')}</h3>
+        <h3 className="font-bold text-sm">{t('session:exercise_detail')}</h3>
         {exercises.map((ex, i) => {
           const sets = completedSets[i] || [];
           if (sets.length === 0) return null;
@@ -76,39 +101,40 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{ex.name}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  {sets.length} {t('sets_unit')} · {sets.reduce((a, s) => a + s.reps, 0)} {t('reps_unit')} · {Math.round(exVolume)} {t('vol_unit')}
+                  {sets.length} {t('session:sets_unit')} · {sets.reduce((a, s) => a + s.reps, 0)} {t('session:reps_unit')} · {Math.round(exVolume)} {t('session:vol_unit')}
                 </p>
               </div>
               {sets.some((s) => s.isFailure) && (
-                <span className="text-[10px] bg-destructive/10 text-destructive px-2 py-0.5 rounded-md font-medium">{t('failure')}</span>
+                <span className="text-[10px] bg-destructive/10 text-destructive px-2 py-0.5 rounded-md font-medium">{t('session:failure')}</span>
               )}
             </div>
           );
         })}
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-          <label className="text-sm font-medium">{t('feedback_label')}</label>
+      <div className="flex flex-col gap-2">
+        {!feedbackDone && (
+          <Button
+            variant="outline"
+            className="w-full h-12 font-semibold gap-2"
+            onClick={() => setShowFeedback(true)}
+          >
+            <MessageSquare className="w-4 h-4" strokeWidth={1.5} />
+            {t('feedback:feedback_title')}
+          </Button>
+        )}
+        {feedbackDone && (
+          <p className="text-center text-sm text-success font-medium">✅ {t('feedback:feedback_sent')}</p>
+        )}
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1 h-12 font-semibold gap-2" onClick={() => setRecoOpen(true)}>
+            <Sparkles className="w-4 h-4" strokeWidth={1.5} />
+            {t('session:view_recos')}
+          </Button>
+          <Button className="flex-1 h-12 font-semibold" onClick={onClose}>
+            {t('session:finish_save')}
+          </Button>
         </div>
-        <Textarea
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-          placeholder={t('feedback_placeholder')}
-          className="bg-surface resize-none"
-          rows={3}
-        />
-      </div>
-
-      <div className="flex gap-2">
-        <Button variant="outline" className="flex-1 h-12 font-semibold gap-2" onClick={() => setRecoOpen(true)}>
-          <Sparkles className="w-4 h-4" strokeWidth={1.5} />
-          {t('view_recos')}
-        </Button>
-        <Button className="flex-1 h-12 font-semibold" onClick={onClose}>
-          {t('finish_save')}
-        </Button>
       </div>
 
       <RecommendationSheet
