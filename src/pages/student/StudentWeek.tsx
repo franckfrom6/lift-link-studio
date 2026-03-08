@@ -33,6 +33,7 @@ const StudentWeek = () => {
     t("common:days.thu"), t("common:days.fri"), t("common:days.sat"), t("common:days.sun"),
   ];
   const [weekOffset, setWeekOffset] = useState(0);
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState(0);
   const navigate = useNavigate();
   const [swapMode, setSwapMode] = useState(false);
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
@@ -48,8 +49,9 @@ const StudentWeek = () => {
   const [checkins, setCheckins] = useState<Record<string, CheckinData>>({});
   const [checkinFormOpen, setCheckinFormOpen] = useState(false);
 
-  // Get current week's sessions from DB program
-  const currentWeek = program?.weeks?.[0]; // First week for now
+  // Get selected week's sessions from DB program
+  const totalWeeks = program?.weeks?.length || 0;
+  const currentWeek = program?.weeks?.[selectedWeekIndex];
   const weekSessions = currentWeek?.sessions || [];
 
   // Build sessions map: day_of_week → session info
@@ -238,7 +240,29 @@ const StudentWeek = () => {
         </div>
       )}
 
-      {/* Week navigator + Nutrition shortcut */}
+
+      {/* Program week selector */}
+      {totalWeeks > 1 && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground font-medium shrink-0">
+            {t('calendar:program_week', 'Semaine du programme')}
+          </span>
+          <div className="flex gap-1 flex-wrap">
+            {program!.weeks.map((w, idx) => (
+              <Button
+                key={w.id}
+                variant={idx === selectedWeekIndex ? "default" : "outline"}
+                size="sm"
+                className="h-7 w-9 text-xs px-0"
+                onClick={() => setSelectedWeekIndex(idx)}
+              >
+                {w.week_number}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset - 1)}>
           <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
