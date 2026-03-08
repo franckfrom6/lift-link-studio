@@ -49,7 +49,7 @@ export const useCoachStudentSwaps = (studentId?: string) => {
         schema: "public",
         table: "session_swaps",
         filter: `student_id=eq.${studentId}`,
-      }, () => { fetch(); })
+      }, () => { fetchData().catch(console.error); })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };

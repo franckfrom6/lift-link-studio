@@ -198,9 +198,9 @@ const StudentCard = ({ student, onClick, locale, t }: { student: StudentOverview
             {/* Check-in emojis */}
             {student.checkin ? (
               <div className="flex items-center gap-0.5 text-xs">
-                <span>{ENERGY_EMOJIS[student.checkin.energy - 1]}</span>
-                <span>{STRESS_EMOJIS[student.checkin.stress - 1]}</span>
-                <span>{SORENESS_EMOJIS[student.checkin.soreness - 1]}</span>
+                <span>{ENERGY_EMOJIS[Math.min(4, Math.max(0, student.checkin.energy - 1))]}</span>
+                <span>{STRESS_EMOJIS[Math.min(4, Math.max(0, student.checkin.stress - 1))]}</span>
+                <span>{SORENESS_EMOJIS[Math.min(4, Math.max(0, student.checkin.soreness - 1))]}</span>
               </div>
             ) : (
               <span className="text-[10px] text-muted-foreground">—</span>

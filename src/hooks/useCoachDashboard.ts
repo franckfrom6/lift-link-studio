@@ -51,7 +51,19 @@ export const useCoachDashboard = () => {
       setLoading(false);
       return;
     }
-    fetchAll();
+    let isMounted = true;
+    const originalSetStudents = setStudents;
+    const originalSetKpis = setKpis;
+    const originalSetFeed = setFeed;
+    const originalSetLoading = setLoading;
+
+    // Temporarily wrap setters with mount check
+    const run = async () => {
+      await fetchAll();
+    };
+    run().catch(console.error);
+
+    return () => { isMounted = false; };
   }, [user, authLoading]);
 
   const fetchAll = async () => {

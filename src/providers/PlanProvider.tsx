@@ -179,12 +179,14 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const channel = supabase
       .channel("plan-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "user_subscriptions", filter: `user_id=eq.${user.id}` }, () => fetchPlanData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "feature_overrides", filter: `user_id=eq.${user.id}` }, () => fetchPlanData())
-      .subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_subscriptions", filter: `user_id=eq.${user.id}` }, () => fetchPlanData().catch(console.error))
+      .on("postgres_changes", { event: "*", schema: "public", table: "feature_overrides", filter: `user_id=eq.${user.id}` }, () => fetchPlanData().catch(console.error))
+      .subscribe((status) => {
+        if (status === "SUBSCRIPTION_ERROR") console.error("Plan subscription failed");
+      });
 
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, fetchPlanData]);
 
   const getFeatureAccess = (featureKey: string): FeatureAccess => {
     if (loading) return { isEnabled: false, limit: null, limitType: null, planRequired: "essential", isLoading: true };

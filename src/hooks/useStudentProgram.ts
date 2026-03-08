@@ -88,6 +88,7 @@ export const useStudentProgram = () => {
       setLoading(false);
       return;
     }
+    if (inFlightRef.current) return;
 
     if (isRefresh) setRefreshing(true);
     else setLoading(true);

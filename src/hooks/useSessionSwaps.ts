@@ -43,7 +43,13 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
   }, [studentId, weekStartDate]);
 
   useEffect(() => {
-    fetchSwaps();
+    (async () => {
+      try {
+        await fetchSwaps();
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
+    })();
   }, [fetchSwaps]);
 
   // Realtime subscription
