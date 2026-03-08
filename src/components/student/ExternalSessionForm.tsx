@@ -17,11 +17,15 @@ export interface ExternalSessionData {
   activity_type: string;
   activity_label: string;
   provider: string;
+  location: string;
+  time_start: string;
+  time_end: string;
   duration_minutes: number;
   intensity_perceived: number;
   muscle_groups_involved: string[];
   notes: string;
   date: string;
+  added_by?: "student" | "coach";
 }
 
 interface ExternalSessionFormProps {
@@ -30,14 +34,18 @@ interface ExternalSessionFormProps {
   onSubmit: (data: ExternalSessionData) => void;
   date: Date;
   initialData?: ExternalSessionData | null;
+  addedBy?: "student" | "coach";
 }
 
 const DURATION_OPTIONS = [30, 45, 60, 75, 90];
 
-const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData }: ExternalSessionFormProps) => {
+const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, addedBy = "student" }: ExternalSessionFormProps) => {
   const [activityType, setActivityType] = useState("pilates");
   const [label, setLabel] = useState("");
   const [provider, setProvider] = useState("");
+  const [location, setLocation] = useState("");
+  const [timeStart, setTimeStart] = useState("");
+  const [timeEnd, setTimeEnd] = useState("");
   const [duration, setDuration] = useState(60);
   const [intensity, setIntensity] = useState(5);
   const [muscleGroups, setMuscleGroups] = useState<string[]>([]);
@@ -49,6 +57,9 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData }: Ext
       setActivityType(initialData.activity_type);
       setLabel(initialData.activity_label);
       setProvider(initialData.provider);
+      setLocation(initialData.location || "");
+      setTimeStart(initialData.time_start || "");
+      setTimeEnd(initialData.time_end || "");
       setDuration(initialData.duration_minutes);
       setIntensity(initialData.intensity_perceived);
       setMuscleGroups(initialData.muscle_groups_involved);
@@ -57,6 +68,9 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData }: Ext
       setActivityType("pilates");
       setLabel("");
       setProvider("");
+      setLocation("");
+      setTimeStart("");
+      setTimeEnd("");
       setDuration(60);
       setIntensity(5);
       setMuscleGroups(ACTIVITY_TYPES[0].defaultMuscleGroups);
@@ -77,17 +91,31 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData }: Ext
     );
   };
 
+  // Auto-calculate duration from time range
+  useEffect(() => {
+    if (timeStart && timeEnd) {
+      const [sh, sm] = timeStart.split(":").map(Number);
+      const [eh, em] = timeEnd.split(":").map(Number);
+      const diff = (eh * 60 + em) - (sh * 60 + sm);
+      if (diff > 0) setDuration(diff);
+    }
+  }, [timeStart, timeEnd]);
+
   const handleSubmit = () => {
     onSubmit({
       id: initialData?.id,
       activity_type: activityType,
       activity_label: label,
       provider,
+      location,
+      time_start: timeStart,
+      time_end: timeEnd,
       duration_minutes: duration,
       intensity_perceived: intensity,
       muscle_groups_involved: muscleGroups,
       notes,
       date: date.toISOString().split("T")[0],
+      added_by: initialData?.added_by || addedBy,
     });
     onClose();
   };
@@ -103,6 +131,9 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData }: Ext
           </SheetTitle>
           <p className="text-xs text-muted-foreground">
             {date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+            {addedBy === "coach" && (
+              <span className="ml-1 text-primary font-medium">· ajoutée par le coach</span>
+            )}
           </p>
         </SheetHeader>
 
@@ -124,36 +155,72 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData }: Ext
             />
           </div>
 
-          {/* Provider */}
-          <div className="space-y-1.5 relative">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Enseigne / Studio</Label>
-            <Input
-              value={provider}
-              onChange={(e) => setProvider(e.target.value)}
-              onFocus={() => setShowProviderSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowProviderSuggestions(false), 200)}
-              placeholder="Ex: Episod, CMG..."
-              className="h-10"
-            />
-            {showProviderSuggestions && !provider && (
-              <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-popover border border-border rounded-lg shadow-lg p-1.5 space-y-0.5">
-                {DEFAULT_PROVIDERS.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onMouseDown={() => { setProvider(p); setShowProviderSuggestions(false); }}
-                    className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent transition-colors"
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Time range */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Horaires (optionnel)</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="time"
+                value={timeStart}
+                onChange={(e) => setTimeStart(e.target.value)}
+                className="h-10 flex-1"
+              />
+              <span className="text-muted-foreground text-sm">→</span>
+              <Input
+                type="time"
+                value={timeEnd}
+                onChange={(e) => setTimeEnd(e.target.value)}
+                className="h-10 flex-1"
+              />
+            </div>
+          </div>
+
+          {/* Provider + Location */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5 relative">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Enseigne</Label>
+              <Input
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+                onFocus={() => setShowProviderSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowProviderSuggestions(false), 200)}
+                placeholder="Ex: Episod"
+                className="h-10"
+              />
+              {showProviderSuggestions && !provider && (
+                <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-popover border border-border rounded-lg shadow-lg p-1.5 space-y-0.5">
+                  {DEFAULT_PROVIDERS.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onMouseDown={() => { setProvider(p); setShowProviderSuggestions(false); }}
+                      className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent transition-colors"
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lieu</Label>
+              <Input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Ex: Bastille"
+                className="h-10"
+              />
+            </div>
           </div>
 
           {/* Duration */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Durée</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Durée</Label>
+              {timeStart && timeEnd && (
+                <span className="text-[10px] text-muted-foreground">Calculée auto</span>
+              )}
+            </div>
             <div className="flex gap-2">
               {DURATION_OPTIONS.map((d) => (
                 <button

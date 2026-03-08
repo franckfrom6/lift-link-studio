@@ -1,16 +1,20 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MOCK_STUDENTS } from "@/types/coach";
 import { YANA_PROGRAM } from "@/data/yana-program";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity } from "lucide-react";
 import ProgramView from "@/components/coach/ProgramView";
+import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import SwapBadge from "@/components/student/SwapBadge";
 import { useCoachStudentSwaps } from "@/hooks/useCoachStudentSwaps";
 import CheckinBadge from "@/components/student/CheckinBadge";
 import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import CoachSuggestion from "@/components/coach/CoachSuggestion";
 import ExternalSessionCard from "@/components/student/ExternalSessionCard";
+import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
 
 const DAY_NAMES: Record<number, string> = {
   1: "Lundi", 2: "Mardi", 3: "Mercredi", 4: "Jeudi", 5: "Vendredi", 6: "Samedi", 7: "Dimanche",
@@ -28,28 +32,36 @@ const DEMO_CHECKIN = {
   week_start: new Date().toISOString().split("T")[0],
 };
 
-const DEMO_EXTERNALS = [
+const DEMO_EXTERNALS: ExternalSessionData[] = [
   {
     id: "ext-1",
     activity_type: "pilates",
     activity_label: "Pilates Reformer",
     provider: "Episod",
+    location: "Bastille",
+    time_start: "12:00",
+    time_end: "13:00",
     duration_minutes: 60,
     intensity_perceived: 6,
     muscle_groups_involved: ["core", "glutes", "flexibility"],
     notes: "Beaucoup de travail jambes",
     date: new Date().toISOString().split("T")[0],
+    added_by: "student",
   },
   {
     id: "ext-2",
     activity_type: "cycling",
     activity_label: "RPM 45min",
     provider: "CMG",
+    location: "Opéra",
+    time_start: "18:30",
+    time_end: "19:15",
     duration_minutes: 45,
     intensity_perceived: 8,
     muscle_groups_involved: ["quads", "cardio"],
     notes: "",
     date: (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; })(),
+    added_by: "student",
   },
 ];
 
@@ -58,6 +70,8 @@ const StudentDetail = () => {
   const navigate = useNavigate();
   const student = MOCK_STUDENTS.find((s) => s.id === studentId);
   const { swaps, loading: swapsLoading } = useCoachStudentSwaps(studentId === "yana" ? studentId : undefined);
+  const [coachFormOpen, setCoachFormOpen] = useState(false);
+  const [coachExternals, setCoachExternals] = useState<ExternalSessionData[]>([]);
 
   if (!student) {
     return (
@@ -73,7 +87,7 @@ const StudentDetail = () => {
   const hasProgram = studentId === "yana";
   const isYana = studentId === "yana";
   const checkin = isYana ? DEMO_CHECKIN : null;
-  const externals = isYana ? DEMO_EXTERNALS : [];
+  const allExternals = isYana ? [...DEMO_EXTERNALS, ...coachExternals] : coachExternals;
 
   const recentSwaps = swaps.filter((s) => {
     const d = new Date(s.created_at);
@@ -133,22 +147,30 @@ const StudentDetail = () => {
         <div className="glass p-4">
           <WeeklyLoadBar
             programmedSessions={1}
-            externalSessions={externals}
+            externalSessions={allExternals}
           />
         </div>
       )}
 
       {/* External sessions */}
-      {externals.length > 0 && (
-        <div className="space-y-3">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
           <h2 className="font-bold">Activités externes cette semaine</h2>
+          <Button size="sm" variant="outline" onClick={() => setCoachFormOpen(true)}>
+            <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
+            Ajouter
+          </Button>
+        </div>
+        {allExternals.length > 0 ? (
           <div className="space-y-2">
-            {externals.map((ext) => (
+            {allExternals.map((ext) => (
               <ExternalSessionCard key={ext.id} session={ext} />
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-muted-foreground">Aucune activité externe cette semaine</p>
+        )}
+      </div>
 
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-3">
@@ -222,6 +244,18 @@ const StudentDetail = () => {
           </div>
         )}
       </div>
+
+      {/* Coach add external session form */}
+      <ExternalSessionForm
+        open={coachFormOpen}
+        onClose={() => setCoachFormOpen(false)}
+        onSubmit={(data) => {
+          setCoachExternals(prev => [...prev, { ...data, id: crypto.randomUUID() }]);
+          toast.success("Activité ajoutée pour l'élève !");
+        }}
+        date={new Date()}
+        addedBy="coach"
+      />
     </div>
   );
 };
