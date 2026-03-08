@@ -258,6 +258,17 @@ export const useStudentProgram = () => {
     };
   }, [studentId, fetchProgram]);
 
+  // Polling fallback: guarantees eventual sync if realtime misses events
+  useEffect(() => {
+    if (!studentId) return;
+
+    const intervalId = window.setInterval(() => {
+      fetchProgram(true);
+    }, 10000);
+
+    return () => window.clearInterval(intervalId);
+  }, [studentId, fetchProgram]);
+
   // Visibility-based refetch: sync when user returns to tab
   useEffect(() => {
     if (!studentId) return;
