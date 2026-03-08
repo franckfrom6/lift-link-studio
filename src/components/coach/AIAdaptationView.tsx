@@ -362,7 +362,7 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
             </Button>
             <Button variant="outline" onClick={handleGenerate} disabled={loading} className="gap-2">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
-              {i18n.language === "fr" ? t('regenerate') : t('regenerate')}
+              {t('regenerate')}
             </Button>
           </>
         ) : (
