@@ -91,7 +91,7 @@ export const useStrengthProgress = () => {
       const { data: completedSessions } = await supabase
         .from("completed_sessions")
         .select("id, started_at, session_id")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .order("started_at", { ascending: true });
 
       if (!completedSessions || completedSessions.length === 0) {
