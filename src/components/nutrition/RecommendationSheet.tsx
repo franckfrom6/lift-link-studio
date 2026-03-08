@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import RecoveryRecommendationCard, { RecoveryRecommendation } from "./RecoveryRecommendationCard";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
 
 const STATIC_RECOMMENDATIONS: RecoveryRecommendation[] = [
   { id: "r1", trigger_type: "post_session", activity_type: null, muscle_groups: ["glutes","quads","hamstrings"], recommendation_type: "nutrition", title_fr: "🥤 Nutrition post lower body", title_en: "🥤 Post lower body nutrition", content_fr: "30-40g de protéines + 50-80g de glucides dans les 2h post-training. Exemple : poulet + riz ou shaker + banane.", content_en: "30-40g protein + 50-80g carbs within 2h. Example: chicken + rice or shake + banana.", priority: 1 },
@@ -45,25 +48,38 @@ interface RecommendationSheetProps {
 }
 
 const RecommendationSheet = ({ open, onClose, triggerType, activityType, muscleGroups }: RecommendationSheetProps) => {
-  const { t, i18n } = useTranslation('recovery');
+  const { t, i18n } = useTranslation(['recovery', 'recommendations']);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const recommendations = getRecommendations({ triggerType, activityType, muscleGroups })
     .filter(r => !dismissed.has(r.id));
 
-  const title = triggerType === "post_session" ? t('post_session_title')
-    : triggerType === "high_fatigue" ? t('high_fatigue_title')
-    : t('deload_title');
+  const title = triggerType === "post_session" ? t('recovery:post_session_title')
+    : triggerType === "high_fatigue" ? t('recovery:high_fatigue_title')
+    : t('recovery:deload_title');
+
+  // Build trigger context for coach recommendations
+  const triggerContext = {
+    muscleGroups: muscleGroups || [],
+    dayOfWeek: new Date().getDay() || 7, // 1-7 Mon-Sun
+  };
 
   return (
     <Sheet open={open} onOpenChange={v => !v && onClose()}>
       <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl overflow-y-auto">
         <SheetHeader className="text-left pb-2">
           <SheetTitle className="text-base">{title}</SheetTitle>
-          <p className="text-xs text-muted-foreground">{t('subtitle')}</p>
+          <p className="text-xs text-muted-foreground">{t('recovery:subtitle')}</p>
         </SheetHeader>
 
         <div className="space-y-3 mt-4 pb-4">
+          {/* 1. Coach recommendations (highest priority) */}
+          <StudentRecommendationCards
+            type="all"
+            triggerContext={triggerContext}
+          />
+
+          {/* 2. Static recommendations */}
           {recommendations.length > 0 ? (
             recommendations.map(r => (
               <RecoveryRecommendationCard
@@ -74,7 +90,7 @@ const RecommendationSheet = ({ open, onClose, triggerType, activityType, muscleG
               />
             ))
           ) : (
-            <p className="text-center text-sm text-muted-foreground py-8">{t('all_seen')}</p>
+            <p className="text-center text-sm text-muted-foreground py-8">{t('recovery:all_seen')}</p>
           )}
         </div>
       </SheetContent>

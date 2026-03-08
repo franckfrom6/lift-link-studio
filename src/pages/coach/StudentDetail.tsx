@@ -16,6 +16,8 @@ import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import CoachSuggestion from "@/components/coach/CoachSuggestion";
 import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
+import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
+import { BookOpen } from "lucide-react";
 
 // Demo data for Yana
 const DEMO_CHECKIN = {
@@ -227,6 +229,17 @@ const StudentDetail = () => {
           {t("program:generate_ai_bilan")}
         </Button>
       </div>
+
+      {/* Coach recommendations for this student */}
+      {isYana && (
+        <div className="space-y-3">
+          <h2 className="font-bold flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            {t("common:recommendations")}
+          </h2>
+          <StudentRecommendationCards type="all" />
+        </div>
+      )}
 
       {/* Programs section */}
       <div className="space-y-3">
