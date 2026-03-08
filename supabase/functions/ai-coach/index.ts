@@ -48,7 +48,7 @@ const MIN_PLAN_FOR_ACTION: Record<string, string> = {
 
 // Model selection per action complexity
 const MODEL_FOR_ACTION: Record<string, string> = {
-  generate_program: "google/gemini-3-flash-preview",
+  generate_program: "google/gemini-2.5-flash",
   cycle_report: "google/gemini-2.5-flash",
   analyze_week: "google/gemini-2.5-flash",
   optimize_week: "google/gemini-2.5-flash",
