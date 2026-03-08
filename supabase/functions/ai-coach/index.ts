@@ -1,20 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const allowedOrigins = [
-  "https://lift-link-studio.lovable.app",
-  "https://id-preview--0363201d-a29c-474b-ab98-106ca7fb6ee7.lovable.app",
-  "http://localhost:5173",
-];
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("origin") || "";
-  return {
-    "Access-Control-Allow-Origin": allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
-    "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  };
-}
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 // Rate limits per plan (per month, -1 = unlimited)
 const RATE_LIMITS: Record<string, Record<string, number>> = {
@@ -58,7 +48,7 @@ const MIN_PLAN_FOR_ACTION: Record<string, string> = {
 
 // Model selection per action complexity
 const MODEL_FOR_ACTION: Record<string, string> = {
-  generate_program: "google/gemini-3-flash-preview",
+  generate_program: "google/gemini-2.5-flash",
   cycle_report: "google/gemini-2.5-flash",
   analyze_week: "google/gemini-2.5-flash",
   optimize_week: "google/gemini-2.5-flash",
@@ -485,7 +475,6 @@ const ACTION_BUILDERS: Record<string, (payload: any, lang: string) => any> = {
 };
 
 serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   function jsonResp(body: any, status = 200) {

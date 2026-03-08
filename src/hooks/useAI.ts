@@ -61,7 +61,8 @@ export function useAI({ action, onSuccess, onError }: UseAIOptions) {
         } else if (aiErr.type === "rate_limited") {
           toast.error(t("ai_rate_limited", "Limite d'utilisation IA atteinte ce mois-ci."));
         } else {
-          toast.error(t("ai_error", "Erreur du service IA. Réessayez."));
+          const detail = parsed.message || parsed.error || String(fnError);
+          toast.error(`Erreur IA: ${detail}`);
         }
         return null;
       }
