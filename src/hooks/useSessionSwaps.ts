@@ -40,7 +40,7 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
       setSwaps(data as SessionSwap[]);
     }
     setLoading(false);
-  }, [user, weekStartDate]);
+  }, [studentId, weekStartDate]);
 
   useEffect(() => {
     fetchSwaps();
