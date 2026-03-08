@@ -1,11 +1,12 @@
 {
   "nav_dashboard": "Dashboard",
-  "nav_students": "Élèves",
+  "nav_students": "Athlètes",
   "nav_programs": "Programmes",
   "nav_exercises": "Exercices",
   "nav_week": "Semaine",
   "nav_progress": "Stats",
   "nav_profile": "Profil",
   "nav_recommendations": "Recos",
-  "nav_plans": "Plans"
+  "nav_plans": "Plans",
+  "nav_support": "Support"
 }

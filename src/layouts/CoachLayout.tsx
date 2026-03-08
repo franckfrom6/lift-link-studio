@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Dumbbell, Users, ClipboardList, LogOut, LayoutDashboard, BookOpen, CreditCard, Shield } from "lucide-react";
+import { Dumbbell, Users, ClipboardList, LogOut, LayoutDashboard, BookOpen, CreditCard, Shield, HelpCircle } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -23,6 +23,7 @@ const CoachLayout = () => {
     { to: "/coach/exercises", icon: Dumbbell, label: t('settings:nav_exercises') },
     { to: "/coach/recommendations", icon: BookOpen, label: t('settings:nav_recommendations') },
     { to: "/pricing", icon: CreditCard, label: t('settings:nav_plans') },
+    { to: "/support", icon: HelpCircle, label: t('settings:nav_support') },
     ...(profile?.is_admin ? [{ to: "/admin", icon: Shield, label: "Admin" }] : []),
   ];
 

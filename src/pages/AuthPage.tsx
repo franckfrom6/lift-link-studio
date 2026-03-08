@@ -90,7 +90,7 @@ const AuthPage = () => {
                   <Label>{t("role", "Rôle")}</Label>
                   <div className="flex gap-2">
                     <Button type="button" variant={role === "coach" ? "default" : "outline"} className="flex-1" onClick={() => setRole("coach")}>Coach</Button>
-                    <Button type="button" variant={role === "student" ? "default" : "outline"} className="flex-1" onClick={() => setRole("student")}>{t("student", "Élève")}</Button>
+                    <Button type="button" variant={role === "student" ? "default" : "outline"} className="flex-1" onClick={() => setRole("student")}>{t("student", "Athlète")}</Button>
                   </div>
                 </div>
               </>

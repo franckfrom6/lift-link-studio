@@ -16,6 +16,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminFeatures from "./pages/admin/AdminFeatures";
 import AdminOverrides from "./pages/admin/AdminOverrides";
+import AdminSupport from "./pages/admin/AdminSupport";
+import AdminKB from "./pages/admin/AdminKB";
 
 import CoachLayout from "./layouts/CoachLayout";
 import CoachDashboard from "./pages/coach/CoachDashboard";
@@ -34,6 +36,12 @@ import StudentProfile from "./pages/student/StudentProfile";
 import LiveSession from "./pages/student/LiveSession";
 import StudentNutrition from "./pages/student/StudentNutrition";
 import StudentRecommendations from "./pages/student/StudentRecommendations";
+
+import SupportPage from "./pages/support/SupportPage";
+import TicketForm from "./pages/support/TicketForm";
+import TicketDetail from "./pages/support/TicketDetail";
+import KBHome from "./pages/support/KBHome";
+import KBArticle from "./pages/support/KBArticle";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +64,8 @@ const App = () => (
                   <Route path="users" element={<AdminUsers />} />
                   <Route path="features" element={<AdminFeatures />} />
                   <Route path="overrides" element={<AdminOverrides />} />
+                  <Route path="support" element={<AdminSupport />} />
+                  <Route path="kb" element={<AdminKB />} />
                 </Route>
 
                 <Route path="/coach" element={<CoachLayout />}>
@@ -77,6 +87,12 @@ const App = () => (
                   <Route path="nutrition" element={<StudentNutrition />} />
                   <Route path="recommendations" element={<StudentRecommendations />} />
                 </Route>
+
+                <Route path="/support" element={<SupportPage />} />
+                <Route path="/support/new" element={<TicketForm />} />
+                <Route path="/support/ticket/:ticketId" element={<TicketDetail />} />
+                <Route path="/support/help" element={<KBHome />} />
+                <Route path="/support/help/:slug" element={<KBArticle />} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>

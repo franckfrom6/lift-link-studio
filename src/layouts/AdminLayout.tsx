@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { BarChart3, Users, Shield, ToggleRight, ArrowLeft, Loader2 } from "lucide-react";
+import { BarChart3, Users, Shield, ToggleRight, ArrowLeft, Loader2, MessageSquare, BookOpen } from "lucide-react";
 import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -36,6 +36,8 @@ const AdminLayout = () => {
     { to: "/admin/users", icon: Users, label: t("users") },
     { to: "/admin/features", icon: Shield, label: t("features_plans") },
     { to: "/admin/overrides", icon: ToggleRight, label: t("overrides") },
+    { to: "/admin/support", icon: MessageSquare, label: "Support" },
+    { to: "/admin/kb", icon: BookOpen, label: "KB" },
   ];
 
   const backTo = role === "coach" ? "/coach" : "/student";
