@@ -83,20 +83,26 @@ const StudentWeek = () => {
   const weekKey = weekStart.toISOString().split("T")[0];
   const currentCheckin = checkins[weekKey] || null;
 
+  // Map DB swaps to the shape used by effectiveSessions
+  const mappedSwaps = useMemo(() =>
+    dbSwaps.map(s => ({ originalDay: s.original_day - 1, newDay: s.new_day - 1, reason: s.reason })),
+    [dbSwaps]
+  );
+
   const effectiveSessions = useMemo(() => {
     const sessions = { ...DEFAULT_SESSIONS };
-    for (const swap of localSwaps) {
+    for (const swap of mappedSwaps) {
       if (sessions[swap.originalDay]) {
         sessions[swap.newDay] = sessions[swap.originalDay];
         delete sessions[swap.originalDay];
       }
     }
     return sessions;
-  }, [localSwaps, DEFAULT_SESSIONS]);
+  }, [mappedSwaps, DEFAULT_SESSIONS]);
 
   const swappedDays = useMemo(() => {
     const map: Record<number, { originalDay: number; reason: string | null }> = {};
-    for (const swap of localSwaps) {
+    for (const swap of mappedSwaps) {
       map[swap.newDay] = { originalDay: swap.originalDay + 1, reason: swap.reason };
     }
     return map;
