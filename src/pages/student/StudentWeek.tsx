@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSessionSwaps } from "@/hooks/useSessionSwaps";
 
 interface LocalSwap {
   id: string;
