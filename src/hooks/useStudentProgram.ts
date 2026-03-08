@@ -78,9 +78,15 @@ export const useStudentProgram = () => {
   const [error, setError] = useState<string | null>(null);
 
   const studentId = user ? effectiveStudentId(user.id) : null;
+  const isFetchingRef = useRef(false);
 
   const fetchProgram = useCallback(async (isRefresh = false) => {
-    if (!studentId) { setLoading(false); return; }
+    if (!studentId || isFetchingRef.current) {
+      if (!studentId) setLoading(false);
+      return;
+    }
+
+    isFetchingRef.current = true;
     if (isRefresh) {
       setRefreshing(true);
     } else {
