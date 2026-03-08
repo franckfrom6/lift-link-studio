@@ -18,6 +18,8 @@ interface ExerciseOption {
 
 export const useStrengthProgress = () => {
   const { user } = useAuth();
+  const { effectiveStudentId } = useImpersonation();
+  const studentId = user ? effectiveStudentId(user.id) : null;
   const [exercises, setExercises] = useState<ExerciseOption[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [dataPoints, setDataPoints] = useState<ExerciseDataPoint[]>([]);
