@@ -308,6 +308,7 @@ const EnhancedExerciseCard = ({
                   {t('add_set')}
                 </Button>
               )}
+              </div>
             </div>
           )}
         </div>
