@@ -79,7 +79,7 @@ export const useStudentProgram = () => {
   const studentId = user ? effectiveStudentId(user.id) : null;
 
   const fetchProgram = useCallback(async () => {
-    if (!user) { setLoading(false); return; }
+    if (!studentId) { setLoading(false); return; }
     setLoading(true);
     setError(null);
 
@@ -88,7 +88,7 @@ export const useStudentProgram = () => {
       const { data: programs, error: pErr } = await supabase
         .from("programs")
         .select("*")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .eq("status", "active")
         .limit(1);
 
