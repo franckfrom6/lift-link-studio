@@ -52,6 +52,7 @@ const App = () => (
                 <Route path="session" element={<LiveSession />} />
                 <Route path="progress" element={<StudentProgress />} />
                 <Route path="profile" element={<StudentProfile />} />
+                <Route path="nutrition" element={<StudentNutrition />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />
