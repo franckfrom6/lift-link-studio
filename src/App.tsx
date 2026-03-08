@@ -36,6 +36,8 @@ const App = () => (
           <Route path="/coach" element={<CoachLayout />}>
             <Route index element={<CoachDashboard />} />
             <Route path="students" element={<CoachStudents />} />
+            <Route path="students/:studentId" element={<StudentDetail />} />
+            <Route path="students/:studentId/program/new" element={<ProgramEditor />} />
             <Route path="programs" element={<CoachPrograms />} />
             <Route path="exercises" element={<CoachExercises />} />
           </Route>
