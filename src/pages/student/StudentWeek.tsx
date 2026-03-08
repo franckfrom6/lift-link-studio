@@ -204,7 +204,13 @@ const StudentWeek = () => {
   }
 
   return (
-    <div className="space-y-5 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-5 animate-fade-in max-w-lg mx-auto relative">
+      {refreshing && (
+        <div className="absolute top-0 right-0 z-10 flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full animate-pulse">
+          <RefreshCw className="h-3 w-3 animate-spin" />
+          {t('common:refreshing', 'Mise à jour…')}
+        </div>
+      )}
       <div>
         <h1 className="text-2xl font-bold">{t('calendar:hello', { name: userName })}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t('calendar:your_program')}</p>
