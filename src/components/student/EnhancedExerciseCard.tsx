@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import CircularRestTimer from "./CircularRestTimer";
 import VideoLink from "./VideoLink";
 import RPESelector from "./RPESelector";
+import { useTranslation } from "react-i18next";
 
 export interface EnhancedCompletedSet {
   setNumber: number;
