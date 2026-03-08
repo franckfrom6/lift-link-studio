@@ -46,6 +46,7 @@ import StudentRecommendations from "./pages/student/StudentRecommendations";
 import SupportPage from "./pages/support/SupportPage";
 import TicketForm from "./pages/support/TicketForm";
 import TicketDetail from "./pages/support/TicketDetail";
+import KBLayout from "./pages/support/KBLayout";
 import KBHome from "./pages/support/KBHome";
 import KBArticle from "./pages/support/KBArticle";
 
@@ -101,8 +102,10 @@ const App = () => (
                 <Route path="/support" element={<SupportPage />} />
                 <Route path="/support/new" element={<TicketForm />} />
                 <Route path="/support/ticket/:ticketId" element={<TicketDetail />} />
-                <Route path="/support/help" element={<KBHome />} />
-                <Route path="/support/help/:slug" element={<KBArticle />} />
+                <Route path="/support/help" element={<KBLayout />}>
+                  <Route index element={<KBHome />} />
+                  <Route path=":slug" element={<KBArticle />} />
+                </Route>
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
