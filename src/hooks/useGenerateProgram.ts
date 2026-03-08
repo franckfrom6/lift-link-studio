@@ -48,7 +48,8 @@ export function useGenerateProgram() {
       });
 
       if (error) {
-        toast.error("Erreur IA : " + (error.message || "Erreur inconnue"));
+      const detail = (error as any).context?.error || error.message || "Erreur inconnue";
+      toast.error("Erreur IA : " + detail);
         return null;
       }
 

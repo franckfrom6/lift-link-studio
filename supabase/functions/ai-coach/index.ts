@@ -475,7 +475,6 @@ const ACTION_BUILDERS: Record<string, (payload: any, lang: string) => any> = {
 };
 
 serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   function jsonResp(body: any, status = 200) {
