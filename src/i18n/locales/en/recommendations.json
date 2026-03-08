@@ -76,5 +76,10 @@
   "day_thu": "Thursday",
   "day_fri": "Friday",
   "day_sat": "Saturday",
-  "day_sun": "Sunday"
+  "day_sun": "Sunday",
+  "macro_protein": "Protein",
+  "macro_carbs": "Carbs",
+  "macro_fat": "Fats",
+  "macro_calories": "Calories",
+  "video_link": "Video"
 }

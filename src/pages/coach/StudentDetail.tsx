@@ -230,6 +230,17 @@ const StudentDetail = () => {
         </Button>
       </div>
 
+      {/* Coach recommendations for this student */}
+      {isYana && (
+        <div className="space-y-3">
+          <h2 className="font-bold flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            {t("common:recommendations")}
+          </h2>
+          <StudentRecommendationCards type="all" />
+        </div>
+      )}
+
       {/* Programs section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">

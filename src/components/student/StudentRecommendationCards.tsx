@@ -138,7 +138,7 @@ const RecoCard = ({ reco }: { reco: CoachReco }) => {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-primary mt-2 hover:underline"
               >
-                <ExternalLink className="w-3 h-3" /> Vidéo
+                <ExternalLink className="w-3 h-3" /> {t("form_video_url").replace(" (optional)", "").replace(" (optionnel)", "")}
               </a>
             )}
           </CardContent>

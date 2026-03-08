@@ -76,5 +76,10 @@
   "day_thu": "Jeudi",
   "day_fri": "Vendredi",
   "day_sat": "Samedi",
-  "day_sun": "Dimanche"
+  "day_sun": "Dimanche",
+  "macro_protein": "Protéines",
+  "macro_carbs": "Glucides",
+  "macro_fat": "Lipides",
+  "macro_calories": "Calories",
+  "video_link": "Vidéo"
 }
