@@ -466,8 +466,7 @@ const StudentWeek = () => {
           );
         })}
       </div>
-
-      {/* Swap confirmation modal */}
+      </DndContext>
       {swapSourceDay !== null && swapTargetDay !== null && (
         <SessionSwapModal
           open={swapModalOpen}
