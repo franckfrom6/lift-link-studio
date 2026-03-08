@@ -769,6 +769,48 @@ export type Database = {
         }
         Relationships: []
       }
+      recommendation_templates: {
+        Row: {
+          category: string
+          content_en: string
+          content_fr: string
+          duration_minutes: number | null
+          id: string
+          sort_order: number
+          title_en: string
+          title_fr: string
+          trigger_config: Json | null
+          trigger_type: string | null
+          type: string
+        }
+        Insert: {
+          category: string
+          content_en: string
+          content_fr: string
+          duration_minutes?: number | null
+          id?: string
+          sort_order?: number
+          title_en: string
+          title_fr: string
+          trigger_config?: Json | null
+          trigger_type?: string | null
+          type: string
+        }
+        Update: {
+          category?: string
+          content_en?: string
+          content_fr?: string
+          duration_minutes?: number | null
+          id?: string
+          sort_order?: number
+          title_en?: string
+          title_fr?: string
+          trigger_config?: Json | null
+          trigger_type?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
       recovery_recommendations: {
         Row: {
           activity_type: string | null

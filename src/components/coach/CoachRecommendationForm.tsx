@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,10 +15,21 @@ import {
   NUTRITION_TRIGGER_TYPES,
   RECOVERY_TRIGGER_TYPES,
   MUSCLE_GROUPS,
-  NUTRITION_TEMPLATES,
-  RECOVERY_TEMPLATES,
-  type RecommendationTemplate,
 } from "@/data/recommendation-templates";
+
+interface DbTemplate {
+  id: string;
+  type: string;
+  category: string;
+  title_fr: string;
+  title_en: string;
+  content_fr: string;
+  content_en: string;
+  trigger_type: string | null;
+  trigger_config: any;
+  duration_minutes: number | null;
+  sort_order: number;
+}
 
 interface Props {
   open: boolean;
@@ -43,7 +54,16 @@ const CoachRecommendationForm = ({ open, onClose, onSave, type, students, initia
   const { t, i18n } = useTranslation("recommendations");
   const categories = type === "nutrition" ? NUTRITION_CATEGORIES : RECOVERY_CATEGORIES;
   const triggerTypes = type === "nutrition" ? NUTRITION_TRIGGER_TYPES : RECOVERY_TRIGGER_TYPES;
-  const templates = type === "nutrition" ? NUTRITION_TEMPLATES : RECOVERY_TEMPLATES;
+
+  const [templates, setTemplates] = useState<DbTemplate[]>([]);
+  useEffect(() => {
+    supabase
+      .from("recommendation_templates")
+      .select("*")
+      .eq("type", type)
+      .order("sort_order")
+      .then(({ data }) => { if (data) setTemplates(data as any); });
+  }, [type]);
 
   const [title, setTitle] = useState(initial?.title || "");
   const [content, setContent] = useState(initial?.content || "");
@@ -85,12 +105,12 @@ const CoachRecommendationForm = ({ open, onClose, onSave, type, students, initia
     }
   };
 
-  const handleTemplate = (tpl: RecommendationTemplate) => {
+  const handleTemplate = (tpl: DbTemplate) => {
     const lang = i18n.language;
     setTitle(lang === "fr" ? tpl.title_fr : tpl.title_en);
     setContent(lang === "fr" ? tpl.content_fr : tpl.content_en);
     setCategory(tpl.category);
-    setTriggerType(tpl.trigger_type);
+    if (tpl.trigger_type) setTriggerType(tpl.trigger_type);
     if (tpl.trigger_config) setTriggerConfig(tpl.trigger_config);
     if (tpl.duration_minutes) setDurationMin(tpl.duration_minutes.toString());
     setShowTemplates(false);
@@ -143,9 +163,9 @@ const CoachRecommendationForm = ({ open, onClose, onSave, type, students, initia
               </Button>
               {showTemplates && (
                 <div className="mt-2 space-y-1 max-h-48 overflow-y-auto border rounded-md p-2">
-                  {templates.filter((tpl) => tpl.category === category || !category).map((tpl, i) => (
+                  {templates.filter((tpl) => tpl.category === category || !category).map((tpl) => (
                     <button
-                      key={i}
+                      key={tpl.id}
                       className="w-full text-left text-sm p-2 rounded hover:bg-accent transition-colors"
                       onClick={() => handleTemplate(tpl)}
                     >
