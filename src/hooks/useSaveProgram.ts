@@ -128,9 +128,10 @@ export async function saveProgram(
 
     // 8. Save progression if exists
     if (program.progression && program.progression.length > 0) {
-      await supabase.from("program_progression").delete().eq("program_id", programId);
+      const { error: delProgError } = await supabase.from("program_progression").delete().eq("program_id", programId);
+      if (delProgError) throw delProgError;
       for (const phase of program.progression) {
-        await supabase.from("program_progression").insert({
+        const { error: insProgError } = await supabase.from("program_progression").insert({
           program_id: programId,
           week_label: phase.weekLabel,
           description: phase.description,
@@ -139,6 +140,7 @@ export async function saveProgram(
           is_deload: phase.isDeload,
           sort_order: phase.order,
         });
+        if (insProgError) throw insProgError;
       }
     }
 

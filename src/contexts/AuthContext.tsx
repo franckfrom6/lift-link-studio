@@ -68,7 +68,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          setTimeout(async () => {
+            try {
+              await fetchProfile(session.user.id);
+            } catch (e) {
+              console.error("Error fetching profile:", e);
+            }
+          }, 0);
         } else {
           setProfile(null);
           setRole(null);
@@ -77,11 +83,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        try {
+          await fetchProfile(session.user.id);
+        } catch (e) {
+          console.error("Error fetching profile:", e);
+        }
       }
       setLoading(false);
     });
