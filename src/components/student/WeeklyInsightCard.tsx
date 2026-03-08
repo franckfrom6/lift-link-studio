@@ -58,12 +58,23 @@ const WeeklyInsightCard = () => {
     setLoading(true);
     setError(false);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("weekly-insight", {
-        body: { student_id: user.id, lang: i18n.language },
+      const { data, error: fnError } = await supabase.functions.invoke("ai-coach", {
+        body: {
+          action: "weekly_insight",
+          payload: { student_id: user.id },
+          lang: i18n.language,
+        },
       });
 
       if (fnError) throw fnError;
-      if (data?.error) throw new Error(data.error);
+      if (data?.error) {
+        // Silently fail for plan/rate limit errors on insight
+        if (data.error === "plan_required" || data.error === "rate_limited") {
+          setError(true);
+          return;
+        }
+        throw new Error(data.error);
+      }
 
       setInsight({ message: data.message, emoji: data.emoji });
       localStorage.setItem(CACHE_KEY, JSON.stringify({

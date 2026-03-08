@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ProgramData, WeekData, SessionData, SessionExerciseData, SessionSectionData, ProgressionPhaseData } from "@/types/coach";
+import { ProgramData, SessionData, SessionSectionData, ProgressionPhaseData } from "@/types/coach";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface AIStructuredInput {
   objective?: string;
@@ -12,15 +13,6 @@ interface AIStructuredInput {
   notes?: string;
 }
 
-interface AIGeneratedProgram {
-  name: string;
-  objective: string;
-  duration_weeks: number;
-  weeks: any[];
-  progression?: any[];
-}
-
-// Create a placeholder exercise for AI-generated exercises that aren't in the library
 function makeExercisePlaceholder(name: string) {
   return {
     id: crypto.randomUUID(),
@@ -39,6 +31,7 @@ function makeExercisePlaceholder(name: string) {
 
 export function useGenerateProgram() {
   const [loading, setLoading] = useState(false);
+  const { i18n, t } = useTranslation("common");
 
   const generate = async (
     prompt: string,
@@ -46,8 +39,12 @@ export function useGenerateProgram() {
   ): Promise<ProgramData | null> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-program", {
-        body: { prompt, structured },
+      const { data, error } = await supabase.functions.invoke("ai-coach", {
+        body: {
+          action: "generate_program",
+          payload: { prompt, structured },
+          lang: i18n.language,
+        },
       });
 
       if (error) {
@@ -56,13 +53,22 @@ export function useGenerateProgram() {
       }
 
       if (data?.error) {
-        toast.error(data.error);
+        if (data.error === "plan_required") {
+          toast.error(t("ai_plan_required"));
+        } else if (data.error === "rate_limited") {
+          toast.error(t("ai_rate_limited"));
+        } else {
+          toast.error(data.error);
+        }
         return null;
       }
 
-      const ai: AIGeneratedProgram = data.program;
+      const ai = data.program;
+      if (!ai) {
+        toast.error("L'IA n'a pas pu générer le programme");
+        return null;
+      }
 
-      // Convert AI output to ProgramData
       const programData: ProgramData = {
         id: crypto.randomUUID(),
         name: ai.name,
@@ -95,20 +101,18 @@ export function useGenerateProgram() {
                 videoSearchQuery: ex.video_search_query || undefined,
               })),
             }));
-
             return {
               id: crypto.randomUUID(),
               dayOfWeek: s.day_of_week,
               name: s.name,
               sections,
-              exercises: [], // All exercises are in sections
+              exercises: [],
             } as SessionData;
           }),
         })),
         progression: [],
       };
 
-      // Convert progression
       const progression: ProgressionPhaseData[] = (ai.progression || []).map((p: any, i: number) => ({
         weekLabel: p.week_label,
         description: p.description,
