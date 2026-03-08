@@ -333,7 +333,7 @@ const StudentWeek = () => {
                 onClick={() => {
                   if (swapMode) {
                     handleDayClickInSwapMode(day.dayIndex);
-                  } else if (isSessionDay && weekOffset === 0) {
+                  } else if (isSessionDay) {
                     navigate("/student/session");
                   }
                 }}
