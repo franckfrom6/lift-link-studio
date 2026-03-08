@@ -43,7 +43,7 @@ export function useGenerateProgram() {
   const generate = async (
     prompt: string,
     structured?: AIStructuredInput
-  ): Promise<{ program: ProgramData; progression: ProgressionPhase[] } | null> => {
+  ): Promise<ProgramData | null> => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-program", {
