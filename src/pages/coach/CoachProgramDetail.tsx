@@ -453,8 +453,8 @@ const CoachProgramDetail = () => {
 
   const addSessionToDay = async (weekId: string, dayOfWeek: number) => {
     if (!program) return;
-    const dayNames: Record<number, string> = { 1: "Lundi", 2: "Mardi", 3: "Mercredi", 4: "Jeudi", 5: "Vendredi", 6: "Samedi", 7: "Dimanche" };
-    const name = `Séance ${dayNames[dayOfWeek] || ""}`;
+    const dayName = dayLabel(dayOfWeek);
+    const name = t("program:session_default_name", { day: dayName });
     const { data, error } = await supabase.from("sessions").insert({
       week_id: weekId,
       day_of_week: dayOfWeek,
