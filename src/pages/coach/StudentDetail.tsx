@@ -216,6 +216,18 @@ const StudentDetail = () => {
         </div>
       )}
 
+      {/* AI Bilan + Report buttons */}
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={() => navigate(`/coach/students/${studentId}/bilan`)}
+        >
+          <Bot className="w-4 h-4 mr-2" />
+          Générer un bilan IA
+        </Button>
+      </div>
+
       {/* Programs section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">

@@ -59,6 +59,7 @@ i18n
         exercises: enExercises,
         recovery: enRecovery,
         settings: enSettings,
+        bilan: enBilan,
       },
     },
     lng: 'fr',
