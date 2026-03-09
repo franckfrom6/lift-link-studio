@@ -54,11 +54,57 @@ const LiveSession = () => {
 
   const selectedSessionId = (location.state as { sessionId?: string } | null)?.sessionId;
 
-  const selectedSession = useMemo(() => {
+  // Free session loaded from DB when not found in program
+  const [freeSession, setFreeSession] = useState<any>(null);
+
+  const programSession = useMemo(() => {
     const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
     if (sessions.length === 0) return null;
-    return sessions.find((s) => s.id === selectedSessionId) || sessions[0];
+    return sessions.find((s) => s.id === selectedSessionId) || null;
   }, [dbProgram?.weeks, selectedSessionId]);
+
+  // If not found in program, fetch as free session
+  useEffect(() => {
+    if (programSession || !selectedSessionId) return;
+    const fetchFree = async () => {
+      const { data } = await supabase
+        .from("sessions")
+        .select(`
+          id, name, day_of_week, notes, is_free_session, created_by,
+          session_sections(id, name, sort_order, notes, duration_estimate, icon),
+          session_exercises(
+            id, sort_order, sets, reps_min, reps_max, rest_seconds, tempo,
+            rpe_target, suggested_weight, coach_notes, video_url, video_search_query,
+            section_id,
+            exercise:exercises(id, name, name_en, muscle_group, equipment, type, tracking_type)
+          )
+        `)
+        .eq("id", selectedSessionId)
+        .maybeSingle();
+      if (data) {
+        // Shape it like a program session
+        const sections = (data.session_sections || [])
+          .sort((a: any, b: any) => a.sort_order - b.sort_order)
+          .map((sec: any) => ({
+            ...sec,
+            exercises: (data.session_exercises || [])
+              .filter((e: any) => e.section_id === sec.id)
+              .sort((a: any, b: any) => a.sort_order - b.sort_order),
+          }));
+        // Exercises without a section
+        const unsectioned = (data.session_exercises || [])
+          .filter((e: any) => !e.section_id)
+          .sort((a: any, b: any) => a.sort_order - b.sort_order);
+        if (unsectioned.length > 0) {
+          sections.push({ id: "default", name: "Exercices", sort_order: 999, notes: null, duration_estimate: null, icon: null, exercises: unsectioned });
+        }
+        setFreeSession({ ...data, sections });
+      }
+    };
+    fetchFree();
+  }, [programSession, selectedSessionId]);
+
+  const selectedSession = programSession || freeSession;
 
   // Map exercise keys to session_exercise IDs for DB persistence
   const sessionExerciseIdMap = useMemo(() => {
