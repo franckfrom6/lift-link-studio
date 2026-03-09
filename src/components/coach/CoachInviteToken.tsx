@@ -124,7 +124,7 @@ const CoachInviteToken = () => {
               className="shrink-0"
               onClick={() => handleCopy(token.token)}
             >
-              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
             </Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
