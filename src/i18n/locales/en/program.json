@@ -1,4 +1,12 @@
 {
+  "my_program": "My program",
+  "create_my_program": "Create my program",
+  "create_my_program_desc": "Add your weight training sessions, choose exercises and plan your week.",
+  "start_creating": "Get started →",
+  "empty_program_title": "Create your program",
+  "empty_program_desc": "Add a week, then sessions and exercises.",
+  "sessions_label": "sessions",
+  "exercises_label": "exercises",
   "programs": "Programs",
   "create_program": "Create first program",
   "new_program": "New program",
