@@ -500,6 +500,7 @@ const LiveSession = () => {
                       onAllSetsComplete={() => handleExerciseComplete(key)}
                       onSwapExercise={() => handleOpenSwap(key)}
                       isSubstituted={isSubstituted}
+                      trackingType={(trackingTypeMap[key] as any) || "weight_reps"}
                     />
                   </div>
                 );
