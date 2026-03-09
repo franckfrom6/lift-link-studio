@@ -297,10 +297,14 @@ const StudentWeek = () => {
           </div>
         </div>
       ) : (
-        <div className="glass p-8 text-center space-y-2">
-          <Dumbbell className="w-8 h-8 text-muted-foreground/50 mx-auto" strokeWidth={1.5} />
-          <p className="text-muted-foreground text-sm">{t('calendar:no_program', 'Aucun programme actif')}</p>
-        </div>
+        <SelfGuidedDashboard
+          onStartAI={() => {
+            toast.info(t('calendar:ai_coming_soon', "La génération IA de programme arrive bientôt !"));
+          }}
+          onJoinCoach={(code) => {
+            toast.info(t('calendar:join_coach_soon', "Fonctionnalité de rejoindre un coach à venir."));
+          }}
+        />
       )}
 
 
