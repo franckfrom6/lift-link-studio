@@ -657,7 +657,7 @@ const StudentWeek = () => {
         open={freeSessionOpen}
         onClose={() => setFreeSessionOpen(false)}
         date={freeSessionDate}
-        onCreated={() => window.location.reload()}
+        onCreated={() => fetchFreeSessions()}
       />
     </div>
   );
