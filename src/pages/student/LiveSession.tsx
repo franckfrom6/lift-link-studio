@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { YANA_PROGRAM, ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
-import { EXERCISE_ALTERNATIVES } from "@/data/exercise-alternatives";
+import { EXERCISE_ALTERNATIVES, AlternativeGroup } from "@/data/exercise-alternatives";
 import { EnhancedCompletedSet } from "@/components/student/EnhancedExerciseCard";
 import EnhancedExerciseCard from "@/components/student/EnhancedExerciseCard";
 import ExerciseAlternativesSheet from "@/components/student/ExerciseAlternativesSheet";
@@ -42,6 +42,10 @@ const LiveSession = () => {
   const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
   const [swapTargetKey, setSwapTargetKey] = useState<string | null>(null);
+  const [dynamicAlternatives, setDynamicAlternatives] = useState<AlternativeGroup | null>(null);
+
+  // Track which exercises' sets have been saved to DB
+  const savedExercisesRef = useRef<Set<string>>(new Set());
 
   const selectedSessionId = (location.state as { sessionId?: string } | null)?.sessionId;
 
@@ -50,6 +54,18 @@ const LiveSession = () => {
     if (sessions.length === 0) return null;
     return sessions.find((s) => s.id === selectedSessionId) || sessions[0];
   }, [dbProgram?.weeks, selectedSessionId]);
+
+  // Map exercise keys to session_exercise IDs for DB persistence
+  const sessionExerciseIdMap = useMemo(() => {
+    if (!selectedSession) return {};
+    const map: Record<string, string> = {};
+    selectedSession.sections.forEach((section, sIdx) => {
+      section.exercises.forEach((ex, eIdx) => {
+        map[`${sIdx}-${eIdx}`] = ex.id;
+      });
+    });
+    return map;
+  }, [selectedSession]);
 
   const mappedSections = useMemo<ProgramSection[]>(() => {
     if (!selectedSession) return [];
@@ -120,6 +136,7 @@ const LiveSession = () => {
 
   const allExercises: ProgramExerciseDetail[] = sessionProgram.sections.flatMap((s) => s.exercises);
 
+  // Timer
   useEffect(() => {
     if (sessionDone) return;
     const interval = setInterval(() => {
@@ -128,12 +145,60 @@ const LiveSession = () => {
     return () => clearInterval(interval);
   }, [startTime, sessionDone]);
 
+  // Create completed_session at mount (Bug 2 fix)
+  useEffect(() => {
+    if (!user || !selectedSession?.id || completedSessionId || sessionDone) return;
+    const create = async () => {
+      try {
+        const { data, error } = await supabase.from("completed_sessions").insert({
+          student_id: user.id,
+          session_id: selectedSession.id,
+          started_at: new Date(startTime).toISOString(),
+        }).select("id").single();
+        if (error) throw error;
+        if (data) setCompletedSessionId(data.id);
+      } catch (e) {
+        console.error("Error creating completed session:", e);
+      }
+    };
+    create();
+  }, [user, selectedSession?.id, startTime, completedSessionId, sessionDone]);
+
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
 
   const completedCount = Object.values(completedSets).filter(sets => sets.length > 0 && sets.every(s => s.reps > 0)).length;
 
-  const handleExerciseComplete = (key: string) => {
+  // Save sets for a given exercise key to DB
+  const saveSetsForExercise = async (key: string) => {
+    if (!completedSessionId) return;
+    if (savedExercisesRef.current.has(key)) return;
+    const sets = completedSets[key] || [];
+    const sessionExId = sessionExerciseIdMap[key];
+    if (!sessionExId) return;
+    const rows = sets.filter(s => s.reps > 0).map(s => ({
+      completed_session_id: completedSessionId,
+      session_exercise_id: sessionExId,
+      set_number: s.setNumber,
+      weight: s.weight || null,
+      reps: s.reps,
+      rpe_actual: s.rpeActual,
+      is_failure: s.isFailure,
+    }));
+    if (rows.length > 0) {
+      const { error } = await supabase.from("completed_sets").insert(rows);
+      if (error) {
+        console.error("Error saving sets:", error);
+      } else {
+        savedExercisesRef.current.add(key);
+      }
+    }
+  };
+
+  const handleExerciseComplete = async (key: string) => {
+    // Save sets for this exercise to DB
+    await saveSetsForExercise(key);
+
     const [sIdx, eIdx] = key.split("-").map(Number);
     let nextKey: string | null = null;
     
@@ -154,29 +219,24 @@ const LiveSession = () => {
   };
 
   const finishSession = async () => {
-    if (!user || !selectedSession?.id) {
-      setSessionDone(true);
-      toast.success(t('session:session_done'));
-      return;
-    }
-
     setSessionDone(true);
     toast.success(t('session:session_done'));
-    const dbSessionId = selectedSession.id;
+
+    if (!completedSessionId) return;
 
     try {
-      const { data: cs, error } = await supabase.from("completed_sessions").insert({
-        student_id: user.id,
-        session_id: dbSessionId,
-        duration: elapsed,
-        started_at: new Date(startTime).toISOString(),
-        completed_at: new Date().toISOString(),
-      }).select("id").single();
+      // Save any unsaved exercises' sets
+      for (const key of Object.keys(completedSets)) {
+        await saveSetsForExercise(key);
+      }
 
-      if (error) throw error;
-      if (cs) setCompletedSessionId(cs.id);
+      // Update session with completion time
+      await supabase.from("completed_sessions").update({
+        completed_at: new Date().toISOString(),
+        duration: elapsed,
+      }).eq("id", completedSessionId);
     } catch (e) {
-      console.error("Error saving completed session:", e);
+      console.error("Error finishing session:", e);
     }
   };
 
@@ -197,8 +257,49 @@ const LiveSession = () => {
     navigate("/student");
   };
 
-  const handleOpenSwap = (key: string) => {
+  // Bug 3 fix: fetch alternatives from DB if not in static map
+  const handleOpenSwap = async (key: string) => {
     setSwapTargetKey(key);
+    const [sIdx, eIdx] = key.split("-").map(Number);
+    const exerciseName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || "";
+
+    // Check static alternatives first
+    if (EXERCISE_ALTERNATIVES[exerciseName]) {
+      setDynamicAlternatives(null);
+      setSwapSheetOpen(true);
+      return;
+    }
+
+    // Fetch from DB by muscle group
+    const sessionEx = selectedSession?.sections[sIdx]?.exercises[eIdx];
+    if (!sessionEx?.exercise) {
+      setDynamicAlternatives(null);
+      setSwapSheetOpen(true);
+      return;
+    }
+
+    const muscleGroup = sessionEx.exercise.muscle_group;
+    const { data: exercises } = await supabase
+      .from("exercises")
+      .select("name, equipment, muscle_group")
+      .eq("muscle_group", muscleGroup)
+      .neq("id", sessionEx.exercise_id)
+      .eq("is_default", true)
+      .limit(6);
+
+    if (exercises && exercises.length > 0) {
+      setDynamicAlternatives({
+        muscleGroup,
+        alternatives: exercises.map(e => ({
+          name: e.name,
+          equipment: e.equipment,
+          difficulty: "medium" as const,
+          reason: `Même groupe musculaire: ${muscleGroup}`,
+        })),
+      });
+    } else {
+      setDynamicAlternatives(null);
+    }
     setSwapSheetOpen(true);
   };
 
@@ -217,11 +318,15 @@ const LiveSession = () => {
       }];
     });
 
+    // Clear completed sets for swapped exercise
     setCompletedSets(prev => {
       const updated = { ...prev };
       delete updated[swapTargetKey];
       return updated;
     });
+
+    // Remove from saved so new sets can be saved
+    savedExercisesRef.current.delete(swapTargetKey);
 
     toast.success(`${originalName} → ${alternative.name}`);
     setSwapSheetOpen(false);
@@ -346,7 +451,6 @@ const LiveSession = () => {
                 const sets = completedSets[key] || [];
                 const displayName = getExerciseName(sIdx, eIdx);
                 const isSubstituted = substitutions.some(s => s.key === key);
-                const hasAlternatives = !!EXERCISE_ALTERNATIVES[ex.name];
 
                 const targetSets = parseInt(ex.sets) || 1;
                 const repsMatch = ex.reps.match(/(\d+)(?:\s*[-–]\s*(\d+))?/);
@@ -383,7 +487,6 @@ const LiveSession = () => {
                       onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
                       onAllSetsComplete={() => handleExerciseComplete(key)}
                       onSwapExercise={() => handleOpenSwap(key)}
-                      hasAlternatives={hasAlternatives}
                       isSubstituted={isSubstituted}
                     />
                   </div>
@@ -408,7 +511,7 @@ const LiveSession = () => {
         open={swapSheetOpen}
         onClose={() => { setSwapSheetOpen(false); setSwapTargetKey(null); }}
         exerciseName={swapExerciseOriginalName}
-        group={EXERCISE_ALTERNATIVES[swapExerciseOriginalName] || null}
+        group={EXERCISE_ALTERNATIVES[swapExerciseOriginalName] || dynamicAlternatives}
         onSelect={handleSwapSelect}
       />
     </div>
