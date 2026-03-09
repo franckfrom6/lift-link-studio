@@ -459,6 +459,18 @@ function buildRecoveryRecommendation(payload: any, lang: string) {
   return { system, user, tools, toolChoice: { type: "function", function: { name: "recovery_recommendation" } } };
 }
 
+function buildChat(payload: any, lang: string) {
+  const l = lang === "fr" ? "Réponds en français." : "Respond in English.";
+  const contextBlock = payload.context ? `\n\nCONTEXTE UTILISATEUR :\n${payload.context}` : "";
+  const system = `Tu es un assistant IA expert en sport, fitness, nutrition et coaching sportif. Tu es intégré dans l'application F6GYM. Tu donnes des conseils concrets, personnalisés et bienveillants. Tu peux aider sur les programmes, exercices, nutrition, récupération, et l'utilisation de l'app. ${l}${contextBlock}`;
+  
+  // Build messages array for multi-turn conversation
+  const messages = payload.messages || [];
+  const lastUserMsg = messages.length > 0 ? messages[messages.length - 1].content : "";
+  
+  return { system, user: lastUserMsg, messages: messages.slice(0, -1) };
+}
+
 // Router
 const ACTION_BUILDERS: Record<string, (payload: any, lang: string) => any> = {
   generate_program: buildGenerateProgram,
@@ -472,6 +484,7 @@ const ACTION_BUILDERS: Record<string, (payload: any, lang: string) => any> = {
   suggest_meal: buildSuggestMeal,
   recovery_recommendation: buildRecoveryRecommendation,
   optimize_week: buildAnalyzeWeek, // same logic
+  chat: buildChat,
 };
 
 serve(async (req) => {
