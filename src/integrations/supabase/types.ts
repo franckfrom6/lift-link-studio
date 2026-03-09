@@ -139,6 +139,42 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_invite_tokens: {
+        Row: {
+          coach_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          label: string | null
+          max_uses: number | null
+          token: string
+          uses_count: number
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          max_uses?: number | null
+          token: string
+          uses_count?: number
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          max_uses?: number | null
+          token?: string
+          uses_count?: number
+        }
+        Relationships: []
+      }
       coach_nutrition_recommendations: {
         Row: {
           category: string

@@ -301,8 +301,66 @@ const StudentWeek = () => {
           onStartAI={() => {
             toast.info(t('calendar:ai_coming_soon', "La génération IA de programme arrive bientôt !"));
           }}
-          onJoinCoach={(code) => {
-            toast.info(t('calendar:join_coach_soon', "Fonctionnalité de rejoindre un coach à venir."));
+          onJoinCoach={async (code) => {
+            if (!user) return;
+            // Look up the token
+            const { data: tokenData } = await supabase
+              .from("coach_invite_tokens")
+              .select("id, coach_id, token, uses_count, max_uses, expires_at")
+              .eq("token", code.toUpperCase())
+              .eq("is_active", true)
+              .maybeSingle();
+
+            if (!tokenData) {
+              toast.error(t('auth:token_invalid', "Code invalide ou expiré"));
+              return;
+            }
+
+            // Check expiry / max uses
+            if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) {
+              toast.error(t('auth:token_invalid', "Code invalide ou expiré"));
+              return;
+            }
+            if (tokenData.max_uses !== null && tokenData.uses_count >= tokenData.max_uses) {
+              toast.error(t('auth:token_invalid', "Code invalide ou expiré"));
+              return;
+            }
+
+            // Check if already linked
+            const { data: existing } = await supabase
+              .from("coach_students")
+              .select("id")
+              .eq("coach_id", tokenData.coach_id)
+              .eq("student_id", user.id)
+              .eq("status", "active")
+              .maybeSingle();
+
+            if (existing) {
+              toast.info(t('auth:token_join_already', "Vous êtes déjà associé à ce coach"));
+              return;
+            }
+
+            // Create association
+            const { error } = await supabase.from("coach_students").insert({
+              coach_id: tokenData.coach_id,
+              student_id: user.id,
+              status: "active",
+            });
+
+            if (error) {
+              toast.error(t('auth:error_generic'));
+              return;
+            }
+
+            // Increment uses_count
+            await supabase
+              .from("coach_invite_tokens")
+              .update({ uses_count: tokenData.uses_count + 1 })
+              .eq("id", tokenData.id);
+
+            toast.success(t('auth:token_join_success', "Vous avez rejoint le coach !"));
+            // Reload to get the new program
+            window.location.reload();
           }}
         />
       )}

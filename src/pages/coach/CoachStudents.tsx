@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { useCoachDashboard } from "@/hooks/useCoachDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import InviteClientModal from "@/components/InviteClientModal";
+import CoachInviteToken from "@/components/coach/CoachInviteToken";
 
 const CoachStudents = () => {
   const [search, setSearch] = useState("");
@@ -27,6 +28,8 @@ const CoachStudents = () => {
         </div>
         <InviteClientModal />
       </div>
+
+      <CoachInviteToken />
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
