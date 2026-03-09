@@ -466,13 +466,54 @@ function buildRecoveryRecommendation(payload: any, lang: string) {
 function buildChat(payload: any, lang: string) {
   const l = lang === "fr" ? "Réponds en français." : "Respond in English.";
   const contextBlock = payload.context ? `\n\nCONTEXTE UTILISATEUR :\n${payload.context}` : "";
-  const system = `Tu es un assistant IA expert en sport, fitness, nutrition et coaching sportif. Tu es intégré dans l'application F6GYM. Tu donnes des conseils concrets, personnalisés et bienveillants. Tu peux aider sur les programmes, exercices, nutrition, récupération, et l'utilisation de l'app. ${l}${contextBlock}`;
+  const system = `Tu es un assistant IA expert en sport, fitness, nutrition et coaching sportif. Tu es intégré dans l'application F6GYM. Tu donnes des conseils concrets, personnalisés et bienveillants. Tu peux aider sur les programmes, exercices, nutrition, récupération, et l'utilisation de l'app.
+
+CAPACITÉS IMPORTANTES :
+- Tu PEUX créer des séances de musculation libres directement dans l'agenda de l'athlète en utilisant l'outil create_free_session.
+- Quand l'utilisateur te demande de créer/ajouter une séance, utilise TOUJOURS l'outil create_free_session. Ne dis JAMAIS que tu ne peux pas le faire.
+- Pour chaque exercice, cherche le nom exact dans la base de données (noms français courants : "Développé couché barre", "Squat barre", "Soulevé de terre", etc.)
+- Le day_of_week est 1=Lundi, 2=Mardi, ..., 7=Dimanche.
+- La date doit être au format YYYY-MM-DD.
+
+${l}${contextBlock}`;
   
   // Build messages array for multi-turn conversation
   const messages = payload.messages || [];
   const lastUserMsg = messages.length > 0 ? messages[messages.length - 1].content : "";
   
-  return { system, user: lastUserMsg, messages: messages.slice(0, -1) };
+  const tools = [{
+    type: "function",
+    function: {
+      name: "create_free_session",
+      description: "Create a free workout session in the athlete's calendar with exercises. Use this whenever the user asks to add/create a workout session.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Session name, e.g. 'Upper Body', 'Hyrox Power'" },
+          date: { type: "string", description: "Date in YYYY-MM-DD format" },
+          day_of_week: { type: "number", description: "1=Monday ... 7=Sunday" },
+          exercises: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "Exercise name (French preferred)" },
+                sets: { type: "number" },
+                reps_min: { type: "number" },
+                reps_max: { type: "number" },
+                rest_seconds: { type: "number" },
+                coach_notes: { type: "string", description: "Optional notes (tempo, technique cues)" },
+              },
+              required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
+            },
+          },
+        },
+        required: ["name", "date", "day_of_week", "exercises"],
+      },
+    },
+  }];
+
+  return { system, user: lastUserMsg, messages: messages.slice(0, -1), tools };
 }
 
 // Router
@@ -585,15 +626,19 @@ serve(async (req) => {
     const built = ACTION_BUILDERS[action](payload || {}, lang || "fr");
     const model = MODEL_FOR_ACTION[action] || "google/gemini-2.5-flash-lite";
 
-    // 7. Call AI - special handling for chat (multi-turn)
+    // 7. Call AI - special handling for chat (multi-turn with tools)
     let aiResult;
-    if (action === "chat" && built.messages) {
-      // Multi-turn: build full messages array
-      const allMessages = [
+    if (action === "chat") {
+      const allMessages: any[] = [
         { role: "system", content: built.system },
-        ...built.messages,
+        ...(built.messages || []),
         { role: "user", content: built.user },
       ];
+      const chatBody: any = { model, messages: allMessages };
+      if (built.tools) {
+        chatBody.tools = built.tools;
+        chatBody.tool_choice = "auto";
+      }
       const start = Date.now();
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -601,7 +646,7 @@ serve(async (req) => {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ model, messages: allMessages }),
+        body: JSON.stringify(chatBody),
       });
       const durationMs = Date.now() - start;
       if (!response.ok) {
@@ -609,13 +654,146 @@ serve(async (req) => {
         aiResult = { error: true, status: response.status, durationMs, errText };
       } else {
         const data = await response.json();
-        const usage = data.usage || {};
-        const content = data.choices?.[0]?.message?.content || "";
+        const usageData = data.usage || {};
+        const msg = data.choices?.[0]?.message;
+        const toolCalls = msg?.tool_calls;
+        
+        let textContent = msg?.content || "";
+        let toolResults: any[] = [];
+
+        // Process tool calls if present
+        if (toolCalls && toolCalls.length > 0) {
+          for (const tc of toolCalls) {
+            if (tc.function?.name === "create_free_session") {
+              const args = typeof tc.function.arguments === "string"
+                ? JSON.parse(tc.function.arguments)
+                : tc.function.arguments;
+              
+              try {
+                // Look up exercises by name
+                const exerciseRows = [];
+                for (let i = 0; i < (args.exercises || []).length; i++) {
+                  const ex = args.exercises[i];
+                  // Try to find the exercise in the database
+                  const { data: found } = await serviceClient
+                    .from("exercises")
+                    .select("id, name")
+                    .or(`name.ilike.%${ex.name}%,name_en.ilike.%${ex.name}%`)
+                    .eq("is_default", true)
+                    .limit(1)
+                    .maybeSingle();
+                  
+                  let exerciseId: string;
+                  if (found) {
+                    exerciseId = found.id;
+                  } else {
+                    // Create a custom exercise
+                    const { data: created, error: createErr } = await serviceClient
+                      .from("exercises")
+                      .insert({
+                        name: ex.name,
+                        muscle_group: "Autre",
+                        equipment: "Autre",
+                        type: "compound",
+                        is_default: false,
+                        created_by: userId,
+                      })
+                      .select("id")
+                      .single();
+                    if (createErr || !created) {
+                      console.error("Error creating exercise:", createErr);
+                      continue;
+                    }
+                    exerciseId = created.id;
+                  }
+                  exerciseRows.push({
+                    exercise_id: exerciseId,
+                    sort_order: i,
+                    sets: ex.sets || 3,
+                    reps_min: ex.reps_min || 8,
+                    reps_max: ex.reps_max || 12,
+                    rest_seconds: ex.rest_seconds || 90,
+                    coach_notes: ex.coach_notes || null,
+                  });
+                }
+
+                // Create the session
+                const { data: session, error: sessErr } = await serviceClient
+                  .from("sessions")
+                  .insert({
+                    name: args.name,
+                    day_of_week: args.day_of_week || 1,
+                    is_free_session: true,
+                    created_by: userId,
+                    free_session_date: args.date,
+                  })
+                  .select("id")
+                  .single();
+
+                if (sessErr || !session) {
+                  console.error("Error creating session:", sessErr);
+                  toolResults.push({ tool: "create_free_session", success: false, error: sessErr?.message });
+                } else {
+                  // Insert exercises
+                  if (exerciseRows.length > 0) {
+                    const rows = exerciseRows.map(r => ({ ...r, session_id: session.id }));
+                    const { error: exErr } = await serviceClient
+                      .from("session_exercises")
+                      .insert(rows);
+                    if (exErr) console.error("Error inserting exercises:", exErr);
+                  }
+                  toolResults.push({ tool: "create_free_session", success: true, session_id: session.id, name: args.name, date: args.date, exercise_count: exerciseRows.length });
+                }
+              } catch (toolErr) {
+                console.error("Tool execution error:", toolErr);
+                toolResults.push({ tool: "create_free_session", success: false, error: String(toolErr) });
+              }
+            }
+          }
+
+          // If the AI only returned tool calls without text, do a follow-up call to get text response
+          if (!textContent && toolResults.length > 0) {
+            const followUpMessages = [
+              ...allMessages,
+              msg, // assistant message with tool calls
+              ...toolResults.map((tr, i) => ({
+                role: "tool",
+                tool_call_id: toolCalls[i]?.id || `call_${i}`,
+                content: JSON.stringify(tr),
+              })),
+            ];
+            const followUp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ model, messages: followUpMessages }),
+            });
+            if (followUp.ok) {
+              const followData = await followUp.json();
+              textContent = followData.choices?.[0]?.message?.content || "";
+            }
+          }
+
+          // If still no text, generate a confirmation message
+          if (!textContent) {
+            const successOnes = toolResults.filter(r => r.success);
+            if (successOnes.length > 0) {
+              textContent = successOnes.map(r => 
+                `✅ Séance "${r.name}" créée pour le ${r.date} avec ${r.exercise_count} exercices ! Rafraîchis ton calendrier pour la voir.`
+              ).join("\n");
+            } else {
+              textContent = "❌ Désolé, je n'ai pas pu créer la séance. Réessaie ou crée-la manuellement depuis le calendrier.";
+            }
+          }
+        }
+
         aiResult = {
           error: false,
-          result: { text: content },
-          inputTokens: usage.prompt_tokens || null,
-          outputTokens: usage.completion_tokens || null,
+          result: { text: textContent, tool_results: toolResults.length > 0 ? toolResults : undefined },
+          inputTokens: usageData.prompt_tokens || null,
+          outputTokens: usageData.completion_tokens || null,
           durationMs,
         };
       }
