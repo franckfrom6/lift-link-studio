@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { formatLocalDate } from "@/lib/date-utils";
 import { useTranslation } from "react-i18next";
 
 export interface CheckinData {
