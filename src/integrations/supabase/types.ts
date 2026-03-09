@@ -304,6 +304,7 @@ export type Database = {
         Row: {
           completed_session_id: string
           created_at: string
+          duration_seconds: number | null
           id: string
           is_failure: boolean
           reps: number
@@ -315,6 +316,7 @@ export type Database = {
         Insert: {
           completed_session_id: string
           created_at?: string
+          duration_seconds?: number | null
           id?: string
           is_failure?: boolean
           reps: number
@@ -326,6 +328,7 @@ export type Database = {
         Update: {
           completed_session_id?: string
           created_at?: string
+          duration_seconds?: number | null
           id?: string
           is_failure?: boolean
           reps?: number
@@ -412,6 +415,7 @@ export type Database = {
           name: string
           name_en: string | null
           secondary_muscle: string | null
+          tracking_type: string | null
           type: string
         }
         Insert: {
@@ -426,6 +430,7 @@ export type Database = {
           name: string
           name_en?: string | null
           secondary_muscle?: string | null
+          tracking_type?: string | null
           type: string
         }
         Update: {
@@ -440,6 +445,7 @@ export type Database = {
           name?: string
           name_en?: string | null
           secondary_muscle?: string | null
+          tracking_type?: string | null
           type?: string
         }
         Relationships: []
@@ -875,27 +881,30 @@ export type Database = {
       }
       programs: {
         Row: {
-          coach_id: string
+          coach_id: string | null
           created_at: string
           id: string
+          is_ai_generated: boolean | null
           name: string
           status: string
           student_id: string
           updated_at: string
         }
         Insert: {
-          coach_id: string
+          coach_id?: string | null
           created_at?: string
           id?: string
+          is_ai_generated?: boolean | null
           name: string
           status?: string
           student_id: string
           updated_at?: string
         }
         Update: {
-          coach_id?: string
+          coach_id?: string | null
           created_at?: string
           id?: string
+          is_ai_generated?: boolean | null
           name?: string
           status?: string
           student_id?: string
