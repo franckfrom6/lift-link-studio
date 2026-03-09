@@ -492,26 +492,26 @@ const StudentWeek = () => {
                     }}
                   >
                     <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
                         <DateBadge
                           day={day.date.getDate()}
                           dayName={day.name}
                           variant={
                             sessionCompleted ? "completed"
                               : day.isToday ? "today"
-                              : isSessionDay ? "active"
+                              : (isSessionDay || dayFreeSessions.length > 0) ? "active"
                               : "rest" as DateBadgeVariant
                           }
                         />
-                        <div className="pt-0.5">
-                          <div className="flex items-center gap-1.5">
-                            {swapInfo && (
+                        <div className="pt-0.5 flex-1 min-w-0">
+                          {swapInfo && (
+                            <div className="mb-0.5">
                               <SwapBadge originalDay={swapInfo.originalDay} newDay={day.dayIndex + 1} reason={swapInfo.reason} />
-                            )}
-                          </div>
+                            </div>
+                          )}
                           {isSessionDay && sessionInfo ? (
                             <div className="space-y-0.5">
-                              <p className="text-sm font-bold text-foreground">{sessionInfo.name}</p>
+                              <p className="text-sm font-bold text-foreground truncate">{sessionInfo.name}</p>
                               <div className="flex items-center gap-2">
                                 <span className="text-[10px] text-muted-foreground">{sessionInfo.exerciseCount} ex.</span>
                                 {sessionInfo.muscleGroups.length > 0 && (
@@ -521,6 +521,27 @@ const StudentWeek = () => {
                                   </>
                                 )}
                               </div>
+                            </div>
+                          ) : dayFreeSessions.length > 0 ? (
+                            <div className="space-y-1">
+                              {dayFreeSessions.map(fs => (
+                                <div
+                                  key={fs.id}
+                                  className="space-y-0.5 cursor-pointer"
+                                  onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: fs.id } }); }}
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="text-sm font-bold text-foreground truncate">{fs.name}</p>
+                                    <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[9px] font-semibold px-1.5 py-0.5 rounded-md border border-ai/15 shrink-0">
+                                      <Bot className="w-2.5 h-2.5" strokeWidth={1.5} />
+                                      IA
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           ) : dayExternals.length > 0 ? (
                             <div className="space-y-0.5">
@@ -533,9 +554,31 @@ const StudentWeek = () => {
                               {isDropTarget && sourceDayHasSession ? t('calendar:move_here') : t('common:rest')}
                             </p>
                           )}
+
+                          {/* AI sessions shown below program session on same day */}
+                          {isSessionDay && dayFreeSessions.length > 0 && (
+                            <div className="mt-1.5 pt-1.5 border-t border-border space-y-1">
+                              {dayFreeSessions.map(fs => (
+                                <div
+                                  key={fs.id}
+                                  className="space-y-0.5 cursor-pointer"
+                                  onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: fs.id } }); }}
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="text-xs font-semibold text-foreground truncate">{fs.name}</p>
+                                    <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[8px] font-semibold px-1 py-0.5 rounded shrink-0">
+                                      <Bot className="w-2 h-2" strokeWidth={1.5} />
+                                      IA
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         {isSessionDay && !swapMode && (
                           <Button
                             variant="ghost" size="icon"
@@ -564,15 +607,17 @@ const StudentWeek = () => {
                             </Button>
                           </>
                         )}
-                        {isSessionDay && !day.isPast && !swapMode ? (
-                          <div className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg">
-                            <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
-                            <span className="text-xs font-semibold">Go</span>
-                          </div>
-                        ) : !isSessionDay && dayFreeSessions.length > 0 && !day.isPast && !swapMode ? (
+                        {(isSessionDay || dayFreeSessions.length > 0) && !day.isPast && !swapMode ? (
                           <div
                             className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg cursor-pointer"
-                            onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: dayFreeSessions[0].id } }); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isSessionDay && sessionInfo) {
+                                navigate("/student/session", { state: { sessionId: sessionInfo.sessionId } });
+                              } else if (dayFreeSessions.length > 0) {
+                                navigate("/student/session", { state: { sessionId: dayFreeSessions[0].id } });
+                              }
+                            }}
                           >
                             <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
                             <span className="text-xs font-semibold">Go</span>
@@ -582,30 +627,6 @@ const StudentWeek = () => {
                         ) : null}
                       </div>
                     </div>
-
-                    {/* AI free sessions inline */}
-                    {dayFreeSessions.length > 0 && (
-                      <div className={cn("space-y-1", (isSessionDay || dayExternals.length > 0) && "mt-2 pt-2 border-t border-border")}>
-                        {dayFreeSessions.map(fs => (
-                          <div
-                            key={fs.id}
-                            className="space-y-0.5 cursor-pointer"
-                            onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: fs.id } }); }}
-                          >
-                            <div className="flex items-center gap-1.5">
-                              <p className="text-sm font-bold text-foreground truncate">{fs.name}</p>
-                              <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[9px] font-semibold px-1.5 py-0.5 rounded-md border border-ai/15">
-                                <Bot className="w-2.5 h-2.5" strokeWidth={1.5} />
-                                IA
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
 
                     {isSessionDay && dayExternals.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-border space-y-1">
