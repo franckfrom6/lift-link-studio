@@ -16,6 +16,7 @@ const RATE_LIMITS: Record<string, Record<string, number>> = {
     estimate_macros: 60,
     recovery_recommendation: 30,
     generate_recommendation: 20,
+    chat: 30,
   },
   advanced: {
     generate_program: 50,
@@ -29,6 +30,7 @@ const RATE_LIMITS: Record<string, Record<string, number>> = {
     recovery_recommendation: -1,
     weekly_insight: -1,
     generate_recommendation: -1,
+    chat: -1,
   },
 };
 
