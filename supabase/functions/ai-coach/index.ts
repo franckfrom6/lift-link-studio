@@ -466,13 +466,54 @@ function buildRecoveryRecommendation(payload: any, lang: string) {
 function buildChat(payload: any, lang: string) {
   const l = lang === "fr" ? "Réponds en français." : "Respond in English.";
   const contextBlock = payload.context ? `\n\nCONTEXTE UTILISATEUR :\n${payload.context}` : "";
-  const system = `Tu es un assistant IA expert en sport, fitness, nutrition et coaching sportif. Tu es intégré dans l'application F6GYM. Tu donnes des conseils concrets, personnalisés et bienveillants. Tu peux aider sur les programmes, exercices, nutrition, récupération, et l'utilisation de l'app. ${l}${contextBlock}`;
+  const system = `Tu es un assistant IA expert en sport, fitness, nutrition et coaching sportif. Tu es intégré dans l'application F6GYM. Tu donnes des conseils concrets, personnalisés et bienveillants. Tu peux aider sur les programmes, exercices, nutrition, récupération, et l'utilisation de l'app.
+
+CAPACITÉS IMPORTANTES :
+- Tu PEUX créer des séances de musculation libres directement dans l'agenda de l'athlète en utilisant l'outil create_free_session.
+- Quand l'utilisateur te demande de créer/ajouter une séance, utilise TOUJOURS l'outil create_free_session. Ne dis JAMAIS que tu ne peux pas le faire.
+- Pour chaque exercice, cherche le nom exact dans la base de données (noms français courants : "Développé couché barre", "Squat barre", "Soulevé de terre", etc.)
+- Le day_of_week est 1=Lundi, 2=Mardi, ..., 7=Dimanche.
+- La date doit être au format YYYY-MM-DD.
+
+${l}${contextBlock}`;
   
   // Build messages array for multi-turn conversation
   const messages = payload.messages || [];
   const lastUserMsg = messages.length > 0 ? messages[messages.length - 1].content : "";
   
-  return { system, user: lastUserMsg, messages: messages.slice(0, -1) };
+  const tools = [{
+    type: "function",
+    function: {
+      name: "create_free_session",
+      description: "Create a free workout session in the athlete's calendar with exercises. Use this whenever the user asks to add/create a workout session.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Session name, e.g. 'Upper Body', 'Hyrox Power'" },
+          date: { type: "string", description: "Date in YYYY-MM-DD format" },
+          day_of_week: { type: "number", description: "1=Monday ... 7=Sunday" },
+          exercises: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "Exercise name (French preferred)" },
+                sets: { type: "number" },
+                reps_min: { type: "number" },
+                reps_max: { type: "number" },
+                rest_seconds: { type: "number" },
+                coach_notes: { type: "string", description: "Optional notes (tempo, technique cues)" },
+              },
+              required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
+            },
+          },
+        },
+        required: ["name", "date", "day_of_week", "exercises"],
+      },
+    },
+  }];
+
+  return { system, user: lastUserMsg, messages: messages.slice(0, -1), tools };
 }
 
 // Router
