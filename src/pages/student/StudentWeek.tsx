@@ -579,17 +579,27 @@ const StudentWeek = () => {
                         {dayFreeSessions.map(fs => (
                           <div
                             key={fs.id}
-                            className="flex items-center gap-2 p-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
+                            className="flex items-center gap-2 p-2 rounded-lg bg-accent/50 cursor-pointer hover:bg-accent transition-colors"
                             onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: fs.id } }); }}
                           >
-                            <Dumbbell className="w-3.5 h-3.5 text-primary shrink-0" strokeWidth={1.5} />
+                            <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                              <Bot className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+                            </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-medium truncate">{fs.name}</p>
-                              <p className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex. · {t('session:free_session_badge')}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
+                                <span className="text-[10px] text-muted-foreground">·</span>
+                                <span className="text-[10px] text-primary font-medium flex items-center gap-0.5">
+                                  <Bot className="w-2.5 h-2.5" strokeWidth={1.5} />
+                                  IA
+                                </span>
+                              </div>
                             </div>
-                            <Badge variant="outline" className="text-[9px] shrink-0 border-primary/30 text-primary">
-                              {t('session:free_session_badge')}
-                            </Badge>
+                            <div className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg">
+                              <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
+                              <span className="text-xs font-semibold">Go</span>
+                            </div>
                           </div>
                         ))}
                       </div>
