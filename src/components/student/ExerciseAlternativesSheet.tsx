@@ -19,7 +19,7 @@ const ExerciseAlternativesSheet = ({
 }: ExerciseAlternativesSheetProps) => {
   const { t } = useTranslation(['session', 'common', 'recovery']);
 
-  if (!group) return null;
+  const isEmpty = !group || group.alternatives.length === 0;
 
   const difficultyConfig = {
     easy: { label: t('recovery:difficulty.easy'), color: "bg-success/10 text-success" },
