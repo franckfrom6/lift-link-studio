@@ -74,6 +74,11 @@
     --tag-orange: 25 95% 53%;
     --tag-orange-bg: 48 96% 89%;
     --tag-red: 0 72% 51%;
+
+    /* AI accent */
+    --ai: 262 83% 58%;
+    --ai-foreground: 0 0% 100%;
+    --ai-bg: 262 80% 96%;
   }
 
   .dark {
