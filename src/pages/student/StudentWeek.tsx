@@ -110,9 +110,9 @@ const StudentWeek = () => {
   };
 
   const weekStart = useMemo(getWeekStart, [weekOffset]);
-  const weekStartStr = weekStart.toISOString().split("T")[0];
+  const weekStartStr = formatLocalDate(weekStart);
   const { swaps: dbSwaps, createSwap } = useSessionSwaps(weekStart);
-  const weekKey = weekStart.toISOString().split("T")[0];
+  const weekKey = weekStartStr;
   const currentCheckin = checkins[weekKey] || null;
 
   // Map DB swaps to the shape used by effectiveSessions
