@@ -245,7 +245,9 @@ const LiveSession = () => {
     try {
       // Save any unsaved exercises' sets
       for (const key of Object.keys(completedSets)) {
-        await saveSetsForExercise(key);
+        if (!skippedExercises.has(key)) {
+          await saveSetsForExercise(key);
+        }
       }
 
       // Update session with completion time
@@ -256,6 +258,49 @@ const LiveSession = () => {
     } catch (e) {
       console.error("Error finishing session:", e);
     }
+  };
+
+  const handleOpenSkip = (key: string) => {
+    setSkipTargetKey(key);
+    setSkipModalOpen(true);
+  };
+
+  const handleConfirmSkip = async (reason: string | null, reasonDetail: string | null) => {
+    if (!skipTargetKey || !completedSessionId) return;
+    const sessionExId = sessionExerciseIdMap[skipTargetKey];
+
+    // Save to DB
+    if (sessionExId) {
+      await supabase.from("skipped_exercises").insert({
+        completed_session_id: completedSessionId,
+        session_exercise_id: sessionExId,
+        reason,
+        reason_detail: reasonDetail,
+      });
+    }
+
+    setSkippedExercises(prev => new Set(prev).add(skipTargetKey));
+    setSkipModalOpen(false);
+
+    // Move to next exercise
+    const [sIdx, eIdx] = skipTargetKey.split("-").map(Number);
+    let nextKey: string | null = null;
+    for (let si = sIdx; si < sessionProgram.sections.length; si++) {
+      const startEi = si === sIdx ? eIdx + 1 : 0;
+      for (let ei = startEi; ei < sessionProgram.sections[si].exercises.length; ei++) {
+        const candidate = `${si}-${ei}`;
+        if (!skippedExercises.has(candidate)) {
+          nextKey = candidate;
+          break;
+        }
+      }
+      if (nextKey) break;
+    }
+
+    if (nextKey) {
+      setActiveExerciseKey(nextKey);
+    }
+    setSkipTargetKey(null);
   };
 
   const handleClose = () => {
