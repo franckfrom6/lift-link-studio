@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { formatLocalDate } from "@/lib/date-utils";
 import ActivityTypeSelector from "./ActivityTypeSelector";
 import {
   ACTIVITY_TYPES, ActivityType, MUSCLE_GROUP_OPTIONS,
