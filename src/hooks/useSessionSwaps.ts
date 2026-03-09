@@ -34,8 +34,8 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
       .from("session_swaps")
       .select("*")
       .eq("student_id", studentId)
-      .gte("new_date", weekStartDate.toISOString().split("T")[0])
-      .lte("new_date", weekEnd.toISOString().split("T")[0]);
+      .gte("new_date", formatLocalDate(weekStartDate))
+      .lte("new_date", formatLocalDate(weekEnd));
 
     if (!error && data) {
       setSwaps(data as SessionSwap[]);
