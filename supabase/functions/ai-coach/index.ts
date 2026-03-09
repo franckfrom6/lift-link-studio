@@ -41,6 +41,7 @@ const MIN_PLAN_FOR_ACTION: Record<string, string> = {
   estimate_macros: "essential",
   recovery_recommendation: "essential",
   generate_recommendation: "essential",
+  chat: "essential",
   analyze_week: "advanced",
   cycle_report: "advanced",
   optimize_week: "advanced",
