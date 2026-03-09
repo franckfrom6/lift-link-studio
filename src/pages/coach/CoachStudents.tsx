@@ -29,6 +29,8 @@ const CoachStudents = () => {
         <InviteClientModal />
       </div>
 
+      <CoachInviteToken />
+
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
         <Input placeholder={t('dashboard:search_student')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 h-11 bg-surface" />
