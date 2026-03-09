@@ -67,6 +67,18 @@ const LiveSession = () => {
     return map;
   }, [selectedSession]);
 
+  // Build a map of exercise key -> tracking type from DB data
+  const trackingTypeMap = useMemo(() => {
+    if (!selectedSession) return {};
+    const map: Record<string, string> = {};
+    selectedSession.sections.forEach((section, sIdx) => {
+      section.exercises.forEach((ex, eIdx) => {
+        map[`${sIdx}-${eIdx}`] = (ex.exercise as any)?.tracking_type || "weight_reps";
+      });
+    });
+    return map;
+  }, [selectedSession]);
+
   const mappedSections = useMemo<ProgramSection[]>(() => {
     if (!selectedSession) return [];
     return selectedSession.sections.map((section) => ({
