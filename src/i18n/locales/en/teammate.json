@@ -1,0 +1,22 @@
+{
+  "share_session": "Share this session",
+  "share_title": "Share with a teammate",
+  "share_desc": "Choose an athlete from the same coach to do this session together.",
+  "no_teammates": "No other athletes with your coach.",
+  "invite_sent": "Invitation sent!",
+  "pending_invite": "Pending invite",
+  "accepted": "Accepted",
+  "declined": "Declined",
+  "expired": "Expired",
+  "shared_session_badge": "Shared session",
+  "join_session": "Join session",
+  "teammate_invites_you": "{{name}} invites you to {{session}}",
+  "teammate_stats": "Your teammate lifted {{weight}}kg on {{exercise}} 💪",
+  "comparison_title": "Teammate Comparison",
+  "you": "You",
+  "teammate": "Teammate",
+  "volume": "Volume",
+  "sets": "Sets",
+  "decline": "Decline",
+  "accept": "Accept"
+}
