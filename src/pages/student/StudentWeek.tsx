@@ -1,4 +1,5 @@
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot } from "lucide-react";
+import DateBadge, { DateBadgeVariant } from "@/components/student/DateBadge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo, useEffect, useCallback } from "react";
@@ -490,26 +491,27 @@ const StudentWeek = () => {
                       }
                     }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold",
-                          day.isToday ? "bg-primary text-primary-foreground"
-                            : isSessionDay ? "bg-accent text-accent-foreground"
-                            : "bg-secondary text-muted-foreground"
-                        )}>
-                          {day.date.getDate()}
-                        </div>
-                        <div>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <DateBadge
+                          day={day.date.getDate()}
+                          dayName={day.name}
+                          variant={
+                            sessionCompleted ? "completed"
+                              : day.isToday ? "today"
+                              : isSessionDay ? "active"
+                              : "rest" as DateBadgeVariant
+                          }
+                        />
+                        <div className="pt-0.5">
                           <div className="flex items-center gap-1.5">
-                            <p className="font-medium text-sm">{day.name}</p>
                             {swapInfo && (
                               <SwapBadge originalDay={swapInfo.originalDay} newDay={day.dayIndex + 1} reason={swapInfo.reason} />
                             )}
                           </div>
                           {isSessionDay && sessionInfo ? (
                             <div className="space-y-0.5">
-                              <p className="text-xs font-medium text-foreground">{sessionInfo.name}</p>
+                              <p className="text-sm font-bold text-foreground">{sessionInfo.name}</p>
                               <div className="flex items-center gap-2">
                                 <span className="text-[10px] text-muted-foreground">{sessionInfo.exerciseCount} ex.</span>
                                 {sessionInfo.muscleGroups.length > 0 && (
