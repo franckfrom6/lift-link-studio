@@ -57,6 +57,7 @@ export interface DBProgram {
   id: string;
   name: string;
   status: string;
+  created_at: string;
   weeks: DBWeek[];
   progression: Array<{
     id: string;
@@ -198,6 +199,7 @@ export const useStudentProgram = () => {
         id: prog.id,
         name: prog.name,
         status: prog.status,
+        created_at: prog.created_at,
         weeks: assembledWeeks,
         progression: progression || [],
       });

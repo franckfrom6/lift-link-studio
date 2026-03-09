@@ -161,7 +161,7 @@ const EnhancedExerciseCard = ({
           </div>
         </button>
         <div className="flex items-center gap-1 shrink-0">
-          {hasAlternatives && !allDone && (
+          {onSwapExercise && !allDone && (
             <div className="flex items-center justify-center w-11 h-11">
               <button
                 onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}

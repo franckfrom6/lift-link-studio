@@ -23,5 +23,6 @@
   "reps_unit": "reps",
   "vol_unit": "kg vol.",
   "replace_exercise": "Replace exercise",
-  "video_label": "Video"
+  "video_label": "Video",
+  "no_alternatives": "No alternatives available for this exercise."
 }
