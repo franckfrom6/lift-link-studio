@@ -137,8 +137,15 @@ const AdminUsers = () => {
 
   const handleAssignStudent = async () => {
     if (!selectedUser || !assignStudentId) return;
-    const { error } = await supabase.from("coach_students").insert({ coach_id: selectedUser.user_id, student_id: assignStudentId, status: "active" });
-    if (error) { toast.error(t("assign_error", "Erreur")); return; }
+    // Check if there's already an inactive row for this pair — reactivate it
+    const { data: existingPair } = await supabase.from("coach_students").select("id").eq("coach_id", selectedUser.user_id).eq("student_id", assignStudentId).eq("status", "inactive").maybeSingle();
+    let error;
+    if (existingPair) {
+      ({ error } = await supabase.from("coach_students").update({ status: "active" }).eq("id", existingPair.id));
+    } else {
+      ({ error } = await supabase.from("coach_students").insert({ coach_id: selectedUser.user_id, student_id: assignStudentId, status: "active" }));
+    }
+    if (error) { toast.error(t("assign_error", "Erreur")); console.error("assign error", error); return; }
     toast.success(t("student_assigned", "Athlète associé")); setAssignStudentId(""); fetchUsers(); await fetchAssignments(selectedUser.user_id, selectedUser.role);
   };
 
