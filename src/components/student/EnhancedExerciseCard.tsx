@@ -385,6 +385,24 @@ const EnhancedExerciseCard = ({
     }
   };
 
+  if (isSkipped) {
+    return (
+      <div className="rounded-xl border border-border/50 bg-card/30 opacity-50 p-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+            <SkipForward className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm truncate line-through">{name}</p>
+          </div>
+          <span className="bg-warning/10 text-warning px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0">
+            {t('skip_badge', 'Passé')}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn(
       "rounded-xl border transition-all",
