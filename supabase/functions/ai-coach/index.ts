@@ -568,12 +568,12 @@ serve(async (req) => {
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getUser(token);
-    if (claimsErr || !claimsData?.user) {
+    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims) {
       console.error("Auth error:", claimsErr);
       return jsonResp({ error: "Unauthorized" }, 401);
     }
-    const userId = claimsData.user.id;
+    const userId = claimsData.claims.sub as string;
 
     // 2. Parse request
     const { action, payload, lang } = await req.json();
