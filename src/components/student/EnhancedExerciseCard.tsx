@@ -36,8 +36,10 @@ interface EnhancedExerciseCardProps {
   onCompletedSetsChange: (sets: EnhancedCompletedSet[]) => void;
   onAllSetsComplete: () => void;
   onSwapExercise?: () => void;
+  onSkipExercise?: () => void;
   hasAlternatives?: boolean;
   isSubstituted?: boolean;
+  isSkipped?: boolean;
   previousSets?: { weight: number; reps: number }[];
   trackingType?: TrackingType;
 }
