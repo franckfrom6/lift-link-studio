@@ -577,11 +577,46 @@ serve(async (req) => {
     }
 
     // 6. Build prompt
-    const { system, user, tools, toolChoice } = ACTION_BUILDERS[action](payload || {}, lang || "fr");
+    const built = ACTION_BUILDERS[action](payload || {}, lang || "fr");
     const model = MODEL_FOR_ACTION[action] || "google/gemini-2.5-flash-lite";
 
-    // 7. Call AI
-    const aiResult = await callLovableAI(LOVABLE_API_KEY, model, system, user, tools, toolChoice);
+    // 7. Call AI - special handling for chat (multi-turn)
+    let aiResult;
+    if (action === "chat" && built.messages) {
+      // Multi-turn: build full messages array
+      const allMessages = [
+        { role: "system", content: built.system },
+        ...built.messages,
+        { role: "user", content: built.user },
+      ];
+      const start = Date.now();
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ model, messages: allMessages }),
+      });
+      const durationMs = Date.now() - start;
+      if (!response.ok) {
+        const errText = await response.text();
+        aiResult = { error: true, status: response.status, durationMs, errText };
+      } else {
+        const data = await response.json();
+        const usage = data.usage || {};
+        const content = data.choices?.[0]?.message?.content || "";
+        aiResult = {
+          error: false,
+          result: { text: content },
+          inputTokens: usage.prompt_tokens || null,
+          outputTokens: usage.completion_tokens || null,
+          durationMs,
+        };
+      }
+    } else {
+      aiResult = await callLovableAI(LOVABLE_API_KEY, model, built.system, built.user, built.tools, built.toolChoice);
+    }
 
     if (aiResult.error) {
       await serviceClient.from("ai_usage_logs").insert({
