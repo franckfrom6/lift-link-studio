@@ -598,6 +598,13 @@ const StudentWeek = () => {
         weekStart={weekStart}
         initialData={currentCheckin}
       />
+
+      <FreeSessionCreator
+        open={freeSessionOpen}
+        onClose={() => setFreeSessionOpen(false)}
+        date={freeSessionDate}
+        onCreated={() => window.location.reload()}
+      />
     </div>
   );
 };
