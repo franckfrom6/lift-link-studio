@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,50 +9,41 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-
-    // List all users
-    const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL")!;
     
-    if (listError) {
-      console.error("listUsers error:", listError);
-      return new Response(JSON.stringify({ error: listError.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Use the postgres module from Deno
+    const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.4/mod.js");
+    const sql = postgres(dbUrl, { ssl: "require" });
 
-    const users = usersData?.users ?? [];
-    console.log(`Found ${users.length} users`);
+    // Fix NULL token columns in auth.users that cause GoTrue scan errors
+    const result = await sql`
+      UPDATE auth.users
+      SET 
+        confirmation_token = COALESCE(confirmation_token, ''),
+        recovery_token = COALESCE(recovery_token, ''),
+        email_change_token_new = COALESCE(email_change_token_new, ''),
+        email_change_token_current = COALESCE(email_change_token_current, ''),
+        phone_change_token = COALESCE(phone_change_token, ''),
+        reauthentication_token = COALESCE(reauthentication_token, '')
+      WHERE 
+        confirmation_token IS NULL 
+        OR recovery_token IS NULL
+        OR email_change_token_new IS NULL
+        OR email_change_token_current IS NULL
+        OR phone_change_token IS NULL
+        OR reauthentication_token IS NULL
+    `;
 
-    const results = [];
-    for (const user of users) {
-      try {
-        // Re-update each user to force GoTrue to fix internal token fields
-        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-          email_confirm: true,
-        });
-        results.push({ 
-          email: user.email, 
-          fixed: !updateError, 
-          error: updateError?.message 
-        });
-        console.log(`Updated ${user.email}: ${updateError ? updateError.message : 'OK'}`);
-      } catch (e) {
-        results.push({ email: user.email, fixed: false, error: String(e) });
-        console.error(`Error updating ${user.email}:`, e);
-      }
-    }
+    await sql.end();
 
-    return new Response(JSON.stringify({ message: "Users re-confirmed", count: results.length, results }), {
+    return new Response(JSON.stringify({ 
+      message: "Fixed NULL tokens in auth.users",
+      rows_affected: result.count
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("Unexpected error:", e);
+    console.error("Error:", e);
     return new Response(JSON.stringify({ error: String(e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
