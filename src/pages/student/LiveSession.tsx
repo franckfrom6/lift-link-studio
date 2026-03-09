@@ -537,11 +537,13 @@ const LiveSession = () => {
                 }
                 if (ex.rest === "—" || !ex.rest) restSeconds = 0;
 
+                const isSkipped = skippedExercises.has(key);
+
                 return (
                   <div
                     key={key}
-                    onClick={() => !isActive && setActiveExerciseKey(key)}
-                    className={cn(!isActive && "cursor-pointer")}
+                    onClick={() => !isActive && !isSkipped && setActiveExerciseKey(key)}
+                    className={cn(!isActive && !isSkipped && "cursor-pointer")}
                   >
                     <EnhancedExerciseCard
                       name={displayName}
@@ -560,7 +562,9 @@ const LiveSession = () => {
                       onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
                       onAllSetsComplete={() => handleExerciseComplete(key)}
                       onSwapExercise={() => handleOpenSwap(key)}
+                      onSkipExercise={() => handleOpenSkip(key)}
                       isSubstituted={isSubstituted}
+                      isSkipped={isSkipped}
                       trackingType={(trackingTypeMap[key] as any) || "weight_reps"}
                     />
                   </div>
