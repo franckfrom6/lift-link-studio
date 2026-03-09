@@ -476,7 +476,7 @@ const StudentWeek = () => {
                     "w-full glass p-4 transition-all text-left touch-manipulation",
                     day.isToday && "ring-1 ring-primary/40",
                     isSessionDay && !swapMode && "hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] cursor-pointer",
-                    !isSessionDay && dayExternals.length === 0 && dayFreeSessions.length === 0 && !swapMode && "opacity-50",
+                    !isSessionDay && dayExternals.length === 0 && dayFreeSessions.length === 0 && dayFreeSessions.length === 0 && !swapMode && "opacity-50",
                     isSwapSource && "ring-2 ring-warning bg-warning-bg",
                     isDropTarget && "ring-1 ring-dashed ring-warning/50 cursor-pointer hover:ring-warning hover:bg-warning-bg/50",
                   )}
@@ -579,7 +579,7 @@ const StudentWeek = () => {
                         {dayFreeSessions.map(fs => (
                           <div
                             key={fs.id}
-                            className="flex items-center gap-2 p-2 rounded-lg bg-accent/50 cursor-pointer hover:bg-accent transition-colors"
+                            className="flex items-cente cursor-pointer hover:bg-accent/800 cursor-pointer hover:bg-accent transition-colors"
                             onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: fs.id } }); }}
                           >
                             <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
