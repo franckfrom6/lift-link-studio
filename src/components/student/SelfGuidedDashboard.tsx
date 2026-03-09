@@ -1,9 +1,10 @@
-import { UserRound, Dumbbell, Sparkles } from "lucide-react";
+import { UserRound, Dumbbell, Sparkles, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
+import CoachRecommendationList from "@/components/leadgen/CoachRecommendationList";
 
 interface SelfGuidedDashboardProps {
   onStartAI: () => void;
@@ -11,7 +12,7 @@ interface SelfGuidedDashboardProps {
 }
 
 const SelfGuidedDashboard = ({ onStartAI, onJoinCoach }: SelfGuidedDashboardProps) => {
-  const { t } = useTranslation(['dashboard', 'common', 'program']);
+  const { t } = useTranslation(['dashboard', 'common', 'program', 'leadgen']);
   const [coachCode, setCoachCode] = useState("");
   const [showCodeInput, setShowCodeInput] = useState(false);
   const navigate = useNavigate();
@@ -86,6 +87,9 @@ const SelfGuidedDashboard = ({ onStartAI, onJoinCoach }: SelfGuidedDashboardProp
           )}
         </div>
       </div>
+
+      {/* Lead gen: Recommended coaches */}
+      <CoachRecommendationList />
     </div>
   );
 };

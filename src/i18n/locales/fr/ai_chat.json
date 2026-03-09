@@ -1,0 +1,16 @@
+{
+  "title": "Assistant IA",
+  "placeholder": "Tape un message...",
+  "send": "Envoyer",
+  "greeting": "Bonjour {{name}} ! Comment puis-je t'aider ?",
+  "thinking": "Réflexion en cours...",
+  "error": "Erreur lors de l'envoi du message.",
+  "rate_limited": "Limite de messages IA atteinte ce mois-ci.",
+  "plan_required": "Passez au plan supérieur pour accéder à l'assistant IA.",
+  "clear_history": "Effacer l'historique",
+  "action_apply": "Appliquer",
+  "action_dismiss": "Non merci",
+  "context_coach": "Coach · {{count}} athlètes",
+  "context_athlete": "Athlète",
+  "feature_key": "ai_chat"
+}

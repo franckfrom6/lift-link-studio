@@ -9,6 +9,7 @@ import SessionSection from "@/components/student/SessionSection";
 import SessionRecap from "@/components/student/SessionRecap";
 import ProgressionTimeline, { ProgressionPhase } from "@/components/student/ProgressionTimeline";
 import { ArrowLeft, Clock, User, TrendingUp } from "lucide-react";
+import ShareSessionButton from "@/components/student/ShareSessionButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -383,6 +384,11 @@ const LiveSession = () => {
             {t('session:quit')}
           </Button>
           <div className="flex items-center gap-2">
+            <ShareSessionButton
+              sessionId={selectedSession?.id || ""}
+              completedSessionId={completedSessionId || undefined}
+              sessionName={sessionProgram.title}
+            />
             <Button
               variant={showProgression ? "secondary" : "outline"}
               size="sm"

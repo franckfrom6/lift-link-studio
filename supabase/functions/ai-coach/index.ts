@@ -16,6 +16,7 @@ const RATE_LIMITS: Record<string, Record<string, number>> = {
     estimate_macros: 60,
     recovery_recommendation: 30,
     generate_recommendation: 20,
+    chat: 30,
   },
   advanced: {
     generate_program: 50,
@@ -29,6 +30,7 @@ const RATE_LIMITS: Record<string, Record<string, number>> = {
     recovery_recommendation: -1,
     weekly_insight: -1,
     generate_recommendation: -1,
+    chat: -1,
   },
 };
 
@@ -39,6 +41,7 @@ const MIN_PLAN_FOR_ACTION: Record<string, string> = {
   estimate_macros: "essential",
   recovery_recommendation: "essential",
   generate_recommendation: "essential",
+  chat: "essential",
   analyze_week: "advanced",
   cycle_report: "advanced",
   optimize_week: "advanced",
@@ -52,6 +55,7 @@ const MODEL_FOR_ACTION: Record<string, string> = {
   cycle_report: "google/gemini-2.5-flash",
   analyze_week: "google/gemini-2.5-flash",
   optimize_week: "google/gemini-2.5-flash",
+  chat: "google/gemini-3-flash-preview",
   suggest_alternatives: "google/gemini-2.5-flash-lite",
   suggest_exercise: "google/gemini-2.5-flash-lite",
   estimate_macros: "google/gemini-2.5-flash-lite",
@@ -459,6 +463,18 @@ function buildRecoveryRecommendation(payload: any, lang: string) {
   return { system, user, tools, toolChoice: { type: "function", function: { name: "recovery_recommendation" } } };
 }
 
+function buildChat(payload: any, lang: string) {
+  const l = lang === "fr" ? "Réponds en français." : "Respond in English.";
+  const contextBlock = payload.context ? `\n\nCONTEXTE UTILISATEUR :\n${payload.context}` : "";
+  const system = `Tu es un assistant IA expert en sport, fitness, nutrition et coaching sportif. Tu es intégré dans l'application F6GYM. Tu donnes des conseils concrets, personnalisés et bienveillants. Tu peux aider sur les programmes, exercices, nutrition, récupération, et l'utilisation de l'app. ${l}${contextBlock}`;
+  
+  // Build messages array for multi-turn conversation
+  const messages = payload.messages || [];
+  const lastUserMsg = messages.length > 0 ? messages[messages.length - 1].content : "";
+  
+  return { system, user: lastUserMsg, messages: messages.slice(0, -1) };
+}
+
 // Router
 const ACTION_BUILDERS: Record<string, (payload: any, lang: string) => any> = {
   generate_program: buildGenerateProgram,
@@ -472,6 +488,7 @@ const ACTION_BUILDERS: Record<string, (payload: any, lang: string) => any> = {
   suggest_meal: buildSuggestMeal,
   recovery_recommendation: buildRecoveryRecommendation,
   optimize_week: buildAnalyzeWeek, // same logic
+  chat: buildChat,
 };
 
 serve(async (req) => {
@@ -560,11 +577,46 @@ serve(async (req) => {
     }
 
     // 6. Build prompt
-    const { system, user, tools, toolChoice } = ACTION_BUILDERS[action](payload || {}, lang || "fr");
+    const built = ACTION_BUILDERS[action](payload || {}, lang || "fr");
     const model = MODEL_FOR_ACTION[action] || "google/gemini-2.5-flash-lite";
 
-    // 7. Call AI
-    const aiResult = await callLovableAI(LOVABLE_API_KEY, model, system, user, tools, toolChoice);
+    // 7. Call AI - special handling for chat (multi-turn)
+    let aiResult;
+    if (action === "chat" && built.messages) {
+      // Multi-turn: build full messages array
+      const allMessages = [
+        { role: "system", content: built.system },
+        ...built.messages,
+        { role: "user", content: built.user },
+      ];
+      const start = Date.now();
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ model, messages: allMessages }),
+      });
+      const durationMs = Date.now() - start;
+      if (!response.ok) {
+        const errText = await response.text();
+        aiResult = { error: true, status: response.status, durationMs, errText };
+      } else {
+        const data = await response.json();
+        const usage = data.usage || {};
+        const content = data.choices?.[0]?.message?.content || "";
+        aiResult = {
+          error: false,
+          result: { text: content },
+          inputTokens: usage.prompt_tokens || null,
+          outputTokens: usage.completion_tokens || null,
+          durationMs,
+        };
+      }
+    } else {
+      aiResult = await callLovableAI(LOVABLE_API_KEY, model, built.system, built.user, built.tools, built.toolChoice);
+    }
 
     if (aiResult.error) {
       await serviceClient.from("ai_usage_logs").insert({

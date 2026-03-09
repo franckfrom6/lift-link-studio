@@ -1,0 +1,16 @@
+{
+  "title": "AI Assistant",
+  "placeholder": "Type a message...",
+  "send": "Send",
+  "greeting": "Hi {{name}}! How can I help you?",
+  "thinking": "Thinking...",
+  "error": "Error sending message.",
+  "rate_limited": "AI message limit reached this month.",
+  "plan_required": "Upgrade your plan to access the AI assistant.",
+  "clear_history": "Clear history",
+  "action_apply": "Apply",
+  "action_dismiss": "No thanks",
+  "context_coach": "Coach · {{count}} athletes",
+  "context_athlete": "Athlete",
+  "feature_key": "ai_chat"
+}

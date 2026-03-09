@@ -55,6 +55,33 @@ export type Database = {
           },
         ]
       }
+      ai_chat_messages: {
+        Row: {
+          content: string
+          context_page: string | null
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          context_page?: string | null
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          context_page?: string | null
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_usage_logs: {
         Row: {
           action: string
@@ -139,6 +166,33 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_contact_requests: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          message: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       coach_invite_tokens: {
         Row: {
           coach_id: string
@@ -217,6 +271,87 @@ export type Database = {
           trigger_config?: Json | null
           trigger_type?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      coach_profiles_public: {
+        Row: {
+          avg_rating: number | null
+          bio_en: string | null
+          bio_fr: string | null
+          client_count: number
+          coach_id: string
+          created_at: string
+          id: string
+          is_accepting_clients: boolean
+          is_featured: boolean
+          location_area: string | null
+          location_city: string | null
+          price_range: string | null
+          specialties: string[] | null
+          training_locations: string[] | null
+        }
+        Insert: {
+          avg_rating?: number | null
+          bio_en?: string | null
+          bio_fr?: string | null
+          client_count?: number
+          coach_id: string
+          created_at?: string
+          id?: string
+          is_accepting_clients?: boolean
+          is_featured?: boolean
+          location_area?: string | null
+          location_city?: string | null
+          price_range?: string | null
+          specialties?: string[] | null
+          training_locations?: string[] | null
+        }
+        Update: {
+          avg_rating?: number | null
+          bio_en?: string | null
+          bio_fr?: string | null
+          client_count?: number
+          coach_id?: string
+          created_at?: string
+          id?: string
+          is_accepting_clients?: boolean
+          is_featured?: boolean
+          location_area?: string | null
+          location_city?: string | null
+          price_range?: string | null
+          specialties?: string[] | null
+          training_locations?: string[] | null
+        }
+        Relationships: []
+      }
+      coach_recommendations: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          match_reasons: string[] | null
+          match_score: number
+          status: string
+          student_id: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          match_reasons?: string[] | null
+          match_score?: number
+          status?: string
+          student_id: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          match_reasons?: string[] | null
+          match_score?: number
+          status?: string
+          student_id?: string
         }
         Relationships: []
       }
@@ -1319,6 +1454,48 @@ export type Database = {
             columns: ["week_id"]
             isOneToOne: false
             referencedRelation: "program_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_sessions: {
+        Row: {
+          completed_session_id: string
+          created_at: string
+          id: string
+          shared_completed_session_id: string | null
+          shared_with_user_id: string
+          status: string
+        }
+        Insert: {
+          completed_session_id: string
+          created_at?: string
+          id?: string
+          shared_completed_session_id?: string | null
+          shared_with_user_id: string
+          status?: string
+        }
+        Update: {
+          completed_session_id?: string
+          created_at?: string
+          id?: string
+          shared_completed_session_id?: string | null
+          shared_with_user_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_sessions_completed_session_id_fkey"
+            columns: ["completed_session_id"]
+            isOneToOne: false
+            referencedRelation: "completed_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_sessions_shared_completed_session_id_fkey"
+            columns: ["shared_completed_session_id"]
+            isOneToOne: false
+            referencedRelation: "completed_sessions"
             referencedColumns: ["id"]
           },
         ]

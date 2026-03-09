@@ -4,9 +4,13 @@ import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import { useTranslation } from "react-i18next";
+import { useState } from "react";
+import AISidebarToggle from "@/components/ai/AISidebarToggle";
+import AISidebar from "@/components/ai/AISidebar";
 
 const StudentLayout = () => {
   const { t } = useTranslation(['settings', 'common']);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const navItems = [
     { to: "/student", icon: Calendar, label: t('settings:nav_week'), end: true },
@@ -41,6 +45,9 @@ const StudentLayout = () => {
           </NavLink>
         ))}
       </nav>
+
+      <AISidebarToggle onClick={() => setAiOpen(true)} />
+      <AISidebar open={aiOpen} onClose={() => setAiOpen(false)} />
     </div>
   );
 };

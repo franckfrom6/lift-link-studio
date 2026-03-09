@@ -20,6 +20,9 @@ import frAdmin from './locales/fr/admin.json';
 import frFeedback from './locales/fr/feedback.json';
 import frSupport from './locales/fr/support.json';
 import frLanding from './locales/fr/landing.json';
+import frTeammate from './locales/fr/teammate.json';
+import frAiChat from './locales/fr/ai_chat.json';
+import frLeadgen from './locales/fr/leadgen.json';
 
 import enCommon from './locales/en/common.json';
 import enAuth from './locales/en/auth.json';
@@ -39,6 +42,9 @@ import enAdmin from './locales/en/admin.json';
 import enFeedback from './locales/en/feedback.json';
 import enSupport from './locales/en/support.json';
 import enLanding from './locales/en/landing.json';
+import enTeammate from './locales/en/teammate.json';
+import enAiChat from './locales/en/ai_chat.json';
+import enLeadgen from './locales/en/leadgen.json';
 
 i18n
   .use(LanguageDetector)
@@ -64,6 +70,9 @@ i18n
         feedback: frFeedback,
         support: frSupport,
         landing: frLanding,
+        teammate: frTeammate,
+        ai_chat: frAiChat,
+        leadgen: frLeadgen,
       },
       en: {
         common: enCommon,
@@ -84,6 +93,9 @@ i18n
         feedback: enFeedback,
         support: enSupport,
         landing: enLanding,
+        teammate: enTeammate,
+        ai_chat: enAiChat,
+        leadgen: enLeadgen,
       },
     },
     lng: 'fr',
