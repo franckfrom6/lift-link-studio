@@ -49,7 +49,7 @@ const EnhancedExerciseCard = ({
   tempo, rpeTarget, suggestedWeight, coachNotes,
   videoUrl, videoSearchQuery,
   isActive, completedSets, onCompletedSetsChange, onAllSetsComplete,
-  onSwapExercise, hasAlternatives, isSubstituted,
+  onSwapExercise, onSkipExercise, hasAlternatives, isSubstituted, isSkipped,
   previousSets,
   trackingType = "weight_reps",
 }: EnhancedExerciseCardProps) => {
