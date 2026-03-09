@@ -184,7 +184,8 @@ const LiveSession = () => {
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
 
-  const completedCount = Object.values(completedSets).filter(sets => sets.length > 0 && sets.every(s => s.reps > 0)).length;
+  const completedCount = Object.entries(completedSets).filter(([key, sets]) => !skippedExercises.has(key) && sets.length > 0 && sets.every(s => s.reps > 0)).length;
+  const skippedCount = skippedExercises.size;
 
   // Save sets for a given exercise key to DB
   const saveSetsForExercise = async (key: string) => {
