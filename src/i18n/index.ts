@@ -70,6 +70,9 @@ i18n
         feedback: frFeedback,
         support: frSupport,
         landing: frLanding,
+        teammate: frTeammate,
+        ai_chat: frAiChat,
+        leadgen: frLeadgen,
       },
       en: {
         common: enCommon,
