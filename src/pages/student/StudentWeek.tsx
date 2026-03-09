@@ -116,6 +116,30 @@ const StudentWeek = () => {
   const weekKey = weekStartStr;
   const currentCheckin = checkins[weekKey] || null;
 
+  // Fetch free sessions for this week
+  const fetchFreeSessions = useCallback(async () => {
+    if (!user) return;
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const { data } = await supabase
+      .from("sessions")
+      .select("id, name, free_session_date, session_exercises(id)")
+      .eq("is_free_session", true)
+      .eq("created_by", user.id)
+      .gte("free_session_date", formatLocalDate(weekStart))
+      .lte("free_session_date", formatLocalDate(weekEnd));
+    if (data) {
+      setFreeSessions(data.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        date: s.free_session_date,
+        exerciseCount: s.session_exercises?.length || 0,
+      })));
+    }
+  }, [user, weekStart]);
+
+  useEffect(() => { fetchFreeSessions(); }, [fetchFreeSessions]);
+
   // Map DB swaps to the shape used by effectiveSessions
   const mappedSwaps = useMemo(() =>
     dbSwaps.map(s => ({ originalDay: s.original_day - 1, newDay: s.new_day - 1, reason: s.reason })),
@@ -141,8 +165,13 @@ const StudentWeek = () => {
     return map;
   }, [mappedSwaps]);
 
+  const getFreeForDay = (date: Date) => {
+    const dateStr = formatLocalDate(date);
+    return freeSessions.filter(s => s.date === dateStr);
+  };
+
   const getExternalForDay = (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = formatLocalDate(date);
     return externalSessions.filter(s => s.date === dateStr);
   };
 
