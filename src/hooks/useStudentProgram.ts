@@ -57,6 +57,7 @@ export interface DBProgram {
   id: string;
   name: string;
   status: string;
+  created_at: string;
   weeks: DBWeek[];
   progression: Array<{
     id: string;
