@@ -15,7 +15,7 @@ serve(async (req) => {
     const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.4/mod.js");
     const sql = postgres(dbUrl, { ssl: "require" });
 
-    // Fix NULL token columns in auth.users that cause GoTrue scan errors
+    // Fix NULL auth columns that make GoTrue crash on password login scans
     const result = await sql`
       UPDATE auth.users
       SET 
@@ -23,14 +23,18 @@ serve(async (req) => {
         recovery_token = COALESCE(recovery_token, ''),
         email_change_token_new = COALESCE(email_change_token_new, ''),
         email_change_token_current = COALESCE(email_change_token_current, ''),
+        email_change = COALESCE(email_change, ''),
         phone_change_token = COALESCE(phone_change_token, ''),
+        phone_change = COALESCE(phone_change, ''),
         reauthentication_token = COALESCE(reauthentication_token, '')
       WHERE 
         confirmation_token IS NULL 
         OR recovery_token IS NULL
         OR email_change_token_new IS NULL
         OR email_change_token_current IS NULL
+        OR email_change IS NULL
         OR phone_change_token IS NULL
+        OR phone_change IS NULL
         OR reauthentication_token IS NULL
     `;
 
