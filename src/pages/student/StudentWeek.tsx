@@ -579,14 +579,14 @@ const StudentWeek = () => {
                         {dayFreeSessions.map(fs => (
                           <div
                             key={fs.id}
-                        cursor-pointer hover:bg-accent/80ursor-pointer hover:bg-accent/800 cursor-pointer hover:bg-accent transition-colors"
+                            className="flex items-center gap-2 p-2 rounded-lg bg-accent cursor-pointer hover:bg-accent/80 transition-colors"
                             onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: fs.id } }); }}
                           >
                             <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                               <Bot className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
                             </div>
                             <div className="flex-1 min-w-0">
-                 sm font-boldp className="text-xs font-medium truncate">{fs.name}</p>
+                              <p className="text-sm font-bold truncate">{fs.name}</p>
                               <div className="flex items-center gap-2">
                                 <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
                                 <span className="text-[10px] text-muted-foreground">·</span>
