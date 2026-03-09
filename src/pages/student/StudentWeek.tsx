@@ -465,6 +465,7 @@ const StudentWeek = () => {
             const isSwapSource = swapMode && day.dayIndex === swapSourceDay;
             const isDropTarget = swapMode && day.dayIndex !== swapSourceDay;
             const dayExternals = getExternalForDay(day.date);
+            const dayFreeSessions = getFreeForDay(day.date);
 
             return (
               <div key={day.name} className="space-y-1">
