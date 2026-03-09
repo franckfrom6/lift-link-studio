@@ -573,6 +573,28 @@ const StudentWeek = () => {
                       </div>
                     </div>
 
+                    {/* Free sessions for this day */}
+                    {dayFreeSessions.length > 0 && (
+                      <div className={cn("space-y-1", (isSessionDay || dayExternals.length > 0) && "mt-2 pt-2 border-t border-border")}>
+                        {dayFreeSessions.map(fs => (
+                          <div
+                            key={fs.id}
+                            className="flex items-center gap-2 p-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: fs.id } }); }}
+                          >
+                            <Dumbbell className="w-3.5 h-3.5 text-primary shrink-0" strokeWidth={1.5} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium truncate">{fs.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex. · {t('session:free_session_badge')}</p>
+                            </div>
+                            <Badge variant="outline" className="text-[9px] shrink-0 border-primary/30 text-primary">
+                              {t('session:free_session_badge')}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {isSessionDay && dayExternals.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-border space-y-1">
                         {dayExternals.map(ext => (
