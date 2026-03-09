@@ -120,10 +120,18 @@ const AdminUsers = () => {
 
   const handleAssignCoach = async () => {
     if (!selectedUser || !assignCoachId) return;
+    // Deactivate any current active coach
     const existing = coachAssignments.find(cs => cs.status === "active");
     if (existing) await supabase.from("coach_students").update({ status: "inactive" }).eq("id", existing.id);
-    const { error } = await supabase.from("coach_students").insert({ coach_id: assignCoachId, student_id: selectedUser.user_id, status: "active" });
-    if (error) { toast.error(t("assign_error", "Erreur")); return; }
+    // Check if there's already an inactive row for this pair — reactivate it
+    const { data: existingPair } = await supabase.from("coach_students").select("id").eq("coach_id", assignCoachId).eq("student_id", selectedUser.user_id).eq("status", "inactive").maybeSingle();
+    let error;
+    if (existingPair) {
+      ({ error } = await supabase.from("coach_students").update({ status: "active" }).eq("id", existingPair.id));
+    } else {
+      ({ error } = await supabase.from("coach_students").insert({ coach_id: assignCoachId, student_id: selectedUser.user_id, status: "active" }));
+    }
+    if (error) { toast.error(t("assign_error", "Erreur")); console.error("assign error", error); return; }
     toast.success(t("coach_assigned", "Coach associé")); setAssignCoachId(""); fetchUsers(); await fetchAssignments(selectedUser.user_id, selectedUser.role);
   };
 
