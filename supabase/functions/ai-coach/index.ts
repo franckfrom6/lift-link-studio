@@ -512,13 +512,18 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) return jsonResp({ error: "Unauthorized" }, 401);
 
-    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || supabaseServiceKey, {
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || supabaseServiceKey;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getUser();
-    if (claimsErr || !claimsData?.user) return jsonResp({ error: "Unauthorized" }, 401);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsErr } = await supabase.auth.getUser(token);
+    if (claimsErr || !claimsData?.user) {
+      console.error("Auth error:", claimsErr);
+      return jsonResp({ error: "Unauthorized" }, 401);
+    }
     const userId = claimsData.user.id;
 
     // 2. Parse request
