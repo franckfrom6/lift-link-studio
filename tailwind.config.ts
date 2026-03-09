@@ -77,6 +77,11 @@ export default {
         "tag-orange-bg": "hsl(var(--tag-orange-bg))",
         "tag-red": "hsl(var(--tag-red))",
         "danger-bg": "hsl(var(--danger-bg))",
+        ai: {
+          DEFAULT: "hsl(var(--ai))",
+          foreground: "hsl(var(--ai-foreground))",
+          bg: "hsl(var(--ai-bg))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
