@@ -4,6 +4,7 @@ import { YANA_PROGRAM, ProgramExerciseDetail, ProgramSection } from "@/data/yana
 import { EXERCISE_ALTERNATIVES, AlternativeGroup } from "@/data/exercise-alternatives";
 import { EnhancedCompletedSet } from "@/components/student/EnhancedExerciseCard";
 import EnhancedExerciseCard from "@/components/student/EnhancedExerciseCard";
+import SkipExerciseModal from "@/components/student/SkipExerciseModal";
 import ExerciseAlternativesSheet from "@/components/student/ExerciseAlternativesSheet";
 import SessionSection from "@/components/student/SessionSection";
 import SessionRecap from "@/components/student/SessionRecap";
@@ -44,6 +45,9 @@ const LiveSession = () => {
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
   const [swapTargetKey, setSwapTargetKey] = useState<string | null>(null);
   const [dynamicAlternatives, setDynamicAlternatives] = useState<AlternativeGroup | null>(null);
+  const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
+  const [skipModalOpen, setSkipModalOpen] = useState(false);
+  const [skipTargetKey, setSkipTargetKey] = useState<string | null>(null);
 
   // Track which exercises' sets have been saved to DB
   const savedExercisesRef = useRef<Set<string>>(new Set());
@@ -180,7 +184,8 @@ const LiveSession = () => {
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
 
-  const completedCount = Object.values(completedSets).filter(sets => sets.length > 0 && sets.every(s => s.reps > 0)).length;
+  const completedCount = Object.entries(completedSets).filter(([key, sets]) => !skippedExercises.has(key) && sets.length > 0 && sets.every(s => s.reps > 0)).length;
+  const skippedCount = skippedExercises.size;
 
   // Save sets for a given exercise key to DB
   const saveSetsForExercise = async (key: string) => {
@@ -240,7 +245,9 @@ const LiveSession = () => {
     try {
       // Save any unsaved exercises' sets
       for (const key of Object.keys(completedSets)) {
-        await saveSetsForExercise(key);
+        if (!skippedExercises.has(key)) {
+          await saveSetsForExercise(key);
+        }
       }
 
       // Update session with completion time
@@ -251,6 +258,49 @@ const LiveSession = () => {
     } catch (e) {
       console.error("Error finishing session:", e);
     }
+  };
+
+  const handleOpenSkip = (key: string) => {
+    setSkipTargetKey(key);
+    setSkipModalOpen(true);
+  };
+
+  const handleConfirmSkip = async (reason: string | null, reasonDetail: string | null) => {
+    if (!skipTargetKey || !completedSessionId) return;
+    const sessionExId = sessionExerciseIdMap[skipTargetKey];
+
+    // Save to DB
+    if (sessionExId) {
+      await supabase.from("skipped_exercises").insert({
+        completed_session_id: completedSessionId,
+        session_exercise_id: sessionExId,
+        reason,
+        reason_detail: reasonDetail,
+      });
+    }
+
+    setSkippedExercises(prev => new Set(prev).add(skipTargetKey));
+    setSkipModalOpen(false);
+
+    // Move to next exercise
+    const [sIdx, eIdx] = skipTargetKey.split("-").map(Number);
+    let nextKey: string | null = null;
+    for (let si = sIdx; si < sessionProgram.sections.length; si++) {
+      const startEi = si === sIdx ? eIdx + 1 : 0;
+      for (let ei = startEi; ei < sessionProgram.sections[si].exercises.length; ei++) {
+        const candidate = `${si}-${ei}`;
+        if (!skippedExercises.has(candidate)) {
+          nextKey = candidate;
+          break;
+        }
+      }
+      if (nextKey) break;
+    }
+
+    if (nextKey) {
+      setActiveExerciseKey(nextKey);
+    }
+    setSkipTargetKey(null);
   };
 
   const handleClose = () => {
@@ -437,6 +487,11 @@ const LiveSession = () => {
             <span>⚡ {substitutions.length > 1 ? t('session:exercises_modified_plural', { count: substitutions.length }) : t('session:exercises_modified', { count: substitutions.length })}</span>
           </div>
         )}
+        {skippedCount > 0 && (
+          <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium">
+            <span>⏭ {t('session:exercises_skipped', { count: skippedCount })}</span>
+          </div>
+        )}
       </div>
 
       {showProgression && (
@@ -482,11 +537,13 @@ const LiveSession = () => {
                 }
                 if (ex.rest === "—" || !ex.rest) restSeconds = 0;
 
+                const isSkipped = skippedExercises.has(key);
+
                 return (
                   <div
                     key={key}
-                    onClick={() => !isActive && setActiveExerciseKey(key)}
-                    className={cn(!isActive && "cursor-pointer")}
+                    onClick={() => !isActive && !isSkipped && setActiveExerciseKey(key)}
+                    className={cn(!isActive && !isSkipped && "cursor-pointer")}
                   >
                     <EnhancedExerciseCard
                       name={displayName}
@@ -505,7 +562,9 @@ const LiveSession = () => {
                       onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
                       onAllSetsComplete={() => handleExerciseComplete(key)}
                       onSwapExercise={() => handleOpenSwap(key)}
+                      onSkipExercise={() => handleOpenSkip(key)}
                       isSubstituted={isSubstituted}
+                      isSkipped={isSkipped}
                       trackingType={(trackingTypeMap[key] as any) || "weight_reps"}
                     />
                   </div>
@@ -532,6 +591,13 @@ const LiveSession = () => {
         exerciseName={swapExerciseOriginalName}
         group={EXERCISE_ALTERNATIVES[swapExerciseOriginalName] || dynamicAlternatives}
         onSelect={handleSwapSelect}
+      />
+
+      <SkipExerciseModal
+        open={skipModalOpen}
+        onClose={() => { setSkipModalOpen(false); setSkipTargetKey(null); }}
+        onConfirm={handleConfirmSkip}
+        exerciseName={skipTargetKey ? getExerciseName(...skipTargetKey.split("-").map(Number) as [number, number]) : ""}
       />
     </div>
   );

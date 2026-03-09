@@ -12,6 +12,7 @@ import WeeklyCheckinForm, { CheckinData } from "@/components/student/WeeklyCheck
 import CheckinBadge from "@/components/student/CheckinBadge";
 import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import SelfGuidedDashboard from "@/components/student/SelfGuidedDashboard";
+import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
@@ -42,6 +43,8 @@ const StudentWeek = () => {
   const [externalFormOpen, setExternalFormOpen] = useState(false);
   const [externalFormDate, setExternalFormDate] = useState<Date>(new Date());
   const [editingExternal, setEditingExternal] = useState<ExternalSessionData | null>(null);
+  const [freeSessionOpen, setFreeSessionOpen] = useState(false);
+  const [freeSessionDate, setFreeSessionDate] = useState<Date>(new Date());
 
   const [checkins, setCheckins] = useState<Record<string, CheckinData>>({});
   const [checkinFormOpen, setCheckinFormOpen] = useState(false);
@@ -509,13 +512,23 @@ const StudentWeek = () => {
                           </Button>
                         )}
                         {!swapMode && (
-                          <Button
-                            variant="ghost" size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            onClick={(e) => { e.stopPropagation(); handleAddExternal(day.date); }}
-                          >
-                            <Plus className="w-4 h-4" strokeWidth={1.5} />
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => { e.stopPropagation(); setFreeSessionDate(day.date); setFreeSessionOpen(true); }}
+                              title={t('session:free_session_btn')}
+                            >
+                              <Dumbbell className="w-4 h-4" strokeWidth={1.5} />
+                            </Button>
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => { e.stopPropagation(); handleAddExternal(day.date); }}
+                            >
+                              <Plus className="w-4 h-4" strokeWidth={1.5} />
+                            </Button>
+                          </>
                         )}
                         {isSessionDay && !day.isPast && !swapMode ? (
                           <div className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg">
@@ -584,6 +597,13 @@ const StudentWeek = () => {
         onSubmit={handleCheckinSubmit}
         weekStart={weekStart}
         initialData={currentCheckin}
+      />
+
+      <FreeSessionCreator
+        open={freeSessionOpen}
+        onClose={() => setFreeSessionOpen(false)}
+        date={freeSessionDate}
+        onCreated={() => window.location.reload()}
       />
     </div>
   );

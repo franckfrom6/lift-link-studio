@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route } from "lucide-react";
+import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -36,8 +36,10 @@ interface EnhancedExerciseCardProps {
   onCompletedSetsChange: (sets: EnhancedCompletedSet[]) => void;
   onAllSetsComplete: () => void;
   onSwapExercise?: () => void;
+  onSkipExercise?: () => void;
   hasAlternatives?: boolean;
   isSubstituted?: boolean;
+  isSkipped?: boolean;
   previousSets?: { weight: number; reps: number }[];
   trackingType?: TrackingType;
 }
@@ -47,7 +49,7 @@ const EnhancedExerciseCard = ({
   tempo, rpeTarget, suggestedWeight, coachNotes,
   videoUrl, videoSearchQuery,
   isActive, completedSets, onCompletedSetsChange, onAllSetsComplete,
-  onSwapExercise, hasAlternatives, isSubstituted,
+  onSwapExercise, onSkipExercise, hasAlternatives, isSubstituted, isSkipped,
   previousSets,
   trackingType = "weight_reps",
 }: EnhancedExerciseCardProps) => {
@@ -383,6 +385,24 @@ const EnhancedExerciseCard = ({
     }
   };
 
+  if (isSkipped) {
+    return (
+      <div className="rounded-xl border border-border/50 bg-card/30 opacity-50 p-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+            <SkipForward className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm truncate line-through">{name}</p>
+          </div>
+          <span className="bg-warning/10 text-warning px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0">
+            {t('skip_badge', 'Passé')}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn(
       "rounded-xl border transition-all",
@@ -433,6 +453,15 @@ const EnhancedExerciseCard = ({
           </div>
         </button>
         <div className="flex items-center gap-1 shrink-0">
+          {onSkipExercise && !allDone && isActive && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSkipExercise?.(); }}
+              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-warning hover:bg-warning/10 transition-colors"
+              title={t('skip_btn', 'Passer')}
+            >
+              <SkipForward className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </button>
+          )}
           {onSwapExercise && !allDone && (
             <div className="flex items-center justify-center w-11 h-11">
               <button

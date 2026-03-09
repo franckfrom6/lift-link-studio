@@ -1426,27 +1426,36 @@ export type Database = {
       sessions: {
         Row: {
           created_at: string
+          created_by: string | null
           day_of_week: number
+          free_session_date: string | null
           id: string
+          is_free_session: boolean
           name: string
           notes: string | null
-          week_id: string
+          week_id: string | null
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           day_of_week: number
+          free_session_date?: string | null
           id?: string
+          is_free_session?: boolean
           name: string
           notes?: string | null
-          week_id: string
+          week_id?: string | null
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           day_of_week?: number
+          free_session_date?: string | null
           id?: string
+          is_free_session?: boolean
           name?: string
           notes?: string | null
-          week_id?: string
+          week_id?: string | null
         }
         Relationships: [
           {
@@ -1496,6 +1505,48 @@ export type Database = {
             columns: ["shared_completed_session_id"]
             isOneToOne: false
             referencedRelation: "completed_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skipped_exercises: {
+        Row: {
+          completed_session_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          reason_detail: string | null
+          session_exercise_id: string
+        }
+        Insert: {
+          completed_session_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reason_detail?: string | null
+          session_exercise_id: string
+        }
+        Update: {
+          completed_session_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reason_detail?: string | null
+          session_exercise_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skipped_exercises_completed_session_id_fkey"
+            columns: ["completed_session_id"]
+            isOneToOne: false
+            referencedRelation: "completed_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skipped_exercises_session_exercise_id_fkey"
+            columns: ["session_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "session_exercises"
             referencedColumns: ["id"]
           },
         ]
