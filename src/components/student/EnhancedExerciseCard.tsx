@@ -453,6 +453,15 @@ const EnhancedExerciseCard = ({
           </div>
         </button>
         <div className="flex items-center gap-1 shrink-0">
+          {onSkipExercise && !allDone && isActive && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSkipExercise?.(); }}
+              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-warning hover:bg-warning/10 transition-colors"
+              title={t('skip_btn', 'Passer')}
+            >
+              <SkipForward className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </button>
+          )}
           {onSwapExercise && !allDone && (
             <div className="flex items-center justify-center w-11 h-11">
               <button
