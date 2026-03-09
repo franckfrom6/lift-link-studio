@@ -29,7 +29,6 @@ const StudentWeek = () => {
     t("common:days.thu"), t("common:days.fri"), t("common:days.sat"), t("common:days.sun"),
   ];
   const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedWeekIndex, setSelectedWeekIndex] = useState(0);
   const navigate = useNavigate();
   const [swapMode, setSwapMode] = useState(false);
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
@@ -47,6 +46,29 @@ const StudentWeek = () => {
 
   // Get selected week's sessions from DB program
   const totalWeeks = program?.weeks?.length || 0;
+
+  // Compute which program week to display based on program start date and weekOffset
+  const selectedWeekIndex = useMemo(() => {
+    if (!program || totalWeeks === 0) return 0;
+    // Monday of program creation week
+    const created = new Date(program.created_at);
+    const cDay = created.getDay();
+    const cMonday = new Date(created);
+    cMonday.setDate(cMonday.getDate() - cDay + (cDay === 0 ? -6 : 1));
+    cMonday.setHours(0, 0, 0, 0);
+
+    // Monday of currently displayed week
+    const now = new Date();
+    const nDay = now.getDay();
+    const displayMonday = new Date(now);
+    displayMonday.setDate(displayMonday.getDate() - nDay + (nDay === 0 ? -6 : 1) + weekOffset * 7);
+    displayMonday.setHours(0, 0, 0, 0);
+
+    const diffWeeks = Math.round((displayMonday.getTime() - cMonday.getTime()) / (7 * 24 * 60 * 60 * 1000));
+    if (diffWeeks < 0) return 0;
+    return diffWeeks % totalWeeks;
+  }, [program, totalWeeks, weekOffset]);
+
   const currentWeek = program?.weeks?.[selectedWeekIndex];
   const weekSessions = currentWeek?.sessions || [];
 

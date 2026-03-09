@@ -199,6 +199,7 @@ export const useStudentProgram = () => {
         id: prog.id,
         name: prog.name,
         status: prog.status,
+        created_at: prog.created_at,
         weeks: assembledWeeks,
         progression: progression || [],
       });
