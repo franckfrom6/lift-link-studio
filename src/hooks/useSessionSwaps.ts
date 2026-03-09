@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { formatLocalDate } from "@/lib/date-utils";
 
 export interface SessionSwap {
   id: string;
@@ -33,8 +34,8 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
       .from("session_swaps")
       .select("*")
       .eq("student_id", studentId)
-      .gte("new_date", weekStartDate.toISOString().split("T")[0])
-      .lte("new_date", weekEnd.toISOString().split("T")[0]);
+      .gte("new_date", formatLocalDate(weekStartDate))
+      .lte("new_date", formatLocalDate(weekEnd));
 
     if (!error && data) {
       setSwaps(data as SessionSwap[]);
@@ -87,8 +88,8 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
         student_id: studentId,
         original_day: params.originalDay,
         new_day: params.newDay,
-        original_date: params.originalDate.toISOString().split("T")[0],
-        new_date: params.newDate.toISOString().split("T")[0],
+        original_date: formatLocalDate(params.originalDate),
+        new_date: formatLocalDate(params.newDate),
         reason: params.reason || null,
       })
       .select()

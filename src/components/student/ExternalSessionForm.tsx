@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { formatLocalDate } from "@/lib/date-utils";
 import ActivityTypeSelector from "./ActivityTypeSelector";
 import {
   ACTIVITY_TYPES, ActivityType, MUSCLE_GROUP_OPTIONS,
@@ -115,7 +116,7 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
       intensity_perceived: intensity,
       muscle_groups_involved: muscleGroups,
       notes,
-      date: date.toISOString().split("T")[0],
+      date: formatLocalDate(date),
       added_by: initialData?.added_by || addedBy,
     });
     onClose();

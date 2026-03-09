@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { formatLocalDate } from "@/lib/date-utils";
 import { useTranslation } from "react-i18next";
 
 export interface CheckinData {
@@ -122,7 +123,7 @@ const WeeklyCheckinForm = ({ open, onClose, onSubmit, weekStart, initialData }: 
       soreness_location: sorenessLocations,
       availability_notes: availabilityNotes,
       general_notes: generalNotes,
-      week_start: weekStart.toISOString().split("T")[0],
+      week_start: formatLocalDate(weekStart),
     });
     onClose();
   };

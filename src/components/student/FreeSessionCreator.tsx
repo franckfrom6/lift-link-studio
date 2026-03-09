@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { formatLocalDate } from "@/lib/date-utils";
 
 interface FreeExercise {
   exercise_id: string;
@@ -110,7 +111,7 @@ const FreeSessionCreator = ({ open, onClose, date, onCreated }: FreeSessionCreat
         day_of_week: date.getDay() === 0 ? 7 : date.getDay(),
         is_free_session: true,
         created_by: user.id,
-        free_session_date: date.toISOString().split("T")[0],
+        free_session_date: formatLocalDate(date),
       }).select("id").single();
 
       if (sessionError || !session) throw sessionError;

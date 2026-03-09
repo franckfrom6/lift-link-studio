@@ -22,6 +22,7 @@ import { useSessionSwaps } from "@/hooks/useSessionSwaps";
 import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { DraggableDayCard } from "@/components/student/DraggableDayCard";
 import { supabase } from "@/integrations/supabase/client";
+import { formatLocalDate } from "@/lib/date-utils";
 
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
@@ -45,6 +46,7 @@ const StudentWeek = () => {
   const [editingExternal, setEditingExternal] = useState<ExternalSessionData | null>(null);
   const [freeSessionOpen, setFreeSessionOpen] = useState(false);
   const [freeSessionDate, setFreeSessionDate] = useState<Date>(new Date());
+  const [freeSessions, setFreeSessions] = useState<Array<{ id: string; name: string; date: string; exerciseCount: number }>>([]);
 
   const [checkins, setCheckins] = useState<Record<string, CheckinData>>({});
   const [checkinFormOpen, setCheckinFormOpen] = useState(false);
@@ -109,10 +111,34 @@ const StudentWeek = () => {
   };
 
   const weekStart = useMemo(getWeekStart, [weekOffset]);
-  const weekStartStr = weekStart.toISOString().split("T")[0];
+  const weekStartStr = formatLocalDate(weekStart);
   const { swaps: dbSwaps, createSwap } = useSessionSwaps(weekStart);
-  const weekKey = weekStart.toISOString().split("T")[0];
+  const weekKey = weekStartStr;
   const currentCheckin = checkins[weekKey] || null;
+
+  // Fetch free sessions for this week
+  const fetchFreeSessions = useCallback(async () => {
+    if (!user) return;
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const { data } = await supabase
+      .from("sessions")
+      .select("id, name, free_session_date, session_exercises(id)")
+      .eq("is_free_session", true)
+      .eq("created_by", user.id)
+      .gte("free_session_date", formatLocalDate(weekStart))
+      .lte("free_session_date", formatLocalDate(weekEnd));
+    if (data) {
+      setFreeSessions(data.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        date: s.free_session_date,
+        exerciseCount: s.session_exercises?.length || 0,
+      })));
+    }
+  }, [user, weekStart]);
+
+  useEffect(() => { fetchFreeSessions(); }, [fetchFreeSessions]);
 
   // Map DB swaps to the shape used by effectiveSessions
   const mappedSwaps = useMemo(() =>
@@ -139,8 +165,13 @@ const StudentWeek = () => {
     return map;
   }, [mappedSwaps]);
 
+  const getFreeForDay = (date: Date) => {
+    const dateStr = formatLocalDate(date);
+    return freeSessions.filter(s => s.date === dateStr);
+  };
+
   const getExternalForDay = (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = formatLocalDate(date);
     return externalSessions.filter(s => s.date === dateStr);
   };
 
@@ -434,6 +465,7 @@ const StudentWeek = () => {
             const isSwapSource = swapMode && day.dayIndex === swapSourceDay;
             const isDropTarget = swapMode && day.dayIndex !== swapSourceDay;
             const dayExternals = getExternalForDay(day.date);
+            const dayFreeSessions = getFreeForDay(day.date);
 
             return (
               <div key={day.name} className="space-y-1">
@@ -541,6 +573,28 @@ const StudentWeek = () => {
                       </div>
                     </div>
 
+                    {/* Free sessions for this day */}
+                    {dayFreeSessions.length > 0 && (
+                      <div className={cn("space-y-1", (isSessionDay || dayExternals.length > 0) && "mt-2 pt-2 border-t border-border")}>
+                        {dayFreeSessions.map(fs => (
+                          <div
+                            key={fs.id}
+                            className="flex items-center gap-2 p-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: fs.id } }); }}
+                          >
+                            <Dumbbell className="w-3.5 h-3.5 text-primary shrink-0" strokeWidth={1.5} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium truncate">{fs.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex. · {t('session:free_session_badge')}</p>
+                            </div>
+                            <Badge variant="outline" className="text-[9px] shrink-0 border-primary/30 text-primary">
+                              {t('session:free_session_badge')}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {isSessionDay && dayExternals.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-border space-y-1">
                         {dayExternals.map(ext => (
@@ -603,7 +657,7 @@ const StudentWeek = () => {
         open={freeSessionOpen}
         onClose={() => setFreeSessionOpen(false)}
         date={freeSessionDate}
-        onCreated={() => window.location.reload()}
+        onCreated={() => fetchFreeSessions()}
       />
     </div>
   );
