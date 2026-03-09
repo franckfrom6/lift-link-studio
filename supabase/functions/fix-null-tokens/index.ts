@@ -9,47 +9,54 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const supabaseAdmin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
+  try {
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
 
-  // Fix NULL confirmation_token, recovery_token, email_change_token_new, email_change_token_current
-  // These NULL values cause GoTrue scan errors on login
-  const { data, error } = await supabaseAdmin.rpc('fix_null_auth_tokens' as any);
-  
-  if (error) {
-    // If the RPC doesn't exist, try direct SQL via a different approach
-    // We'll use the admin API to list and re-confirm users instead
-    const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    // List all users
+    const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     
     if (listError) {
+      console.error("listUsers error:", listError);
       return new Response(JSON.stringify({ error: listError.message }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const users = usersData?.users ?? [];
+    console.log(`Found ${users.length} users`);
+
     const results = [];
-    for (const user of users.users) {
-      // Re-update each user to force GoTrue to fix internal token fields
-      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-        email_confirm: true,
-      });
-      results.push({ 
-        email: user.email, 
-        fixed: !updateError, 
-        error: updateError?.message 
-      });
+    for (const user of users) {
+      try {
+        // Re-update each user to force GoTrue to fix internal token fields
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+          email_confirm: true,
+        });
+        results.push({ 
+          email: user.email, 
+          fixed: !updateError, 
+          error: updateError?.message 
+        });
+        console.log(`Updated ${user.email}: ${updateError ? updateError.message : 'OK'}`);
+      } catch (e) {
+        results.push({ email: user.email, fixed: false, error: String(e) });
+        console.error(`Error updating ${user.email}:`, e);
+      }
     }
 
-    return new Response(JSON.stringify({ message: "Users re-confirmed", results }), {
+    return new Response(JSON.stringify({ message: "Users re-confirmed", count: results.length, results }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    console.error("Unexpected error:", e);
+    return new Response(JSON.stringify({ error: String(e) }), {
+      status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-
-  return new Response(JSON.stringify({ message: "Tokens fixed", data }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
 });
