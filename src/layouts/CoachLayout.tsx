@@ -6,11 +6,15 @@ import InviteClientModal from "@/components/InviteClientModal";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
+import AISidebarToggle from "@/components/ai/AISidebarToggle";
+import AISidebar from "@/components/ai/AISidebar";
 
 const CoachLayout = () => {
   const { t } = useTranslation(['settings', 'common']);
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const [aiOpen, setAiOpen] = useState(false);
 
   const navItems = [
     { to: "/coach", icon: LayoutDashboard, label: t('settings:nav_dashboard'), end: true },
@@ -97,6 +101,9 @@ const CoachLayout = () => {
           )}
         </nav>
       </div>
+
+      <AISidebarToggle onClick={() => setAiOpen(true)} />
+      <AISidebar open={aiOpen} onClose={() => setAiOpen(false)} />
     </div>
   );
 };
