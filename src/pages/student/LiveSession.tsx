@@ -4,6 +4,7 @@ import { YANA_PROGRAM, ProgramExerciseDetail, ProgramSection } from "@/data/yana
 import { EXERCISE_ALTERNATIVES, AlternativeGroup } from "@/data/exercise-alternatives";
 import { EnhancedCompletedSet } from "@/components/student/EnhancedExerciseCard";
 import EnhancedExerciseCard from "@/components/student/EnhancedExerciseCard";
+import SkipExerciseModal from "@/components/student/SkipExerciseModal";
 import ExerciseAlternativesSheet from "@/components/student/ExerciseAlternativesSheet";
 import SessionSection from "@/components/student/SessionSection";
 import SessionRecap from "@/components/student/SessionRecap";
