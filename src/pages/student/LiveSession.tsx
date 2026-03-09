@@ -384,6 +384,11 @@ const LiveSession = () => {
             {t('session:quit')}
           </Button>
           <div className="flex items-center gap-2">
+            <ShareSessionButton
+              sessionId={selectedSession?.id || ""}
+              completedSessionId={completedSessionId || undefined}
+              sessionName={sessionProgram.title}
+            />
             <Button
               variant={showProgression ? "secondary" : "outline"}
               size="sm"
