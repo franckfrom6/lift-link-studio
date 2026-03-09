@@ -36,9 +36,11 @@ const ExerciseAlternativesSheet = ({
             {t('session:replace_exercise')}
           </div>
           <SheetTitle className="text-base">{exerciseName}</SheetTitle>
-          <Badge variant="secondary" className="w-fit text-[10px]">
-            {group.muscleGroup}
-          </Badge>
+          {group && (
+            <Badge variant="secondary" className="w-fit text-[10px]">
+              {group.muscleGroup}
+            </Badge>
+          )}
         </SheetHeader>
 
         <div className="space-y-2 mt-4 overflow-y-auto max-h-[55vh] pb-4">
