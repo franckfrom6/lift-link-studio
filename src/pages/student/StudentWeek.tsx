@@ -569,40 +569,38 @@ const StudentWeek = () => {
                             <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
                             <span className="text-xs font-semibold">Go</span>
                           </div>
+                        ) : !isSessionDay && dayFreeSessions.length > 0 && !day.isPast && !swapMode ? (
+                          <div
+                            className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg cursor-pointer"
+                            onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: dayFreeSessions[0].id } }); }}
+                          >
+                            <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            <span className="text-xs font-semibold">Go</span>
+                          </div>
                         ) : isSessionDay && sessionCompleted ? (
                           <CheckCircle className="w-5 h-5 text-success" strokeWidth={1.5} />
                         ) : null}
                       </div>
                     </div>
 
-                    {/* Free sessions for this day */}
+                    {/* AI free sessions inline */}
                     {dayFreeSessions.length > 0 && (
-                      <div className={cn("space-y-1.5", (isSessionDay || dayExternals.length > 0) && "mt-2 pt-2 border-t border-border")}>
+                      <div className={cn("space-y-1", (isSessionDay || dayExternals.length > 0) && "mt-2 pt-2 border-t border-border")}>
                         {dayFreeSessions.map(fs => (
                           <div
                             key={fs.id}
-                            className="flex items-center gap-2.5 p-2.5 rounded-xl border border-ai/30 bg-ai-bg cursor-pointer hover:border-ai/60 hover:shadow-[0_0_12px_-4px_hsl(var(--ai)/0.3)] transition-all"
+                            className="space-y-0.5 cursor-pointer"
                             onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: fs.id } }); }}
                           >
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-ai/20 to-ai/5 flex items-center justify-center shrink-0 ring-1 ring-ai/20">
-                              <Bot className="w-4 h-4 text-ai" strokeWidth={2} />
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-sm font-bold text-foreground truncate">{fs.name}</p>
+                              <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[9px] font-semibold px-1.5 py-0.5 rounded-md border border-ai/15">
+                                <Bot className="w-2.5 h-2.5" strokeWidth={1.5} />
+                                IA
+                              </span>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <p className="text-sm font-bold truncate">{fs.name}</p>
-                                <span className="inline-flex items-center gap-0.5 bg-ai/15 text-ai text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide">
-                                  <Bot className="w-2.5 h-2.5" strokeWidth={2} />
-                                  IA
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
-                                <span className="text-[10px] text-ai/70">Généré par l'assistant</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-ai text-ai-foreground px-3 py-1.5 rounded-lg shadow-sm">
-                              <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
-                              <span className="text-xs font-semibold">Go</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
                             </div>
                           </div>
                         ))}
