@@ -45,6 +45,9 @@ const LiveSession = () => {
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
   const [swapTargetKey, setSwapTargetKey] = useState<string | null>(null);
   const [dynamicAlternatives, setDynamicAlternatives] = useState<AlternativeGroup | null>(null);
+  const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
+  const [skipModalOpen, setSkipModalOpen] = useState(false);
+  const [skipTargetKey, setSkipTargetKey] = useState<string | null>(null);
 
   // Track which exercises' sets have been saved to DB
   const savedExercisesRef = useRef<Set<string>>(new Set());
