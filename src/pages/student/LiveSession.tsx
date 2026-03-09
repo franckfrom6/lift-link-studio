@@ -592,6 +592,13 @@ const LiveSession = () => {
         group={EXERCISE_ALTERNATIVES[swapExerciseOriginalName] || dynamicAlternatives}
         onSelect={handleSwapSelect}
       />
+
+      <SkipExerciseModal
+        open={skipModalOpen}
+        onClose={() => { setSkipModalOpen(false); setSkipTargetKey(null); }}
+        onConfirm={handleConfirmSkip}
+        exerciseName={skipTargetKey ? getExerciseName(...skipTargetKey.split("-").map(Number) as [number, number]) : ""}
+      />
     </div>
   );
 };
