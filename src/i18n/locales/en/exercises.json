@@ -35,5 +35,7 @@
   "target_weight": "Target weight",
   "add_set": "Add a set",
   "modified": "Modified",
-  "more_options": "More options"
+  "more_options": "More options",
+  "duration_sec": "Duration (s)",
+  "distance_m": "Distance (m)"
 }

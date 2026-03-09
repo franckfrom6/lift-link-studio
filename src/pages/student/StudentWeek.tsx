@@ -11,6 +11,7 @@ import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import WeeklyCheckinForm, { CheckinData } from "@/components/student/WeeklyCheckinForm";
 import CheckinBadge from "@/components/student/CheckinBadge";
 import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
+import SelfGuidedDashboard from "@/components/student/SelfGuidedDashboard";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
@@ -19,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSessionSwaps } from "@/hooks/useSessionSwaps";
 import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { DraggableDayCard } from "@/components/student/DraggableDayCard";
+import { supabase } from "@/integrations/supabase/client";
 
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
@@ -295,10 +297,14 @@ const StudentWeek = () => {
           </div>
         </div>
       ) : (
-        <div className="glass p-8 text-center space-y-2">
-          <Dumbbell className="w-8 h-8 text-muted-foreground/50 mx-auto" strokeWidth={1.5} />
-          <p className="text-muted-foreground text-sm">{t('calendar:no_program', 'Aucun programme actif')}</p>
-        </div>
+        <SelfGuidedDashboard
+          onStartAI={() => {
+            toast.info(t('calendar:ai_coming_soon', "La génération IA de programme arrive bientôt !"));
+          }}
+          onJoinCoach={(code) => {
+            toast.info(t('calendar:join_coach_soon', "Fonctionnalité de rejoindre un coach à venir."));
+          }}
+        />
       )}
 
 
