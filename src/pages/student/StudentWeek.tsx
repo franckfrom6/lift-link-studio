@@ -22,6 +22,7 @@ import { useSessionSwaps } from "@/hooks/useSessionSwaps";
 import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { DraggableDayCard } from "@/components/student/DraggableDayCard";
 import { supabase } from "@/integrations/supabase/client";
+import { formatLocalDate } from "@/lib/date-utils";
 
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);

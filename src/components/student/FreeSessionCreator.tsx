@@ -111,7 +111,7 @@ const FreeSessionCreator = ({ open, onClose, date, onCreated }: FreeSessionCreat
         day_of_week: date.getDay() === 0 ? 7 : date.getDay(),
         is_free_session: true,
         created_by: user.id,
-        free_session_date: date.toISOString().split("T")[0],
+        free_session_date: formatLocalDate(date),
       }).select("id").single();
 
       if (sessionError || !session) throw sessionError;
