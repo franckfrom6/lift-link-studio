@@ -1,4 +1,12 @@
 {
+  "my_program": "Mon programme",
+  "create_my_program": "Créer mon programme",
+  "create_my_program_desc": "Ajoutez vos séances de musculation, choisissez vos exercices et planifiez votre semaine.",
+  "start_creating": "Commencer →",
+  "empty_program_title": "Créez votre programme",
+  "empty_program_desc": "Ajoutez une semaine, puis des séances et des exercices.",
+  "sessions_label": "séances",
+  "exercises_label": "exercices",
   "programs": "Programmes",
   "create_program": "Créer le premier programme",
   "new_program": "Nouveau programme",

@@ -99,6 +99,7 @@ const App = () => (
                 <Route path="/student" element={<AuthGuard role="student"><StudentLayout /></AuthGuard>}>
                   <Route index element={<StudentWeek />} />
                   <Route path="session" element={<LiveSession />} />
+                  <Route path="program/edit" element={<AthleteProgramEditor />} />
                   <Route path="progress" element={<StudentProgress />} />
                   <Route path="profile" element={<StudentProfile />} />
                   <Route path="nutrition" element={<StudentNutrition />} />
