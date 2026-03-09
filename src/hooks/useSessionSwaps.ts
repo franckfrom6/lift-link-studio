@@ -88,8 +88,8 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
         student_id: studentId,
         original_day: params.originalDay,
         new_day: params.newDay,
-        original_date: params.originalDate.toISOString().split("T")[0],
-        new_date: params.newDate.toISOString().split("T")[0],
+        original_date: formatLocalDate(params.originalDate),
+        new_date: formatLocalDate(params.newDate),
         reason: params.reason || null,
       })
       .select()
