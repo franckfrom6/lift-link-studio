@@ -123,7 +123,7 @@ const WeeklyCheckinForm = ({ open, onClose, onSubmit, weekStart, initialData }: 
       soreness_location: sorenessLocations,
       availability_notes: availabilityNotes,
       general_notes: generalNotes,
-      week_start: weekStart.toISOString().split("T")[0],
+      week_start: formatLocalDate(weekStart),
     });
     onClose();
   };

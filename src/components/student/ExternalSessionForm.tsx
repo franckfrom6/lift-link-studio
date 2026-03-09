@@ -116,7 +116,7 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
       intensity_perceived: intensity,
       muscle_groups_involved: muscleGroups,
       notes,
-      date: date.toISOString().split("T")[0],
+      date: formatLocalDate(date),
       added_by: initialData?.added_by || addedBy,
     });
     onClose();
