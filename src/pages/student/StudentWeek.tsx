@@ -118,15 +118,18 @@ const StudentWeek = () => {
   const currentCheckin = checkins[weekKey] || null;
 
   // Fetch free sessions for this week
+  const { effectiveStudentId } = useImpersonation();
+  const studentId = user ? effectiveStudentId(user.id) : null;
+
   const fetchFreeSessions = useCallback(async () => {
-    if (!user) return;
+    if (!studentId) return;
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
     const { data } = await supabase
       .from("sessions")
       .select("id, name, free_session_date, session_exercises(id)")
       .eq("is_free_session", true)
-      .eq("created_by", user.id)
+      .eq("created_by", studentId)
       .gte("free_session_date", formatLocalDate(weekStart))
       .lte("free_session_date", formatLocalDate(weekEnd));
     if (data) {
@@ -137,7 +140,7 @@ const StudentWeek = () => {
         exerciseCount: s.session_exercises?.length || 0,
       })));
     }
-  }, [user, weekStart]);
+  }, [studentId, weekStart]);
 
   useEffect(() => { fetchFreeSessions(); }, [fetchFreeSessions]);
 
