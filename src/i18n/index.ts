@@ -42,6 +42,9 @@ import enAdmin from './locales/en/admin.json';
 import enFeedback from './locales/en/feedback.json';
 import enSupport from './locales/en/support.json';
 import enLanding from './locales/en/landing.json';
+import enTeammate from './locales/en/teammate.json';
+import enAiChat from './locales/en/ai_chat.json';
+import enLeadgen from './locales/en/leadgen.json';
 
 i18n
   .use(LanguageDetector)
