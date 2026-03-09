@@ -1,8 +1,9 @@
-import { Bot, UserRound, Dumbbell, Sparkles } from "lucide-react";
+import { UserRound, Dumbbell, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router-dom";
 
 interface SelfGuidedDashboardProps {
   onStartAI: () => void;
@@ -10,37 +11,38 @@ interface SelfGuidedDashboardProps {
 }
 
 const SelfGuidedDashboard = ({ onStartAI, onJoinCoach }: SelfGuidedDashboardProps) => {
-  const { t } = useTranslation(['dashboard', 'common']);
+  const { t } = useTranslation(['dashboard', 'common', 'program']);
   const [coachCode, setCoachCode] = useState("");
   const [showCodeInput, setShowCodeInput] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="max-w-lg mx-auto space-y-6 animate-fade-in">
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold">{t('dashboard:welcome_title', 'Bienvenue sur F6GYM 👋')}</h1>
         <p className="text-muted-foreground text-sm">
-          {t('dashboard:no_coach_subtitle', "Vous n'avez pas encore de coach. Deux options s'offrent à vous :")}
+          {t('dashboard:no_coach_subtitle', "Vous n'avez pas encore de programme. Choisissez comment commencer :")}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* AI Mode */}
+      <div className="grid grid-cols-1 gap-4">
+        {/* Create my own program */}
         <button
-          onClick={onStartAI}
+          onClick={() => navigate("/student/program/edit")}
           className="glass p-6 space-y-4 text-left hover:ring-1 hover:ring-primary/40 transition-all rounded-xl group"
         >
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-            <Bot className="w-6 h-6 text-primary" strokeWidth={1.5} />
+            <Dumbbell className="w-6 h-6 text-primary" strokeWidth={1.5} />
           </div>
           <div>
-            <h3 className="font-bold text-sm">{t('dashboard:self_guided_title', 'Mode autonome')}</h3>
+            <h3 className="font-bold text-sm">{t('program:create_my_program', 'Créer mon programme')}</h3>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              {t('dashboard:self_guided_desc', "L'IA crée et adapte vos programmes selon votre profil.")}
+              {t('program:create_my_program_desc', 'Ajoutez vos séances de musculation, choisissez vos exercices et planifiez votre semaine.')}
             </p>
           </div>
           <div className="flex items-center gap-1.5 text-primary text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5" />
-            {t('dashboard:start_with_ai', "Commencer avec l'IA →")}
+            {t('program:start_creating', 'Commencer →')}
           </div>
         </button>
 
@@ -69,7 +71,7 @@ const SelfGuidedDashboard = ({ onStartAI, onJoinCoach }: SelfGuidedDashboardProp
               <Input
                 value={coachCode}
                 onChange={(e) => setCoachCode(e.target.value)}
-                placeholder={t('dashboard:coach_code_placeholder', 'Code ou email du coach')}
+                placeholder={t('dashboard:coach_code_placeholder', 'Code du coach')}
                 className="text-sm h-9"
               />
               <Button

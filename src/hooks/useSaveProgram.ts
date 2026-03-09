@@ -8,7 +8,7 @@ export interface SaveProgramResult {
 
 export async function saveProgram(
   program: ProgramData,
-  coachId: string,
+  coachId: string | null,
   studentId: string
 ): Promise<SaveProgramResult | null> {
   try {
