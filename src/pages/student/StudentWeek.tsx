@@ -43,6 +43,8 @@ const StudentWeek = () => {
   const [externalFormOpen, setExternalFormOpen] = useState(false);
   const [externalFormDate, setExternalFormDate] = useState<Date>(new Date());
   const [editingExternal, setEditingExternal] = useState<ExternalSessionData | null>(null);
+  const [freeSessionOpen, setFreeSessionOpen] = useState(false);
+  const [freeSessionDate, setFreeSessionDate] = useState<Date>(new Date());
 
   const [checkins, setCheckins] = useState<Record<string, CheckinData>>({});
   const [checkinFormOpen, setCheckinFormOpen] = useState(false);
