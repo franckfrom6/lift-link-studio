@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight } from "lucide-react";
+import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -8,12 +8,15 @@ import VideoLink from "./VideoLink";
 import RPESelector from "./RPESelector";
 import { useTranslation } from "react-i18next";
 
+export type TrackingType = "weight_reps" | "reps_only" | "duration" | "distance";
+
 export interface EnhancedCompletedSet {
   setNumber: number;
   weight: number;
   reps: number;
   isFailure: boolean;
   rpeActual: number | null;
+  durationSeconds?: number;
 }
 
 interface EnhancedExerciseCardProps {
@@ -36,6 +39,7 @@ interface EnhancedExerciseCardProps {
   hasAlternatives?: boolean;
   isSubstituted?: boolean;
   previousSets?: { weight: number; reps: number }[];
+  trackingType?: TrackingType;
 }
 
 const EnhancedExerciseCard = ({
@@ -45,24 +49,30 @@ const EnhancedExerciseCard = ({
   isActive, completedSets, onCompletedSetsChange, onAllSetsComplete,
   onSwapExercise, hasAlternatives, isSubstituted,
   previousSets,
+  trackingType = "weight_reps",
 }: EnhancedExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const { t } = useTranslation('exercises');
   const [currentSetIdx, setCurrentSetIdx] = useState(
-    completedSets.findIndex(s => s.reps === 0) >= 0
-      ? completedSets.findIndex(s => s.reps === 0)
+    completedSets.findIndex(s => s.reps === 0 && (s.durationSeconds || 0) === 0) >= 0
+      ? completedSets.findIndex(s => s.reps === 0 && (s.durationSeconds || 0) === 0)
       : completedSets.length < targetSets ? completedSets.length : -1
   );
   const [showTimer, setShowTimer] = useState(false);
-  const [allDone, setAllDone] = useState(completedSets.length >= targetSets && completedSets.every(s => s.reps > 0));
+  const [allDone, setAllDone] = useState(
+    completedSets.length >= targetSets && completedSets.every(s => 
+      trackingType === "duration" ? (s.durationSeconds || 0) > 0 : s.reps > 0
+    )
+  );
 
   if (completedSets.length === 0 && isActive) {
     const initial: EnhancedCompletedSet[] = Array.from({ length: targetSets }, (_, i) => ({
       setNumber: i + 1,
-      weight: suggestedWeight || 0,
+      weight: trackingType === "weight_reps" ? (suggestedWeight || 0) : 0,
       reps: 0,
       isFailure: false,
       rpeActual: null,
+      durationSeconds: 0,
     }));
     onCompletedSetsChange(initial);
     return null;
@@ -74,11 +84,16 @@ const EnhancedExerciseCard = ({
     onCompletedSetsChange(updated);
   };
 
+  const isSetComplete = (set: EnhancedCompletedSet) => {
+    if (trackingType === "duration") return (set.durationSeconds || 0) > 0;
+    return set.reps > 0;
+  };
+
   const validateSet = (idx: number) => {
     if (idx < completedSets.length - 1) {
       setCurrentSetIdx(idx + 1);
       const updated = [...completedSets];
-      if (updated[idx + 1] && updated[idx + 1].weight === 0) {
+      if (trackingType === "weight_reps" && updated[idx + 1] && updated[idx + 1].weight === 0) {
         updated[idx + 1] = { ...updated[idx + 1], weight: updated[idx].weight };
         onCompletedSetsChange(updated);
       }
@@ -94,7 +109,7 @@ const EnhancedExerciseCard = ({
     const lastWeight = completedSets[completedSets.length - 1]?.weight || 0;
     onCompletedSetsChange([
       ...completedSets,
-      { setNumber: completedSets.length + 1, weight: lastWeight, reps: 0, isFailure: false, rpeActual: null }
+      { setNumber: completedSets.length + 1, weight: lastWeight, reps: 0, isFailure: false, rpeActual: null, durationSeconds: 0 }
     ]);
     if (allDone) {
       setAllDone(false);
@@ -112,6 +127,262 @@ const EnhancedExerciseCard = ({
     return "same";
   };
 
+  const formatDuration = (secs: number) => {
+    if (secs >= 60) return `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`;
+    return `${secs}s`;
+  };
+
+  // Tags display based on tracking type
+  const renderTags = () => {
+    switch (trackingType) {
+      case "duration":
+        return (
+          <>
+            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+              {targetSets}s
+            </span>
+            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium flex items-center gap-0.5">
+              <Timer className="w-2.5 h-2.5" />
+              {repsMin >= 60 ? `${Math.floor(repsMin / 60)}min` : `${repsMin}s`}
+            </span>
+          </>
+        );
+      case "reps_only":
+        return (
+          <>
+            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+              {targetSets}×{repsMin === repsMax ? repsMin : `${repsMin}-${repsMax}`}
+            </span>
+          </>
+        );
+      case "distance":
+        return (
+          <>
+            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium flex items-center gap-0.5">
+              <Route className="w-2.5 h-2.5" />
+              {repsMin}m
+            </span>
+            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+              {targetSets}s
+            </span>
+          </>
+        );
+      default: // weight_reps
+        return (
+          <>
+            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+              {targetSets}s
+            </span>
+            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+              {repsMin === repsMax ? repsMin : `${repsMin}-${repsMax}`} reps
+            </span>
+          </>
+        );
+    }
+  };
+
+  // Grid header and row based on tracking type
+  const renderSetHeader = () => {
+    switch (trackingType) {
+      case "duration":
+        return (
+          <div className="grid grid-cols-[36px_1fr_40px] gap-1.5 min-w-[200px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
+            <span>Set</span>
+            <span>{t('duration_sec', 'Durée (s)')}</span>
+            <span></span>
+          </div>
+        );
+      case "reps_only":
+        return (
+          <div className="grid grid-cols-[36px_1fr_40px_40px] gap-1.5 min-w-[240px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
+            <span>Set</span>
+            <span>Reps</span>
+            <span className="text-center">Fail</span>
+            <span></span>
+          </div>
+        );
+      case "distance":
+        return (
+          <div className="grid grid-cols-[36px_1fr_1fr_40px] gap-1.5 min-w-[260px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
+            <span>Set</span>
+            <span>{t('distance_m', 'Dist. (m)')}</span>
+            <span>{t('duration_sec', 'Durée (s)')}</span>
+            <span></span>
+          </div>
+        );
+      default:
+        return (
+          <div className="grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 min-w-[280px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
+            <span>Set</span>
+            <span>Kg</span>
+            <span>Reps</span>
+            <span className="text-center">Fail</span>
+            <span></span>
+          </div>
+        );
+    }
+  };
+
+  const renderSetRow = (set: EnhancedCompletedSet, i: number) => {
+    const isCurrent = i === currentSetIdx && !allDone;
+    const isDone = i < currentSetIdx || allDone;
+    const rowClass = cn(
+      "gap-1.5 items-center p-1.5 rounded-lg transition-colors",
+      isCurrent && "bg-accent ring-1 ring-accent-foreground/20",
+      isDone && "opacity-60"
+    );
+    const inputClass = "h-9 text-center bg-background text-sm font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
+
+    const checkButton = isCurrent ? (
+      <Button size="icon" className="h-9 w-9" onClick={() => validateSet(i)} disabled={!isSetComplete(set)}>
+        <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
+      </Button>
+    ) : (
+      <div className="h-9 w-9 flex items-center justify-center">
+        {isDone && <Check className="w-3.5 h-3.5 text-success" strokeWidth={1.5} />}
+      </div>
+    );
+
+    switch (trackingType) {
+      case "duration":
+        return (
+          <div key={i} className={cn("grid grid-cols-[36px_1fr_40px]", rowClass)}>
+            <span className="text-sm font-bold text-center">{set.setNumber}</span>
+            <Input
+              type="number"
+              value={set.durationSeconds || ""}
+              onChange={(e) => updateSet(i, "durationSeconds", Number(e.target.value))}
+              placeholder="0"
+              className={inputClass}
+              disabled={!isCurrent}
+              min={0}
+            />
+            {checkButton}
+          </div>
+        );
+      case "reps_only":
+        return (
+          <div key={i}>
+            <div className={cn("grid grid-cols-[36px_1fr_40px_40px]", rowClass)}>
+              <span className="text-sm font-bold text-center">{set.setNumber}</span>
+              <Input
+                type="number"
+                value={set.reps || ""}
+                onChange={(e) => updateSet(i, "reps", Number(e.target.value))}
+                placeholder="0"
+                className={inputClass}
+                disabled={!isCurrent}
+                min={0}
+              />
+              <button
+                onClick={() => updateSet(i, "isFailure", !set.isFailure)}
+                disabled={!isCurrent}
+                className={cn(
+                  "h-9 w-9 rounded-lg flex items-center justify-center mx-auto transition-colors",
+                  set.isFailure ? "bg-destructive/10 text-destructive" : "bg-secondary text-muted-foreground",
+                  "disabled:opacity-40"
+                )}
+              >
+                <X className="w-3.5 h-3.5" strokeWidth={1.5} />
+              </button>
+              {checkButton}
+            </div>
+            {isDone && (
+              <div className="pl-9 mt-1 mb-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground font-medium">RPE:</span>
+                  <RPESelector value={set.rpeActual} onChange={(rpe) => updateSet(i, "rpeActual", rpe)} disabled={false} />
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      case "distance":
+        return (
+          <div key={i} className={cn("grid grid-cols-[36px_1fr_1fr_40px]", rowClass)}>
+            <span className="text-sm font-bold text-center">{set.setNumber}</span>
+            <Input
+              type="number"
+              value={set.reps || ""}
+              onChange={(e) => updateSet(i, "reps", Number(e.target.value))}
+              placeholder="0"
+              className={inputClass}
+              disabled={!isCurrent}
+              min={0}
+            />
+            <Input
+              type="number"
+              value={set.durationSeconds || ""}
+              onChange={(e) => updateSet(i, "durationSeconds", Number(e.target.value))}
+              placeholder="0"
+              className={inputClass}
+              disabled={!isCurrent}
+              min={0}
+            />
+            {checkButton}
+          </div>
+        );
+      default: // weight_reps
+        return (
+          <div key={i}>
+            <div className={cn("grid grid-cols-[36px_1fr_1fr_40px_40px]", rowClass)}>
+              <span className="text-sm font-bold text-center">{set.setNumber}</span>
+              <div className="relative">
+                <Input
+                  type="number"
+                  value={set.weight || ""}
+                  onChange={(e) => updateSet(i, "weight", Number(e.target.value))}
+                  placeholder="0"
+                  className={inputClass}
+                  disabled={!isCurrent}
+                  min={0}
+                  step={2.5}
+                />
+                {getPrevComparison(i, "weight") && isDone && (
+                  <span className={cn(
+                    "absolute -right-0.5 -top-0.5 text-[9px] font-bold",
+                    getPrevComparison(i, "weight") === "up" && "text-success",
+                    getPrevComparison(i, "weight") === "down" && "text-destructive",
+                  )}>
+                    {getPrevComparison(i, "weight") === "up" ? "↑" : getPrevComparison(i, "weight") === "down" ? "↓" : ""}
+                  </span>
+                )}
+              </div>
+              <Input
+                type="number"
+                value={set.reps || ""}
+                onChange={(e) => updateSet(i, "reps", Number(e.target.value))}
+                placeholder="0"
+                className={inputClass}
+                disabled={!isCurrent}
+                min={0}
+              />
+              <button
+                onClick={() => updateSet(i, "isFailure", !set.isFailure)}
+                disabled={!isCurrent}
+                className={cn(
+                  "h-9 w-9 rounded-lg flex items-center justify-center mx-auto transition-colors",
+                  set.isFailure ? "bg-destructive/10 text-destructive" : "bg-secondary text-muted-foreground",
+                  "disabled:opacity-40"
+                )}
+              >
+                <X className="w-3.5 h-3.5" strokeWidth={1.5} />
+              </button>
+              {checkButton}
+            </div>
+            {isDone && (
+              <div className="pl-9 mt-1 mb-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground font-medium">RPE:</span>
+                  <RPESelector value={set.rpeActual} onChange={(rpe) => updateSet(i, "rpeActual", rpe)} disabled={false} />
+                </div>
+              </div>
+            )}
+          </div>
+        );
+    }
+  };
+
   return (
     <div className={cn(
       "rounded-xl border transition-all",
@@ -124,7 +395,13 @@ const EnhancedExerciseCard = ({
           className="flex items-center gap-3 flex-1 min-w-0 text-left"
         >
           <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-            <Dumbbell className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            {trackingType === "duration" ? (
+              <Timer className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            ) : trackingType === "distance" ? (
+              <Route className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            ) : (
+              <Dumbbell className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
@@ -136,12 +413,7 @@ const EnhancedExerciseCard = ({
               )}
             </div>
             <div className="flex flex-wrap gap-1.5 mt-1">
-              <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-                {targetSets}s
-              </span>
-              <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-                {repsMin === repsMax ? repsMin : `${repsMin}-${repsMax}`} reps
-              </span>
+              {renderTags()}
               {tempo && (
                 <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
                   {tempo}
@@ -186,7 +458,7 @@ const EnhancedExerciseCard = ({
         <div className="px-3 pb-3 space-y-3 border-t border-border pt-3">
           {(suggestedWeight || coachNotes || videoUrl || videoSearchQuery) && (
             <div className="space-y-2">
-              {suggestedWeight && (
+              {suggestedWeight && trackingType === "weight_reps" && (
                 <p className="text-xs text-muted-foreground">
                   💪 <span className="font-medium">{t('target_weight')} :</span> {suggestedWeight} kg
                 </p>
@@ -215,101 +487,14 @@ const EnhancedExerciseCard = ({
           {isActive && completedSets.length > 0 && (
             <div className="space-y-2">
               <div className="overflow-x-auto -mx-3 px-3">
-              <div className="grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 min-w-[280px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
-                <span>Set</span>
-                <span>Kg</span>
-                <span>Reps</span>
-                <span className="text-center">Fail</span>
-                <span></span>
-              </div>
-
-              {completedSets.map((set, i) => {
-                const weightTrend = getPrevComparison(i, "weight");
-                const isCurrent = i === currentSetIdx && !allDone;
-                const isDone = i < currentSetIdx || allDone;
-
-                return (
-                  <div key={i}>
-                    <div className={cn(
-                      "grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 min-w-[280px] items-center p-1.5 rounded-lg transition-colors",
-                      isCurrent && "bg-accent ring-1 ring-accent-foreground/20",
-                      isDone && "opacity-60"
-                    )}>
-                      <span className="text-sm font-bold text-center">{set.setNumber}</span>
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          value={set.weight || ""}
-                          onChange={(e) => updateSet(i, "weight", Number(e.target.value))}
-                          placeholder="0"
-                          className="h-9 text-center bg-background text-sm font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          disabled={!isCurrent}
-                          min={0}
-                          step={2.5}
-                        />
-                        {weightTrend && isDone && (
-                          <span className={cn(
-                            "absolute -right-0.5 -top-0.5 text-[9px] font-bold",
-                            weightTrend === "up" && "text-success",
-                            weightTrend === "down" && "text-destructive",
-                          )}>
-                            {weightTrend === "up" ? "↑" : weightTrend === "down" ? "↓" : ""}
-                          </span>
-                        )}
-                      </div>
-                      <Input
-                        type="number"
-                        value={set.reps || ""}
-                        onChange={(e) => updateSet(i, "reps", Number(e.target.value))}
-                        placeholder="0"
-                        className="h-9 text-center bg-background text-sm font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        disabled={!isCurrent}
-                        min={0}
-                      />
-                      <button
-                        onClick={() => updateSet(i, "isFailure", !set.isFailure)}
-                        disabled={!isCurrent}
-                        className={cn(
-                          "h-9 w-9 rounded-lg flex items-center justify-center mx-auto transition-colors",
-                          set.isFailure ? "bg-destructive/10 text-destructive" : "bg-secondary text-muted-foreground",
-                          "disabled:opacity-40"
-                        )}
-                      >
-                        <X className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      </button>
-                      {isCurrent ? (
-                        <Button size="icon" className="h-9 w-9" onClick={() => validateSet(i)} disabled={!set.reps}>
-                          <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
-                        </Button>
-                      ) : (
-                        <div className="h-9 w-9 flex items-center justify-center">
-                          {isDone && <Check className="w-3.5 h-3.5 text-success" strokeWidth={1.5} />}
-                        </div>
-                      )}
-                    </div>
-
-                    {isDone && (
-                      <div className="pl-9 mt-1 mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-muted-foreground font-medium">RPE:</span>
-                          <RPESelector
-                            value={set.rpeActual}
-                            onChange={(rpe) => updateSet(i, "rpeActual", rpe)}
-                            disabled={false}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {!allDone && (
-                <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={addSet}>
-                  <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
-                  {t('add_set')}
-                </Button>
-              )}
+                {renderSetHeader()}
+                {completedSets.map((set, i) => renderSetRow(set, i))}
+                {!allDone && (
+                  <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={addSet}>
+                    <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
+                    {t('add_set')}
+                  </Button>
+                )}
               </div>
             </div>
           )}

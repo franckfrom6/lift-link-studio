@@ -35,5 +35,7 @@
   "target_weight": "Charge cible",
   "add_set": "Ajouter une série",
   "modified": "Modifié",
-  "more_options": "Plus d'options"
+  "more_options": "Plus d'options",
+  "duration_sec": "Durée (s)",
+  "distance_m": "Distance (m)"
 }

@@ -1,5 +1,5 @@
 import { SessionExerciseData } from "@/types/coach";
-import { Trash2, ChevronUp, ChevronDown, Dumbbell, MessageSquare, Film } from "lucide-react";
+import { Trash2, ChevronUp, ChevronDown, Dumbbell, MessageSquare, Film, Timer, Route } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -20,6 +20,11 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
   const [showExtras, setShowExtras] = useState(false);
   const { t } = useTranslation('exercises');
 
+  const trackingType = (item.exercise as any).tracking_type || "weight_reps";
+  const isDuration = trackingType === "duration";
+  const isRepsOnly = trackingType === "reps_only";
+  const isDistance = trackingType === "distance";
+
   return (
     <div className="glass p-4 space-y-3">
       {/* Header */}
@@ -33,7 +38,9 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
           </button>
         </div>
         <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-          <Dumbbell className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+          {isDuration ? <Timer className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            : isDistance ? <Route className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            : <Dumbbell className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />}
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm">{item.exercise.name}</p>
@@ -50,8 +57,8 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
         </button>
       </div>
 
-      {/* Core params grid */}
-      <div className="grid grid-cols-4 gap-2">
+      {/* Core params grid — adapts to tracking type */}
+      <div className={`grid gap-2 ${isDuration ? 'grid-cols-3' : isDistance ? 'grid-cols-3' : 'grid-cols-4'}`}>
         <div>
           <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('sets_label')}</label>
           <Input
@@ -62,26 +69,60 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
             min={1} max={20}
           />
         </div>
-        <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('reps_min')}</label>
-          <Input
-            type="number"
-            value={item.repsMin}
-            onChange={(e) => onUpdate({ ...item, repsMin: Number(e.target.value) || 1 })}
-            className="h-9 text-center bg-surface text-sm font-semibold"
-            min={1} max={100}
-          />
-        </div>
-        <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('reps_max')}</label>
-          <Input
-            type="number"
-            value={item.repsMax}
-            onChange={(e) => onUpdate({ ...item, repsMax: Number(e.target.value) || 1 })}
-            className="h-9 text-center bg-surface text-sm font-semibold"
-            min={1} max={100}
-          />
-        </div>
+        {isDuration ? (
+          <div>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('duration_sec', 'Durée (s)')}</label>
+            <Input
+              type="number"
+              value={item.repsMin}
+              onChange={(e) => {
+                const v = Number(e.target.value) || 1;
+                onUpdate({ ...item, repsMin: v, repsMax: v });
+              }}
+              className="h-9 text-center bg-surface text-sm font-semibold"
+              min={1}
+            />
+          </div>
+        ) : isDistance ? (
+          <>
+            <div>
+              <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('distance_m', 'Distance (m)')}</label>
+              <Input
+                type="number"
+                value={item.repsMin}
+                onChange={(e) => {
+                  const v = Number(e.target.value) || 1;
+                  onUpdate({ ...item, repsMin: v, repsMax: v });
+                }}
+                className="h-9 text-center bg-surface text-sm font-semibold"
+                min={1}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('reps_min')}</label>
+              <Input
+                type="number"
+                value={item.repsMin}
+                onChange={(e) => onUpdate({ ...item, repsMin: Number(e.target.value) || 1 })}
+                className="h-9 text-center bg-surface text-sm font-semibold"
+                min={1} max={100}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('reps_max')}</label>
+              <Input
+                type="number"
+                value={item.repsMax}
+                onChange={(e) => onUpdate({ ...item, repsMax: Number(e.target.value) || 1 })}
+                className="h-9 text-center bg-surface text-sm font-semibold"
+                min={1} max={100}
+              />
+            </div>
+          </>
+        )}
         <div>
           <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('rest_s')}</label>
           <Input
@@ -94,19 +135,21 @@ const SessionExerciseCard = ({ item, index, total, onUpdate, onRemove, onMoveUp,
         </div>
       </div>
 
-      {/* Extended params */}
-      <div className="grid grid-cols-3 gap-2">
-        <div>
-          <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('weight_kg')}</label>
-          <Input
-            type="number"
-            value={item.suggestedWeight ?? ""}
-            onChange={(e) => onUpdate({ ...item, suggestedWeight: e.target.value ? Number(e.target.value) : undefined })}
-            placeholder="—"
-            className="h-9 bg-surface text-sm"
-            min={0} step={2.5}
-          />
-        </div>
+      {/* Extended params — hide weight for reps_only / duration / distance */}
+      <div className={`grid gap-2 ${(isDuration || isRepsOnly || isDistance) ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        {!isDuration && !isRepsOnly && !isDistance && (
+          <div>
+            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('weight_kg')}</label>
+            <Input
+              type="number"
+              value={item.suggestedWeight ?? ""}
+              onChange={(e) => onUpdate({ ...item, suggestedWeight: e.target.value ? Number(e.target.value) : undefined })}
+              placeholder="—"
+              className="h-9 bg-surface text-sm"
+              min={0} step={2.5}
+            />
+          </div>
+        )}
         <div>
           <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.05em]">{t('tempo')}</label>
           <Input
