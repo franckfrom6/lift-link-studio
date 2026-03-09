@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { useCoachDashboard } from "@/hooks/useCoachDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import InviteClientModal from "@/components/InviteClientModal";
+import CoachInviteToken from "@/components/coach/CoachInviteToken";
 
 const CoachStudents = () => {
   const [search, setSearch] = useState("");
