@@ -1004,10 +1004,12 @@ serve(async (req) => {
       }
     }
 
-    // 6. Build prompt (with session intelligence for chat)
+    // 6. Build prompt (with session + nutrition intelligence for chat)
     if (action === "chat") {
       const sessionCtx = await fetchSessionContext(serviceClient, userId);
+      const nutritionCtx = await fetchNutritionContext(serviceClient, userId);
       (payload || {})._sessionContext = sessionCtx;
+      (payload || {})._nutritionContext = nutritionCtx;
     }
     const built = ACTION_BUILDERS[action](payload || {}, lang || "fr");
     const model = MODEL_FOR_ACTION[action] || "google/gemini-2.5-flash-lite";
