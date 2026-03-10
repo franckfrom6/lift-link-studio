@@ -981,7 +981,7 @@ serve(async (req) => {
             const successOnes = toolResults.filter(r => r.success);
             if (successOnes.length > 0) {
               textContent = successOnes.map(r => 
-                `✅ Séance "${r.name}" créée pour le ${r.date} avec ${r.exercise_count} exercices ! Rafraîchis ton calendrier pour la voir.`
+                `✅ Séance "${r.name}" créée pour le ${r.date} avec ${r.exercise_count} exercices${r.section_count ? ` en ${r.section_count} sections` : ""} ! Rafraîchis ton calendrier pour la voir. ⚡`
               ).join("\n");
             } else {
               textContent = "❌ Désolé, je n'ai pas pu créer la séance. Réessaie ou crée-la manuellement depuis le calendrier.";
