@@ -823,11 +823,8 @@ serve(async (req) => {
                 : tc.function.arguments;
               
               try {
-                // Look up exercises by name
-                const exerciseRows = [];
-                for (let i = 0; i < (args.exercises || []).length; i++) {
-                  const ex = args.exercises[i];
-                  // Try to find the exercise in the database
+                // Resolve exercise IDs from names
+                async function resolveExercise(ex: any) {
                   const { data: found } = await serviceClient
                     .from("exercises")
                     .select("id, name")
@@ -836,38 +833,25 @@ serve(async (req) => {
                     .limit(1)
                     .maybeSingle();
                   
-                  let exerciseId: string;
-                  if (found) {
-                    exerciseId = found.id;
-                  } else {
-                    // Create a custom exercise
-                    const { data: created, error: createErr } = await serviceClient
-                      .from("exercises")
-                      .insert({
-                        name: ex.name,
-                        muscle_group: "Autre",
-                        equipment: "Autre",
-                        type: "compound",
-                        is_default: false,
-                        created_by: userId,
-                      })
-                      .select("id")
-                      .single();
-                    if (createErr || !created) {
-                      console.error("Error creating exercise:", createErr);
-                      continue;
-                    }
-                    exerciseId = created.id;
+                  if (found) return found.id;
+                  
+                  const { data: created, error: createErr } = await serviceClient
+                    .from("exercises")
+                    .insert({
+                      name: ex.name,
+                      muscle_group: "Autre",
+                      equipment: "Autre",
+                      type: "compound",
+                      is_default: false,
+                      created_by: userId,
+                    })
+                    .select("id")
+                    .single();
+                  if (createErr || !created) {
+                    console.error("Error creating exercise:", createErr);
+                    return null;
                   }
-                  exerciseRows.push({
-                    exercise_id: exerciseId,
-                    sort_order: i,
-                    sets: ex.sets || 3,
-                    reps_min: ex.reps_min || 8,
-                    reps_max: ex.reps_max || 12,
-                    rest_seconds: ex.rest_seconds || 90,
-                    coach_notes: ex.coach_notes || null,
-                  });
+                  return created.id;
                 }
 
                 // Create the session
@@ -887,15 +871,78 @@ serve(async (req) => {
                   console.error("Error creating session:", sessErr);
                   toolResults.push({ tool: "create_free_session", success: false, error: sessErr?.message });
                 } else {
-                  // Insert exercises
-                  if (exerciseRows.length > 0) {
-                    const rows = exerciseRows.map(r => ({ ...r, session_id: session.id }));
-                    const { error: exErr } = await serviceClient
-                      .from("session_exercises")
-                      .insert(rows);
-                    if (exErr) console.error("Error inserting exercises:", exErr);
+                  let totalExercises = 0;
+
+                  // Handle sections if provided
+                  if (args.sections && args.sections.length > 0) {
+                    for (let sIdx = 0; sIdx < args.sections.length; sIdx++) {
+                      const sec = args.sections[sIdx];
+                      const { data: sectionRow, error: secErr } = await serviceClient
+                        .from("session_sections")
+                        .insert({
+                          session_id: session.id,
+                          name: sec.name,
+                          sort_order: sIdx,
+                          icon: sec.icon || null,
+                          duration_estimate: sec.duration_estimate || null,
+                        })
+                        .select("id")
+                        .single();
+                      
+                      if (secErr || !sectionRow) {
+                        console.error("Error creating section:", secErr);
+                        continue;
+                      }
+
+                      for (let eIdx = 0; eIdx < (sec.exercises || []).length; eIdx++) {
+                        const ex = sec.exercises[eIdx];
+                        const exerciseId = await resolveExercise(ex);
+                        if (!exerciseId) continue;
+                        
+                        const { error: exErr } = await serviceClient
+                          .from("session_exercises")
+                          .insert({
+                            session_id: session.id,
+                            section_id: sectionRow.id,
+                            exercise_id: exerciseId,
+                            sort_order: eIdx,
+                            sets: ex.sets || 3,
+                            reps_min: ex.reps_min || 8,
+                            reps_max: ex.reps_max || 12,
+                            rest_seconds: ex.rest_seconds || 90,
+                            coach_notes: ex.coach_notes || null,
+                          });
+                        if (exErr) console.error("Error inserting exercise:", exErr);
+                        else totalExercises++;
+                      }
+                    }
                   }
-                  toolResults.push({ tool: "create_free_session", success: true, session_id: session.id, name: args.name, date: args.date, exercise_count: exerciseRows.length });
+
+                  // Handle flat exercises (backward compat)
+                  if (args.exercises && args.exercises.length > 0 && totalExercises === 0) {
+                    for (let i = 0; i < args.exercises.length; i++) {
+                      const ex = args.exercises[i];
+                      const exerciseId = await resolveExercise(ex);
+                      if (!exerciseId) continue;
+                      
+                      const { error: exErr } = await serviceClient
+                        .from("session_exercises")
+                        .insert({
+                          session_id: session.id,
+                          exercise_id: exerciseId,
+                          sort_order: i,
+                          sets: ex.sets || 3,
+                          reps_min: ex.reps_min || 8,
+                          reps_max: ex.reps_max || 12,
+                          rest_seconds: ex.rest_seconds || 90,
+                          coach_notes: ex.coach_notes || null,
+                        });
+                      if (exErr) console.error("Error inserting exercise:", exErr);
+                      else totalExercises++;
+                    }
+                  }
+
+                  toolResults.push({ tool: "create_free_session", success: true, session_id: session.id, name: args.name, date: args.date, exercise_count: totalExercises, section_count: args.sections?.length || 0 });
                 }
               } catch (toolErr) {
                 console.error("Tool execution error:", toolErr);
