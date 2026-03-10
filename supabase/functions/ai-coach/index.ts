@@ -463,6 +463,78 @@ function buildRecoveryRecommendation(payload: any, lang: string) {
   return { system, user, tools, toolChoice: { type: "function", function: { name: "recovery_recommendation" } } };
 }
 
+// Fetch recent session context for smart session creation
+async function fetchSessionContext(serviceClient: any, userId: string) {
+  try {
+    // 1. Get last 2 completed sessions with their exercises & muscle groups
+    const { data: recentCompleted } = await serviceClient
+      .from("completed_sessions")
+      .select(`
+        id, completed_at,
+        session:sessions(
+          id, name,
+          session_exercises(
+            exercise:exercises(name, muscle_group, type)
+          )
+        )
+      `)
+      .eq("student_id", userId)
+      .order("completed_at", { ascending: false })
+      .limit(2);
+
+    const recentMuscleGroups: string[] = [];
+    const recentSessionsSummary: string[] = [];
+    if (recentCompleted) {
+      for (const cs of recentCompleted) {
+        const sess = cs.session as any;
+        if (!sess) continue;
+        const muscles = (sess.session_exercises || [])
+          .map((se: any) => se.exercise?.muscle_group)
+          .filter(Boolean);
+        recentMuscleGroups.push(...muscles);
+        recentSessionsSummary.push(`${sess.name}: ${[...new Set(muscles)].join(", ")}`);
+      }
+    }
+
+    // 2. Get most popular exercises from completed sessions globally (top patterns)
+    const { data: popularExercises } = await serviceClient
+      .from("completed_sets")
+      .select(`
+        session_exercise:session_exercises(
+          exercise:exercises(name, muscle_group, type, equipment)
+        )
+      `)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    const exerciseFrequency: Record<string, { count: number; muscle_group: string; type: string }> = {};
+    if (popularExercises) {
+      for (const cs of popularExercises) {
+        const ex = (cs.session_exercise as any)?.exercise;
+        if (!ex?.name) continue;
+        if (!exerciseFrequency[ex.name]) {
+          exerciseFrequency[ex.name] = { count: 0, muscle_group: ex.muscle_group, type: ex.type };
+        }
+        exerciseFrequency[ex.name].count++;
+      }
+    }
+
+    const topExercises = Object.entries(exerciseFrequency)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 20)
+      .map(([name, info]) => `${name} (${info.muscle_group}, ${info.type}, ${info.count}x)`);
+
+    return {
+      recentMuscleGroups: [...new Set(recentMuscleGroups)],
+      recentSessionsSummary,
+      topExercises,
+    };
+  } catch (e) {
+    console.error("Error fetching session context:", e);
+    return { recentMuscleGroups: [], recentSessionsSummary: [], topExercises: [] };
+  }
+}
+
 function buildChat(payload: any, lang: string) {
   const l = lang === "fr" ? "Réponds en français." : "Respond in English.";
   const contextBlock = payload.context ? `\n\nCONTEXTE UTILISATEUR :\n${payload.context}` : "";
@@ -470,6 +542,18 @@ function buildChat(payload: any, lang: string) {
   const todayStr = today.toISOString().split("T")[0];
   const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
   const todayDayName = dayNames[today.getDay()];
+
+  // Session intelligence context (injected dynamically)
+  const sessionCtx = payload._sessionContext;
+  let sessionIntelligence = "";
+  if (sessionCtx) {
+    sessionIntelligence = `
+INTELLIGENCE SÉANCE (données temps réel) :
+- Derniers muscle_group travaillés : ${sessionCtx.recentMuscleGroups.length > 0 ? sessionCtx.recentMuscleGroups.join(", ") : "Aucune donnée"}
+- Résumé des 2 dernières séances : ${sessionCtx.recentSessionsSummary.length > 0 ? sessionCtx.recentSessionsSummary.join(" | ") : "Aucune séance récente"}
+- Exercices les plus performants (base globale) : ${sessionCtx.topExercises.length > 0 ? sessionCtx.topExercises.join(", ") : "Aucune donnée"}
+`;
+  }
 
   const system = `Tu es VOLT ⚡, le coach IA de l'application.
 
@@ -496,6 +580,19 @@ CAPACITÉS IMPORTANTES :
 - Pour chaque exercice, cherche le nom exact dans la base de données (noms français courants : "Développé couché barre", "Squat barre", "Soulevé de terre", etc.)
 - Le day_of_week est 1=Lundi, 2=Mardi, ..., 7=Dimanche.
 - La date doit être au format YYYY-MM-DD. Utilise l'année ${today.getFullYear()}.
+${sessionIntelligence}
+RÈGLES DE CONSTRUCTION DE SÉANCE :
+Quand tu crées une séance avec create_free_session :
+1. NE RÉPÈTE PAS les muscle_group des 2 dernières séances de l'utilisateur (voir INTELLIGENCE SÉANCE)
+2. Privilégie les exercices les plus performants de la base globale
+3. Crée MINIMUM 2 sections (ex: "Compound", "Isolation", "Cardio", "Mobilité")
+4. Place exactement 4 exercices minimum répartis entre les sections
+5. Donne un nom dynamique à la séance selon l'objectif (pas de nom générique)
+6. Dans ta réponse textuelle, formate le récap ainsi :
+   - Récap en 1 ligne des derniers muscle_group travaillés
+   - Objectif de la séance du jour
+   - Les sections formatées avec exercices
+   - Un conseil motivation ⚡
 
 ${l}${contextBlock}`;
   
@@ -507,15 +604,45 @@ ${l}${contextBlock}`;
     type: "function",
     function: {
       name: "create_free_session",
-      description: "Create a free workout session in the athlete's calendar with exercises. Use this whenever the user asks to add/create a workout session.",
+      description: "Create a free workout session in the athlete's calendar with sections and exercises. Use this whenever the user asks to add/create a workout session.",
       parameters: {
         type: "object",
         properties: {
-          name: { type: "string", description: "Session name, e.g. 'Upper Body', 'Hyrox Power'" },
+          name: { type: "string", description: "Dynamic session name based on objective, e.g. 'Push Power ⚡', 'Lower Body Explosif'" },
           date: { type: "string", description: "Date in YYYY-MM-DD format" },
           day_of_week: { type: "number", description: "1=Monday ... 7=Sunday" },
+          sections: {
+            type: "array",
+            description: "Minimum 2 sections to organize exercises",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "Section name, e.g. 'Compound', 'Isolation', 'Cardio', 'Mobilité'" },
+                icon: { type: "string", description: "Optional emoji icon for the section, e.g. '🔥', '⚡', '🧘'" },
+                duration_estimate: { type: "string", description: "Estimated duration, e.g. '15 min'" },
+                exercises: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string", description: "Exercise name (French preferred)" },
+                      sets: { type: "number" },
+                      reps_min: { type: "number" },
+                      reps_max: { type: "number" },
+                      rest_seconds: { type: "number" },
+                      coach_notes: { type: "string", description: "Optional notes (tempo, technique cues)" },
+                    },
+                    required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
+                  },
+                },
+              },
+              required: ["name", "exercises"],
+            },
+          },
+          // Keep flat exercises for backward compat
           exercises: {
             type: "array",
+            description: "Flat list of exercises (use sections instead when possible)",
             items: {
               type: "object",
               properties: {
@@ -530,7 +657,7 @@ ${l}${contextBlock}`;
             },
           },
         },
-        required: ["name", "date", "day_of_week", "exercises"],
+        required: ["name", "date", "day_of_week"],
       },
     },
   }];
@@ -644,7 +771,11 @@ serve(async (req) => {
       }
     }
 
-    // 6. Build prompt
+    // 6. Build prompt (with session intelligence for chat)
+    if (action === "chat") {
+      const sessionCtx = await fetchSessionContext(serviceClient, userId);
+      (payload || {})._sessionContext = sessionCtx;
+    }
     const built = ACTION_BUILDERS[action](payload || {}, lang || "fr");
     const model = MODEL_FOR_ACTION[action] || "google/gemini-2.5-flash-lite";
 
@@ -692,11 +823,8 @@ serve(async (req) => {
                 : tc.function.arguments;
               
               try {
-                // Look up exercises by name
-                const exerciseRows = [];
-                for (let i = 0; i < (args.exercises || []).length; i++) {
-                  const ex = args.exercises[i];
-                  // Try to find the exercise in the database
+                // Resolve exercise IDs from names
+                async function resolveExercise(ex: any) {
                   const { data: found } = await serviceClient
                     .from("exercises")
                     .select("id, name")
@@ -705,38 +833,25 @@ serve(async (req) => {
                     .limit(1)
                     .maybeSingle();
                   
-                  let exerciseId: string;
-                  if (found) {
-                    exerciseId = found.id;
-                  } else {
-                    // Create a custom exercise
-                    const { data: created, error: createErr } = await serviceClient
-                      .from("exercises")
-                      .insert({
-                        name: ex.name,
-                        muscle_group: "Autre",
-                        equipment: "Autre",
-                        type: "compound",
-                        is_default: false,
-                        created_by: userId,
-                      })
-                      .select("id")
-                      .single();
-                    if (createErr || !created) {
-                      console.error("Error creating exercise:", createErr);
-                      continue;
-                    }
-                    exerciseId = created.id;
+                  if (found) return found.id;
+                  
+                  const { data: created, error: createErr } = await serviceClient
+                    .from("exercises")
+                    .insert({
+                      name: ex.name,
+                      muscle_group: "Autre",
+                      equipment: "Autre",
+                      type: "compound",
+                      is_default: false,
+                      created_by: userId,
+                    })
+                    .select("id")
+                    .single();
+                  if (createErr || !created) {
+                    console.error("Error creating exercise:", createErr);
+                    return null;
                   }
-                  exerciseRows.push({
-                    exercise_id: exerciseId,
-                    sort_order: i,
-                    sets: ex.sets || 3,
-                    reps_min: ex.reps_min || 8,
-                    reps_max: ex.reps_max || 12,
-                    rest_seconds: ex.rest_seconds || 90,
-                    coach_notes: ex.coach_notes || null,
-                  });
+                  return created.id;
                 }
 
                 // Create the session
@@ -756,15 +871,78 @@ serve(async (req) => {
                   console.error("Error creating session:", sessErr);
                   toolResults.push({ tool: "create_free_session", success: false, error: sessErr?.message });
                 } else {
-                  // Insert exercises
-                  if (exerciseRows.length > 0) {
-                    const rows = exerciseRows.map(r => ({ ...r, session_id: session.id }));
-                    const { error: exErr } = await serviceClient
-                      .from("session_exercises")
-                      .insert(rows);
-                    if (exErr) console.error("Error inserting exercises:", exErr);
+                  let totalExercises = 0;
+
+                  // Handle sections if provided
+                  if (args.sections && args.sections.length > 0) {
+                    for (let sIdx = 0; sIdx < args.sections.length; sIdx++) {
+                      const sec = args.sections[sIdx];
+                      const { data: sectionRow, error: secErr } = await serviceClient
+                        .from("session_sections")
+                        .insert({
+                          session_id: session.id,
+                          name: sec.name,
+                          sort_order: sIdx,
+                          icon: sec.icon || null,
+                          duration_estimate: sec.duration_estimate || null,
+                        })
+                        .select("id")
+                        .single();
+                      
+                      if (secErr || !sectionRow) {
+                        console.error("Error creating section:", secErr);
+                        continue;
+                      }
+
+                      for (let eIdx = 0; eIdx < (sec.exercises || []).length; eIdx++) {
+                        const ex = sec.exercises[eIdx];
+                        const exerciseId = await resolveExercise(ex);
+                        if (!exerciseId) continue;
+                        
+                        const { error: exErr } = await serviceClient
+                          .from("session_exercises")
+                          .insert({
+                            session_id: session.id,
+                            section_id: sectionRow.id,
+                            exercise_id: exerciseId,
+                            sort_order: eIdx,
+                            sets: ex.sets || 3,
+                            reps_min: ex.reps_min || 8,
+                            reps_max: ex.reps_max || 12,
+                            rest_seconds: ex.rest_seconds || 90,
+                            coach_notes: ex.coach_notes || null,
+                          });
+                        if (exErr) console.error("Error inserting exercise:", exErr);
+                        else totalExercises++;
+                      }
+                    }
                   }
-                  toolResults.push({ tool: "create_free_session", success: true, session_id: session.id, name: args.name, date: args.date, exercise_count: exerciseRows.length });
+
+                  // Handle flat exercises (backward compat)
+                  if (args.exercises && args.exercises.length > 0 && totalExercises === 0) {
+                    for (let i = 0; i < args.exercises.length; i++) {
+                      const ex = args.exercises[i];
+                      const exerciseId = await resolveExercise(ex);
+                      if (!exerciseId) continue;
+                      
+                      const { error: exErr } = await serviceClient
+                        .from("session_exercises")
+                        .insert({
+                          session_id: session.id,
+                          exercise_id: exerciseId,
+                          sort_order: i,
+                          sets: ex.sets || 3,
+                          reps_min: ex.reps_min || 8,
+                          reps_max: ex.reps_max || 12,
+                          rest_seconds: ex.rest_seconds || 90,
+                          coach_notes: ex.coach_notes || null,
+                        });
+                      if (exErr) console.error("Error inserting exercise:", exErr);
+                      else totalExercises++;
+                    }
+                  }
+
+                  toolResults.push({ tool: "create_free_session", success: true, session_id: session.id, name: args.name, date: args.date, exercise_count: totalExercises, section_count: args.sections?.length || 0 });
                 }
               } catch (toolErr) {
                 console.error("Tool execution error:", toolErr);
@@ -803,7 +981,7 @@ serve(async (req) => {
             const successOnes = toolResults.filter(r => r.success);
             if (successOnes.length > 0) {
               textContent = successOnes.map(r => 
-                `✅ Séance "${r.name}" créée pour le ${r.date} avec ${r.exercise_count} exercices ! Rafraîchis ton calendrier pour la voir.`
+                `✅ Séance "${r.name}" créée pour le ${r.date} avec ${r.exercise_count} exercices${r.section_count ? ` en ${r.section_count} sections` : ""} ! Rafraîchis ton calendrier pour la voir. ⚡`
               ).join("\n");
             } else {
               textContent = "❌ Désolé, je n'ai pas pu créer la séance. Réessaie ou crée-la manuellement depuis le calendrier.";
