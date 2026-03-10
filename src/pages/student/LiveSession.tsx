@@ -52,7 +52,7 @@ const LiveSession = () => {
   // Track which exercises' sets have been saved to DB
   const savedExercisesRef = useRef<Set<string>>(new Set());
 
-  const selectedSessionId = (location.state as { sessionId?: string } | null)?.sessionId;
+  // selectedSessionId comes from URL params now
 
   const [freeSession, setFreeSession] = useState<any>(null);
   const [freeSessionLoading, setFreeSessionLoading] = useState(false);
