@@ -617,9 +617,9 @@ const StudentWeek = () => {
                             onClick={(e) => {
                               e.stopPropagation();
                               if (isSessionDay && sessionInfo) {
-                                navigate("/student/session", { state: { sessionId: sessionInfo.sessionId } });
+                                navigate(`/student/session/${sessionInfo.sessionId}`);
                               } else if (dayFreeSessions.length > 0) {
-                                navigate("/student/session", { state: { sessionId: dayFreeSessions[0].id } });
+                                navigate(`/student/session/${dayFreeSessions[0].id}`);
                               }
                             }}
                           >
