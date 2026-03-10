@@ -54,8 +54,8 @@ const LiveSession = () => {
 
   const selectedSessionId = (location.state as { sessionId?: string } | null)?.sessionId;
 
-  // Free session loaded from DB when not found in program
   const [freeSession, setFreeSession] = useState<any>(null);
+  const [freeSessionLoading, setFreeSessionLoading] = useState(false);
 
   const programSession = useMemo(() => {
     const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
