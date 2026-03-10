@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { YANA_PROGRAM, ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
+import { ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
 import { EXERCISE_ALTERNATIVES, AlternativeGroup } from "@/data/exercise-alternatives";
 import { EnhancedCompletedSet } from "@/components/student/EnhancedExerciseCard";
 import EnhancedExerciseCard from "@/components/student/EnhancedExerciseCard";
@@ -165,28 +165,20 @@ const LiveSession = () => {
           isDeload: p.is_deload,
           order: p.sort_order,
         }))
-      : YANA_PROGRAM.progression.map((p, i) => {
-          const weekMatch = p.match(/Semaine[s]?\s+(\d+)(?:\s*[-–]\s*(\d+))?/i);
-          const weekStart = weekMatch ? parseInt(weekMatch[1]) : i + 1;
-          const weekEnd = weekMatch && weekMatch[2] ? parseInt(weekMatch[2]) : weekStart;
-          return {
-            id: `prog-${i}`,
-            weekLabel: p.split(":")[0]?.trim() || `Phase ${i + 1}`,
-            description: p.split(":").slice(1).join(":").trim() || p,
-            weekStart,
-            weekEnd,
-            isDeload: p.toLowerCase().includes("deload"),
-            order: i,
-          };
-        });
+      : [];
 
     return phases;
   }, [dbProgram?.progression]);
 
   const sessionProgram = useMemo(() => {
-    if (!selectedSession || mappedSections.length === 0) return YANA_PROGRAM;
+    if (!selectedSession || mappedSections.length === 0) {
+      return {
+        title: selectedSession?.name || "Séance",
+        sections: mappedSections.length > 0 ? mappedSections : [],
+        progression: [],
+      };
+    }
     return {
-      ...YANA_PROGRAM,
       title: selectedSession.name,
       sections: mappedSections,
       progression: progressionPhases.map((p) => `${p.weekLabel}: ${p.description}`),
@@ -523,10 +515,10 @@ const LiveSession = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate">{sessionProgram.title}</p>
-            <p className="text-[11px] text-muted-foreground">{sessionProgram.client}</p>
+            {selectedSession?.notes && <p className="text-[11px] text-muted-foreground">{selectedSession.notes}</p>}
           </div>
           <Badge variant="outline" className="shrink-0 text-[10px]">
-            {sessionProgram.duration}
+            {allExercises.length} ex.
           </Badge>
         </div>
 
