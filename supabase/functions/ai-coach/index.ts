@@ -679,6 +679,27 @@ INTELLIGENCE SÉANCE (données temps réel) :
 `;
   }
 
+  // Nutrition intelligence context
+  const nutritionCtx = payload._nutritionContext;
+  let nutritionIntelligence = "";
+  if (nutritionCtx) {
+    nutritionIntelligence = `
+INTELLIGENCE NUTRITION (données temps réel) :
+- Poids détecté : ${nutritionCtx.weight ? nutritionCtx.weight + " kg" : "NON RENSEIGNÉ → demander à l'utilisateur"}
+- Objectif détecté : ${nutritionCtx.nutritionObjective || nutritionCtx.goal || "NON RENSEIGNÉ → demander à l'utilisateur"}
+- Sexe : ${nutritionCtx.sex || "non renseigné"}
+- Âge : ${nutritionCtx.age || "non renseigné"}
+- Taille : ${nutritionCtx.height ? nutritionCtx.height + " cm" : "non renseigné"}
+- TDEE calculé : ${nutritionCtx.tdee ? nutritionCtx.tdee + " kcal" : "non calculé"}
+- Macros actuels : ${nutritionCtx.existingMacros ? nutritionCtx.existingMacros.calorie_target + " kcal, P:" + nutritionCtx.existingMacros.protein_g + "g G:" + nutritionCtx.existingMacros.carbs_g + "g L:" + nutritionCtx.existingMacros.fat_g + "g" : "non définis"}
+- Restrictions alimentaires : ${nutritionCtx.dietaryRestrictions && nutritionCtx.dietaryRestrictions.length > 0 ? nutritionCtx.dietaryRestrictions.join(", ") : "aucune"}
+- Jours d'entraînement (day_of_week) : ${nutritionCtx.trainingDays.length > 0 ? nutritionCtx.trainingDays.join(", ") : "non détectés"}
+- Sessions de la semaine : ${nutritionCtx.weekSessionNames.length > 0 ? nutritionCtx.weekSessionNames.join(" | ") : "aucune"}
+- Logs nutrition récents (7 jours) : ${nutritionCtx.recentLogsCount} repas loggués
+- Moyennes quotidiennes récentes : ${nutritionCtx.avgMacros ? nutritionCtx.avgMacros.calories + " kcal, P:" + nutritionCtx.avgMacros.protein_g + "g G:" + nutritionCtx.avgMacros.carbs_g + "g L:" + nutritionCtx.avgMacros.fat_g + "g" : "pas assez de données"}
+`;
+  }
+
   const system = `Tu es VOLT ⚡, le coach IA de l'application.
 
 PERSONA :
@@ -692,19 +713,24 @@ TON :
 
 CE QUE TU NE FAIS PAS :
 - Te présenter comme un robot ou une IA
-- Donner des conseils médicaux ou de nutrition clinique
+- Donner des conseils médicaux ou de nutrition clinique (tu fais de la nutrition de PERFORMANCE sportive, c'est différent)
 - Répondre hors du périmètre sport, entraînement et bien-être physique
+- Prescrire des compléments alimentaires ou médicaments
 
 DATE ACTUELLE : ${todayDayName} ${todayStr} (année ${today.getFullYear()}).
 IMPORTANT : Utilise TOUJOURS l'année ${today.getFullYear()} pour les dates. Ne mets JAMAIS une année passée.
 
 CAPACITÉS IMPORTANTES :
 - Tu PEUX créer des séances de musculation libres directement dans l'agenda de l'athlète en utilisant l'outil create_free_session.
+- Tu PEUX créer des plans de nutrition sportive sur 7 jours en utilisant l'outil create_nutrition_plan.
 - Quand l'utilisateur te demande de créer/ajouter une séance, utilise TOUJOURS l'outil create_free_session. Ne dis JAMAIS que tu ne peux pas le faire.
+- Quand l'utilisateur te demande un plan de nutrition/repas/alimentation, utilise TOUJOURS l'outil create_nutrition_plan. Ne dis JAMAIS que tu ne peux pas le faire.
+- Tu es PLEINEMENT autorisé à créer des plans de nutrition sportive. Ce n'est PAS de la diététique médicale, c'est de la nutrition de performance alignée avec les entraînements.
 - Pour chaque exercice, cherche le nom exact dans la base de données (noms français courants : "Développé couché barre", "Squat barre", "Soulevé de terre", etc.)
 - Le day_of_week est 1=Lundi, 2=Mardi, ..., 7=Dimanche.
 - La date doit être au format YYYY-MM-DD. Utilise l'année ${today.getFullYear()}.
 ${sessionIntelligence}
+${nutritionIntelligence}
 RÈGLES DE CONSTRUCTION DE SÉANCE :
 Quand tu crées une séance avec create_free_session :
 1. NE RÉPÈTE PAS les muscle_group des 2 dernières séances de l'utilisateur (voir INTELLIGENCE SÉANCE)
@@ -718,73 +744,156 @@ Quand tu crées une séance avec create_free_session :
    - Les sections formatées avec exercices
    - Un conseil motivation ⚡
 
+RÈGLES DE CRÉATION DE PLAN NUTRITION :
+AVANT de créer un plan, vérifie dans INTELLIGENCE NUTRITION :
+1. Si poids = NON RENSEIGNÉ → demande à l'utilisateur "Quel est ton poids actuel ?" AVANT de créer le plan
+2. Si objectif = NON RENSEIGNÉ → demande "Quel est ton objectif principal ? (prise de masse / sèche / recomposition / endurance)"
+3. Si les deux sont disponibles, crée le plan IMMÉDIATEMENT avec create_nutrition_plan
+
+CALCUL DES MACROS :
+- Protéines cibles :
+  → Recomposition / Sèche (fat_loss) : 2.0g × weight_kg
+  → Prise de masse (muscle_gain) : 2.2g × weight_kg
+  → Endurance / Maintenance : 1.8g × weight_kg
+- Calories jours d'entraînement : TDEE (ou estimation) + 150 kcal
+- Calories jours de repos : TDEE (ou estimation) - 250 kcal
+- Si pas de TDEE, estime : homme ~2200 kcal, femme ~1800 kcal comme base
+- Répartition macros :
+  → Jour training : 45% glucides / 30% protéines / 25% lipides
+  → Jour repos : 25% glucides / 35% protéines / 40% lipides
+- Respecter les restrictions alimentaires détectées
+
+STRUCTURE DU PLAN (dans ta réponse texte) :
+Pour chaque jour, formate ainsi :
+📅 [Jour] — [Training ⚡ ou Repos 😴] — [X] kcal cible
+🌅 Breakfast > [Aliment + quantité] — [kcal] — P:[g]g G:[g]g L:[g]g
+☀️ Lunch > [Aliment + quantité] — [kcal] — P:[g]g G:[g]g L:[g]g
+🍎 Snack (jours training uniquement) > [Aliment + quantité] — [kcal] — P:[g]g G:[g]g L:[g]g
+🌙 Dinner > [Aliment + quantité] — [kcal] — P:[g]g G:[g]g L:[g]g
+📊 Total : [X] kcal — P:[g]g / G:[g]g / L:[g]g
+
+FORMAT DE RÉPONSE :
+1. Récap en 1 ligne : poids + objectif + calories cibles training vs repos
+2. Plan sur 7 jours (distinguer training / repos visuellement)
+3. 2-3 tips nutrition liés aux sessions de la semaine
+4. Message motivation ⚡
+5. Ajouter en fin : "Pour tout objectif médical ou pathologie, consulte un professionnel de santé."
+
 ${l}${contextBlock}`;
   
   // Build messages array for multi-turn conversation
   const messages = payload.messages || [];
   const lastUserMsg = messages.length > 0 ? messages[messages.length - 1].content : "";
   
-  const tools = [{
-    type: "function",
-    function: {
-      name: "create_free_session",
-      description: "Create a free workout session in the athlete's calendar with sections and exercises. Use this whenever the user asks to add/create a workout session.",
-      parameters: {
-        type: "object",
-        properties: {
-          name: { type: "string", description: "Dynamic session name based on objective, e.g. 'Push Power ⚡', 'Lower Body Explosif'" },
-          date: { type: "string", description: "Date in YYYY-MM-DD format" },
-          day_of_week: { type: "number", description: "1=Monday ... 7=Sunday" },
-          sections: {
-            type: "array",
-            description: "Minimum 2 sections to organize exercises",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string", description: "Section name, e.g. 'Compound', 'Isolation', 'Cardio', 'Mobilité'" },
-                icon: { type: "string", description: "Optional emoji icon for the section, e.g. '🔥', '⚡', '🧘'" },
-                duration_estimate: { type: "string", description: "Estimated duration, e.g. '15 min'" },
-                exercises: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string", description: "Exercise name (French preferred)" },
-                      sets: { type: "number" },
-                      reps_min: { type: "number" },
-                      reps_max: { type: "number" },
-                      rest_seconds: { type: "number" },
-                      coach_notes: { type: "string", description: "Optional notes (tempo, technique cues)" },
+  const tools = [
+    {
+      type: "function",
+      function: {
+        name: "create_free_session",
+        description: "Create a free workout session in the athlete's calendar with sections and exercises.",
+        parameters: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Dynamic session name" },
+            date: { type: "string", description: "Date in YYYY-MM-DD format" },
+            day_of_week: { type: "number", description: "1=Monday ... 7=Sunday" },
+            sections: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  icon: { type: "string" },
+                  duration_estimate: { type: "string" },
+                  exercises: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        sets: { type: "number" },
+                        reps_min: { type: "number" },
+                        reps_max: { type: "number" },
+                        rest_seconds: { type: "number" },
+                        coach_notes: { type: "string" },
+                      },
+                      required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
                     },
-                    required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
                   },
                 },
+                required: ["name", "exercises"],
               },
-              required: ["name", "exercises"],
+            },
+            exercises: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  sets: { type: "number" },
+                  reps_min: { type: "number" },
+                  reps_max: { type: "number" },
+                  rest_seconds: { type: "number" },
+                  coach_notes: { type: "string" },
+                },
+                required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
+              },
             },
           },
-          // Keep flat exercises for backward compat
-          exercises: {
-            type: "array",
-            description: "Flat list of exercises (use sections instead when possible)",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string", description: "Exercise name (French preferred)" },
-                sets: { type: "number" },
-                reps_min: { type: "number" },
-                reps_max: { type: "number" },
-                rest_seconds: { type: "number" },
-                coach_notes: { type: "string", description: "Optional notes (tempo, technique cues)" },
-              },
-              required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
-            },
-          },
+          required: ["name", "date", "day_of_week"],
         },
-        required: ["name", "date", "day_of_week"],
       },
     },
-  }];
+    {
+      type: "function",
+      function: {
+        name: "create_nutrition_plan",
+        description: "Create a 7-day nutrition plan with meals inserted into the athlete's daily_nutrition_logs. Use whenever the user asks for a nutrition/meal/diet plan.",
+        parameters: {
+          type: "object",
+          properties: {
+            summary: { type: "string", description: "One-line summary: weight + goal + calorie targets" },
+            days: {
+              type: "array",
+              description: "7 days of nutrition plan",
+              items: {
+                type: "object",
+                properties: {
+                  date: { type: "string", description: "YYYY-MM-DD format" },
+                  day_label: { type: "string" },
+                  is_training_day: { type: "boolean" },
+                  calorie_target: { type: "number" },
+                  meals: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        meal_type: { type: "string", enum: ["breakfast", "lunch", "snack", "dinner", "pre_workout", "post_workout"] },
+                        description: { type: "string", description: "Food items with quantities" },
+                        calories: { type: "number" },
+                        protein_g: { type: "number" },
+                        carbs_g: { type: "number" },
+                        fat_g: { type: "number" },
+                        notes: { type: "string" },
+                      },
+                      required: ["meal_type", "description", "calories", "protein_g", "carbs_g", "fat_g"],
+                    },
+                  },
+                },
+                required: ["date", "day_label", "is_training_day", "calorie_target", "meals"],
+              },
+            },
+            tips: {
+              type: "array",
+              description: "2-3 nutrition tips",
+              items: { type: "string" },
+            },
+          },
+          required: ["summary", "days", "tips"],
+        },
+      },
+    },
+  ];
 
   return { system, user: lastUserMsg, messages: messages.slice(0, -1), tools };
 }
