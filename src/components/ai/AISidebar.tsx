@@ -178,7 +178,7 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
         <div className="space-y-4">
           {messages.length === 0 && !isLoading && (
             <div className="text-center py-8">
-              <Bot className="w-10 h-10 text-muted-foreground mx-auto mb-3" strokeWidth={1} />
+              <Zap className="w-10 h-10 text-muted-foreground mx-auto mb-3" strokeWidth={1} />
               <p className="text-sm text-muted-foreground">
                 {t("greeting", { name: profile?.full_name?.split(" ")[0] || "" })}
               </p>
