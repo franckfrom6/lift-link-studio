@@ -29,7 +29,7 @@ interface Substitution {
 
 const LiveSession = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { sessionId: selectedSessionId } = useParams<{ sessionId: string }>();
   const { t } = useTranslation(['session', 'common']);
   const { user } = useAuth();
   const { program: dbProgram } = useStudentProgram();
