@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { X, Send, Trash2, Bot, Loader2 } from "lucide-react";
+import { X, Send, Trash2, Zap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
@@ -159,7 +159,7 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
       <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Bot className="w-4 h-4 text-primary" strokeWidth={1.5} />
+            <Zap className="w-4 h-4 text-primary" strokeWidth={1.5} />
           </div>
           <h2 className="font-bold text-sm">{t("title")}</h2>
         </div>
@@ -178,7 +178,7 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
         <div className="space-y-4">
           {messages.length === 0 && !isLoading && (
             <div className="text-center py-8">
-              <Bot className="w-10 h-10 text-muted-foreground mx-auto mb-3" strokeWidth={1} />
+              <Zap className="w-10 h-10 text-muted-foreground mx-auto mb-3" strokeWidth={1} />
               <p className="text-sm text-muted-foreground">
                 {t("greeting", { name: profile?.full_name?.split(" ")[0] || "" })}
               </p>
