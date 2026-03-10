@@ -528,10 +528,10 @@ const LiveSession = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate">{sessionProgram.title}</p>
-            <p className="text-[11px] text-muted-foreground">{sessionProgram.client}</p>
+            {selectedSession?.notes && <p className="text-[11px] text-muted-foreground">{selectedSession.notes}</p>}
           </div>
           <Badge variant="outline" className="shrink-0 text-[10px]">
-            {sessionProgram.duration}
+            {allExercises.length} ex.
           </Badge>
         </div>
 
