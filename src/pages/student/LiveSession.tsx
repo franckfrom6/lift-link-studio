@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { YANA_PROGRAM, ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
 import { EXERCISE_ALTERNATIVES, AlternativeGroup } from "@/data/exercise-alternatives";
 import { EnhancedCompletedSet } from "@/components/student/EnhancedExerciseCard";
@@ -29,7 +29,7 @@ interface Substitution {
 
 const LiveSession = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { sessionId: selectedSessionId } = useParams<{ sessionId: string }>();
   const { t } = useTranslation(['session', 'common']);
   const { user } = useAuth();
   const { program: dbProgram } = useStudentProgram();
@@ -52,7 +52,7 @@ const LiveSession = () => {
   // Track which exercises' sets have been saved to DB
   const savedExercisesRef = useRef<Set<string>>(new Set());
 
-  const selectedSessionId = (location.state as { sessionId?: string } | null)?.sessionId;
+  // selectedSessionId comes from URL params now
 
   const [freeSession, setFreeSession] = useState<any>(null);
   const [freeSessionLoading, setFreeSessionLoading] = useState(false);

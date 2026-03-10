@@ -491,7 +491,7 @@ const StudentWeek = () => {
                       if (swapMode) {
                         handleDayClickInSwapMode(day.dayIndex);
                       } else if (isSessionDay && sessionInfo) {
-                        navigate("/student/session", { state: { sessionId: sessionInfo.sessionId } });
+                        navigate(`/student/session/${sessionInfo.sessionId}`);
                       }
                     }}
                   >
@@ -532,7 +532,7 @@ const StudentWeek = () => {
                                 <div
                                   key={fs.id}
                                   className="space-y-0.5 cursor-pointer"
-                                  onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: fs.id } }); }}
+                                  onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
                                 >
                                   <div className="flex items-center gap-1.5">
                                     <p className="text-sm font-bold text-foreground truncate">{fs.name}</p>
@@ -566,7 +566,7 @@ const StudentWeek = () => {
                                 <div
                                   key={fs.id}
                                   className="space-y-0.5 cursor-pointer"
-                                  onClick={(e) => { e.stopPropagation(); navigate("/student/session", { state: { sessionId: fs.id } }); }}
+                                  onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
                                 >
                                   <div className="flex items-center gap-1.5">
                                     <p className="text-xs font-semibold text-foreground truncate">{fs.name}</p>
@@ -617,9 +617,9 @@ const StudentWeek = () => {
                             onClick={(e) => {
                               e.stopPropagation();
                               if (isSessionDay && sessionInfo) {
-                                navigate("/student/session", { state: { sessionId: sessionInfo.sessionId } });
+                                navigate(`/student/session/${sessionInfo.sessionId}`);
                               } else if (dayFreeSessions.length > 0) {
-                                navigate("/student/session", { state: { sessionId: dayFreeSessions[0].id } });
+                                navigate(`/student/session/${dayFreeSessions[0].id}`);
                               }
                             }}
                           >
