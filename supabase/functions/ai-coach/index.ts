@@ -1261,11 +1261,14 @@ serve(async (req) => {
           if (!textContent) {
             const successOnes = toolResults.filter(r => r.success);
             if (successOnes.length > 0) {
-              textContent = successOnes.map(r => 
-                `✅ Séance "${r.name}" créée pour le ${r.date} avec ${r.exercise_count} exercices${r.section_count ? ` en ${r.section_count} sections` : ""} ! Rafraîchis ton calendrier pour la voir. ⚡`
-              ).join("\n");
+              textContent = successOnes.map(r => {
+                if (r.tool === "create_nutrition_plan") {
+                  return `✅ Plan nutrition créé ! ${r.meals_count} repas programmés sur ${r.days_count} jours. Va dans l'onglet Nutrition pour voir tes repas du jour. ⚡`;
+                }
+                return `✅ Séance "${r.name}" créée pour le ${r.date} avec ${r.exercise_count} exercices${r.section_count ? ` en ${r.section_count} sections` : ""} ! Rafraîchis ton calendrier pour la voir. ⚡`;
+              }).join("\n");
             } else {
-              textContent = "❌ Désolé, je n'ai pas pu créer la séance. Réessaie ou crée-la manuellement depuis le calendrier.";
+              textContent = "❌ Désolé, une erreur s'est produite. Réessaie ou fais-le manuellement.";
             }
           }
         }
