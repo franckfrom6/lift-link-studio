@@ -463,6 +463,78 @@ function buildRecoveryRecommendation(payload: any, lang: string) {
   return { system, user, tools, toolChoice: { type: "function", function: { name: "recovery_recommendation" } } };
 }
 
+// Fetch recent session context for smart session creation
+async function fetchSessionContext(serviceClient: any, userId: string) {
+  try {
+    // 1. Get last 2 completed sessions with their exercises & muscle groups
+    const { data: recentCompleted } = await serviceClient
+      .from("completed_sessions")
+      .select(`
+        id, completed_at,
+        session:sessions(
+          id, name,
+          session_exercises(
+            exercise:exercises(name, muscle_group, type)
+          )
+        )
+      `)
+      .eq("student_id", userId)
+      .order("completed_at", { ascending: false })
+      .limit(2);
+
+    const recentMuscleGroups: string[] = [];
+    const recentSessionsSummary: string[] = [];
+    if (recentCompleted) {
+      for (const cs of recentCompleted) {
+        const sess = cs.session as any;
+        if (!sess) continue;
+        const muscles = (sess.session_exercises || [])
+          .map((se: any) => se.exercise?.muscle_group)
+          .filter(Boolean);
+        recentMuscleGroups.push(...muscles);
+        recentSessionsSummary.push(`${sess.name}: ${[...new Set(muscles)].join(", ")}`);
+      }
+    }
+
+    // 2. Get most popular exercises from completed sessions globally (top patterns)
+    const { data: popularExercises } = await serviceClient
+      .from("completed_sets")
+      .select(`
+        session_exercise:session_exercises(
+          exercise:exercises(name, muscle_group, type, equipment)
+        )
+      `)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    const exerciseFrequency: Record<string, { count: number; muscle_group: string; type: string }> = {};
+    if (popularExercises) {
+      for (const cs of popularExercises) {
+        const ex = (cs.session_exercise as any)?.exercise;
+        if (!ex?.name) continue;
+        if (!exerciseFrequency[ex.name]) {
+          exerciseFrequency[ex.name] = { count: 0, muscle_group: ex.muscle_group, type: ex.type };
+        }
+        exerciseFrequency[ex.name].count++;
+      }
+    }
+
+    const topExercises = Object.entries(exerciseFrequency)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 20)
+      .map(([name, info]) => `${name} (${info.muscle_group}, ${info.type}, ${info.count}x)`);
+
+    return {
+      recentMuscleGroups: [...new Set(recentMuscleGroups)],
+      recentSessionsSummary,
+      topExercises,
+    };
+  } catch (e) {
+    console.error("Error fetching session context:", e);
+    return { recentMuscleGroups: [], recentSessionsSummary: [], topExercises: [] };
+  }
+}
+
 function buildChat(payload: any, lang: string) {
   const l = lang === "fr" ? "Réponds en français." : "Respond in English.";
   const contextBlock = payload.context ? `\n\nCONTEXTE UTILISATEUR :\n${payload.context}` : "";
@@ -470,6 +542,18 @@ function buildChat(payload: any, lang: string) {
   const todayStr = today.toISOString().split("T")[0];
   const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
   const todayDayName = dayNames[today.getDay()];
+
+  // Session intelligence context (injected dynamically)
+  const sessionCtx = payload._sessionContext;
+  let sessionIntelligence = "";
+  if (sessionCtx) {
+    sessionIntelligence = `
+INTELLIGENCE SÉANCE (données temps réel) :
+- Derniers muscle_group travaillés : ${sessionCtx.recentMuscleGroups.length > 0 ? sessionCtx.recentMuscleGroups.join(", ") : "Aucune donnée"}
+- Résumé des 2 dernières séances : ${sessionCtx.recentSessionsSummary.length > 0 ? sessionCtx.recentSessionsSummary.join(" | ") : "Aucune séance récente"}
+- Exercices les plus performants (base globale) : ${sessionCtx.topExercises.length > 0 ? sessionCtx.topExercises.join(", ") : "Aucune donnée"}
+`;
+  }
 
   const system = `Tu es VOLT ⚡, le coach IA de l'application.
 
@@ -496,6 +580,19 @@ CAPACITÉS IMPORTANTES :
 - Pour chaque exercice, cherche le nom exact dans la base de données (noms français courants : "Développé couché barre", "Squat barre", "Soulevé de terre", etc.)
 - Le day_of_week est 1=Lundi, 2=Mardi, ..., 7=Dimanche.
 - La date doit être au format YYYY-MM-DD. Utilise l'année ${today.getFullYear()}.
+${sessionIntelligence}
+RÈGLES DE CONSTRUCTION DE SÉANCE :
+Quand tu crées une séance avec create_free_session :
+1. NE RÉPÈTE PAS les muscle_group des 2 dernières séances de l'utilisateur (voir INTELLIGENCE SÉANCE)
+2. Privilégie les exercices les plus performants de la base globale
+3. Crée MINIMUM 2 sections (ex: "Compound", "Isolation", "Cardio", "Mobilité")
+4. Place exactement 4 exercices minimum répartis entre les sections
+5. Donne un nom dynamique à la séance selon l'objectif (pas de nom générique)
+6. Dans ta réponse textuelle, formate le récap ainsi :
+   - Récap en 1 ligne des derniers muscle_group travaillés
+   - Objectif de la séance du jour
+   - Les sections formatées avec exercices
+   - Un conseil motivation ⚡
 
 ${l}${contextBlock}`;
   
@@ -507,15 +604,45 @@ ${l}${contextBlock}`;
     type: "function",
     function: {
       name: "create_free_session",
-      description: "Create a free workout session in the athlete's calendar with exercises. Use this whenever the user asks to add/create a workout session.",
+      description: "Create a free workout session in the athlete's calendar with sections and exercises. Use this whenever the user asks to add/create a workout session.",
       parameters: {
         type: "object",
         properties: {
-          name: { type: "string", description: "Session name, e.g. 'Upper Body', 'Hyrox Power'" },
+          name: { type: "string", description: "Dynamic session name based on objective, e.g. 'Push Power ⚡', 'Lower Body Explosif'" },
           date: { type: "string", description: "Date in YYYY-MM-DD format" },
           day_of_week: { type: "number", description: "1=Monday ... 7=Sunday" },
+          sections: {
+            type: "array",
+            description: "Minimum 2 sections to organize exercises",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "Section name, e.g. 'Compound', 'Isolation', 'Cardio', 'Mobilité'" },
+                icon: { type: "string", description: "Optional emoji icon for the section, e.g. '🔥', '⚡', '🧘'" },
+                duration_estimate: { type: "string", description: "Estimated duration, e.g. '15 min'" },
+                exercises: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string", description: "Exercise name (French preferred)" },
+                      sets: { type: "number" },
+                      reps_min: { type: "number" },
+                      reps_max: { type: "number" },
+                      rest_seconds: { type: "number" },
+                      coach_notes: { type: "string", description: "Optional notes (tempo, technique cues)" },
+                    },
+                    required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
+                  },
+                },
+              },
+              required: ["name", "exercises"],
+            },
+          },
+          // Keep flat exercises for backward compat
           exercises: {
             type: "array",
+            description: "Flat list of exercises (use sections instead when possible)",
             items: {
               type: "object",
               properties: {
@@ -530,7 +657,7 @@ ${l}${contextBlock}`;
             },
           },
         },
-        required: ["name", "date", "day_of_week", "exercises"],
+        required: ["name", "date", "day_of_week"],
       },
     },
   }];
