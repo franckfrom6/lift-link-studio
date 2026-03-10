@@ -54,8 +54,8 @@ const LiveSession = () => {
 
   const selectedSessionId = (location.state as { sessionId?: string } | null)?.sessionId;
 
-  // Free session loaded from DB when not found in program
   const [freeSession, setFreeSession] = useState<any>(null);
+  const [freeSessionLoading, setFreeSessionLoading] = useState(false);
 
   const programSession = useMemo(() => {
     const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
@@ -66,6 +66,7 @@ const LiveSession = () => {
   // If not found in program, fetch as free session
   useEffect(() => {
     if (programSession || !selectedSessionId) return;
+    setFreeSessionLoading(true);
     const fetchFree = async () => {
       const { data } = await supabase
         .from("sessions")
@@ -100,6 +101,7 @@ const LiveSession = () => {
         }
         setFreeSession({ ...data, sections });
       }
+      setFreeSessionLoading(false);
     };
     fetchFree();
   }, [programSession, selectedSessionId]);
@@ -445,6 +447,18 @@ const LiveSession = () => {
   const swapExerciseOriginalName = swapTargetKey
     ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
+
+  // Show loading while fetching free session
+  if (freeSessionLoading || (!selectedSession && selectedSessionId)) {
+    return (
+      <div className="max-w-lg mx-auto flex items-center justify-center py-20">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Clock className="w-4 h-4 animate-spin" />
+          <span className="text-sm">{t('common:loading')}</span>
+        </div>
+      </div>
+    );
+  }
 
   if (sessionDone) {
     return (
