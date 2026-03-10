@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { YANA_PROGRAM, ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
+import { ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
 import { EXERCISE_ALTERNATIVES, AlternativeGroup } from "@/data/exercise-alternatives";
 import { EnhancedCompletedSet } from "@/components/student/EnhancedExerciseCard";
 import EnhancedExerciseCard from "@/components/student/EnhancedExerciseCard";
