@@ -184,9 +184,14 @@ const LiveSession = () => {
   }, [dbProgram?.progression]);
 
   const sessionProgram = useMemo(() => {
-    if (!selectedSession || mappedSections.length === 0) return YANA_PROGRAM;
+    if (!selectedSession || mappedSections.length === 0) {
+      return {
+        title: selectedSession?.name || "Séance",
+        sections: mappedSections.length > 0 ? mappedSections : [],
+        progression: [],
+      };
+    }
     return {
-      ...YANA_PROGRAM,
       title: selectedSession.name,
       sections: mappedSections,
       progression: progressionPhases.map((p) => `${p.weekLabel}: ${p.description}`),
