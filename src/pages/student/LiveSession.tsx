@@ -165,20 +165,7 @@ const LiveSession = () => {
           isDeload: p.is_deload,
           order: p.sort_order,
         }))
-      : YANA_PROGRAM.progression.map((p, i) => {
-          const weekMatch = p.match(/Semaine[s]?\s+(\d+)(?:\s*[-–]\s*(\d+))?/i);
-          const weekStart = weekMatch ? parseInt(weekMatch[1]) : i + 1;
-          const weekEnd = weekMatch && weekMatch[2] ? parseInt(weekMatch[2]) : weekStart;
-          return {
-            id: `prog-${i}`,
-            weekLabel: p.split(":")[0]?.trim() || `Phase ${i + 1}`,
-            description: p.split(":").slice(1).join(":").trim() || p,
-            weekStart,
-            weekEnd,
-            isDeload: p.toLowerCase().includes("deload"),
-            order: i,
-          };
-        });
+      : [];
 
     return phases;
   }, [dbProgram?.progression]);
