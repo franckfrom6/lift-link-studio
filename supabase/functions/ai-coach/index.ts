@@ -535,6 +535,130 @@ async function fetchSessionContext(serviceClient: any, userId: string) {
   }
 }
 
+// Fetch nutrition context for nutrition plan creation
+async function fetchNutritionContext(serviceClient: any, userId: string) {
+  try {
+    // 1. User profile (weight, goal)
+    const { data: profile } = await serviceClient
+      .from("profiles")
+      .select("weight, goal, full_name, age, height, level")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    // 2. Nutrition profile (existing macros, objective, restrictions)
+    const { data: nutritionProfile } = await serviceClient
+      .from("nutrition_profiles")
+      .select("*")
+      .eq("student_id", userId)
+      .maybeSingle();
+
+    // 3. Current week sessions (to distinguish training vs rest days)
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Monday
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday
+
+    // Get program sessions for the week
+    const { data: programs } = await serviceClient
+      .from("programs")
+      .select("id")
+      .eq("student_id", userId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+
+    let weekSessions: any[] = [];
+    if (programs) {
+      const { data: weeks } = await serviceClient
+        .from("program_weeks")
+        .select("id, week_number")
+        .eq("program_id", programs.id)
+        .order("week_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (weeks) {
+        const { data: sessions } = await serviceClient
+          .from("sessions")
+          .select("name, day_of_week")
+          .eq("week_id", weeks.id)
+          .order("day_of_week");
+        weekSessions = sessions || [];
+      }
+    }
+
+    // Also get free sessions for this week
+    const { data: freeSessions } = await serviceClient
+      .from("sessions")
+      .select("name, day_of_week, free_session_date")
+      .eq("is_free_session", true)
+      .eq("created_by", userId)
+      .gte("free_session_date", startOfWeek.toISOString().split("T")[0])
+      .lte("free_session_date", endOfWeek.toISOString().split("T")[0]);
+
+    if (freeSessions) weekSessions.push(...freeSessions);
+
+    const trainingDays = [...new Set(weekSessions.map(s => s.day_of_week))];
+
+    // 4. Recent nutrition logs (last 7 days)
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    const { data: recentLogs } = await serviceClient
+      .from("daily_nutrition_logs")
+      .select("date, meal_type, calories, protein_g, carbs_g, fat_g")
+      .eq("student_id", userId)
+      .gte("date", sevenDaysAgo.toISOString().split("T")[0])
+      .order("date", { ascending: false });
+
+    const logsCount = recentLogs?.length || 0;
+    let avgMacros = null;
+    if (recentLogs && recentLogs.length > 0) {
+      const totals = recentLogs.reduce((acc, l) => ({
+        cal: acc.cal + (l.calories || 0),
+        p: acc.p + (l.protein_g || 0),
+        c: acc.c + (l.carbs_g || 0),
+        f: acc.f + (l.fat_g || 0),
+      }), { cal: 0, p: 0, c: 0, f: 0 });
+      const uniqueDays = new Set(recentLogs.map(l => l.date)).size;
+      if (uniqueDays > 0) {
+        avgMacros = {
+          calories: Math.round(totals.cal / uniqueDays),
+          protein_g: Math.round(totals.p / uniqueDays),
+          carbs_g: Math.round(totals.c / uniqueDays),
+          fat_g: Math.round(totals.f / uniqueDays),
+        };
+      }
+    }
+
+    return {
+      weight: profile?.weight || nutritionProfile?.weight_kg || null,
+      goal: profile?.goal || null,
+      name: profile?.full_name || null,
+      age: profile?.age || nutritionProfile?.age || null,
+      height: profile?.height || nutritionProfile?.height_cm || null,
+      level: profile?.level || null,
+      nutritionObjective: nutritionProfile?.objective || null,
+      sex: nutritionProfile?.sex || null,
+      tdee: nutritionProfile?.tdee || null,
+      existingMacros: nutritionProfile ? {
+        calorie_target: nutritionProfile.calorie_target,
+        protein_g: nutritionProfile.protein_g,
+        carbs_g: nutritionProfile.carbs_g,
+        fat_g: nutritionProfile.fat_g,
+      } : null,
+      dietaryRestrictions: nutritionProfile?.dietary_restrictions || [],
+      trainingDays,
+      weekSessionNames: weekSessions.map(s => `J${s.day_of_week}: ${s.name}`),
+      recentLogsCount: logsCount,
+      avgMacros,
+    };
+  } catch (e) {
+    console.error("Error fetching nutrition context:", e);
+    return { weight: null, goal: null, name: null, age: null, height: null, level: null, nutritionObjective: null, sex: null, tdee: null, existingMacros: null, dietaryRestrictions: [], trainingDays: [], weekSessionNames: [], recentLogsCount: 0, avgMacros: null };
+  }
+}
+
 function buildChat(payload: any, lang: string) {
   const l = lang === "fr" ? "Réponds en français." : "Respond in English.";
   const contextBlock = payload.context ? `\n\nCONTEXTE UTILISATEUR :\n${payload.context}` : "";
@@ -555,6 +679,27 @@ INTELLIGENCE SÉANCE (données temps réel) :
 `;
   }
 
+  // Nutrition intelligence context
+  const nutritionCtx = payload._nutritionContext;
+  let nutritionIntelligence = "";
+  if (nutritionCtx) {
+    nutritionIntelligence = `
+INTELLIGENCE NUTRITION (données temps réel) :
+- Poids détecté : ${nutritionCtx.weight ? nutritionCtx.weight + " kg" : "NON RENSEIGNÉ → demander à l'utilisateur"}
+- Objectif détecté : ${nutritionCtx.nutritionObjective || nutritionCtx.goal || "NON RENSEIGNÉ → demander à l'utilisateur"}
+- Sexe : ${nutritionCtx.sex || "non renseigné"}
+- Âge : ${nutritionCtx.age || "non renseigné"}
+- Taille : ${nutritionCtx.height ? nutritionCtx.height + " cm" : "non renseigné"}
+- TDEE calculé : ${nutritionCtx.tdee ? nutritionCtx.tdee + " kcal" : "non calculé"}
+- Macros actuels : ${nutritionCtx.existingMacros ? nutritionCtx.existingMacros.calorie_target + " kcal, P:" + nutritionCtx.existingMacros.protein_g + "g G:" + nutritionCtx.existingMacros.carbs_g + "g L:" + nutritionCtx.existingMacros.fat_g + "g" : "non définis"}
+- Restrictions alimentaires : ${nutritionCtx.dietaryRestrictions && nutritionCtx.dietaryRestrictions.length > 0 ? nutritionCtx.dietaryRestrictions.join(", ") : "aucune"}
+- Jours d'entraînement (day_of_week) : ${nutritionCtx.trainingDays.length > 0 ? nutritionCtx.trainingDays.join(", ") : "non détectés"}
+- Sessions de la semaine : ${nutritionCtx.weekSessionNames.length > 0 ? nutritionCtx.weekSessionNames.join(" | ") : "aucune"}
+- Logs nutrition récents (7 jours) : ${nutritionCtx.recentLogsCount} repas loggués
+- Moyennes quotidiennes récentes : ${nutritionCtx.avgMacros ? nutritionCtx.avgMacros.calories + " kcal, P:" + nutritionCtx.avgMacros.protein_g + "g G:" + nutritionCtx.avgMacros.carbs_g + "g L:" + nutritionCtx.avgMacros.fat_g + "g" : "pas assez de données"}
+`;
+  }
+
   const system = `Tu es VOLT ⚡, le coach IA de l'application.
 
 PERSONA :
@@ -568,19 +713,24 @@ TON :
 
 CE QUE TU NE FAIS PAS :
 - Te présenter comme un robot ou une IA
-- Donner des conseils médicaux ou de nutrition clinique
+- Donner des conseils médicaux ou de nutrition clinique (tu fais de la nutrition de PERFORMANCE sportive, c'est différent)
 - Répondre hors du périmètre sport, entraînement et bien-être physique
+- Prescrire des compléments alimentaires ou médicaments
 
 DATE ACTUELLE : ${todayDayName} ${todayStr} (année ${today.getFullYear()}).
 IMPORTANT : Utilise TOUJOURS l'année ${today.getFullYear()} pour les dates. Ne mets JAMAIS une année passée.
 
 CAPACITÉS IMPORTANTES :
 - Tu PEUX créer des séances de musculation libres directement dans l'agenda de l'athlète en utilisant l'outil create_free_session.
+- Tu PEUX créer des plans de nutrition sportive sur 7 jours en utilisant l'outil create_nutrition_plan.
 - Quand l'utilisateur te demande de créer/ajouter une séance, utilise TOUJOURS l'outil create_free_session. Ne dis JAMAIS que tu ne peux pas le faire.
+- Quand l'utilisateur te demande un plan de nutrition/repas/alimentation, utilise TOUJOURS l'outil create_nutrition_plan. Ne dis JAMAIS que tu ne peux pas le faire.
+- Tu es PLEINEMENT autorisé à créer des plans de nutrition sportive. Ce n'est PAS de la diététique médicale, c'est de la nutrition de performance alignée avec les entraînements.
 - Pour chaque exercice, cherche le nom exact dans la base de données (noms français courants : "Développé couché barre", "Squat barre", "Soulevé de terre", etc.)
 - Le day_of_week est 1=Lundi, 2=Mardi, ..., 7=Dimanche.
 - La date doit être au format YYYY-MM-DD. Utilise l'année ${today.getFullYear()}.
 ${sessionIntelligence}
+${nutritionIntelligence}
 RÈGLES DE CONSTRUCTION DE SÉANCE :
 Quand tu crées une séance avec create_free_session :
 1. NE RÉPÈTE PAS les muscle_group des 2 dernières séances de l'utilisateur (voir INTELLIGENCE SÉANCE)
@@ -594,73 +744,156 @@ Quand tu crées une séance avec create_free_session :
    - Les sections formatées avec exercices
    - Un conseil motivation ⚡
 
+RÈGLES DE CRÉATION DE PLAN NUTRITION :
+AVANT de créer un plan, vérifie dans INTELLIGENCE NUTRITION :
+1. Si poids = NON RENSEIGNÉ → demande à l'utilisateur "Quel est ton poids actuel ?" AVANT de créer le plan
+2. Si objectif = NON RENSEIGNÉ → demande "Quel est ton objectif principal ? (prise de masse / sèche / recomposition / endurance)"
+3. Si les deux sont disponibles, crée le plan IMMÉDIATEMENT avec create_nutrition_plan
+
+CALCUL DES MACROS :
+- Protéines cibles :
+  → Recomposition / Sèche (fat_loss) : 2.0g × weight_kg
+  → Prise de masse (muscle_gain) : 2.2g × weight_kg
+  → Endurance / Maintenance : 1.8g × weight_kg
+- Calories jours d'entraînement : TDEE (ou estimation) + 150 kcal
+- Calories jours de repos : TDEE (ou estimation) - 250 kcal
+- Si pas de TDEE, estime : homme ~2200 kcal, femme ~1800 kcal comme base
+- Répartition macros :
+  → Jour training : 45% glucides / 30% protéines / 25% lipides
+  → Jour repos : 25% glucides / 35% protéines / 40% lipides
+- Respecter les restrictions alimentaires détectées
+
+STRUCTURE DU PLAN (dans ta réponse texte) :
+Pour chaque jour, formate ainsi :
+📅 [Jour] — [Training ⚡ ou Repos 😴] — [X] kcal cible
+🌅 Breakfast > [Aliment + quantité] — [kcal] — P:[g]g G:[g]g L:[g]g
+☀️ Lunch > [Aliment + quantité] — [kcal] — P:[g]g G:[g]g L:[g]g
+🍎 Snack (jours training uniquement) > [Aliment + quantité] — [kcal] — P:[g]g G:[g]g L:[g]g
+🌙 Dinner > [Aliment + quantité] — [kcal] — P:[g]g G:[g]g L:[g]g
+📊 Total : [X] kcal — P:[g]g / G:[g]g / L:[g]g
+
+FORMAT DE RÉPONSE :
+1. Récap en 1 ligne : poids + objectif + calories cibles training vs repos
+2. Plan sur 7 jours (distinguer training / repos visuellement)
+3. 2-3 tips nutrition liés aux sessions de la semaine
+4. Message motivation ⚡
+5. Ajouter en fin : "Pour tout objectif médical ou pathologie, consulte un professionnel de santé."
+
 ${l}${contextBlock}`;
   
   // Build messages array for multi-turn conversation
   const messages = payload.messages || [];
   const lastUserMsg = messages.length > 0 ? messages[messages.length - 1].content : "";
   
-  const tools = [{
-    type: "function",
-    function: {
-      name: "create_free_session",
-      description: "Create a free workout session in the athlete's calendar with sections and exercises. Use this whenever the user asks to add/create a workout session.",
-      parameters: {
-        type: "object",
-        properties: {
-          name: { type: "string", description: "Dynamic session name based on objective, e.g. 'Push Power ⚡', 'Lower Body Explosif'" },
-          date: { type: "string", description: "Date in YYYY-MM-DD format" },
-          day_of_week: { type: "number", description: "1=Monday ... 7=Sunday" },
-          sections: {
-            type: "array",
-            description: "Minimum 2 sections to organize exercises",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string", description: "Section name, e.g. 'Compound', 'Isolation', 'Cardio', 'Mobilité'" },
-                icon: { type: "string", description: "Optional emoji icon for the section, e.g. '🔥', '⚡', '🧘'" },
-                duration_estimate: { type: "string", description: "Estimated duration, e.g. '15 min'" },
-                exercises: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string", description: "Exercise name (French preferred)" },
-                      sets: { type: "number" },
-                      reps_min: { type: "number" },
-                      reps_max: { type: "number" },
-                      rest_seconds: { type: "number" },
-                      coach_notes: { type: "string", description: "Optional notes (tempo, technique cues)" },
+  const tools = [
+    {
+      type: "function",
+      function: {
+        name: "create_free_session",
+        description: "Create a free workout session in the athlete's calendar with sections and exercises.",
+        parameters: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Dynamic session name" },
+            date: { type: "string", description: "Date in YYYY-MM-DD format" },
+            day_of_week: { type: "number", description: "1=Monday ... 7=Sunday" },
+            sections: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  icon: { type: "string" },
+                  duration_estimate: { type: "string" },
+                  exercises: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        sets: { type: "number" },
+                        reps_min: { type: "number" },
+                        reps_max: { type: "number" },
+                        rest_seconds: { type: "number" },
+                        coach_notes: { type: "string" },
+                      },
+                      required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
                     },
-                    required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
                   },
                 },
+                required: ["name", "exercises"],
               },
-              required: ["name", "exercises"],
+            },
+            exercises: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  sets: { type: "number" },
+                  reps_min: { type: "number" },
+                  reps_max: { type: "number" },
+                  rest_seconds: { type: "number" },
+                  coach_notes: { type: "string" },
+                },
+                required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
+              },
             },
           },
-          // Keep flat exercises for backward compat
-          exercises: {
-            type: "array",
-            description: "Flat list of exercises (use sections instead when possible)",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string", description: "Exercise name (French preferred)" },
-                sets: { type: "number" },
-                reps_min: { type: "number" },
-                reps_max: { type: "number" },
-                rest_seconds: { type: "number" },
-                coach_notes: { type: "string", description: "Optional notes (tempo, technique cues)" },
-              },
-              required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
-            },
-          },
+          required: ["name", "date", "day_of_week"],
         },
-        required: ["name", "date", "day_of_week"],
       },
     },
-  }];
+    {
+      type: "function",
+      function: {
+        name: "create_nutrition_plan",
+        description: "Create a 7-day nutrition plan with meals inserted into the athlete's daily_nutrition_logs. Use whenever the user asks for a nutrition/meal/diet plan.",
+        parameters: {
+          type: "object",
+          properties: {
+            summary: { type: "string", description: "One-line summary: weight + goal + calorie targets" },
+            days: {
+              type: "array",
+              description: "7 days of nutrition plan",
+              items: {
+                type: "object",
+                properties: {
+                  date: { type: "string", description: "YYYY-MM-DD format" },
+                  day_label: { type: "string" },
+                  is_training_day: { type: "boolean" },
+                  calorie_target: { type: "number" },
+                  meals: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        meal_type: { type: "string", enum: ["breakfast", "lunch", "snack", "dinner", "pre_workout", "post_workout"] },
+                        description: { type: "string", description: "Food items with quantities" },
+                        calories: { type: "number" },
+                        protein_g: { type: "number" },
+                        carbs_g: { type: "number" },
+                        fat_g: { type: "number" },
+                        notes: { type: "string" },
+                      },
+                      required: ["meal_type", "description", "calories", "protein_g", "carbs_g", "fat_g"],
+                    },
+                  },
+                },
+                required: ["date", "day_label", "is_training_day", "calorie_target", "meals"],
+              },
+            },
+            tips: {
+              type: "array",
+              description: "2-3 nutrition tips",
+              items: { type: "string" },
+            },
+          },
+          required: ["summary", "days", "tips"],
+        },
+      },
+    },
+  ];
 
   return { system, user: lastUserMsg, messages: messages.slice(0, -1), tools };
 }
@@ -771,10 +1004,12 @@ serve(async (req) => {
       }
     }
 
-    // 6. Build prompt (with session intelligence for chat)
+    // 6. Build prompt (with session + nutrition intelligence for chat)
     if (action === "chat") {
       const sessionCtx = await fetchSessionContext(serviceClient, userId);
+      const nutritionCtx = await fetchNutritionContext(serviceClient, userId);
       (payload || {})._sessionContext = sessionCtx;
+      (payload || {})._nutritionContext = nutritionCtx;
     }
     const built = ACTION_BUILDERS[action](payload || {}, lang || "fr");
     const model = MODEL_FOR_ACTION[action] || "google/gemini-2.5-flash-lite";
@@ -949,9 +1184,55 @@ serve(async (req) => {
                 toolResults.push({ tool: "create_free_session", success: false, error: String(toolErr) });
               }
             }
-          }
 
-          // If the AI only returned tool calls without text, do a follow-up call to get text response
+            // ── Tool: create_nutrition_plan ──
+            if (tc.function?.name === "create_nutrition_plan") {
+              const args = typeof tc.function.arguments === "string"
+                ? JSON.parse(tc.function.arguments)
+                : tc.function.arguments;
+
+              try {
+                let totalMeals = 0;
+                let totalDays = 0;
+
+                for (const day of (args.days || [])) {
+                  for (const meal of (day.meals || [])) {
+                    const { error: mealErr } = await serviceClient
+                      .from("daily_nutrition_logs")
+                      .insert({
+                        student_id: userId,
+                        date: day.date,
+                        meal_type: meal.meal_type,
+                        description: meal.description,
+                        calories: meal.calories || null,
+                        protein_g: meal.protein_g || null,
+                        carbs_g: meal.carbs_g || null,
+                        fat_g: meal.fat_g || null,
+                        notes: meal.notes || null,
+                      });
+                    if (mealErr) {
+                      console.error("Error inserting meal:", mealErr);
+                    } else {
+                      totalMeals++;
+                    }
+                  }
+                  totalDays++;
+                }
+
+                toolResults.push({
+                  tool: "create_nutrition_plan",
+                  success: true,
+                  summary: args.summary,
+                  days_count: totalDays,
+                  meals_count: totalMeals,
+                  tips: args.tips,
+                });
+              } catch (toolErr) {
+                console.error("Nutrition plan tool error:", toolErr);
+                toolResults.push({ tool: "create_nutrition_plan", success: false, error: String(toolErr) });
+              }
+            }
+          }
           if (!textContent && toolResults.length > 0) {
             const followUpMessages = [
               ...allMessages,
@@ -980,11 +1261,14 @@ serve(async (req) => {
           if (!textContent) {
             const successOnes = toolResults.filter(r => r.success);
             if (successOnes.length > 0) {
-              textContent = successOnes.map(r => 
-                `✅ Séance "${r.name}" créée pour le ${r.date} avec ${r.exercise_count} exercices${r.section_count ? ` en ${r.section_count} sections` : ""} ! Rafraîchis ton calendrier pour la voir. ⚡`
-              ).join("\n");
+              textContent = successOnes.map(r => {
+                if (r.tool === "create_nutrition_plan") {
+                  return `✅ Plan nutrition créé ! ${r.meals_count} repas programmés sur ${r.days_count} jours. Va dans l'onglet Nutrition pour voir tes repas du jour. ⚡`;
+                }
+                return `✅ Séance "${r.name}" créée pour le ${r.date} avec ${r.exercise_count} exercices${r.section_count ? ` en ${r.section_count} sections` : ""} ! Rafraîchis ton calendrier pour la voir. ⚡`;
+              }).join("\n");
             } else {
-              textContent = "❌ Désolé, je n'ai pas pu créer la séance. Réessaie ou crée-la manuellement depuis le calendrier.";
+              textContent = "❌ Désolé, une erreur s'est produite. Réessaie ou fais-le manuellement.";
             }
           }
         }
