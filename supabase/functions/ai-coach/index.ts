@@ -1184,9 +1184,55 @@ serve(async (req) => {
                 toolResults.push({ tool: "create_free_session", success: false, error: String(toolErr) });
               }
             }
-          }
 
-          // If the AI only returned tool calls without text, do a follow-up call to get text response
+            // ── Tool: create_nutrition_plan ──
+            if (tc.function?.name === "create_nutrition_plan") {
+              const args = typeof tc.function.arguments === "string"
+                ? JSON.parse(tc.function.arguments)
+                : tc.function.arguments;
+
+              try {
+                let totalMeals = 0;
+                let totalDays = 0;
+
+                for (const day of (args.days || [])) {
+                  for (const meal of (day.meals || [])) {
+                    const { error: mealErr } = await serviceClient
+                      .from("daily_nutrition_logs")
+                      .insert({
+                        student_id: userId,
+                        date: day.date,
+                        meal_type: meal.meal_type,
+                        description: meal.description,
+                        calories: meal.calories || null,
+                        protein_g: meal.protein_g || null,
+                        carbs_g: meal.carbs_g || null,
+                        fat_g: meal.fat_g || null,
+                        notes: meal.notes || null,
+                      });
+                    if (mealErr) {
+                      console.error("Error inserting meal:", mealErr);
+                    } else {
+                      totalMeals++;
+                    }
+                  }
+                  totalDays++;
+                }
+
+                toolResults.push({
+                  tool: "create_nutrition_plan",
+                  success: true,
+                  summary: args.summary,
+                  days_count: totalDays,
+                  meals_count: totalMeals,
+                  tips: args.tips,
+                });
+              } catch (toolErr) {
+                console.error("Nutrition plan tool error:", toolErr);
+                toolResults.push({ tool: "create_nutrition_plan", success: false, error: String(toolErr) });
+              }
+            }
+          }
           if (!textContent && toolResults.length > 0) {
             const followUpMessages = [
               ...allMessages,
