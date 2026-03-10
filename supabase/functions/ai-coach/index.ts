@@ -535,6 +535,130 @@ async function fetchSessionContext(serviceClient: any, userId: string) {
   }
 }
 
+// Fetch nutrition context for nutrition plan creation
+async function fetchNutritionContext(serviceClient: any, userId: string) {
+  try {
+    // 1. User profile (weight, goal)
+    const { data: profile } = await serviceClient
+      .from("profiles")
+      .select("weight, goal, full_name, age, height, level")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    // 2. Nutrition profile (existing macros, objective, restrictions)
+    const { data: nutritionProfile } = await serviceClient
+      .from("nutrition_profiles")
+      .select("*")
+      .eq("student_id", userId)
+      .maybeSingle();
+
+    // 3. Current week sessions (to distinguish training vs rest days)
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Monday
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday
+
+    // Get program sessions for the week
+    const { data: programs } = await serviceClient
+      .from("programs")
+      .select("id")
+      .eq("student_id", userId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+
+    let weekSessions: any[] = [];
+    if (programs) {
+      const { data: weeks } = await serviceClient
+        .from("program_weeks")
+        .select("id, week_number")
+        .eq("program_id", programs.id)
+        .order("week_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (weeks) {
+        const { data: sessions } = await serviceClient
+          .from("sessions")
+          .select("name, day_of_week")
+          .eq("week_id", weeks.id)
+          .order("day_of_week");
+        weekSessions = sessions || [];
+      }
+    }
+
+    // Also get free sessions for this week
+    const { data: freeSessions } = await serviceClient
+      .from("sessions")
+      .select("name, day_of_week, free_session_date")
+      .eq("is_free_session", true)
+      .eq("created_by", userId)
+      .gte("free_session_date", startOfWeek.toISOString().split("T")[0])
+      .lte("free_session_date", endOfWeek.toISOString().split("T")[0]);
+
+    if (freeSessions) weekSessions.push(...freeSessions);
+
+    const trainingDays = [...new Set(weekSessions.map(s => s.day_of_week))];
+
+    // 4. Recent nutrition logs (last 7 days)
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    const { data: recentLogs } = await serviceClient
+      .from("daily_nutrition_logs")
+      .select("date, meal_type, calories, protein_g, carbs_g, fat_g")
+      .eq("student_id", userId)
+      .gte("date", sevenDaysAgo.toISOString().split("T")[0])
+      .order("date", { ascending: false });
+
+    const logsCount = recentLogs?.length || 0;
+    let avgMacros = null;
+    if (recentLogs && recentLogs.length > 0) {
+      const totals = recentLogs.reduce((acc, l) => ({
+        cal: acc.cal + (l.calories || 0),
+        p: acc.p + (l.protein_g || 0),
+        c: acc.c + (l.carbs_g || 0),
+        f: acc.f + (l.fat_g || 0),
+      }), { cal: 0, p: 0, c: 0, f: 0 });
+      const uniqueDays = new Set(recentLogs.map(l => l.date)).size;
+      if (uniqueDays > 0) {
+        avgMacros = {
+          calories: Math.round(totals.cal / uniqueDays),
+          protein_g: Math.round(totals.p / uniqueDays),
+          carbs_g: Math.round(totals.c / uniqueDays),
+          fat_g: Math.round(totals.f / uniqueDays),
+        };
+      }
+    }
+
+    return {
+      weight: profile?.weight || nutritionProfile?.weight_kg || null,
+      goal: profile?.goal || null,
+      name: profile?.full_name || null,
+      age: profile?.age || nutritionProfile?.age || null,
+      height: profile?.height || nutritionProfile?.height_cm || null,
+      level: profile?.level || null,
+      nutritionObjective: nutritionProfile?.objective || null,
+      sex: nutritionProfile?.sex || null,
+      tdee: nutritionProfile?.tdee || null,
+      existingMacros: nutritionProfile ? {
+        calorie_target: nutritionProfile.calorie_target,
+        protein_g: nutritionProfile.protein_g,
+        carbs_g: nutritionProfile.carbs_g,
+        fat_g: nutritionProfile.fat_g,
+      } : null,
+      dietaryRestrictions: nutritionProfile?.dietary_restrictions || [],
+      trainingDays,
+      weekSessionNames: weekSessions.map(s => `J${s.day_of_week}: ${s.name}`),
+      recentLogsCount: logsCount,
+      avgMacros,
+    };
+  } catch (e) {
+    console.error("Error fetching nutrition context:", e);
+    return { weight: null, goal: null, name: null, age: null, height: null, level: null, nutritionObjective: null, sex: null, tdee: null, existingMacros: null, dietaryRestrictions: [], trainingDays: [], weekSessionNames: [], recentLogsCount: 0, avgMacros: null };
+  }
+}
+
 function buildChat(payload: any, lang: string) {
   const l = lang === "fr" ? "Réponds en français." : "Respond in English.";
   const contextBlock = payload.context ? `\n\nCONTEXTE UTILISATEUR :\n${payload.context}` : "";
