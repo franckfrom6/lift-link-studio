@@ -448,6 +448,18 @@ const LiveSession = () => {
     ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
 
+  // Show loading while fetching free session
+  if (freeSessionLoading || (!selectedSession && selectedSessionId)) {
+    return (
+      <div className="max-w-lg mx-auto flex items-center justify-center py-20">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Clock className="w-4 h-4 animate-spin" />
+          <span className="text-sm">{t('common:loading')}</span>
+        </div>
+      </div>
+    );
+  }
+
   if (sessionDone) {
     return (
       <div className="max-w-lg mx-auto">
