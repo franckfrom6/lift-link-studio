@@ -491,7 +491,7 @@ const StudentWeek = () => {
                       if (swapMode) {
                         handleDayClickInSwapMode(day.dayIndex);
                       } else if (isSessionDay && sessionInfo) {
-                        navigate("/student/session", { state: { sessionId: sessionInfo.sessionId } });
+                        navigate(`/student/session/${sessionInfo.sessionId}`);
                       }
                     }}
                   >
