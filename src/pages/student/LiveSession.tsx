@@ -66,6 +66,7 @@ const LiveSession = () => {
   // If not found in program, fetch as free session
   useEffect(() => {
     if (programSession || !selectedSessionId) return;
+    setFreeSessionLoading(true);
     const fetchFree = async () => {
       const { data } = await supabase
         .from("sessions")
@@ -100,6 +101,7 @@ const LiveSession = () => {
         }
         setFreeSession({ ...data, sections });
       }
+      setFreeSessionLoading(false);
     };
     fetchFree();
   }, [programSession, selectedSessionId]);
