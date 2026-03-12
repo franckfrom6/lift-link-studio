@@ -530,8 +530,9 @@ const StudentWeek = () => {
                           </>
                         )}
                         {(isSessionDay || dayFreeSessions.length > 0) && !day.isPast && !swapMode ? (
-                          <div
+                          <button
                             className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg cursor-pointer"
+                            aria-label={t('session:start_session', 'Start session')}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (isSessionDay && sessionInfo) {
@@ -543,7 +544,7 @@ const StudentWeek = () => {
                           >
                             <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
                             <span className="text-xs font-semibold">Go</span>
-                          </div>
+                          </button>
                         ) : isSessionDay && sessionCompleted ? (
                           <CheckCircle className="w-5 h-5 text-success" strokeWidth={1.5} />
                         ) : null}
