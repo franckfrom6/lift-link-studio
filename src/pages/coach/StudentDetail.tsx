@@ -188,7 +188,7 @@ const StudentDetail = () => {
     );
   }
 
-  const allExternals = [...externals, ...coachExternals];
+  const allExternals = externals;
   const hasProgram = !!program;
 
   const recentSwaps = swaps.filter((s) => {
