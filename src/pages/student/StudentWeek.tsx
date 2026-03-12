@@ -316,22 +316,83 @@ const StudentWeek = () => {
     setExternalFormOpen(true);
   };
 
-  const handleExternalSubmit = (data: ExternalSessionData) => {
+  const handleExternalSubmit = async (data: ExternalSessionData) => {
+    if (!studentId) return;
     if (data.id) {
+      const { error } = await supabase.from("external_sessions").update({
+        activity_type: data.activity_type,
+        activity_label: data.activity_label || null,
+        provider: data.provider || null,
+        location: data.location || null,
+        time_start: data.time_start || null,
+        time_end: data.time_end || null,
+        duration_minutes: data.duration_minutes || null,
+        intensity_perceived: data.intensity_perceived || null,
+        muscle_groups_involved: data.muscle_groups_involved || null,
+        notes: data.notes || null,
+        date: data.date,
+      }).eq("id", data.id);
+      if (error) {
+        console.error("Error updating external session:", error);
+        toast.error(t('common:error'));
+        return;
+      }
       setExternalSessions(prev => prev.map(s => s.id === data.id ? data : s));
       toast.success(t('calendar:activity_modified'));
     } else {
-      setExternalSessions(prev => [...prev, { ...data, id: crypto.randomUUID() }]);
+      const { data: inserted, error } = await supabase.from("external_sessions").insert({
+        student_id: studentId,
+        activity_type: data.activity_type,
+        activity_label: data.activity_label || null,
+        provider: data.provider || null,
+        location: data.location || null,
+        time_start: data.time_start || null,
+        time_end: data.time_end || null,
+        duration_minutes: data.duration_minutes || null,
+        intensity_perceived: data.intensity_perceived || null,
+        muscle_groups_involved: data.muscle_groups_involved || null,
+        notes: data.notes || null,
+        date: data.date,
+      }).select("id").single();
+      if (error) {
+        console.error("Error inserting external session:", error);
+        toast.error(t('common:error'));
+        return;
+      }
+      setExternalSessions(prev => [...prev, { ...data, id: inserted.id }]);
       toast.success(t('calendar:activity_added'));
     }
   };
 
-  const handleDeleteExternal = (id: string) => {
+  const handleDeleteExternal = async (id: string) => {
+    const { error } = await supabase.from("external_sessions").delete().eq("id", id);
+    if (error) {
+      console.error("Error deleting external session:", error);
+      toast.error(t('common:error'));
+      return;
+    }
     setExternalSessions(prev => prev.filter(s => s.id !== id));
     toast.success(t('calendar:activity_deleted'));
   };
 
-  const handleCheckinSubmit = (data: CheckinData) => {
+  const handleCheckinSubmit = async (data: CheckinData) => {
+    if (!studentId) return;
+    const { error } = await supabase.from("weekly_checkins").upsert({
+      student_id: studentId,
+      week_start: formatLocalDate(weekStart),
+      energy_level: data.energy_level,
+      sleep_quality: data.sleep_quality,
+      stress_level: data.stress_level,
+      muscle_soreness: data.muscle_soreness,
+      soreness_location: data.soreness_location || null,
+      availability_notes: data.availability_notes || null,
+      general_notes: data.general_notes || null,
+    }, { onConflict: 'student_id,week_start' });
+    if (error) {
+      console.error("Error saving checkin:", error);
+      toast.error(t('common:error'));
+      return;
+    }
     setCheckins(prev => ({ ...prev, [weekKey]: data }));
     toast.success(t('checkin:checkin_sent'));
   };
