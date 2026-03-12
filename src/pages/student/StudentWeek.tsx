@@ -330,7 +330,7 @@ const StudentWeek = () => {
       )}
 
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset - 1)}>
+        <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset - 1)} aria-label={t('calendar:previous_week', 'Previous week')}>
           <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
         </Button>
         <div className="flex items-center gap-2">
@@ -342,7 +342,7 @@ const StudentWeek = () => {
             {t('calendar:nutrition')}
           </Button>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset + 1)}>
+        <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset + 1)} aria-label={t('calendar:next_week', 'Next week')}>
           <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
         </Button>
       </div>
@@ -371,6 +371,7 @@ const StudentWeek = () => {
             variant="ghost" size="icon"
             className="h-7 w-7 text-warning hover:text-warning"
             onClick={() => { setSwapMode(false); setSwapSourceDay(null); }}
+            aria-label={t('common:cancel')}
           >
             <X className="w-4 h-4" strokeWidth={1.5} />
           </Button>
@@ -394,6 +395,8 @@ const StudentWeek = () => {
                 <DraggableDayCard
                   dayIndex={day.dayIndex}
                   hasSession={isSessionDay}
+                  onMoveUp={isSessionDay && day.dayIndex > 0 ? () => { setSwapSourceDay(day.dayIndex); setSwapTargetDay(day.dayIndex - 1); setSwapModalOpen(true); } : undefined}
+                  onMoveDown={isSessionDay && day.dayIndex < 6 ? () => { setSwapSourceDay(day.dayIndex); setSwapTargetDay(day.dayIndex + 1); setSwapModalOpen(true); } : undefined}
                   className={cn(
                     "w-full glass p-4 transition-all text-left touch-manipulation",
                     day.isToday && "ring-1 ring-primary/40",
@@ -404,11 +407,20 @@ const StudentWeek = () => {
                   )}
                 >
                   <div
+                    role={swapMode || (isSessionDay && sessionInfo) ? "button" : undefined}
+                    tabIndex={swapMode || (isSessionDay && sessionInfo) ? 0 : undefined}
                     onClick={() => {
                       if (swapMode) {
                         handleDayClickInSwapMode(day.dayIndex);
                       } else if (isSessionDay && sessionInfo) {
                         navigate(`/student/session/${sessionInfo.sessionId}`);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        if (swapMode) handleDayClickInSwapMode(day.dayIndex);
+                        else if (isSessionDay && sessionInfo) navigate(`/student/session/${sessionInfo.sessionId}`);
                       }
                     }}
                   >
@@ -444,12 +456,15 @@ const StudentWeek = () => {
                               </div>
                             </div>
                           ) : dayFreeSessions.length > 0 ? (
-                            <div className="space-y-1">
+                <div className="space-y-1">
                               {dayFreeSessions.map(fs => (
                                 <div
                                   key={fs.id}
                                   className="space-y-0.5 cursor-pointer"
+                                  role="button"
+                                  tabIndex={0}
                                   onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
+                                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
                                 >
                                   <div className="flex items-center gap-1.5">
                                     <p className="text-sm font-bold text-foreground truncate">{fs.name}</p>
@@ -478,11 +493,14 @@ const StudentWeek = () => {
 
                           {isSessionDay && dayFreeSessions.length > 0 && (
                             <div className="mt-1.5 pt-1.5 border-t border-border space-y-1">
-                              {dayFreeSessions.map(fs => (
+                             {dayFreeSessions.map(fs => (
                                 <div
                                   key={fs.id}
                                   className="space-y-0.5 cursor-pointer"
+                                  role="button"
+                                  tabIndex={0}
                                   onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
+                                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
                                 >
                                   <div className="flex items-center gap-1.5">
                                     <p className="text-xs font-semibold text-foreground truncate">{fs.name}</p>
@@ -504,6 +522,7 @@ const StudentWeek = () => {
                             variant="ghost" size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-foreground"
                             onClick={(e) => { e.stopPropagation(); setSwapMode(true); setSwapSourceDay(day.dayIndex); }}
+                            aria-label={t('calendar:swap_session', 'Swap session')}
                           >
                             <ArrowLeftRight className="w-4 h-4" strokeWidth={1.5} />
                           </Button>
@@ -514,7 +533,7 @@ const StudentWeek = () => {
                               variant="ghost" size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-foreground"
                               onClick={(e) => { e.stopPropagation(); setFreeSessionDate(day.date); setFreeSessionOpen(true); }}
-                              title={t('session:free_session_btn')}
+                              aria-label={t('session:free_session_btn')}
                             >
                               <Dumbbell className="w-4 h-4" strokeWidth={1.5} />
                             </Button>
@@ -522,14 +541,16 @@ const StudentWeek = () => {
                               variant="ghost" size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-foreground"
                               onClick={(e) => { e.stopPropagation(); handleAddExternal(day.date); }}
+                              aria-label={t('calendar:add_external', 'Add external activity')}
                             >
                               <Plus className="w-4 h-4" strokeWidth={1.5} />
                             </Button>
                           </>
                         )}
                         {(isSessionDay || dayFreeSessions.length > 0) && !day.isPast && !swapMode ? (
-                          <div
+                          <button
                             className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg cursor-pointer"
+                            aria-label={t('session:start_session', 'Start session')}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (isSessionDay && sessionInfo) {
@@ -541,7 +562,7 @@ const StudentWeek = () => {
                           >
                             <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
                             <span className="text-xs font-semibold">Go</span>
-                          </div>
+                          </button>
                         ) : isSessionDay && sessionCompleted ? (
                           <CheckCircle className="w-5 h-5 text-success" strokeWidth={1.5} />
                         ) : null}

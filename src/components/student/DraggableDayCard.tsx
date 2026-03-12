@@ -8,9 +8,11 @@ interface DraggableDayCardProps {
   hasSession: boolean;
   children: ReactNode;
   className?: string;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
 
-export const DraggableDayCard = ({ dayIndex, hasSession, children, className }: DraggableDayCardProps) => {
+export const DraggableDayCard = ({ dayIndex, hasSession, children, className, onMoveUp, onMoveDown }: DraggableDayCardProps) => {
   const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({
     id: `day-${dayIndex}`,
     data: { dayIndex },
@@ -35,6 +37,13 @@ export const DraggableDayCard = ({ dayIndex, hasSession, children, className }: 
       style={style}
       {...listeners}
       {...attributes}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowUp" && onMoveUp) { e.preventDefault(); onMoveUp(); }
+        if (e.key === "ArrowDown" && onMoveDown) { e.preventDefault(); onMoveDown(); }
+      }}
+      tabIndex={hasSession ? 0 : undefined}
+      role={hasSession ? "button" : undefined}
+      aria-label={hasSession ? `Day ${dayIndex + 1}, press arrow keys to move` : undefined}
       className={cn(
         className,
         isDragging && "opacity-50 shadow-lg scale-[1.02]",

@@ -16,7 +16,7 @@ const LanguageSwitcher = () => {
         "h-8 px-2 rounded-lg text-xs font-bold border border-border",
         "text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
       )}
-      title={i18n.language === 'fr' ? 'Switch to English' : 'Passer en français'}
+      aria-label={i18n.language === 'fr' ? 'Switch to English' : 'Passer en français'}
     >
       {i18n.language === 'fr' ? 'EN' : 'FR'}
     </button>

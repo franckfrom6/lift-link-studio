@@ -481,7 +481,7 @@ const LiveSession = () => {
       {/* Sticky header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-3 -mx-4 px-4 pt-2 border-b border-border">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/student")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/student")} aria-label={t('session:quit')}>
             <ArrowLeft className="w-4 h-4 mr-1" strokeWidth={1.5} />
             {t('session:quit')}
           </Button>
@@ -517,30 +517,30 @@ const LiveSession = () => {
             <p className="text-sm font-semibold truncate">{sessionProgram.title}</p>
             {selectedSession?.notes && <p className="text-[11px] text-muted-foreground">{selectedSession.notes}</p>}
           </div>
-          <Badge variant="outline" className="shrink-0 text-[10px]">
+          <Badge variant="outline" className="shrink-0 text-xs">
             {allExercises.length} ex.
           </Badge>
         </div>
 
         <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden" role="progressbar" aria-valuenow={completedCount} aria-valuemin={0} aria-valuemax={allExercises.length} aria-label={t('session:exercise_progress', 'Exercise progress')}>
             <div
               className="h-full bg-primary rounded-full transition-all duration-500"
               style={{ width: `${(completedCount / allExercises.length) * 100}%` }}
             />
           </div>
-          <span className="text-[10px] text-muted-foreground font-medium tabular-nums">
+          <span className="text-xs text-muted-foreground font-medium tabular-nums">
             {completedCount}/{allExercises.length}
           </span>
         </div>
 
         {substitutions.length > 0 && (
-          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-warning font-medium">
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-warning font-medium">
             <span>⚡ {substitutions.length > 1 ? t('session:exercises_modified_plural', { count: substitutions.length }) : t('session:exercises_modified', { count: substitutions.length })}</span>
           </div>
         )}
         {skippedCount > 0 && (
-          <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium">
+          <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
             <span>⏭ {t('session:exercises_skipped', { count: skippedCount })}</span>
           </div>
         )}
@@ -594,7 +594,10 @@ const LiveSession = () => {
                 return (
                   <div
                     key={key}
+                    role={!isActive && !isSkipped ? "button" : undefined}
+                    tabIndex={!isActive && !isSkipped ? 0 : undefined}
                     onClick={() => !isActive && !isSkipped && setActiveExerciseKey(key)}
+                    onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isActive && !isSkipped) { e.preventDefault(); setActiveExerciseKey(key); } }}
                     className={cn(!isActive && !isSkipped && "cursor-pointer")}
                   >
                     <EnhancedExerciseCard

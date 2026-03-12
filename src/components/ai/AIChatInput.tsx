@@ -47,6 +47,7 @@ const AIChatInput = ({ onSend, disabled }: AIChatInputProps) => {
         className="h-10 w-10 shrink-0"
         onClick={handleSend}
         disabled={!text.trim() || disabled}
+        aria-label={t("send", "Send message")}
       >
         <Send className="w-4 h-4" strokeWidth={1.5} />
       </Button>
