@@ -342,7 +342,7 @@ const StudentWeek = () => {
             {t('calendar:nutrition')}
           </Button>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset + 1)}>
+        <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset + 1)} aria-label={t('calendar:next_week', 'Next week')}>
           <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
         </Button>
       </div>
