@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ProgramData, WeekData, SessionSectionData, SessionExerciseData, SessionData, MOCK_STUDENTS } from "@/types/coach";
+import { ProgramData, WeekData, SessionSectionData, SessionExerciseData, SessionData } from "@/types/coach";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -22,8 +22,23 @@ const ProgramEditor = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation(["program", "common"]);
-  const student = MOCK_STUDENTS.find((s) => s.id === studentId);
   const { generate, loading: aiLoading } = useGenerateProgram();
+  const [student, setStudent] = useState<{ full_name: string; goal: string | null; level: string | null } | null>(null);
+
+  // Fetch real student data from DB
+  useEffect(() => {
+    if (!studentId) return;
+    const fetchStudent = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name, goal, level")
+        .eq("user_id", studentId)
+        .maybeSingle();
+      if (error) console.error("Error fetching student:", error);
+      if (data) setStudent(data);
+    };
+    fetchStudent();
+  }, [studentId]);
 
   const [program, setProgram] = useState<ProgramData>({
     id: programId || crypto.randomUUID(),
@@ -130,13 +145,24 @@ const ProgramEditor = () => {
   const [aiMode, setAiMode] = useState<"guided" | "free">("guided");
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiForm, setAiForm] = useState({
-    objective: student?.goal || "",
-    level: student?.level || "Intermédiaire",
+    objective: "",
+    level: "Intermédiaire",
     frequency: "3x/semaine",
     duration: "1h",
     equipment: "Salle complète",
     notes: "",
   });
+
+  // Update AI form when student data loads
+  useEffect(() => {
+    if (student) {
+      setAiForm(prev => ({
+        ...prev,
+        objective: student.goal || prev.objective,
+        level: student.level || prev.level,
+      }));
+    }
+  }, [student]);
 
   const addWeek = () => {
     const newWeek: WeekData = {
@@ -201,9 +227,18 @@ const ProgramEditor = () => {
     }
   };
 
-  const handleActivate = () => {
-    setProgram((prev) => ({ ...prev, status: "active" }));
-    toast.success(t("program:program_activated"));
+  const handleActivate = async () => {
+    if (!user || !studentId) return;
+    setSaving(true);
+    const activated = { ...program, status: "active" as const };
+    const result = await saveProgram(activated, user.id, studentId);
+    setSaving(false);
+    if (result) {
+      setProgram(prev => ({ ...prev, status: "active" }));
+      toast.success(t("program:program_activated"));
+    } else {
+      toast.error(t("program:error_save"));
+    }
   };
 
   const handleAIGenerate = async () => {
@@ -264,9 +299,9 @@ const ProgramEditor = () => {
             {student && (
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                  {student.avatar}
+                  {student.full_name.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm text-muted-foreground">{student.name}</span>
+                <span className="text-sm text-muted-foreground">{student.full_name}</span>
               </div>
             )}
             <Badge variant={program.status === "draft" ? "secondary" : program.status === "active" ? "default" : "outline"}>

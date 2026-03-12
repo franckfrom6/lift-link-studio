@@ -39,13 +39,17 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
   useEffect(() => {
     if (!user || initialLoaded) return;
     const load = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("ai_chat_messages")
         .select("id, role, content, context_page")
         .eq("user_id", user.id)
         .order("created_at", { ascending: true })
         .limit(50);
-      if (data) setMessages(data as Message[]);
+      if (error) {
+        console.error("Error loading chat history:", error);
+      } else if (data) {
+        setMessages(data as Message[]);
+      }
       setInitialLoaded(true);
     };
     load();
@@ -81,12 +85,13 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
     setMessages(prev => [...prev, userMsg]);
 
     // Save user message
-    await supabase.from("ai_chat_messages").insert({
+    const { error: insertError } = await supabase.from("ai_chat_messages").insert({
       user_id: user.id,
       role: "user",
       content: text,
       context_page: location.pathname,
     });
+    if (insertError) console.error("Error saving user message:", insertError);
 
     setIsLoading(true);
 
@@ -130,13 +135,13 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
       const assistantMsg: Message = { role: "assistant", content: assistantContent };
       setMessages(prev => [...prev, assistantMsg]);
 
-      // Save assistant message
-      await supabase.from("ai_chat_messages").insert({
+      const { error: saveError } = await supabase.from("ai_chat_messages").insert({
         user_id: user.id,
         role: "assistant",
         content: assistantContent,
         context_page: location.pathname,
       });
+      if (saveError) console.error("Error saving assistant message:", saveError);
     } catch (e) {
       console.error(e);
       toast.error(t("error"));
@@ -147,7 +152,12 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
 
   const handleClear = async () => {
     if (!user) return;
-    await supabase.from("ai_chat_messages").delete().eq("user_id", user.id);
+    const { error } = await supabase.from("ai_chat_messages").delete().eq("user_id", user.id);
+    if (error) {
+      console.error("Error clearing chat:", error);
+      toast.error(t("error"));
+      return;
+    }
     setMessages([]);
   };
 

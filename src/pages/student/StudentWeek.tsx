@@ -53,6 +53,9 @@ const StudentWeek = () => {
   const [checkins, setCheckins] = useState<Record<string, CheckinData>>({});
   const [checkinFormOpen, setCheckinFormOpen] = useState(false);
 
+
+
+
   // Get selected week's sessions from DB program
   const totalWeeks = program?.weeks?.length || 0;
 
@@ -126,13 +129,17 @@ const StudentWeek = () => {
     if (!studentId) return;
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("sessions")
       .select("id, name, free_session_date, session_exercises(id)")
       .eq("is_free_session", true)
       .eq("created_by", studentId)
       .gte("free_session_date", formatLocalDate(weekStart))
       .lte("free_session_date", formatLocalDate(weekEnd));
+    if (error) {
+      console.error("Error fetching free sessions:", error);
+      return;
+    }
     if (data) {
       setFreeSessions(data.map((s: any) => ({
         id: s.id,
@@ -143,7 +150,61 @@ const StudentWeek = () => {
     }
   }, [studentId, weekStart]);
 
+  // Fetch external sessions for this week from DB
+  const fetchExternalSessions = useCallback(async () => {
+    if (!studentId) return;
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const { data, error } = await supabase
+      .from("external_sessions")
+      .select("*")
+      .eq("student_id", studentId)
+      .gte("date", formatLocalDate(weekStart))
+      .lte("date", formatLocalDate(weekEnd))
+      .order("date");
+    if (error) {
+      console.error("Error fetching external sessions:", error);
+      return;
+    }
+    if (data) {
+      setExternalSessions(data.map((e: any) => ({
+        id: e.id,
+        activity_type: e.activity_type,
+        activity_label: e.activity_label || undefined,
+        provider: e.provider || undefined,
+        location: e.location || undefined,
+        time_start: e.time_start || undefined,
+        time_end: e.time_end || undefined,
+        duration_minutes: e.duration_minutes || undefined,
+        intensity_perceived: e.intensity_perceived || undefined,
+        muscle_groups_involved: e.muscle_groups_involved || undefined,
+        notes: e.notes || undefined,
+        date: e.date,
+      })));
+    }
+  }, [studentId, weekStart]);
+
+  // Fetch weekly checkin from DB
+  const fetchCheckin = useCallback(async () => {
+    if (!studentId) return;
+    const { data, error } = await supabase
+      .from("weekly_checkins")
+      .select("*")
+      .eq("student_id", studentId)
+      .eq("week_start", formatLocalDate(weekStart))
+      .maybeSingle();
+    if (error) {
+      console.error("Error fetching checkin:", error);
+      return;
+    }
+    if (data) {
+      setCheckins(prev => ({ ...prev, [formatLocalDate(weekStart)]: data as CheckinData }));
+    }
+  }, [studentId, weekStart]);
+
   useEffect(() => { fetchFreeSessions(); }, [fetchFreeSessions]);
+  useEffect(() => { fetchExternalSessions(); }, [fetchExternalSessions]);
+  useEffect(() => { fetchCheckin(); }, [fetchCheckin]);
 
   // Map DB swaps to the shape used by effectiveSessions
   const mappedSwaps = useMemo(() =>
@@ -264,22 +325,83 @@ const StudentWeek = () => {
     setExternalFormOpen(true);
   };
 
-  const handleExternalSubmit = (data: ExternalSessionData) => {
+  const handleExternalSubmit = async (data: ExternalSessionData) => {
+    if (!studentId) return;
     if (data.id) {
+      const { error } = await supabase.from("external_sessions").update({
+        activity_type: data.activity_type,
+        activity_label: data.activity_label || null,
+        provider: data.provider || null,
+        location: data.location || null,
+        time_start: data.time_start || null,
+        time_end: data.time_end || null,
+        duration_minutes: data.duration_minutes || null,
+        intensity_perceived: data.intensity_perceived || null,
+        muscle_groups_involved: data.muscle_groups_involved || null,
+        notes: data.notes || null,
+        date: data.date,
+      }).eq("id", data.id);
+      if (error) {
+        console.error("Error updating external session:", error);
+        toast.error(t('common:error'));
+        return;
+      }
       setExternalSessions(prev => prev.map(s => s.id === data.id ? data : s));
       toast.success(t('calendar:activity_modified'));
     } else {
-      setExternalSessions(prev => [...prev, { ...data, id: crypto.randomUUID() }]);
+      const { data: inserted, error } = await supabase.from("external_sessions").insert({
+        student_id: studentId,
+        activity_type: data.activity_type,
+        activity_label: data.activity_label || null,
+        provider: data.provider || null,
+        location: data.location || null,
+        time_start: data.time_start || null,
+        time_end: data.time_end || null,
+        duration_minutes: data.duration_minutes || null,
+        intensity_perceived: data.intensity_perceived || null,
+        muscle_groups_involved: data.muscle_groups_involved || null,
+        notes: data.notes || null,
+        date: data.date,
+      }).select("id").single();
+      if (error) {
+        console.error("Error inserting external session:", error);
+        toast.error(t('common:error'));
+        return;
+      }
+      setExternalSessions(prev => [...prev, { ...data, id: inserted.id }]);
       toast.success(t('calendar:activity_added'));
     }
   };
 
-  const handleDeleteExternal = (id: string) => {
+  const handleDeleteExternal = async (id: string) => {
+    const { error } = await supabase.from("external_sessions").delete().eq("id", id);
+    if (error) {
+      console.error("Error deleting external session:", error);
+      toast.error(t('common:error'));
+      return;
+    }
     setExternalSessions(prev => prev.filter(s => s.id !== id));
     toast.success(t('calendar:activity_deleted'));
   };
 
-  const handleCheckinSubmit = (data: CheckinData) => {
+  const handleCheckinSubmit = async (data: CheckinData) => {
+    if (!studentId) return;
+    const { error } = await supabase.from("weekly_checkins").upsert({
+      student_id: studentId,
+      week_start: formatLocalDate(weekStart),
+      energy_level: data.energy_level,
+      sleep_quality: data.sleep_quality,
+      stress_level: data.stress_level,
+      muscle_soreness: data.muscle_soreness,
+      soreness_location: data.soreness_location || null,
+      availability_notes: data.availability_notes || null,
+      general_notes: data.general_notes || null,
+    }, { onConflict: 'student_id,week_start' });
+    if (error) {
+      console.error("Error saving checkin:", error);
+      toast.error(t('common:error'));
+      return;
+    }
     setCheckins(prev => ({ ...prev, [weekKey]: data }));
     toast.success(t('checkin:checkin_sent'));
   };

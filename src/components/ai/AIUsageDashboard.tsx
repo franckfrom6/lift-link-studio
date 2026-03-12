@@ -68,7 +68,7 @@ const AIUsageDashboard = () => {
     setLoading(true);
 
     // Get plan
-    const { data: sub } = await supabase
+    const { data: sub, error: subError } = await supabase
       .from("user_subscriptions")
       .select("plan_id, plans(name)")
       .eq("user_id", user.id)
@@ -76,6 +76,7 @@ const AIUsageDashboard = () => {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (subError) console.error("Error fetching subscription:", subError);
 
     const plan = (sub as any)?.plans?.name || "free";
     setPlanName(plan);
@@ -91,12 +92,13 @@ const AIUsageDashboard = () => {
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const { data: logs } = await supabase
+    const { data: logs, error: logsError } = await supabase
       .from("ai_usage_logs")
       .select("action")
       .eq("user_id", user.id)
       .eq("status", "success")
       .gte("created_at", startOfMonth.toISOString());
+    if (logsError) console.error("Error fetching AI usage:", logsError);
 
     const limits = PLAN_LIMITS[plan] || {};
     const counts: Record<string, number> = {};
