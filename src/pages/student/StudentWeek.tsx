@@ -515,7 +515,7 @@ const StudentWeek = () => {
                               variant="ghost" size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-foreground"
                               onClick={(e) => { e.stopPropagation(); setFreeSessionDate(day.date); setFreeSessionOpen(true); }}
-                              title={t('session:free_session_btn')}
+                              aria-label={t('session:free_session_btn')}
                             >
                               <Dumbbell className="w-4 h-4" strokeWidth={1.5} />
                             </Button>
@@ -523,6 +523,7 @@ const StudentWeek = () => {
                               variant="ghost" size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-foreground"
                               onClick={(e) => { e.stopPropagation(); handleAddExternal(day.date); }}
+                              aria-label={t('calendar:add_external', 'Add external activity')}
                             >
                               <Plus className="w-4 h-4" strokeWidth={1.5} />
                             </Button>
