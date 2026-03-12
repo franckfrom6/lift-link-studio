@@ -37,5 +37,7 @@
   "modified": "Modified",
   "more_options": "More options",
   "duration_sec": "Duration (s)",
-  "distance_m": "Distance (m)"
+  "distance_m": "Distance (m)",
+  "demo_video": "Demo video",
+  "search_youtube": "Watch on YouTube"
 }
