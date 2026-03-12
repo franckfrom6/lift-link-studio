@@ -193,7 +193,7 @@ const StudentCard = ({ student, onClick, locale, t }: { student: StudentOverview
             {/* Adherence bar */}
             <div className="flex items-center gap-1.5 flex-1 max-w-[120px] sm:max-w-[160px]">
               <Progress value={adherence} className="h-1.5" />
-              <span className="text-[10px] font-medium text-muted-foreground w-7 sm:w-8">{student.sessionsDone}/{student.sessionsTotal}</span>
+              <span className="text-xs font-medium text-muted-foreground">{student.sessionsDone}/{student.sessionsTotal}</span>
             </div>
             {/* Check-in emojis */}
             {student.checkin ? (
