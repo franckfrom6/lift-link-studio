@@ -18,7 +18,7 @@ const ThemeToggle = () => {
         "w-9 h-9 rounded-lg flex items-center justify-center",
         "text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
       )}
-      title={theme === "light" ? "Mode clair" : theme === "dark" ? "Mode sombre" : "Système"}
+      aria-label={theme === "light" ? "Mode clair" : theme === "dark" ? "Mode sombre" : "Système"}
     >
       {theme === "light" && <Sun className="w-4 h-4" strokeWidth={1.5} />}
       {theme === "dark" && <Moon className="w-4 h-4" strokeWidth={1.5} />}

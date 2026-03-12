@@ -136,7 +136,7 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose} aria-label={t("common:close", "Close")}>
               <X className="w-4 h-4" strokeWidth={1.5} />
             </Button>
           </div>

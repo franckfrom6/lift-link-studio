@@ -39,7 +39,7 @@ const WeeklyLoadBar = ({ programmedSessions, externalSessions, className }: Week
           {statusConfig.label}
         </span>
       </div>
-      <div className="h-2 bg-secondary rounded-full overflow-hidden">
+      <div className="h-2 bg-secondary rounded-full overflow-hidden" role="progressbar" aria-valuenow={Math.round(fillPercent)} aria-valuemin={0} aria-valuemax={100} aria-label={t('weekly_load')}>
         <div
           className={cn("h-full rounded-full transition-all duration-500", statusConfig.color)}
           style={{ width: `${fillPercent}%` }}

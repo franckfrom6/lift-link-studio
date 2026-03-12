@@ -57,7 +57,7 @@ const RestTimer = ({ initialSeconds, onComplete, autoStart = true }: RestTimerPr
       </div>
 
       {/* Progress bar */}
-      <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
+      <div className="w-full h-1.5 bg-border rounded-full overflow-hidden" role="progressbar" aria-valuenow={seconds} aria-valuemin={0} aria-valuemax={initialSeconds} aria-label="Rest timer">
         <div
           className="h-full bg-primary rounded-full transition-all duration-1000 ease-linear"
           style={{ width: `${pct}%` }}

@@ -535,12 +535,12 @@ const LiveSession = () => {
         </div>
 
         {substitutions.length > 0 && (
-          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-warning font-medium">
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-warning font-medium">
             <span>⚡ {substitutions.length > 1 ? t('session:exercises_modified_plural', { count: substitutions.length }) : t('session:exercises_modified', { count: substitutions.length })}</span>
           </div>
         )}
         {skippedCount > 0 && (
-          <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium">
+          <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
             <span>⏭ {t('session:exercises_skipped', { count: skippedCount })}</span>
           </div>
         )}
