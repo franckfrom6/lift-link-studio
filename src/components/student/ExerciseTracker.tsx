@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check, X, Plus, Play, MessageSquare, Dumbbell } from "lucide-react";
 import RestTimer from "./RestTimer";
+import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
 
 export interface CompletedSet {
   setNumber: number;
