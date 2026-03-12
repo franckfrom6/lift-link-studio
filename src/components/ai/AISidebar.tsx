@@ -119,7 +119,7 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
           <div className="flex items-center gap-1">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={messages.length === 0}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" disabled={messages.length === 0} aria-label={t("ai_chat:clear_history")}>
                   <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                 </Button>
               </AlertDialogTrigger>
