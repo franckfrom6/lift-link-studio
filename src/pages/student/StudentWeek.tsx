@@ -407,11 +407,20 @@ const StudentWeek = () => {
                   )}
                 >
                   <div
+                    role={swapMode || (isSessionDay && sessionInfo) ? "button" : undefined}
+                    tabIndex={swapMode || (isSessionDay && sessionInfo) ? 0 : undefined}
                     onClick={() => {
                       if (swapMode) {
                         handleDayClickInSwapMode(day.dayIndex);
                       } else if (isSessionDay && sessionInfo) {
                         navigate(`/student/session/${sessionInfo.sessionId}`);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        if (swapMode) handleDayClickInSwapMode(day.dayIndex);
+                        else if (isSessionDay && sessionInfo) navigate(`/student/session/${sessionInfo.sessionId}`);
                       }
                     }}
                   >
