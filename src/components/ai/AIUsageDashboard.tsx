@@ -92,12 +92,13 @@ const AIUsageDashboard = () => {
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const { data: logs } = await supabase
+    const { data: logs, error: logsError } = await supabase
       .from("ai_usage_logs")
       .select("action")
       .eq("user_id", user.id)
       .eq("status", "success")
       .gte("created_at", startOfMonth.toISOString());
+    if (logsError) console.error("Error fetching AI usage:", logsError);
 
     const limits = PLAN_LIMITS[plan] || {};
     const counts: Record<string, number> = {};

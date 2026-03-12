@@ -152,7 +152,12 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
 
   const handleClear = async () => {
     if (!user) return;
-    await supabase.from("ai_chat_messages").delete().eq("user_id", user.id);
+    const { error } = await supabase.from("ai_chat_messages").delete().eq("user_id", user.id);
+    if (error) {
+      console.error("Error clearing chat:", error);
+      toast.error(t("error"));
+      return;
+    }
     setMessages([]);
   };
 
