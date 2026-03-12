@@ -216,9 +216,18 @@ const ProgramEditor = () => {
     }
   };
 
-  const handleActivate = () => {
-    setProgram((prev) => ({ ...prev, status: "active" }));
-    toast.success(t("program:program_activated"));
+  const handleActivate = async () => {
+    if (!user || !studentId) return;
+    setSaving(true);
+    const activated = { ...program, status: "active" as const };
+    const result = await saveProgram(activated, user.id, studentId);
+    setSaving(false);
+    if (result) {
+      setProgram(prev => ({ ...prev, status: "active" }));
+      toast.success(t("program:program_activated"));
+    } else {
+      toast.error(t("program:error_save"));
+    }
   };
 
   const handleAIGenerate = async () => {

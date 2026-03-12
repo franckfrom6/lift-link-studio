@@ -196,6 +196,8 @@ const StudentWeek = () => {
   }, [studentId, weekStart]);
 
   useEffect(() => { fetchFreeSessions(); }, [fetchFreeSessions]);
+  useEffect(() => { fetchExternalSessions(); }, [fetchExternalSessions]);
+  useEffect(() => { fetchCheckin(); }, [fetchCheckin]);
 
   // Map DB swaps to the shape used by effectiveSessions
   const mappedSwaps = useMemo(() =>
