@@ -395,6 +395,8 @@ const StudentWeek = () => {
                 <DraggableDayCard
                   dayIndex={day.dayIndex}
                   hasSession={isSessionDay}
+                  onMoveUp={isSessionDay && day.dayIndex > 0 ? () => { setSwapSourceDay(day.dayIndex); setSwapTargetDay(day.dayIndex - 1); setSwapModalOpen(true); } : undefined}
+                  onMoveDown={isSessionDay && day.dayIndex < 6 ? () => { setSwapSourceDay(day.dayIndex); setSwapTargetDay(day.dayIndex + 1); setSwapModalOpen(true); } : undefined}
                   className={cn(
                     "w-full glass p-4 transition-all text-left touch-manipulation",
                     day.isToday && "ring-1 ring-primary/40",
