@@ -145,13 +145,24 @@ const ProgramEditor = () => {
   const [aiMode, setAiMode] = useState<"guided" | "free">("guided");
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiForm, setAiForm] = useState({
-    objective: student?.goal || "",
-    level: student?.level || "Intermédiaire",
+    objective: "",
+    level: "Intermédiaire",
     frequency: "3x/semaine",
     duration: "1h",
     equipment: "Salle complète",
     notes: "",
   });
+
+  // Update AI form when student data loads
+  useEffect(() => {
+    if (student) {
+      setAiForm(prev => ({
+        ...prev,
+        objective: student.goal || prev.objective,
+        level: student.level || prev.level,
+      }));
+    }
+  }, [student]);
 
   const addWeek = () => {
     const newWeek: WeekData = {

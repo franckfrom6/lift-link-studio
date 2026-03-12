@@ -424,8 +424,28 @@ const StudentDetail = () => {
       <ExternalSessionForm
         open={coachFormOpen}
         onClose={() => setCoachFormOpen(false)}
-        onSubmit={(data) => {
-          setCoachExternals(prev => [...prev, { ...data, id: crypto.randomUUID() }]);
+        onSubmit={async (data) => {
+          if (!studentId) return;
+          const { data: inserted, error } = await supabase.from("external_sessions").insert({
+            student_id: studentId,
+            activity_type: data.activity_type,
+            activity_label: data.activity_label || null,
+            provider: data.provider || null,
+            location: data.location || null,
+            time_start: data.time_start || null,
+            time_end: data.time_end || null,
+            duration_minutes: data.duration_minutes || null,
+            intensity_perceived: data.intensity_perceived || null,
+            muscle_groups_involved: data.muscle_groups_involved || null,
+            notes: data.notes || null,
+            date: data.date,
+          }).select("id").single();
+          if (error) {
+            console.error("Error adding external session:", error);
+            toast.error(t("common:error"));
+            return;
+          }
+          setExternals(prev => [...prev, { ...data, id: inserted.id }]);
           toast.success(t("calendar:activity_added_for_student"));
         }}
         date={new Date()}
