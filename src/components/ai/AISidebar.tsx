@@ -135,13 +135,13 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
       const assistantMsg: Message = { role: "assistant", content: assistantContent };
       setMessages(prev => [...prev, assistantMsg]);
 
-      // Save assistant message
-      await supabase.from("ai_chat_messages").insert({
+      const { error: saveError } = await supabase.from("ai_chat_messages").insert({
         user_id: user.id,
         role: "assistant",
         content: assistantContent,
         context_page: location.pathname,
       });
+      if (saveError) console.error("Error saving assistant message:", saveError);
     } catch (e) {
       console.error(e);
       toast.error(t("error"));
