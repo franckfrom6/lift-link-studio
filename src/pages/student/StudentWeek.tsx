@@ -413,7 +413,7 @@ const StudentWeek = () => {
 
   if (programLoading) {
     return (
-      <div className="space-y-5 animate-fade-in max-w-lg mx-auto">
+      <div className="space-y-5 animate-fade-in max-w-2xl mx-auto">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-24 w-full rounded-xl" />
         <Skeleton className="h-64 w-full rounded-xl" />
