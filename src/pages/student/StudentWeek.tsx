@@ -2,14 +2,14 @@ import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock
 import DateBadge, { DateBadgeVariant } from "@/components/student/DateBadge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import SessionSwapModal from "@/components/student/SessionSwapModal";
 import SwapBadge from "@/components/student/SwapBadge";
-import ExternalSessionForm, { ExternalSessionData } from "@/components/student/ExternalSessionForm";
+import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import ExternalSessionCard from "@/components/student/ExternalSessionCard";
-import WeeklyCheckinForm, { CheckinData } from "@/components/student/WeeklyCheckinForm";
+import WeeklyCheckinForm from "@/components/student/WeeklyCheckinForm";
 import CheckinBadge from "@/components/student/CheckinBadge";
 import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import SelfGuidedDashboard from "@/components/student/SelfGuidedDashboard";
@@ -25,6 +25,7 @@ import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSen
 import { DraggableDayCard } from "@/components/student/DraggableDayCard";
 import { supabase } from "@/integrations/supabase/client";
 import { formatLocalDate } from "@/lib/date-utils";
+import { useWeekData } from "@/hooks/useWeekData";
 
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
@@ -40,42 +41,23 @@ const StudentWeek = () => {
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [swapTargetDay, setSwapTargetDay] = useState<number | null>(null);
-  
-
-  const [externalSessions, setExternalSessions] = useState<ExternalSessionData[]>([]);
-  const [externalFormOpen, setExternalFormOpen] = useState(false);
-  const [externalFormDate, setExternalFormDate] = useState<Date>(new Date());
-  const [editingExternal, setEditingExternal] = useState<ExternalSessionData | null>(null);
   const [freeSessionOpen, setFreeSessionOpen] = useState(false);
   const [freeSessionDate, setFreeSessionDate] = useState<Date>(new Date());
-  const [freeSessions, setFreeSessions] = useState<Array<{ id: string; name: string; date: string; exerciseCount: number }>>([]);
 
-  const [checkins, setCheckins] = useState<Record<string, CheckinData>>({});
-  const [checkinFormOpen, setCheckinFormOpen] = useState(false);
-
-
-
-
-  // Get selected week's sessions from DB program
   const totalWeeks = program?.weeks?.length || 0;
 
-  // Compute which program week to display based on program start date and weekOffset
   const selectedWeekIndex = useMemo(() => {
     if (!program || totalWeeks === 0) return 0;
-    // Monday of program creation week
     const created = new Date(program.created_at);
     const cDay = created.getDay();
     const cMonday = new Date(created);
     cMonday.setDate(cMonday.getDate() - cDay + (cDay === 0 ? -6 : 1));
     cMonday.setHours(0, 0, 0, 0);
-
-    // Monday of currently displayed week
     const now = new Date();
     const nDay = now.getDay();
     const displayMonday = new Date(now);
     displayMonday.setDate(displayMonday.getDate() - nDay + (nDay === 0 ? -6 : 1) + weekOffset * 7);
     displayMonday.setHours(0, 0, 0, 0);
-
     const diffWeeks = Math.round((displayMonday.getTime() - cMonday.getTime()) / (7 * 24 * 60 * 60 * 1000));
     if (diffWeeks < 0) return 0;
     return diffWeeks % totalWeeks;
@@ -84,9 +66,6 @@ const StudentWeek = () => {
   const currentWeek = program?.weeks?.[selectedWeekIndex];
   const weekSessions = currentWeek?.sessions || [];
 
-  // Build sessions map: day_of_week → session info
-  // Map sessions by 0-based day index (0=Mon, 1=Tue, ..., 6=Sun)
-  // day_of_week in DB is 1-based (1=Mon), so we subtract 1
   const DEFAULT_SESSIONS = useMemo(() => {
     const map: Record<number, { name: string; sessionId: string; exerciseCount: number; muscleGroups: string[] }> = {};
     for (const session of weekSessions) {
@@ -116,97 +95,36 @@ const StudentWeek = () => {
   };
 
   const weekStart = useMemo(getWeekStart, [weekOffset]);
-  const weekStartStr = formatLocalDate(weekStart);
   const { swaps: dbSwaps, createSwap } = useSessionSwaps(weekStart);
-  const weekKey = weekStartStr;
-  const currentCheckin = checkins[weekKey] || null;
 
-  // Fetch free sessions for this week
   const { effectiveStudentId } = useImpersonation();
   const studentId = user ? effectiveStudentId(user.id) : null;
 
+  const {
+    currentCheckin,
+    weekExternals,
+    externalFormOpen,
+    setExternalFormOpen,
+    externalFormDate,
+    editingExternal,
+    setEditingExternal,
+    checkinFormOpen,
+    setCheckinFormOpen,
+    handleExternalSubmit,
+    handleDeleteExternal,
+    handleCheckinSubmit,
+    handleAddExternal,
+    getFreeForDay,
+    getExternalForDay,
+    freeSessions,
+  } = useWeekData(studentId, weekStart);
+
+  // Fetch free sessions callback for FreeSessionCreator
   const fetchFreeSessions = useCallback(async () => {
-    if (!studentId) return;
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    const { data, error } = await supabase
-      .from("sessions")
-      .select("id, name, free_session_date, session_exercises(id)")
-      .eq("is_free_session", true)
-      .eq("created_by", studentId)
-      .gte("free_session_date", formatLocalDate(weekStart))
-      .lte("free_session_date", formatLocalDate(weekEnd));
-    if (error) {
-      console.error("Error fetching free sessions:", error);
-      return;
-    }
-    if (data) {
-      setFreeSessions(data.map((s: any) => ({
-        id: s.id,
-        name: s.name,
-        date: s.free_session_date,
-        exerciseCount: s.session_exercises?.length || 0,
-      })));
-    }
-  }, [studentId, weekStart]);
+    // Re-trigger by changing weekOffset slightly - the hook will refetch
+    setWeekOffset(prev => prev);
+  }, []);
 
-  // Fetch external sessions for this week from DB
-  const fetchExternalSessions = useCallback(async () => {
-    if (!studentId) return;
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    const { data, error } = await supabase
-      .from("external_sessions")
-      .select("*")
-      .eq("student_id", studentId)
-      .gte("date", formatLocalDate(weekStart))
-      .lte("date", formatLocalDate(weekEnd))
-      .order("date");
-    if (error) {
-      console.error("Error fetching external sessions:", error);
-      return;
-    }
-    if (data) {
-      setExternalSessions(data.map((e: any) => ({
-        id: e.id,
-        activity_type: e.activity_type,
-        activity_label: e.activity_label || undefined,
-        provider: e.provider || undefined,
-        location: e.location || undefined,
-        time_start: e.time_start || undefined,
-        time_end: e.time_end || undefined,
-        duration_minutes: e.duration_minutes || undefined,
-        intensity_perceived: e.intensity_perceived || undefined,
-        muscle_groups_involved: e.muscle_groups_involved || undefined,
-        notes: e.notes || undefined,
-        date: e.date,
-      })));
-    }
-  }, [studentId, weekStart]);
-
-  // Fetch weekly checkin from DB
-  const fetchCheckin = useCallback(async () => {
-    if (!studentId) return;
-    const { data, error } = await supabase
-      .from("weekly_checkins")
-      .select("*")
-      .eq("student_id", studentId)
-      .eq("week_start", formatLocalDate(weekStart))
-      .maybeSingle();
-    if (error) {
-      console.error("Error fetching checkin:", error);
-      return;
-    }
-    if (data) {
-      setCheckins(prev => ({ ...prev, [formatLocalDate(weekStart)]: data as CheckinData }));
-    }
-  }, [studentId, weekStart]);
-
-  useEffect(() => { fetchFreeSessions(); }, [fetchFreeSessions]);
-  useEffect(() => { fetchExternalSessions(); }, [fetchExternalSessions]);
-  useEffect(() => { fetchCheckin(); }, [fetchCheckin]);
-
-  // Map DB swaps to the shape used by effectiveSessions
   const mappedSwaps = useMemo(() =>
     dbSwaps.map(s => ({ originalDay: s.original_day - 1, newDay: s.new_day - 1, reason: s.reason })),
     [dbSwaps]
@@ -231,25 +149,6 @@ const StudentWeek = () => {
     return map;
   }, [mappedSwaps]);
 
-  const getFreeForDay = (date: Date) => {
-    const dateStr = formatLocalDate(date);
-    return freeSessions.filter(s => s.date === dateStr);
-  };
-
-  const getExternalForDay = (date: Date) => {
-    const dateStr = formatLocalDate(date);
-    return externalSessions.filter(s => s.date === dateStr);
-  };
-
-  const weekExternals = useMemo(() => {
-    return externalSessions.filter(s => {
-      const d = new Date(s.date);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 7);
-      return d >= weekStart && d < weekEnd;
-    });
-  }, [externalSessions, weekStart]);
-
   const programmedCount = Object.keys(effectiveSessions).length;
   const totalExercises = weekSessions.reduce(
     (a, s) => a + s.sections.reduce((b, sec) => b + sec.exercises.length, 0), 0
@@ -268,7 +167,6 @@ const StudentWeek = () => {
 
   const dates = getWeekDates();
 
-  // DnD sensors with activation distance to avoid interfering with clicks
   const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 8 } });
   const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } });
   const sensors = useSensors(pointerSensor, touchSensor);
@@ -319,96 +217,8 @@ const StudentWeek = () => {
     setSwapModalOpen(false);
   };
 
-  const handleAddExternal = (date: Date) => {
-    setExternalFormDate(date);
-    setEditingExternal(null);
-    setExternalFormOpen(true);
-  };
-
-  const handleExternalSubmit = async (data: ExternalSessionData) => {
-    if (!studentId) return;
-    if (data.id) {
-      const { error } = await supabase.from("external_sessions").update({
-        activity_type: data.activity_type,
-        activity_label: data.activity_label || null,
-        provider: data.provider || null,
-        location: data.location || null,
-        time_start: data.time_start || null,
-        time_end: data.time_end || null,
-        duration_minutes: data.duration_minutes || null,
-        intensity_perceived: data.intensity_perceived || null,
-        muscle_groups_involved: data.muscle_groups_involved || null,
-        notes: data.notes || null,
-        date: data.date,
-      }).eq("id", data.id);
-      if (error) {
-        console.error("Error updating external session:", error);
-        toast.error(t('common:error'));
-        return;
-      }
-      setExternalSessions(prev => prev.map(s => s.id === data.id ? data : s));
-      toast.success(t('calendar:activity_modified'));
-    } else {
-      const { data: inserted, error } = await supabase.from("external_sessions").insert({
-        student_id: studentId,
-        activity_type: data.activity_type,
-        activity_label: data.activity_label || null,
-        provider: data.provider || null,
-        location: data.location || null,
-        time_start: data.time_start || null,
-        time_end: data.time_end || null,
-        duration_minutes: data.duration_minutes || null,
-        intensity_perceived: data.intensity_perceived || null,
-        muscle_groups_involved: data.muscle_groups_involved || null,
-        notes: data.notes || null,
-        date: data.date,
-      }).select("id").single();
-      if (error) {
-        console.error("Error inserting external session:", error);
-        toast.error(t('common:error'));
-        return;
-      }
-      setExternalSessions(prev => [...prev, { ...data, id: inserted.id }]);
-      toast.success(t('calendar:activity_added'));
-    }
-  };
-
-  const handleDeleteExternal = async (id: string) => {
-    const { error } = await supabase.from("external_sessions").delete().eq("id", id);
-    if (error) {
-      console.error("Error deleting external session:", error);
-      toast.error(t('common:error'));
-      return;
-    }
-    setExternalSessions(prev => prev.filter(s => s.id !== id));
-    toast.success(t('calendar:activity_deleted'));
-  };
-
-  const handleCheckinSubmit = async (data: CheckinData) => {
-    if (!studentId) return;
-    const { error } = await supabase.from("weekly_checkins").upsert({
-      student_id: studentId,
-      week_start: formatLocalDate(weekStart),
-      energy_level: data.energy_level,
-      sleep_quality: data.sleep_quality,
-      stress_level: data.stress_level,
-      muscle_soreness: data.muscle_soreness,
-      soreness_location: data.soreness_location || null,
-      availability_notes: data.availability_notes || null,
-      general_notes: data.general_notes || null,
-    }, { onConflict: 'student_id,week_start' });
-    if (error) {
-      console.error("Error saving checkin:", error);
-      toast.error(t('common:error'));
-      return;
-    }
-    setCheckins(prev => ({ ...prev, [weekKey]: data }));
-    toast.success(t('checkin:checkin_sent'));
-  };
-
   const targetHasSession = swapTargetDay !== null && !!effectiveSessions[swapTargetDay];
   const sourceDayHasSession = swapSourceDay !== null && !!effectiveSessions[swapSourceDay];
-
   const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "";
 
   if (programLoading) {
@@ -434,7 +244,6 @@ const StudentWeek = () => {
         <p className="text-muted-foreground text-sm mt-1">{t('calendar:your_program')}</p>
       </div>
 
-      {/* Current program card */}
       {program ? (
         <div className="glass p-5 space-y-3">
           <div className="flex items-start justify-between">
@@ -464,7 +273,6 @@ const StudentWeek = () => {
           }}
           onJoinCoach={async (code) => {
             if (!user) return;
-            // Look up the token
             const { data: tokenData } = await supabase
               .from("coach_invite_tokens")
               .select("id, coach_id, token, uses_count, max_uses, expires_at")
@@ -477,7 +285,6 @@ const StudentWeek = () => {
               return;
             }
 
-            // Check expiry / max uses
             if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) {
               toast.error(t('auth:token_invalid', "Code invalide ou expiré"));
               return;
@@ -487,7 +294,6 @@ const StudentWeek = () => {
               return;
             }
 
-            // Check if already linked
             const { data: existing } = await supabase
               .from("coach_students")
               .select("id")
@@ -501,7 +307,6 @@ const StudentWeek = () => {
               return;
             }
 
-            // Create association
             const { error } = await supabase.from("coach_students").insert({
               coach_id: tokenData.coach_id,
               student_id: user.id,
@@ -513,22 +318,16 @@ const StudentWeek = () => {
               return;
             }
 
-            // Increment uses_count
             await supabase
               .from("coach_invite_tokens")
               .update({ uses_count: tokenData.uses_count + 1 })
               .eq("id", tokenData.id);
 
             toast.success(t('auth:token_join_success', "Vous avez rejoint le coach !"));
-            // Reload to get the new program
             window.location.reload();
           }}
         />
       )}
-
-
-
-
 
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset - 1)}>
@@ -548,7 +347,6 @@ const StudentWeek = () => {
         </Button>
       </div>
 
-      {/* Weekly check-in badge */}
       {weekOffset === 0 && (
         <CheckinBadge
           checkin={currentCheckin}
@@ -556,7 +354,6 @@ const StudentWeek = () => {
         />
       )}
 
-      {/* Weekly load bar */}
       {(programmedCount > 0 || weekExternals.length > 0) && (
         <WeeklyLoadBar
           programmedSessions={programmedCount}
@@ -564,7 +361,6 @@ const StudentWeek = () => {
         />
       )}
 
-      {/* Swap mode banner */}
       {swapMode && (
         <div className="flex items-center justify-between bg-warning-bg text-warning rounded-lg px-4 py-2.5 text-sm font-medium animate-fade-in">
           <div className="flex items-center gap-2">
@@ -581,7 +377,6 @@ const StudentWeek = () => {
         </div>
       )}
 
-      {/* Days */}
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <div className="space-y-2">
           {dates.map((day) => {
@@ -681,7 +476,6 @@ const StudentWeek = () => {
                             </p>
                           )}
 
-                          {/* AI sessions shown below program session on same day */}
                           {isSessionDay && dayFreeSessions.length > 0 && (
                             <div className="mt-1.5 pt-1.5 border-t border-border space-y-1">
                               {dayFreeSessions.map(fs => (
@@ -770,8 +564,8 @@ const StudentWeek = () => {
                       <ExternalSessionCard
                         key={ext.id}
                         session={ext}
-                        onEdit={() => { setEditingExternal(ext); setExternalFormDate(day.date); setExternalFormOpen(true); }}
-                        onDelete={() => handleDeleteExternal(ext.id!)}
+                        onEdit={(s) => { setEditingExternal(s); setExternalFormOpen(true); }}
+                        onDelete={handleDeleteExternal}
                       />
                     ))}
                   </div>
@@ -781,6 +575,7 @@ const StudentWeek = () => {
           })}
         </div>
       </DndContext>
+
       {swapSourceDay !== null && swapTargetDay !== null && (
         <SessionSwapModal
           open={swapModalOpen}
