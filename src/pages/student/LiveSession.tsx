@@ -443,7 +443,7 @@ const LiveSession = () => {
   // Show loading while fetching free session
   if (freeSessionLoading || (!selectedSession && selectedSessionId)) {
     return (
-      <div className="max-w-lg mx-auto flex items-center justify-center py-20">
+      <div className="max-w-2xl mx-auto flex items-center justify-center py-20">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Clock className="w-4 h-4 animate-spin" />
           <span className="text-sm">{t('common:loading')}</span>
