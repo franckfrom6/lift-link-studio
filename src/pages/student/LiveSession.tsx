@@ -481,7 +481,7 @@ const LiveSession = () => {
       {/* Sticky header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-3 -mx-4 px-4 pt-2 border-b border-border">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/student")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/student")} aria-label={t('session:quit')}>
             <ArrowLeft className="w-4 h-4 mr-1" strokeWidth={1.5} />
             {t('session:quit')}
           </Button>
