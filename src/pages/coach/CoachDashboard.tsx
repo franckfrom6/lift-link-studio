@@ -229,7 +229,7 @@ const FEED_ICONS: Record<string, string> = {
 const FeedItem = ({ item, locale, t }: { item: ActivityItem; locale: any; t: any }) => (
   <div className="flex items-center gap-2 sm:gap-3 py-2 px-2 sm:px-3 rounded-lg hover:bg-secondary/50 transition-colors">
     <span className="text-sm">{FEED_ICONS[item.type]}</span>
-    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-accent flex items-center justify-center text-[10px] font-semibold text-accent-foreground shrink-0">
+    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-accent flex items-center justify-center text-xs font-semibold text-accent-foreground shrink-0">
       {item.avatar}
     </div>
     <div className="flex-1 min-w-0">
