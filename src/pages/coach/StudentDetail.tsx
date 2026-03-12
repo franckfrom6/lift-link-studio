@@ -79,11 +79,12 @@ const StudentDetail = () => {
     setLoading(true);
 
     // Fetch profile
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("user_id, full_name, avatar_url, goal, level, age, height, weight")
       .eq("user_id", studentId)
       .maybeSingle();
+    if (profileError) console.error("Error fetching student profile:", profileError);
 
     if (!profile) {
       setLoading(false);
