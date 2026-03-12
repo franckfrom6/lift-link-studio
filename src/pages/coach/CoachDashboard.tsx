@@ -150,7 +150,7 @@ const KPICard = ({ icon: Icon, label, value, variant = "default" }: { icon: any;
   <div className="glass p-3 sm:p-4 space-y-1">
     <div className="flex items-center gap-1.5 text-muted-foreground">
       <Icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0", variant === "warning" && "text-warning")} strokeWidth={1.5} />
-      <span className="text-[10px] sm:text-[11px] font-medium leading-tight">{label}</span>
+      <span className="text-xs font-medium leading-tight">{label}</span>
     </div>
     <p className={cn("text-xl sm:text-2xl font-bold", variant === "warning" && Number(value) > 0 && "text-warning")}>{value}</p>
   </div>
