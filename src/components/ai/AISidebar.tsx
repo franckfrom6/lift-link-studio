@@ -39,13 +39,17 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
   useEffect(() => {
     if (!user || initialLoaded) return;
     const load = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("ai_chat_messages")
         .select("id, role, content, context_page")
         .eq("user_id", user.id)
         .order("created_at", { ascending: true })
         .limit(50);
-      if (data) setMessages(data as Message[]);
+      if (error) {
+        console.error("Error loading chat history:", error);
+      } else if (data) {
+        setMessages(data as Message[]);
+      }
       setInitialLoaded(true);
     };
     load();
