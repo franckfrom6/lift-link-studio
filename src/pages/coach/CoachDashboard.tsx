@@ -177,16 +177,16 @@ const StudentCard = ({ student, onClick, locale, t }: { student: StudentOverview
           {/* Alert badges - wrap on mobile */}
           <div className="flex items-center gap-1 flex-wrap">
             {student.alerts.includes("no_session_5d") && (
-              <Badge variant="outline" className="text-[9px] border-warning/40 text-warning bg-warning-bg px-1 py-0">{t("dashboard:alert_no_session")}</Badge>
+              <Badge variant="outline" className="text-xs border-warning/40 text-warning bg-warning-bg px-1.5 py-0.5">{t("dashboard:alert_no_session")}</Badge>
             )}
             {student.alerts.includes("no_checkin") && (
-              <Badge variant="outline" className="text-[9px] border-warning/40 text-warning bg-warning-bg px-1 py-0">{t("dashboard:alert_no_checkin")}</Badge>
+              <Badge variant="outline" className="text-xs border-warning/40 text-warning bg-warning-bg px-1.5 py-0.5">{t("dashboard:alert_no_checkin")}</Badge>
             )}
             {student.alerts.includes("high_fatigue") && (
-              <Badge variant="outline" className="text-[9px] border-destructive/40 text-destructive bg-destructive/10 px-1 py-0">{t("dashboard:alert_fatigue")}</Badge>
+              <Badge variant="outline" className="text-xs border-destructive/40 text-destructive bg-destructive/10 px-1.5 py-0.5">{t("dashboard:alert_fatigue")}</Badge>
             )}
             {student.swapsThisWeek > 0 && (
-              <Badge variant="outline" className="text-[9px] border-primary/30 text-primary px-1 py-0">🔄 {student.swapsThisWeek}</Badge>
+              <Badge variant="outline" className="text-xs border-primary/30 text-primary px-1.5 py-0.5">🔄 {student.swapsThisWeek}</Badge>
             )}
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
