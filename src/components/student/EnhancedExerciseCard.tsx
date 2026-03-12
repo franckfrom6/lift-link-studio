@@ -484,8 +484,11 @@ const EnhancedExerciseCard = ({
 
       {/* Expanded details */}
       {expanded && (
-        <div className="px-3 pb-3 space-y-3 border-t border-border pt-3">
-          {(suggestedWeight || coachNotes || videoUrl || videoSearchQuery) && (
+        <div className="px-3 pb-3 space-y-4 border-t border-border pt-3">
+          {/* Video embed section */}
+          <ExerciseVideoEmbed exerciseName={name} />
+
+          {(suggestedWeight || coachNotes) && (
             <div className="space-y-2">
               {suggestedWeight && trackingType === "weight_reps" && (
                 <p className="text-xs text-muted-foreground">
@@ -497,11 +500,6 @@ const EnhancedExerciseCard = ({
                   📝 {coachNotes}
                 </p>
               )}
-              <VideoLink
-                videoUrl={videoUrl}
-                videoSearchQuery={videoSearchQuery}
-                exerciseName={name}
-              />
             </div>
           )}
 

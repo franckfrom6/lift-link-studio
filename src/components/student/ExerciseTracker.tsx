@@ -112,6 +112,9 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
         </div>
       </div>
 
+      {/* Video embed */}
+      <ExerciseVideoEmbed exerciseName={exercise.name} />
+
       {/* Coach notes */}
       {exercise.notes && (
         <button
@@ -123,19 +126,6 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
             {exercise.notes}
           </p>
         </button>
-      )}
-
-      {/* Video link */}
-      {exercise.video && (
-        <a
-          href={exercise.video}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-destructive/90 hover:bg-destructive text-destructive-foreground px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
-        >
-          <Play className="w-3 h-3" />
-          Voir la démo — {exercise.channel}
-        </a>
       )}
 
       {/* Rest timer */}
