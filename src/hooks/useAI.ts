@@ -57,12 +57,12 @@ export function useAI({ action, onSuccess, onError }: UseAIOptions) {
         onError?.(aiErr);
 
         if (aiErr.type === "plan_required") {
-          toast.error(t("ai_plan_required", "Passez au plan supérieur pour utiliser cette fonctionnalité IA."));
+          toast.error(t("ai_plan_required"));
         } else if (aiErr.type === "rate_limited") {
-          toast.error(t("ai_rate_limited", "Limite d'utilisation IA atteinte ce mois-ci."));
+          toast.error(t("ai_rate_limited"));
         } else {
           const detail = parsed.message || parsed.error || String(fnError);
-          toast.error(`Erreur IA: ${detail}`);
+          toast.error(`${t("ai_error")} ${detail}`);
         }
         return null;
       }
