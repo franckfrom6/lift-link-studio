@@ -22,8 +22,23 @@ const ProgramEditor = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation(["program", "common"]);
-  const student = MOCK_STUDENTS.find((s) => s.id === studentId);
   const { generate, loading: aiLoading } = useGenerateProgram();
+  const [student, setStudent] = useState<{ full_name: string; goal: string | null; level: string | null } | null>(null);
+
+  // Fetch real student data from DB
+  useEffect(() => {
+    if (!studentId) return;
+    const fetchStudent = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name, goal, level")
+        .eq("user_id", studentId)
+        .maybeSingle();
+      if (error) console.error("Error fetching student:", error);
+      if (data) setStudent(data);
+    };
+    fetchStudent();
+  }, [studentId]);
 
   const [program, setProgram] = useState<ProgramData>({
     id: programId || crypto.randomUUID(),
