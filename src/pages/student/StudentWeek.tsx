@@ -456,12 +456,15 @@ const StudentWeek = () => {
                               </div>
                             </div>
                           ) : dayFreeSessions.length > 0 ? (
-                            <div className="space-y-1">
+                <div className="space-y-1">
                               {dayFreeSessions.map(fs => (
                                 <div
                                   key={fs.id}
                                   className="space-y-0.5 cursor-pointer"
+                                  role="button"
+                                  tabIndex={0}
                                   onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
+                                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
                                 >
                                   <div className="flex items-center gap-1.5">
                                     <p className="text-sm font-bold text-foreground truncate">{fs.name}</p>
