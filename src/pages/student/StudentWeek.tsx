@@ -422,7 +422,7 @@ const StudentWeek = () => {
   }
 
   return (
-    <div className="space-y-5 animate-fade-in max-w-lg mx-auto relative">
+    <div className="space-y-5 animate-fade-in max-w-2xl mx-auto relative">
       {refreshing && (
         <div className="absolute top-0 right-0 z-10 flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full animate-pulse">
           <RefreshCw className="h-3 w-3 animate-spin" />

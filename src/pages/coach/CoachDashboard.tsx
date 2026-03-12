@@ -243,7 +243,7 @@ const FeedItem = ({ item, locale, t }: { item: ActivityItem; locale: any; t: any
         </span>
       </p>
     </div>
-    <span className="text-[10px] text-muted-foreground shrink-0 hidden sm:inline">
+    <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">
       {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale })}
     </span>
   </div>

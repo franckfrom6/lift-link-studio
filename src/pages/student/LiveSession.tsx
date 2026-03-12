@@ -477,7 +477,7 @@ const LiveSession = () => {
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-4">
+    <div className="max-w-2xl mx-auto space-y-4">
       {/* Sticky header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-3 -mx-4 px-4 pt-2 border-b border-border">
         <div className="flex items-center justify-between">
