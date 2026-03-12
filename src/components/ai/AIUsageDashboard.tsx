@@ -68,7 +68,7 @@ const AIUsageDashboard = () => {
     setLoading(true);
 
     // Get plan
-    const { data: sub } = await supabase
+    const { data: sub, error: subError } = await supabase
       .from("user_subscriptions")
       .select("plan_id, plans(name)")
       .eq("user_id", user.id)
@@ -76,6 +76,7 @@ const AIUsageDashboard = () => {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (subError) console.error("Error fetching subscription:", subError);
 
     const plan = (sub as any)?.plans?.name || "free";
     setPlanName(plan);
