@@ -56,5 +56,6 @@
   "free_session_created": "Séance libre créée ! 🎯",
   "free_session_error": "Erreur lors de la création.",
   "free_session_badge": "Libre",
-  "free_session_btn": "+ Musculation"
+  "free_session_btn": "+ Musculation",
+  "same_muscle_group": "Même groupe musculaire : {{muscleGroup}}"
 }

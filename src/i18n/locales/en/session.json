@@ -56,5 +56,6 @@
   "free_session_created": "Free session created! 🎯",
   "free_session_error": "Error creating session.",
   "free_session_badge": "Free",
-  "free_session_btn": "+ Workout"
+  "free_session_btn": "+ Workout",
+  "same_muscle_group": "Same muscle group: {{muscleGroup}}"
 }
