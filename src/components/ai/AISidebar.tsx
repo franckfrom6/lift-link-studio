@@ -85,12 +85,13 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
     setMessages(prev => [...prev, userMsg]);
 
     // Save user message
-    await supabase.from("ai_chat_messages").insert({
+    const { error: insertError } = await supabase.from("ai_chat_messages").insert({
       user_id: user.id,
       role: "user",
       content: text,
       context_page: location.pathname,
     });
+    if (insertError) console.error("Error saving user message:", insertError);
 
     setIsLoading(true);
 
