@@ -523,13 +523,13 @@ const LiveSession = () => {
         </div>
 
         <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden" role="progressbar" aria-valuenow={completedCount} aria-valuemin={0} aria-valuemax={allExercises.length} aria-label={t('session:exercise_progress', 'Exercise progress')}>
             <div
               className="h-full bg-primary rounded-full transition-all duration-500"
               style={{ width: `${(completedCount / allExercises.length) * 100}%` }}
             />
           </div>
-          <span className="text-[10px] text-muted-foreground font-medium tabular-nums">
+          <span className="text-xs text-muted-foreground font-medium tabular-nums">
             {completedCount}/{allExercises.length}
           </span>
         </div>
