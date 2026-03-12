@@ -8,6 +8,8 @@ interface DraggableDayCardProps {
   hasSession: boolean;
   children: ReactNode;
   className?: string;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
 
 export const DraggableDayCard = ({ dayIndex, hasSession, children, className }: DraggableDayCardProps) => {
