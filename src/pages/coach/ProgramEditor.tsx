@@ -288,9 +288,9 @@ const ProgramEditor = () => {
             {student && (
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                  {student.avatar}
+                  {student.full_name.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm text-muted-foreground">{student.name}</span>
+                <span className="text-sm text-muted-foreground">{student.full_name}</span>
               </div>
             )}
             <Badge variant={program.status === "draft" ? "secondary" : program.status === "active" ? "default" : "outline"}>
