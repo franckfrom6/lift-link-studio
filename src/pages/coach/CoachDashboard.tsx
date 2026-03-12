@@ -203,7 +203,7 @@ const StudentCard = ({ student, onClick, locale, t }: { student: StudentOverview
                 <span>{SORENESS_EMOJIS[Math.min(4, Math.max(0, student.checkin.soreness - 1))]}</span>
               </div>
             ) : (
-              <span className="text-[10px] text-muted-foreground">—</span>
+              <span className="text-xs text-muted-foreground">—</span>
             )}
             {/* Last session - hide on very small screens */}
             {student.lastSessionDate && (
