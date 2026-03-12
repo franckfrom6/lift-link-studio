@@ -594,7 +594,10 @@ const LiveSession = () => {
                 return (
                   <div
                     key={key}
+                    role={!isActive && !isSkipped ? "button" : undefined}
+                    tabIndex={!isActive && !isSkipped ? 0 : undefined}
                     onClick={() => !isActive && !isSkipped && setActiveExerciseKey(key)}
+                    onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isActive && !isSkipped) { e.preventDefault(); setActiveExerciseKey(key); } }}
                     className={cn(!isActive && !isSkipped && "cursor-pointer")}
                   >
                     <EnhancedExerciseCard
