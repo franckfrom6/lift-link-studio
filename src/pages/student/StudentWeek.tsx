@@ -564,8 +564,8 @@ const StudentWeek = () => {
                       <ExternalSessionCard
                         key={ext.id}
                         session={ext}
-                        onEdit={(s: any) => { setEditingExternal(s); setExternalFormOpen(true); }}
-                        onDelete={(id: string) => handleDeleteExternal(id)}
+                        onEdit={() => { setEditingExternal(ext); setExternalFormOpen(true); }}
+                        onDelete={() => handleDeleteExternal(ext.id!)}
                       />
                     ))}
                   </div>
