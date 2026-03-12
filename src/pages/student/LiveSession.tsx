@@ -454,7 +454,7 @@ const LiveSession = () => {
 
   if (sessionDone) {
     return (
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-2xl mx-auto">
         <SessionRecap
           exercises={allExercises}
           completedSets={
