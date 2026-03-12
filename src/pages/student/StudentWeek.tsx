@@ -53,6 +53,58 @@ const StudentWeek = () => {
   const [checkins, setCheckins] = useState<Record<string, CheckinData>>({});
   const [checkinFormOpen, setCheckinFormOpen] = useState(false);
 
+  // Fetch external sessions for this week from DB
+  const fetchExternalSessions = useCallback(async () => {
+    if (!studentId) return;
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const { data, error } = await supabase
+      .from("external_sessions")
+      .select("*")
+      .eq("student_id", studentId)
+      .gte("date", formatLocalDate(weekStart))
+      .lte("date", formatLocalDate(weekEnd))
+      .order("date");
+    if (error) {
+      console.error("Error fetching external sessions:", error);
+      return;
+    }
+    if (data) {
+      setExternalSessions(data.map((e: any) => ({
+        id: e.id,
+        activity_type: e.activity_type,
+        activity_label: e.activity_label || undefined,
+        provider: e.provider || undefined,
+        location: e.location || undefined,
+        time_start: e.time_start || undefined,
+        time_end: e.time_end || undefined,
+        duration_minutes: e.duration_minutes || undefined,
+        intensity_perceived: e.intensity_perceived || undefined,
+        muscle_groups_involved: e.muscle_groups_involved || undefined,
+        notes: e.notes || undefined,
+        date: e.date,
+      })));
+    }
+  }, [studentId, weekStart]);
+
+  // Fetch weekly checkin from DB
+  const fetchCheckin = useCallback(async () => {
+    if (!studentId) return;
+    const { data, error } = await supabase
+      .from("weekly_checkins")
+      .select("*")
+      .eq("student_id", studentId)
+      .eq("week_start", formatLocalDate(weekStart))
+      .maybeSingle();
+    if (error) {
+      console.error("Error fetching checkin:", error);
+      return;
+    }
+    if (data) {
+      setCheckins(prev => ({ ...prev, [formatLocalDate(weekStart)]: data as CheckinData }));
+    }
+  }, [studentId, weekStart]);
+
   // Get selected week's sessions from DB program
   const totalWeeks = program?.weeks?.length || 0;
 
