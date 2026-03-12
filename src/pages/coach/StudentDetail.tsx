@@ -19,8 +19,6 @@ import CoachSuggestion from "@/components/coach/CoachSuggestion";
 import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
-import ProgramView from "@/components/coach/ProgramView";
-import { YANA_PROGRAM } from "@/data/yana-program";
 import CoachFeedbackView from "@/components/coach/CoachFeedbackView";
 
 interface StudentProfile {
@@ -264,7 +262,7 @@ const StudentDetail = () => {
         <div className="space-y-3">
           <h2 className="font-bold flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-            Feedbacks de séance
+            {t("dashboard:session_feedbacks")}
           </h2>
           {feedbacks.map((fb) => (
             <CoachFeedbackView

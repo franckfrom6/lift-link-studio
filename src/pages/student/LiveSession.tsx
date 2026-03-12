@@ -397,7 +397,7 @@ const LiveSession = () => {
           name: e.name,
           equipment: e.equipment,
           difficulty: "medium" as const,
-          reason: `Même groupe musculaire: ${muscleGroup}`,
+          reason: t('session:same_muscle_group', { muscleGroup }),
         })),
       });
     } else {

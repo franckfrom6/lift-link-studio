@@ -97,7 +97,7 @@ const StudentNutrition = () => {
       .single();
     
     if (error) {
-      toast.error("Erreur lors de l'ajout");
+      toast.error(t('common:error'));
       console.error(error);
     } else if (inserted) {
       setMeals(prev => [...prev, {
@@ -130,7 +130,7 @@ const StudentNutrition = () => {
       .eq("id", data.id);
     
     if (error) {
-      toast.error("Erreur lors de la modification");
+      toast.error(t('common:error'));
     } else {
       setMeals(prev => prev.map(m => m.id === data.id ? data : m));
       toast.success(t('nutrition:meal_modified'));
@@ -144,7 +144,7 @@ const StudentNutrition = () => {
       .eq("id", id);
     
     if (error) {
-      toast.error("Erreur lors de la suppression");
+      toast.error(t('common:error'));
     } else {
       setMeals(prev => prev.filter(m => m.id !== id));
       toast.success(t('nutrition:meal_deleted'));
