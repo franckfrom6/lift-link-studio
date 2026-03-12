@@ -504,6 +504,7 @@ const StudentWeek = () => {
                             variant="ghost" size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-foreground"
                             onClick={(e) => { e.stopPropagation(); setSwapMode(true); setSwapSourceDay(day.dayIndex); }}
+                            aria-label={t('calendar:swap_session', 'Swap session')}
                           >
                             <ArrowLeftRight className="w-4 h-4" strokeWidth={1.5} />
                           </Button>
