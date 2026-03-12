@@ -150,7 +150,7 @@ const KPICard = ({ icon: Icon, label, value, variant = "default" }: { icon: any;
   <div className="glass p-3 sm:p-4 space-y-1">
     <div className="flex items-center gap-1.5 text-muted-foreground">
       <Icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0", variant === "warning" && "text-warning")} strokeWidth={1.5} />
-      <span className="text-[10px] sm:text-[11px] font-medium leading-tight">{label}</span>
+      <span className="text-xs font-medium leading-tight">{label}</span>
     </div>
     <p className={cn("text-xl sm:text-2xl font-bold", variant === "warning" && Number(value) > 0 && "text-warning")}>{value}</p>
   </div>
@@ -177,23 +177,23 @@ const StudentCard = ({ student, onClick, locale, t }: { student: StudentOverview
           {/* Alert badges - wrap on mobile */}
           <div className="flex items-center gap-1 flex-wrap">
             {student.alerts.includes("no_session_5d") && (
-              <Badge variant="outline" className="text-[9px] border-warning/40 text-warning bg-warning-bg px-1 py-0">{t("dashboard:alert_no_session")}</Badge>
+              <Badge variant="outline" className="text-xs border-warning/40 text-warning bg-warning-bg px-1.5 py-0.5">{t("dashboard:alert_no_session")}</Badge>
             )}
             {student.alerts.includes("no_checkin") && (
-              <Badge variant="outline" className="text-[9px] border-warning/40 text-warning bg-warning-bg px-1 py-0">{t("dashboard:alert_no_checkin")}</Badge>
+              <Badge variant="outline" className="text-xs border-warning/40 text-warning bg-warning-bg px-1.5 py-0.5">{t("dashboard:alert_no_checkin")}</Badge>
             )}
             {student.alerts.includes("high_fatigue") && (
-              <Badge variant="outline" className="text-[9px] border-destructive/40 text-destructive bg-destructive/10 px-1 py-0">{t("dashboard:alert_fatigue")}</Badge>
+              <Badge variant="outline" className="text-xs border-destructive/40 text-destructive bg-destructive/10 px-1.5 py-0.5">{t("dashboard:alert_fatigue")}</Badge>
             )}
             {student.swapsThisWeek > 0 && (
-              <Badge variant="outline" className="text-[9px] border-primary/30 text-primary px-1 py-0">🔄 {student.swapsThisWeek}</Badge>
+              <Badge variant="outline" className="text-xs border-primary/30 text-primary px-1.5 py-0.5">🔄 {student.swapsThisWeek}</Badge>
             )}
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Adherence bar */}
             <div className="flex items-center gap-1.5 flex-1 max-w-[120px] sm:max-w-[160px]">
               <Progress value={adherence} className="h-1.5" />
-              <span className="text-[10px] font-medium text-muted-foreground w-7 sm:w-8">{student.sessionsDone}/{student.sessionsTotal}</span>
+              <span className="text-xs font-medium text-muted-foreground">{student.sessionsDone}/{student.sessionsTotal}</span>
             </div>
             {/* Check-in emojis */}
             {student.checkin ? (
@@ -203,11 +203,11 @@ const StudentCard = ({ student, onClick, locale, t }: { student: StudentOverview
                 <span>{SORENESS_EMOJIS[Math.min(4, Math.max(0, student.checkin.soreness - 1))]}</span>
               </div>
             ) : (
-              <span className="text-[10px] text-muted-foreground">—</span>
+              <span className="text-xs text-muted-foreground">—</span>
             )}
             {/* Last session - hide on very small screens */}
             {student.lastSessionDate && (
-              <span className="text-[10px] text-muted-foreground shrink-0 hidden sm:inline">
+              <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">
                 {formatDistanceToNow(new Date(student.lastSessionDate), { addSuffix: true, locale })}
               </span>
             )}
@@ -229,7 +229,7 @@ const FEED_ICONS: Record<string, string> = {
 const FeedItem = ({ item, locale, t }: { item: ActivityItem; locale: any; t: any }) => (
   <div className="flex items-center gap-2 sm:gap-3 py-2 px-2 sm:px-3 rounded-lg hover:bg-secondary/50 transition-colors">
     <span className="text-sm">{FEED_ICONS[item.type]}</span>
-    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-accent flex items-center justify-center text-[10px] font-semibold text-accent-foreground shrink-0">
+    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-accent flex items-center justify-center text-xs font-semibold text-accent-foreground shrink-0">
       {item.avatar}
     </div>
     <div className="flex-1 min-w-0">
@@ -243,7 +243,7 @@ const FeedItem = ({ item, locale, t }: { item: ActivityItem; locale: any; t: any
         </span>
       </p>
     </div>
-    <span className="text-[10px] text-muted-foreground shrink-0 hidden sm:inline">
+    <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">
       {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale })}
     </span>
   </div>

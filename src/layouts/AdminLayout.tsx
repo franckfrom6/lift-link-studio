@@ -5,7 +5,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -49,7 +49,7 @@ const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <aside className="hidden md:flex flex-col w-[260px] border-r border-border bg-secondary/50 p-4 shrink-0">
+      <aside className="hidden md:flex flex-col w-[220px] lg:w-[260px] border-r border-border bg-secondary/50 p-4 shrink-0">
         <div className="flex items-center gap-3 mb-8 px-2">
           <Logo variant="compact" />
           <span className="font-bold text-lg tracking-tight">{t("title")}</span>
@@ -114,25 +114,25 @@ const AdminLayout = () => {
           </div>
         </main>
 
-        <nav className="md:hidden flex items-center justify-around border-t border-border bg-background py-1.5 px-0.5 safe-area-bottom">
+        <nav className="md:hidden flex items-center justify-around border-t border-border bg-background py-1.5 px-1 safe-area-bottom">
           {mobileMainItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-1 px-2 text-xs font-medium transition-colors ${
+                `flex flex-col items-center gap-0.5 py-1 px-1.5 text-xs font-medium transition-colors ${
                   isActive ? "text-foreground" : "text-muted-foreground"
                 }`
               }
             >
               <item.icon className="w-5 h-5" strokeWidth={1.5} />
-              <span className="truncate max-w-[52px] text-center leading-tight">{item.label}</span>
+              <span className="truncate max-w-[64px] text-center leading-tight">{item.label}</span>
             </NavLink>
           ))}
           {mobileOverflowItems.length > 0 && (
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex flex-col items-center gap-0.5 py-1 px-2 text-xs font-medium text-muted-foreground">
+              <DropdownMenuTrigger className="flex flex-col items-center gap-0.5 py-1 px-1.5 text-xs font-medium text-muted-foreground">
                 <MoreHorizontal className="w-5 h-5" strokeWidth={1.5} />
                 <span className="leading-tight">Plus</span>
               </DropdownMenuTrigger>

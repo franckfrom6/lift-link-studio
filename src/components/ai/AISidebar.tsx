@@ -34,6 +34,44 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
   const [initialLoaded, setInitialLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Body scroll lock when open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  // Focus trap
+  useEffect(() => {
+    if (!open || !sidebarRef.current) return;
+    const sidebar = sidebarRef.current;
+    const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+      const focusable = sidebar.querySelectorAll<HTMLElement>(focusableSelector);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    // Auto-focus first focusable
+    const firstFocusable = sidebar.querySelector<HTMLElement>(focusableSelector);
+    firstFocusable?.focus();
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
 
   // Load chat history
   useEffect(() => {
@@ -47,6 +85,7 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
         .limit(50);
       if (error) {
         console.error("Error loading chat history:", error);
+        toast.error(t("error"));
       } else if (data) {
         setMessages(data as Message[]);
       }
@@ -84,7 +123,6 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
     const userMsg: Message = { role: "user", content: text, context_page: location.pathname };
     setMessages(prev => [...prev, userMsg]);
 
-    // Save user message
     const { error: insertError } = await supabase.from("ai_chat_messages").insert({
       user_id: user.id,
       role: "user",
@@ -164,75 +202,91 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[360px] bg-background border-l border-border shadow-xl flex flex-col animate-slide-in-right">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Zap className="w-4 h-4 text-primary" strokeWidth={1.5} />
+    <>
+      {/* Backdrop overlay */}
+      <div
+        className="fixed inset-0 z-50 bg-black/50 animate-in fade-in-0"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Sidebar panel */}
+      <div
+        ref={sidebarRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("title")}
+        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[340px] md:w-[380px] lg:w-[400px] bg-background border-l border-border shadow-xl flex flex-col animate-slide-in-right"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Zap className="w-4 h-4 text-primary" strokeWidth={1.5} />
+            </div>
+            <h2 className="font-bold text-sm">{t("title")}</h2>
           </div>
-          <h2 className="font-bold text-sm">{t("title")}</h2>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleClear}>
+              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
+              <X className="w-4 h-4" strokeWidth={1.5} />
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleClear}>
-            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
-            <X className="w-4 h-4" strokeWidth={1.5} />
-          </Button>
+
+        {/* Messages */}
+        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+          <div className="space-y-4">
+            {messages.length === 0 && !isLoading && (
+              <div className="text-center py-8">
+                <Zap className="w-10 h-10 text-muted-foreground mx-auto mb-3" strokeWidth={1} />
+                <p className="text-sm text-muted-foreground">
+                  {t("greeting", { name: profile?.full_name?.split(" ")[0] || "" })}
+                </p>
+              </div>
+            )}
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm ${
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground"
+                  }`}
+                >
+                  {msg.role === "assistant" ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1">
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    msg.content
+                  )}
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-secondary rounded-xl px-4 py-3">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+        </ScrollArea>
+
+        {/* Input */}
+        <div className="p-4 border-t border-border shrink-0">
+          {!isEnabled ? (
+            <p className="text-xs text-center text-muted-foreground">{t("plan_required")}</p>
+          ) : (
+            <AIChatInput onSend={handleSend} disabled={isLoading} />
+          )}
         </div>
       </div>
-
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-        <div className="space-y-4">
-          {messages.length === 0 && !isLoading && (
-            <div className="text-center py-8">
-              <Zap className="w-10 h-10 text-muted-foreground mx-auto mb-3" strokeWidth={1} />
-              <p className="text-sm text-muted-foreground">
-                {t("greeting", { name: profile?.full_name?.split(" ")[0] || "" })}
-              </p>
-            </div>
-          )}
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm ${
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground"
-                }`}
-              >
-                {msg.role === "assistant" ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  </div>
-                ) : (
-                  msg.content
-                )}
-              </div>
-            </div>
-          ))}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-secondary rounded-xl px-4 py-3">
-                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              </div>
-            </div>
-          )}
-          <div ref={bottomRef} />
-        </div>
-      </ScrollArea>
-
-      {/* Input */}
-      <div className="p-4 border-t border-border shrink-0">
-        {!isEnabled ? (
-          <p className="text-xs text-center text-muted-foreground">{t("plan_required")}</p>
-        ) : (
-          <AIChatInput onSend={handleSend} disabled={isLoading} />
-        )}
-      </div>
-    </div>
+    </>
   );
 };
 

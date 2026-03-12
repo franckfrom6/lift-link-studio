@@ -160,7 +160,7 @@ const StudentNutrition = () => {
 
   return (
     <FeatureGate feature="nutrition_tracking" showLocked>
-    <div className="space-y-5 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-5 animate-fade-in max-w-2xl mx-auto">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/student")}>
           <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />

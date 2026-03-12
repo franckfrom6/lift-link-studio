@@ -18,7 +18,7 @@ const SelfGuidedDashboard = ({ onStartAI, onJoinCoach }: SelfGuidedDashboardProp
   const navigate = useNavigate();
 
   return (
-    <div className="max-w-lg mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold">{t('dashboard:welcome_title', 'Bienvenue sur F6GYM 👋')}</h1>
         <p className="text-muted-foreground text-sm">

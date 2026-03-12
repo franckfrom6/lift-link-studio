@@ -16,7 +16,7 @@ const StudentProfile = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold">{t('dashboard:my_profile')}</h1>
       </div>
