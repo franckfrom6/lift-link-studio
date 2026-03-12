@@ -12,7 +12,7 @@ interface DraggableDayCardProps {
   onMoveDown?: () => void;
 }
 
-export const DraggableDayCard = ({ dayIndex, hasSession, children, className }: DraggableDayCardProps) => {
+export const DraggableDayCard = ({ dayIndex, hasSession, children, className, onMoveUp, onMoveDown }: DraggableDayCardProps) => {
   const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({
     id: `day-${dayIndex}`,
     data: { dayIndex },
