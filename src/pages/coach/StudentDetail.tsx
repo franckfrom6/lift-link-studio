@@ -263,7 +263,7 @@ const StudentDetail = () => {
         <div className="space-y-3">
           <h2 className="font-bold flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-            Feedbacks de séance
+            {t("dashboard:session_feedbacks")}
           </h2>
           {feedbacks.map((fb) => (
             <CoachFeedbackView

@@ -144,7 +144,7 @@ const StudentNutrition = () => {
       .eq("id", id);
     
     if (error) {
-      toast.error("Erreur lors de la suppression");
+      toast.error(t('common:error'));
     } else {
       setMeals(prev => prev.filter(m => m.id !== id));
       toast.success(t('nutrition:meal_deleted'));

@@ -93,7 +93,7 @@ export function useAI({ action, onSuccess, onError }: UseAIOptions) {
       const aiErr: AIError = { type: "network_error", message: e.message };
       setError(aiErr);
       onError?.(aiErr);
-      toast.error(t("ai_network_error", "Erreur réseau. Vérifiez votre connexion."));
+      toast.error(t("ai_network_error"));
       return null;
     } finally {
       setIsLoading(false);
