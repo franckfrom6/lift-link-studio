@@ -2,7 +2,7 @@ import { ProgramExerciseDetail } from "@/data/yana-program";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Check, X, Plus, Play, MessageSquare, Dumbbell } from "lucide-react";
+import { Check, X, Plus, MessageSquare, Dumbbell } from "lucide-react";
 import RestTimer from "./RestTimer";
 import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
 
