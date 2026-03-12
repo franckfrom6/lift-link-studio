@@ -20,7 +20,6 @@ import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
 import CoachFeedbackView from "@/components/coach/CoachFeedbackView";
-import CoachFeedbackView from "@/components/coach/CoachFeedbackView";
 
 interface StudentProfile {
   user_id: string;
