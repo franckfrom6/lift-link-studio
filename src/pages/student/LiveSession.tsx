@@ -517,7 +517,7 @@ const LiveSession = () => {
             <p className="text-sm font-semibold truncate">{sessionProgram.title}</p>
             {selectedSession?.notes && <p className="text-[11px] text-muted-foreground">{selectedSession.notes}</p>}
           </div>
-          <Badge variant="outline" className="shrink-0 text-[10px]">
+          <Badge variant="outline" className="shrink-0 text-xs">
             {allExercises.length} ex.
           </Badge>
         </div>
