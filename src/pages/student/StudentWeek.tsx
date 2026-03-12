@@ -330,7 +330,7 @@ const StudentWeek = () => {
       )}
 
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset - 1)}>
+        <Button variant="ghost" size="icon" onClick={() => setWeekOffset(weekOffset - 1)} aria-label={t('calendar:previous_week', 'Previous week')}>
           <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
         </Button>
         <div className="flex items-center gap-2">
