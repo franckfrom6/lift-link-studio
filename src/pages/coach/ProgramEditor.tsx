@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ProgramData, WeekData, SessionSectionData, SessionExerciseData, SessionData, MOCK_STUDENTS } from "@/types/coach";
+import { ProgramData, WeekData, SessionSectionData, SessionExerciseData, SessionData } from "@/types/coach";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
