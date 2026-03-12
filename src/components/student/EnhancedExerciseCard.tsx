@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import CircularRestTimer from "./CircularRestTimer";
-import VideoLink from "./VideoLink";
+import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
 import RPESelector from "./RPESelector";
 import { useTranslation } from "react-i18next";
 
