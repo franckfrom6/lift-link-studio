@@ -19,8 +19,7 @@ import CoachSuggestion from "@/components/coach/CoachSuggestion";
 import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
-import ProgramView from "@/components/coach/ProgramView";
-import { YANA_PROGRAM } from "@/data/yana-program";
+import CoachFeedbackView from "@/components/coach/CoachFeedbackView";
 import CoachFeedbackView from "@/components/coach/CoachFeedbackView";
 
 interface StudentProfile {
