@@ -65,7 +65,7 @@ const StudentDetail = () => {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [coachFormOpen, setCoachFormOpen] = useState(false);
-  const [coachExternals, setCoachExternals] = useState<ExternalSessionData[]>([]);
+  
 
   const { swaps, loading: swapsLoading } = useCoachStudentSwaps(studentId);
 
