@@ -72,15 +72,15 @@ export function useAI({ action, onSuccess, onError }: UseAIOptions) {
         if (data.error === "plan_required") {
           aiErr.type = "plan_required";
           aiErr.plan_required = data.plan_required;
-          toast.error(t("ai_plan_required", "Passez au plan supérieur pour utiliser cette fonctionnalité IA."));
+          toast.error(t("ai_plan_required"));
         } else if (data.error === "rate_limited") {
           aiErr.type = "rate_limited";
           aiErr.limit = data.limit;
           aiErr.used = data.used;
           aiErr.resets_at = data.resets_at;
-          toast.error(t("ai_rate_limited", "Limite d'utilisation IA atteinte ce mois-ci."));
+          toast.error(t("ai_rate_limited"));
         } else {
-          toast.error(t("ai_error", "Erreur du service IA. Réessayez."));
+          toast.error(t("ai_error"));
         }
         setError(aiErr);
         onError?.(aiErr);
