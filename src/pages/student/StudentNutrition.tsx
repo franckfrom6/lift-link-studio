@@ -97,7 +97,7 @@ const StudentNutrition = () => {
       .single();
     
     if (error) {
-      toast.error("Erreur lors de l'ajout");
+      toast.error(t('common:error'));
       console.error(error);
     } else if (inserted) {
       setMeals(prev => [...prev, {
