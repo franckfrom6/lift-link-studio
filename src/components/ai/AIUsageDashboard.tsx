@@ -27,30 +27,6 @@ const ACTION_LABELS: Record<string, { fr: string; en: string }> = {
   generate_recommendation: { fr: "Rédaction reco", en: "Recommendation writing" },
 };
 
-const PLAN_LIMITS: Record<string, Record<string, number>> = {
-  essential: {
-    generate_program: 5,
-    suggest_alternatives: 30,
-    suggest_exercise: 30,
-    estimate_macros: 60,
-    recovery_recommendation: 30,
-    generate_recommendation: 20,
-  },
-  advanced: {
-    generate_program: 50,
-    suggest_alternatives: -1,
-    suggest_exercise: -1,
-    analyze_week: 30,
-    cycle_report: 10,
-    optimize_week: 30,
-    estimate_macros: -1,
-    suggest_meal: -1,
-    recovery_recommendation: -1,
-    weekly_insight: -1,
-    generate_recommendation: -1,
-  },
-};
-
 const AIUsageDashboard = () => {
   const { t, i18n } = useTranslation("common");
   const { user } = useAuth();
@@ -87,6 +63,30 @@ const AIUsageDashboard = () => {
       return;
     }
 
+    // Get plan features (limits) from DB
+    const { data: planRow } = await supabase
+      .from("plans")
+      .select("id")
+      .eq("name", plan)
+      .maybeSingle();
+
+    let featureLimits: Record<string, number> = {};
+    if (planRow) {
+      const { data: features } = await supabase
+        .from("plan_features")
+        .select("feature_key, limit_value, is_enabled")
+        .eq("plan_id", planRow.id);
+      if (features) {
+        for (const f of features) {
+          if (f.is_enabled && f.feature_key.startsWith("ai_")) {
+            // Map feature_key "ai_generate_program" -> action "generate_program"
+            const action = f.feature_key.replace(/^ai_/, "");
+            featureLimits[action] = f.limit_value ?? -1;
+          }
+        }
+      }
+    }
+
     // Get usage this month
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
@@ -100,17 +100,24 @@ const AIUsageDashboard = () => {
       .gte("created_at", startOfMonth.toISOString());
     if (logsError) console.error("Error fetching AI usage:", logsError);
 
-    const limits = PLAN_LIMITS[plan] || {};
     const counts: Record<string, number> = {};
     logs?.forEach((l: any) => {
       counts[l.action] = (counts[l.action] || 0) + 1;
     });
 
-    const entries: UsageEntry[] = Object.entries(limits).map(([action, limit]) => ({
+    // Build entries from DB limits, fallback to usage actions if no limits found
+    const entries: UsageEntry[] = Object.entries(featureLimits).map(([action, limit]) => ({
       action,
       count: counts[action] || 0,
-      limit: limit as number,
+      limit,
     }));
+
+    // If no DB limits found, show all used actions without limits
+    if (entries.length === 0 && Object.keys(counts).length > 0) {
+      for (const [action, count] of Object.entries(counts)) {
+        entries.push({ action, count, limit: -1 });
+      }
+    }
 
     setUsage(entries);
     setLoading(false);
@@ -143,7 +150,7 @@ const AIUsageDashboard = () => {
                 <span className="text-muted-foreground">{label}</span>
                 <span className={`font-medium ${isDanger ? "text-destructive" : isWarning ? "text-yellow-600" : ""}`}>
                   {isUnlimited ? (
-                    <Badge variant="secondary" className="text-[10px]">∞</Badge>
+                    <Badge variant="secondary" className="text-xs">∞</Badge>
                   ) : (
                     `${u.count}/${u.limit}`
                   )}
