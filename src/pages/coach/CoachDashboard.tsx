@@ -207,7 +207,7 @@ const StudentCard = ({ student, onClick, locale, t }: { student: StudentOverview
             )}
             {/* Last session - hide on very small screens */}
             {student.lastSessionDate && (
-              <span className="text-[10px] text-muted-foreground shrink-0 hidden sm:inline">
+              <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">
                 {formatDistanceToNow(new Date(student.lastSessionDate), { addSuffix: true, locale })}
               </span>
             )}
