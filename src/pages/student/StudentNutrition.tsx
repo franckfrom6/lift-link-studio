@@ -130,7 +130,7 @@ const StudentNutrition = () => {
       .eq("id", data.id);
     
     if (error) {
-      toast.error("Erreur lors de la modification");
+      toast.error(t('common:error'));
     } else {
       setMeals(prev => prev.map(m => m.id === data.id ? data : m));
       toast.success(t('nutrition:meal_modified'));
