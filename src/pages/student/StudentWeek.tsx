@@ -371,6 +371,7 @@ const StudentWeek = () => {
             variant="ghost" size="icon"
             className="h-7 w-7 text-warning hover:text-warning"
             onClick={() => { setSwapMode(false); setSwapSourceDay(null); }}
+            aria-label={t('common:cancel')}
           >
             <X className="w-4 h-4" strokeWidth={1.5} />
           </Button>
