@@ -493,15 +493,17 @@ const LiveSession = () => {
               completedSessionId={completedSessionId || undefined}
               sessionName={sessionProgram.title}
             />
-            <Button
-              variant={showProgression ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setShowProgression(!showProgression)}
-              className="gap-1.5"
-            >
-              <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />
-              {t('session:progression')}
-            </Button>
+            {isAdvanced && (
+              <Button
+                variant={showProgression ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setShowProgression(!showProgression)}
+                className="gap-1.5"
+              >
+                <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />
+                {t('session:progression')}
+              </Button>
+            )}
             <div className="flex items-center gap-1.5 bg-surface px-3 py-1.5 rounded-lg">
               <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
               <span className="text-sm font-bold tabular-nums">
