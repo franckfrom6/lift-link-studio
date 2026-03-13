@@ -44,14 +44,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
 
   const fetchProfile = useCallback(async (userId: string) => {
-    if (profileFetchInProgress.current) return;
-    profileFetchInProgress.current = true;
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        setProfile(null);
+        setRole(null);
+        return;
+      }
+
       if (data) {
         setProfile(data as Profile);
         setRole(data.role as UserRole);
@@ -59,8 +65,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(null);
         setRole(null);
       }
-    } finally {
-      profileFetchInProgress.current = false;
+    } catch (e) {
+      console.error("Error fetching profile:", e);
+      setProfile(null);
+      setRole(null);
     }
   }, []);
 
