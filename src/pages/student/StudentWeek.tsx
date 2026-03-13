@@ -636,6 +636,13 @@ const StudentWeek = () => {
         date={freeSessionDate}
         onCreated={() => fetchFreeSessions()}
       />
+
+      <SessionBuilderModal
+        open={builderOpen}
+        onClose={() => setBuilderOpen(false)}
+        date={builderDate}
+        onCreated={() => fetchFreeSessions()}
+      />
     </div>
   );
 };
