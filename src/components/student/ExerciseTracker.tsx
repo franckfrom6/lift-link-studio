@@ -136,11 +136,19 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
 
       {/* Rest timer */}
       {showTimer && (
-        <RestTimer
-          key={currentSet}
-          initialSeconds={restSeconds}
-          onComplete={() => setShowTimer(false)}
-        />
+        isAdvanced ? (
+          <CircularRestTimer
+            key={currentSet}
+            initialSeconds={restSeconds}
+            onComplete={() => setShowTimer(false)}
+          />
+        ) : (
+          <RestTimer
+            key={currentSet}
+            initialSeconds={restSeconds}
+            onComplete={() => setShowTimer(false)}
+          />
+        )
       )}
 
       {/* Sets */}
