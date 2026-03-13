@@ -14,6 +14,7 @@ import CheckinBadge from "@/components/student/CheckinBadge";
 import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import SelfGuidedDashboard from "@/components/student/SelfGuidedDashboard";
 import FreeSessionCreator from "@/components/student/FreeSessionCreator";
+import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
