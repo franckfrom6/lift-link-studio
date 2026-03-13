@@ -7,18 +7,24 @@ import { MUSCLE_GROUPS } from "@/types/coach";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getExerciseName, getMuscleGroupLabel, getEquipmentLabel } from "@/lib/exercise-utils";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 
 const CoachExercises = () => {
   const { exercises, loading } = useExercises();
   const [search, setSearch] = useState("");
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
+  const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
   const { t } = useTranslation('exercises');
+  const isAdvanced = useIsAdvanced();
+
+  const EQUIPMENT_LIST = [...new Set(exercises.map(e => e.equipment))].filter(Boolean).sort();
 
   const filtered = exercises.filter((ex) => {
     const name = getExerciseName(ex);
     const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) || ex.name.toLowerCase().includes(search.toLowerCase());
     const matchesMuscle = !selectedMuscle || ex.muscle_group === selectedMuscle;
-    return matchesSearch && matchesMuscle;
+    const matchesEquipment = !selectedEquipment || ex.equipment === selectedEquipment;
+    return matchesSearch && matchesMuscle && matchesEquipment;
   });
 
   const grouped = filtered.reduce<Record<string, typeof filtered>>((acc, ex) => {
@@ -47,7 +53,7 @@ const CoachExercises = () => {
         <Input placeholder={t('search_exercise')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 h-11 bg-surface" />
       </div>
 
-      {/* Muscle group filters - scrollable on mobile */}
+      {/* Muscle group filters — always visible */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap scrollbar-none">
         <button onClick={() => setSelectedMuscle(null)}
           className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
@@ -65,6 +71,24 @@ const CoachExercises = () => {
         ))}
       </div>
 
+      {/* Equipment filter — always visible (Simple: muscle + equipment only) */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap scrollbar-none">
+        <button onClick={() => setSelectedEquipment(null)}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
+            !selectedEquipment ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+          }`}>
+          {t('all')}
+        </button>
+        {EQUIPMENT_LIST.map((eq) => (
+          <button key={eq} onClick={() => setSelectedEquipment(eq === selectedEquipment ? null : eq)}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
+              selectedEquipment === eq ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+            }`}>
+            {getEquipmentLabel(eq)}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-6">
         {Object.entries(grouped).map(([muscle, exs]) => (
           <div key={muscle}>
@@ -77,10 +101,16 @@ const CoachExercises = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{getExerciseName(ex)}</p>
-                    <p className="text-xs text-muted-foreground truncate">{ex.description}</p>
+                    {isAdvanced ? (
+                      <p className="text-xs text-muted-foreground truncate">{ex.description}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground truncate">{ex.description?.split('.')[0]}</p>
+                    )}
                   </div>
                   <div className="flex flex-col sm:flex-row gap-1 shrink-0">
-                    <Badge variant="secondary" className="text-[10px]">{ex.type === "compound" ? t('compound') : t('isolation')}</Badge>
+                    {isAdvanced && (
+                      <Badge variant="secondary" className="text-[10px]">{ex.type === "compound" ? t('compound') : t('isolation')}</Badge>
+                    )}
                     <Badge variant="outline" className="text-[10px]">{getEquipmentLabel(ex.equipment)}</Badge>
                   </div>
                 </div>
