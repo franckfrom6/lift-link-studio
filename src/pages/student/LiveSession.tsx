@@ -34,6 +34,7 @@ const LiveSession = () => {
   const { t } = useTranslation(['session', 'common']);
   const { user } = useAuth();
   const { program: dbProgram } = useStudentProgram();
+  const isAdvanced = useIsAdvanced();
   const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>({});
   const [sessionDone, setSessionDone] = useState(false);
   const [startTime] = useState(Date.now());
