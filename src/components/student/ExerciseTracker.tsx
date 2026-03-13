@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check, X, Plus, MessageSquare } from "lucide-react";
 import RestTimer from "./RestTimer";
+import CircularRestTimer from "./CircularRestTimer";
 import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
 import { useTranslation } from "react-i18next";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
