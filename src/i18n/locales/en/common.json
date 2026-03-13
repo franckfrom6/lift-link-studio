@@ -76,5 +76,8 @@
   "select_session": "Select a session from the calendar above",
   "rest_label": "Rest",
   "section_name_example": "Section name (e.g.: Warm-up, Block A...)",
-  "save_error": "Save error"
+  "save_error": "Save error",
+  "mode_simple": "Simple",
+  "mode_pro": "Pro",
+  "mode_toggle_tooltip": "Switch between Simple and Pro mode at any time"
 }

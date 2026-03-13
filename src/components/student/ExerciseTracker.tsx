@@ -4,8 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check, X, Plus, MessageSquare } from "lucide-react";
 import RestTimer from "./RestTimer";
+import CircularRestTimer from "./CircularRestTimer";
 import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
 import { useTranslation } from "react-i18next";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 
 export interface CompletedSet {
   setNumber: number;
@@ -41,6 +43,7 @@ const parseRestSeconds = (restStr: string): number => {
 
 const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, isFirst, isLast }: ExerciseTrackerProps) => {
   const { t } = useTranslation(["exercises", "session", "common"]);
+  const isAdvanced = useIsAdvanced();
   const targetSets = parseTargetSets(exercise.sets);
   const restSeconds = parseRestSeconds(exercise.rest);
 
@@ -101,12 +104,12 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
               {exercise.reps} {t("session:reps_unit")}
             </span>
           )}
-          {exercise.tempo && (
+          {isAdvanced && exercise.tempo && (
             <span className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded text-[11px] font-medium">
               {t("exercises:tempo")} {exercise.tempo}
             </span>
           )}
-          {exercise.rpe && (
+          {isAdvanced && exercise.rpe && (
             <span className="bg-primary/20 text-primary px-2 py-0.5 rounded text-[11px] font-medium">
               RPE {exercise.rpe}
             </span>
@@ -133,11 +136,19 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
 
       {/* Rest timer */}
       {showTimer && (
-        <RestTimer
-          key={currentSet}
-          initialSeconds={restSeconds}
-          onComplete={() => setShowTimer(false)}
-        />
+        isAdvanced ? (
+          <CircularRestTimer
+            key={currentSet}
+            initialSeconds={restSeconds}
+            onComplete={() => setShowTimer(false)}
+          />
+        ) : (
+          <RestTimer
+            key={currentSet}
+            initialSeconds={restSeconds}
+            onComplete={() => setShowTimer(false)}
+          />
+        )
       )}
 
       {/* Sets */}

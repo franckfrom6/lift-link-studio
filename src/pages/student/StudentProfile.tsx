@@ -5,9 +5,11 @@ import NutritionProfileForm, { NutritionProfileData } from "@/components/nutriti
 import MacroDonut from "@/components/nutrition/MacroDonut";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 
 const StudentProfile = () => {
   const { t } = useTranslation(['nutrition', 'dashboard', 'common']);
+  const isAdvanced = useIsAdvanced();
   const [nutritionProfile, setNutritionProfile] = useState<NutritionProfileData | null>(null);
 
   const handleNutritionSubmit = (data: NutritionProfileData) => {
@@ -67,13 +69,20 @@ const StudentProfile = () => {
             {nutritionProfile && (
               <div className="glass p-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t('nutrition:macro_targets')}</p>
-                <MacroDonut
-                  protein_g={nutritionProfile.protein_g}
-                  carbs_g={nutritionProfile.carbs_g}
-                  fat_g={nutritionProfile.fat_g}
-                  calorieTarget={nutritionProfile.calorie_target}
-                  size={120}
-                />
+                {isAdvanced ? (
+                  <MacroDonut
+                    protein_g={nutritionProfile.protein_g}
+                    carbs_g={nutritionProfile.carbs_g}
+                    fat_g={nutritionProfile.fat_g}
+                    calorieTarget={nutritionProfile.calorie_target}
+                    size={120}
+                  />
+                ) : (
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-foreground">{nutritionProfile.calorie_target}</p>
+                    <p className="text-sm text-muted-foreground">kcal / {t('nutrition:day', 'jour')}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

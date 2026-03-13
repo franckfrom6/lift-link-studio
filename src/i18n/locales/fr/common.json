@@ -76,5 +76,8 @@
   "select_session": "Sélectionnez une séance dans le calendrier ci-dessus",
   "rest_label": "Repos",
   "section_name_example": "Nom de la section (ex: Warm-up, Bloc A...)",
-  "save_error": "Erreur de sauvegarde"
+  "save_error": "Erreur de sauvegarde",
+  "mode_simple": "Simple",
+  "mode_pro": "Pro",
+  "mode_toggle_tooltip": "Passe du mode Simple au mode Pro à tout moment"
 }
