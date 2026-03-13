@@ -360,7 +360,7 @@ const StudentWeek = () => {
         />
       )}
 
-      {(programmedCount > 0 || weekExternals.length > 0) && (
+      {isAdvanced && (programmedCount > 0 || weekExternals.length > 0) && (
         <WeeklyLoadBar
           programmedSessions={programmedCount}
           externalSessions={weekExternals}

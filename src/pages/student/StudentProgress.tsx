@@ -23,8 +23,11 @@ const StudentProgress = () => {
       </FeatureGate>
 
       <WeeklySummaryCard />
+
+      {/* Simple: simplified weight chart only. Pro: full strength progress with volume toggle */}
       <StrengthProgressChart />
 
+      {/* Body evolution & photos — Pro only */}
       {isAdvanced && <BodyEvolutionSection />}
 
       {isAdvanced && (
