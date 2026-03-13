@@ -43,6 +43,8 @@ const StudentWeek = () => {
   const [swapTargetDay, setSwapTargetDay] = useState<number | null>(null);
   const [freeSessionOpen, setFreeSessionOpen] = useState(false);
   const [freeSessionDate, setFreeSessionDate] = useState<Date>(new Date());
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderDate, setBuilderDate] = useState<Date>(new Date());
 
   const totalWeeks = program?.weeks?.length || 0;
 
