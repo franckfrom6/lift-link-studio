@@ -42,6 +42,7 @@ const parseRestSeconds = (restStr: string): number => {
 
 const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, isFirst, isLast }: ExerciseTrackerProps) => {
   const { t } = useTranslation(["exercises", "session", "common"]);
+  const isAdvanced = useIsAdvanced();
   const targetSets = parseTargetSets(exercise.sets);
   const restSeconds = parseRestSeconds(exercise.rest);
 
