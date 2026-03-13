@@ -10,6 +10,7 @@ import SessionSection from "@/components/student/SessionSection";
 import SessionRecap from "@/components/student/SessionRecap";
 import ProgressionTimeline, { ProgressionPhase } from "@/components/student/ProgressionTimeline";
 import { ArrowLeft, Clock, User, TrendingUp } from "lucide-react";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import ShareSessionButton from "@/components/student/ShareSessionButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
