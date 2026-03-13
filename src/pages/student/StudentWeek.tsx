@@ -534,8 +534,8 @@ const StudentWeek = () => {
                             <Button
                               variant="ghost" size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                              onClick={(e) => { e.stopPropagation(); setFreeSessionDate(day.date); setFreeSessionOpen(true); }}
-                              aria-label={t('session:free_session_btn')}
+                              onClick={(e) => { e.stopPropagation(); setBuilderDate(day.date); setBuilderOpen(true); }}
+                              aria-label={t('session:builder_title')}
                             >
                               <Dumbbell className="w-4 h-4" strokeWidth={1.5} />
                             </Button>
