@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<UserRole>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const profileFetchInProgress = useRef(false);
+  
 
   const fetchProfile = useCallback(async (userId: string) => {
     if (profileFetchInProgress.current) return;
