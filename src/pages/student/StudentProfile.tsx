@@ -5,6 +5,7 @@ import NutritionProfileForm, { NutritionProfileData } from "@/components/nutriti
 import MacroDonut from "@/components/nutrition/MacroDonut";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 
 const StudentProfile = () => {
   const { t } = useTranslation(['nutrition', 'dashboard', 'common']);
