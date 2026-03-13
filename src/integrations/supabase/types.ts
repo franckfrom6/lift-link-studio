@@ -937,6 +937,7 @@ export type Database = {
           onboarding_completed: boolean
           role: Database["public"]["Enums"]["app_role"] | null
           specialty: string | null
+          unit_preference: string | null
           updated_at: string
           user_id: string
           weight: number | null
@@ -954,6 +955,7 @@ export type Database = {
           onboarding_completed?: boolean
           role?: Database["public"]["Enums"]["app_role"] | null
           specialty?: string | null
+          unit_preference?: string | null
           updated_at?: string
           user_id: string
           weight?: number | null
@@ -971,6 +973,7 @@ export type Database = {
           onboarding_completed?: boolean
           role?: Database["public"]["Enums"]["app_role"] | null
           specialty?: string | null
+          unit_preference?: string | null
           updated_at?: string
           user_id?: string
           weight?: number | null
