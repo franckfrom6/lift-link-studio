@@ -6,6 +6,7 @@ import { Check, X, Plus, MessageSquare } from "lucide-react";
 import RestTimer from "./RestTimer";
 import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
 import { useTranslation } from "react-i18next";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 
 export interface CompletedSet {
   setNumber: number;
