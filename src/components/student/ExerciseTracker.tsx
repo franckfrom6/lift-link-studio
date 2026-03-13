@@ -2,9 +2,10 @@ import { ProgramExerciseDetail } from "@/data/yana-program";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Check, X, Plus, MessageSquare, Dumbbell } from "lucide-react";
+import { Check, X, Plus, MessageSquare } from "lucide-react";
 import RestTimer from "./RestTimer";
 import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
+import { useTranslation } from "react-i18next";
 
 export interface CompletedSet {
   setNumber: number;
@@ -39,6 +40,7 @@ const parseRestSeconds = (restStr: string): number => {
 };
 
 const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, isFirst, isLast }: ExerciseTrackerProps) => {
+  const { t } = useTranslation(["exercises", "session", "common"]);
   const targetSets = parseTargetSets(exercise.sets);
   const restSeconds = parseRestSeconds(exercise.rest);
 
@@ -83,7 +85,7 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
           <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold">
             {index + 1}
           </span>
-          <span>sur {total}</span>
+          <span>{index + 1} / {total}</span>
         </div>
         <h2 className="text-xl font-display font-bold leading-tight">{exercise.name}</h2>
 
@@ -91,17 +93,17 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
         <div className="flex flex-wrap gap-1.5">
           {exercise.sets && (
             <span className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded text-[11px] font-medium">
-              {exercise.sets} séries
+              {exercise.sets} {t("session:sets_unit")}
             </span>
           )}
           {exercise.reps && (
             <span className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded text-[11px] font-medium">
-              {exercise.reps} reps
+              {exercise.reps} {t("session:reps_unit")}
             </span>
           )}
           {exercise.tempo && (
             <span className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded text-[11px] font-medium">
-              Tempo {exercise.tempo}
+              {t("exercises:tempo")} {exercise.tempo}
             </span>
           )}
           {exercise.rpe && (
@@ -120,6 +122,7 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
         <button
           onClick={() => setShowNotes(!showNotes)}
           className="w-full flex items-start gap-2 text-left"
+          aria-label={t("exercises:coach_notes")}
         >
           <MessageSquare className="w-4 h-4 text-primary mt-0.5 shrink-0" />
           <p className={`text-sm text-muted-foreground ${showNotes ? "" : "line-clamp-2"}`}>
@@ -142,9 +145,9 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
         {/* Header */}
         <div className="grid grid-cols-[40px_1fr_1fr_44px_44px] gap-2 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-1">
           <span>Set</span>
-          <span>Poids (kg)</span>
-          <span>Reps</span>
-          <span className="text-center">Fail</span>
+          <span>{t("exercises:weight_kg")}</span>
+          <span>{t("session:reps")}</span>
+          <span className="text-center">{t("session:failure")}</span>
           <span></span>
         </div>
 
@@ -165,6 +168,7 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
               disabled={i !== currentSet || done}
               min={0}
               step={2.5}
+              aria-label={`${t("exercises:weight_kg")} — Set ${set.setNumber}`}
             />
             <Input
               type="number"
@@ -174,10 +178,13 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
               className="h-10 text-center bg-background text-base font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               disabled={i !== currentSet || done}
               min={0}
+              aria-label={`${t("session:reps")} — Set ${set.setNumber}`}
             />
             <button
               onClick={() => updateSet(i, "isFailure", !set.isFailure)}
               disabled={i !== currentSet || done}
+              aria-label={`${t("session:failure")} — Set ${set.setNumber}`}
+              aria-pressed={set.isFailure}
               className={`h-10 w-10 rounded-lg flex items-center justify-center mx-auto transition-colors ${
                 set.isFailure ? "bg-destructive/20 text-destructive" : "bg-surface text-muted-foreground"
               } disabled:opacity-40`}
@@ -190,12 +197,13 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
                 className="h-10 w-10"
                 onClick={() => validateSet(i)}
                 disabled={!set.reps}
+                aria-label={`${t("common:confirm")} Set ${set.setNumber}`}
               >
                 <Check className="w-4 h-4" />
               </Button>
             ) : (
               <div className="h-10 w-10 flex items-center justify-center">
-                {(i < currentSet || done) && <Check className="w-4 h-4 text-primary" />}
+                {(i < currentSet || done) && <Check className="w-4 h-4 text-primary" aria-hidden="true" />}
               </div>
             )}
           </div>
@@ -204,7 +212,7 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
         {!done && (
           <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={addSet}>
             <Plus className="w-3.5 h-3.5 mr-1" />
-            Ajouter une série
+            {t("exercises:add_set")}
           </Button>
         )}
       </div>
@@ -212,10 +220,10 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
       {/* Navigation */}
       <div className="flex gap-3 pt-2">
         <Button variant="outline" className="flex-1" onClick={onPrev} disabled={isFirst}>
-          Précédent
+          {t("common:back")}
         </Button>
         <Button className="flex-1" onClick={onNext} disabled={!done && !isLast}>
-          {isLast && done ? "Terminer" : "Suivant"}
+          {isLast && done ? t("session:finish_save") : t("common:next")}
         </Button>
       </div>
     </div>

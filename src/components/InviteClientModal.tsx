@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus, Loader2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const emailSchema = z.string().trim().toLowerCase().email().max(255);
 
 const InviteClientModal = () => {
   const { t } = useTranslation("auth");
@@ -22,7 +23,6 @@ const InviteClientModal = () => {
   const [copied, setCopied] = useState(false);
   const [studentCount, setStudentCount] = useState(0);
 
-  // Fetch current student count when modal opens
   useEffect(() => {
     if (!open || !user) return;
     supabase
@@ -37,18 +37,18 @@ const InviteClientModal = () => {
     e.preventDefault();
     if (!user) return;
 
-    const trimmedEmail = email.toLowerCase().trim();
-
-    // 1. Email format validation
-    if (!EMAIL_REGEX.test(trimmedEmail)) {
+    // Zod email validation
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success) {
       toast.error(t("invalid_email", "Adresse email invalide"));
       return;
     }
+    const trimmedEmail = parsed.data;
 
     setLoading(true);
 
     try {
-      // 2. Check for duplicate pending invitation
+      // Check for duplicate pending invitation
       const { data: existing } = await supabase
         .from("pending_invitations")
         .select("id")
@@ -62,14 +62,13 @@ const InviteClientModal = () => {
         return;
       }
 
-      // 3. Check if student is already linked
+      // Check if student is already linked
       const { data: existingStudent } = await supabase
         .from("coach_students")
         .select("id, student_id")
         .eq("coach_id", user.id)
         .eq("status", "active");
 
-      // Check plan limit (count active students + pending invitations)
       const { count: pendingCount } = await supabase
         .from("pending_invitations")
         .select("id", { count: "exact", head: true })
@@ -78,7 +77,6 @@ const InviteClientModal = () => {
 
       const totalClients = (existingStudent?.length || 0) + (pendingCount || 0);
 
-      // Get plan limit from plan_features
       const { data: sub } = await supabase
         .from("user_subscriptions")
         .select("plan_id")
@@ -101,7 +99,6 @@ const InviteClientModal = () => {
         }
       }
 
-      // 4. Insert invitation
       const { data, error } = await supabase.from("pending_invitations").insert({
         coach_id: user.id,
         email: trimmedEmail,
@@ -157,7 +154,7 @@ const InviteClientModal = () => {
             <p className="text-sm text-muted-foreground">{t("invite_link_desc")}</p>
             <div className="flex gap-2">
               <Input value={inviteUrl} readOnly className="text-xs" />
-              <Button variant="outline" size="icon" onClick={handleCopy}>
+              <Button variant="outline" size="icon" onClick={handleCopy} aria-label={t("invite_link_copied")}>
                 {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>

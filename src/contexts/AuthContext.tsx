@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -11,6 +11,7 @@ interface Profile {
   full_name: string;
   is_admin: boolean;
   onboarding_completed: boolean;
+  unit_preference?: "metric" | "imperial";
   [key: string]: any;
 }
 
@@ -40,19 +41,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<UserRole>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const profileFetchInProgress = useRef(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
-    if (data) {
-      setProfile(data as Profile);
-      setRole(data.role as UserRole);
-    } else {
-      setProfile(null);
-      setRole(null);
+    if (profileFetchInProgress.current) return;
+    profileFetchInProgress.current = true;
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+      if (data) {
+        setProfile(data as Profile);
+        setRole(data.role as UserRole);
+      } else {
+        setProfile(null);
+        setRole(null);
+      }
+    } finally {
+      profileFetchInProgress.current = false;
     }
   }, []);
 
@@ -63,27 +71,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, fetchProfile]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (!isMounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(async () => {
-            try {
-              await fetchProfile(session.user.id);
-            } catch (e) {
-              console.error("Error fetching profile:", e);
-            }
-          }, 0);
+          try {
+            await fetchProfile(session.user.id);
+          } catch (e) {
+            console.error("Error fetching profile:", e);
+          }
         } else {
           setProfile(null);
           setRole(null);
         }
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     );
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!isMounted) return;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -93,10 +103,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error("Error fetching profile:", e);
         }
       }
-      setLoading(false);
+      if (isMounted) setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [fetchProfile]);
 
   const signUp = async (email: string, password: string) => {
@@ -107,15 +120,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailRedirectTo: window.location.origin,
       },
     });
-    if (!error && data.user) {
-      // Create empty profile (role set during onboarding)
-      await supabase.from("profiles").insert({
-        user_id: data.user.id,
-        full_name: "",
-        onboarding_completed: false,
-      });
+    if (error) return { error };
+
+    if (data.user) {
+      try {
+        // Check if profile already exists (trigger may have created it)
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          const { error: profileError } = await supabase.from("profiles").insert({
+            user_id: data.user.id,
+            full_name: "",
+            onboarding_completed: false,
+          });
+          if (profileError) {
+            console.error("Error creating profile:", profileError);
+            return { error: profileError };
+          }
+        }
+      } catch (e: any) {
+        console.error("Error during profile creation:", e);
+        return { error: e };
+      }
     }
-    return { error };
+    return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {

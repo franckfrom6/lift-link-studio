@@ -90,17 +90,20 @@ const SessionFeedbackWizard = ({ exercises, onSubmit, onSkip }: SessionFeedbackW
       {step === 0 && (
         <div className="space-y-6">
           <h2 className="text-lg font-bold text-center">{t("post_session_title")}</h2>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-5 gap-2" role="radiogroup" aria-label={t("overall_rating")}>
             {RATINGS.map((r) => (
               <button
                 key={r.value}
                 onClick={() => setRating(r.value)}
+                role="radio"
+                aria-checked={rating === r.value}
+                aria-label={t(`rating_${r.value}`)}
                 className={cn(
                   "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
                   rating === r.value ? r.color + " border-current scale-105" : "border-border bg-card hover:bg-secondary"
                 )}
               >
-                <span className="text-2xl">{r.emoji}</span>
+                <span className="text-2xl" aria-hidden="true">{r.emoji}</span>
                 <span className="text-[10px] font-medium leading-tight text-center">
                   {t(`rating_${r.value}`)}
                 </span>
@@ -131,9 +134,11 @@ const SessionFeedbackWizard = ({ exercises, onSubmit, onSkip }: SessionFeedbackW
               return (
                 <div key={ex.id} className="glass p-3 space-y-2">
                   <p className="text-sm font-medium">{ex.name}</p>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5" role="group" aria-label={ex.name}>
                     <button
                       onClick={() => toggleExercise(ex.id, exTooEasy, setExTooEasy, [exTooHard, setExTooHard], [exPain, setExPain])}
+                      aria-pressed={isEasy}
+                      aria-label={t("exercise_too_easy")}
                       className={cn("flex-1 py-1.5 px-2 rounded-lg text-[11px] font-medium border transition-all flex items-center justify-center gap-1",
                         isEasy ? "bg-success-bg text-success border-success/30" : "border-border hover:bg-secondary"
                       )}
@@ -142,11 +147,12 @@ const SessionFeedbackWizard = ({ exercises, onSubmit, onSkip }: SessionFeedbackW
                     </button>
                     <button
                       onClick={() => {
-                        // Clear all for this exercise (OK state)
                         setExTooEasy(exTooEasy.filter(x => x !== ex.id));
                         setExTooHard(exTooHard.filter(x => x !== ex.id));
                         setExPain(exPain.filter(x => x !== ex.id));
                       }}
+                      aria-pressed={!isEasy && !isHard && !isPain}
+                      aria-label={t("exercise_ok")}
                       className={cn("flex-1 py-1.5 px-2 rounded-lg text-[11px] font-medium border transition-all flex items-center justify-center gap-1",
                         !isEasy && !isHard && !isPain ? "bg-accent text-accent-foreground border-accent-foreground/20" : "border-border hover:bg-secondary"
                       )}
@@ -155,6 +161,8 @@ const SessionFeedbackWizard = ({ exercises, onSubmit, onSkip }: SessionFeedbackW
                     </button>
                     <button
                       onClick={() => toggleExercise(ex.id, exTooHard, setExTooHard, [exTooEasy, setExTooEasy], [exPain, setExPain])}
+                      aria-pressed={isHard}
+                      aria-label={t("exercise_too_hard")}
                       className={cn("flex-1 py-1.5 px-2 rounded-lg text-[11px] font-medium border transition-all flex items-center justify-center gap-1",
                         isHard ? "bg-warning-bg text-warning border-warning/30" : "border-border hover:bg-secondary"
                       )}
@@ -169,6 +177,8 @@ const SessionFeedbackWizard = ({ exercises, onSubmit, onSkip }: SessionFeedbackW
                           setExTooHard(exTooHard.filter(x => x !== ex.id));
                           toggleExercise(ex.id, exPain, setExPain, [exTooEasy, setExTooEasy], [exTooHard, setExTooHard]);
                         }}
+                        aria-pressed={isPain}
+                        aria-label={t("pain_joint")}
                         className={cn("flex-1 py-1 px-2 rounded-lg text-[10px] font-medium border transition-all",
                           isPain ? "bg-danger-bg text-destructive border-destructive/30" : "border-border hover:bg-secondary"
                         )}
@@ -184,6 +194,7 @@ const SessionFeedbackWizard = ({ exercises, onSubmit, onSkip }: SessionFeedbackW
                       placeholder={t("pain_where")}
                       value={painLocation}
                       onChange={(e) => setPainLocation(e.target.value)}
+                      aria-label={t("pain_where")}
                     />
                   )}
                 </div>
@@ -217,17 +228,20 @@ const SessionFeedbackWizard = ({ exercises, onSubmit, onSkip }: SessionFeedbackW
 
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground">{t("mood_label")}</p>
-            <div className="flex gap-2 justify-center">
+            <div className="flex gap-2 justify-center" role="radiogroup" aria-label={t("mood_label")}>
               {MOODS.map((m) => (
                 <button
                   key={m.value}
                   onClick={() => setMood(mood === m.value ? null : m.value)}
+                  role="radio"
+                  aria-checked={mood === m.value}
+                  aria-label={t(`mood_${m.value}`)}
                   className={cn(
                     "flex flex-col items-center gap-1 px-3 py-2 rounded-xl border transition-all",
                     mood === m.value ? "bg-accent border-accent-foreground/20 scale-105" : "border-border hover:bg-secondary"
                   )}
                 >
-                  <span className="text-xl">{m.emoji}</span>
+                  <span className="text-xl" aria-hidden="true">{m.emoji}</span>
                   <span className="text-[9px] font-medium">{t(`mood_${m.value}`)}</span>
                 </button>
               ))}

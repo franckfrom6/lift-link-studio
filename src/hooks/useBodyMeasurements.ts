@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -18,40 +18,49 @@ export interface BodyMeasurement {
   notes: string | null;
 }
 
-export const useBodyMeasurements = () => {
+const PAGE_SIZE = 50;
+
+async function fetchMeasurements(studentId: string, page: number): Promise<BodyMeasurement[]> {
+  const { data } = await supabase
+    .from("body_measurements")
+    .select("*")
+    .eq("student_id", studentId)
+    .order("date", { ascending: false })
+    .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+  return (data as BodyMeasurement[]) || [];
+}
+
+export const useBodyMeasurements = (page = 0) => {
   const { user } = useAuth();
   const { effectiveStudentId } = useImpersonation();
   const { t } = useTranslation("dashboard");
-  const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const studentId = user ? effectiveStudentId(user.id) : null;
 
-  const fetchMeasurements = async () => {
-    if (!studentId) return;
-    const { data } = await supabase
-      .from("body_measurements")
-      .select("*")
-      .eq("student_id", studentId)
-      .order("date", { ascending: false })
-      .limit(50);
-    if (data) setMeasurements(data as BodyMeasurement[]);
-    setLoading(false);
-  };
+  const { data: measurements = [], isLoading: loading } = useQuery({
+    queryKey: ["body-measurements", studentId, page],
+    queryFn: () => fetchMeasurements(studentId!, page),
+    enabled: !!studentId,
+    staleTime: 60 * 1000,
+  });
 
-  useEffect(() => {
-    fetchMeasurements();
-  }, [studentId]);
-
-  const addMeasurement = async (measurement: Omit<BodyMeasurement, "id">) => {
-    if (!studentId) return;
-    const { error } = await supabase.from("body_measurements").insert({
-      student_id: studentId,
-      ...measurement,
-    });
-    if (!error) {
+  const addMutation = useMutation({
+    mutationFn: async (measurement: Omit<BodyMeasurement, "id">) => {
+      if (!studentId) throw new Error("No student ID");
+      const { error } = await supabase.from("body_measurements").insert({
+        student_id: studentId,
+        ...measurement,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
       toast.success(t("measurement_saved"));
-      fetchMeasurements();
-    }
+      queryClient.invalidateQueries({ queryKey: ["body-measurements", studentId] });
+    },
+  });
+
+  const addMeasurement = (measurement: Omit<BodyMeasurement, "id">) => {
+    addMutation.mutate(measurement);
   };
 
   return { measurements, loading, addMeasurement };

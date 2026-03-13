@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Timer, Pause, Play, RotateCcw, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface CircularRestTimerProps {
   initialSeconds: number;
@@ -11,7 +12,22 @@ interface CircularRestTimerProps {
 const RADIUS = 54;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
+function requestNotificationPermission() {
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+  }
+}
+
+function sendTimerNotification(title: string) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    try {
+      new Notification(title, { icon: "/favicon.svg", tag: "rest-timer", requireInteraction: false });
+    } catch {}
+  }
+}
+
 const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: CircularRestTimerProps) => {
+  const { t } = useTranslation(["common", "session"]);
   const [totalSeconds, setTotalSeconds] = useState(initialSeconds);
   const [seconds, setSeconds] = useState(initialSeconds);
   const [running, setRunning] = useState(autoStart);
@@ -19,6 +35,11 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+
+  // Request notification permission on mount
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
 
   useEffect(() => {
     if (!running || seconds <= 0) {
@@ -30,6 +51,7 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
         if (s <= 1) {
           setRunning(false);
           setFinished(true);
+          // Audio beep
           try {
             const ctx = new AudioContext();
             const osc = ctx.createOscillator();
@@ -41,7 +63,10 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
             osc.start();
             osc.stop(ctx.currentTime + 0.3);
           } catch {}
-          try { navigator.vibrate?.([200, 100, 200]); } catch {}
+          // Vibrate
+          try { navigator.vibrate?.([200, 100, 200, 100, 200]); } catch {}
+          // Web Notification (for background/screen-off)
+          sendTimerNotification(t("common:rest_label") + " — " + t("session:session_done", "Done!"));
           onCompleteRef.current?.();
           return 0;
         }
@@ -49,7 +74,7 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
       });
     }, 1000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [running, seconds]);
+  }, [running, seconds, t]);
 
   const reset = () => {
     setSeconds(totalSeconds);
@@ -70,20 +95,27 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
 
+  const restDoneLabel = t("common:rest_label") + " — " + (finished ? "✓" : "");
+  const timerLabel = finished ? restDoneLabel : `${t("common:rest_label")} ${mins}:${secs.toString().padStart(2, "0")}`;
+
   return (
-    <div className={`rounded-xl p-4 text-center space-y-3 transition-colors border ${
-      finished ? "bg-success-bg border-success/20" : "bg-info-bg border-info/20"
-    }`}>
+    <div
+      className={`rounded-xl p-4 text-center space-y-3 transition-colors border ${
+        finished ? "bg-success-bg border-success/20" : "bg-info-bg border-info/20"
+      }`}
+      role="timer"
+      aria-label={timerLabel}
+    >
       <div className="flex items-center justify-center gap-2">
         <Timer className="w-4 h-4 text-info" strokeWidth={1.5} />
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-[0.05em]">
-          {finished ? "Repos terminé !" : "Repos"}
+          {finished ? t("common:rest_label") + " ✓" : t("common:rest_label")}
         </span>
       </div>
 
       {/* Circular progress */}
       <div className="relative w-32 h-32 mx-auto">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
           <circle
             cx="60" cy="60" r={RADIUS}
             fill="none"
@@ -110,16 +142,16 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
 
       {/* Adjust buttons */}
       <div className="flex items-center justify-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => adjust(-15)} className="h-8 px-2 text-xs">
+        <Button variant="outline" size="sm" onClick={() => adjust(-15)} className="h-8 px-2 text-xs" aria-label={t("common:rest_label") + " -15s"}>
           <Minus className="w-3 h-3 mr-1" strokeWidth={1.5} />15s
         </Button>
-        <Button variant="outline" size="sm" onClick={toggle} className="h-8">
+        <Button variant="outline" size="sm" onClick={toggle} className="h-8" aria-label={running ? "Pause" : "Play"}>
           {running ? <Pause className="w-3.5 h-3.5" strokeWidth={1.5} /> : <Play className="w-3.5 h-3.5" strokeWidth={1.5} />}
         </Button>
-        <Button variant="outline" size="sm" onClick={reset} className="h-8">
+        <Button variant="outline" size="sm" onClick={reset} className="h-8" aria-label="Reset">
           <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => adjust(15)} className="h-8 px-2 text-xs">
+        <Button variant="outline" size="sm" onClick={() => adjust(15)} className="h-8 px-2 text-xs" aria-label={t("common:rest_label") + " +15s"}>
           <Plus className="w-3 h-3 mr-1" strokeWidth={1.5} />15s
         </Button>
       </div>
