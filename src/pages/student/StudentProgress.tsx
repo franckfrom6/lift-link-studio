@@ -5,9 +5,11 @@ import BodyEvolutionSection from "@/components/student/BodyEvolutionSection";
 import ProgressPhotoGallery from "@/components/student/ProgressPhotoGallery";
 import WeeklyInsightCard from "@/components/student/WeeklyInsightCard";
 import FeatureGate from "@/components/plans/FeatureGate";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 
 const StudentProgress = () => {
   const { t } = useTranslation("dashboard");
+  const isAdvanced = useIsAdvanced();
 
   return (
     <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
@@ -22,11 +24,14 @@ const StudentProgress = () => {
 
       <WeeklySummaryCard />
       <StrengthProgressChart />
-      <BodyEvolutionSection />
 
-      <FeatureGate feature="progress_photos" showLocked>
-        <ProgressPhotoGallery />
-      </FeatureGate>
+      {isAdvanced && <BodyEvolutionSection />}
+
+      {isAdvanced && (
+        <FeatureGate feature="progress_photos" showLocked>
+          <ProgressPhotoGallery />
+        </FeatureGate>
+      )}
     </div>
   );
 };
