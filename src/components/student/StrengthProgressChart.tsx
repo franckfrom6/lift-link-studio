@@ -4,11 +4,12 @@ import { useStrengthProgress } from "@/hooks/useStrengthProgress";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, TrendingUp } from "lucide-react";
-import { getExerciseName } from "@/lib/exercise-utils";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 
 const StrengthProgressChart = () => {
   const { t } = useTranslation("dashboard");
   const { exercises, selectedExercise, setSelectedExercise, dataPoints, loading } = useStrengthProgress();
+  const isAdvanced = useIsAdvanced();
   const [mode, setMode] = useState<"maxWeight" | "totalVolume">("maxWeight");
 
   if (exercises.length === 0) {
@@ -38,24 +39,27 @@ const StrengthProgressChart = () => {
               ))}
             </SelectContent>
           </Select>
-          <div className="flex bg-secondary rounded-md">
-            <button
-              onClick={() => setMode("maxWeight")}
-              className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-colors ${
-                mode === "maxWeight" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-              }`}
-            >
-              {t("max_weight")}
-            </button>
-            <button
-              onClick={() => setMode("totalVolume")}
-              className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-colors ${
-                mode === "totalVolume" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-              }`}
-            >
-              {t("total_volume_label")}
-            </button>
-          </div>
+          {/* Volume toggle — Pro only */}
+          {isAdvanced && (
+            <div className="flex bg-secondary rounded-md">
+              <button
+                onClick={() => setMode("maxWeight")}
+                className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-colors ${
+                  mode === "maxWeight" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {t("max_weight")}
+              </button>
+              <button
+                onClick={() => setMode("totalVolume")}
+                className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-colors ${
+                  mode === "totalVolume" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {t("total_volume_label")}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -69,7 +73,7 @@ const StrengthProgressChart = () => {
         <div className="overflow-x-auto">
           <div className="w-full h-[180px] sm:h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dataPoints}>
+              <LineChart data={isAdvanced ? dataPoints : dataPoints.slice(-4)}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis
                   dataKey="date"
@@ -85,13 +89,13 @@ const StrengthProgressChart = () => {
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
                   labelFormatter={(v) => new Date(v).toLocaleDateString()}
                   formatter={(value: number) => [
-                    mode === "maxWeight" ? `${value} kg` : `${value} kg`,
-                    mode === "maxWeight" ? t("max_weight") : t("total_volume_label")
+                    `${value} kg`,
+                    isAdvanced ? (mode === "maxWeight" ? t("max_weight") : t("total_volume_label")) : t("max_weight")
                   ]}
                 />
                 <Line
                   type="monotone"
-                  dataKey={mode}
+                  dataKey={isAdvanced ? mode : "maxWeight"}
                   stroke="hsl(var(--primary))"
                   strokeWidth={2}
                   dot={{ fill: "hsl(var(--primary))", r: 4 }}

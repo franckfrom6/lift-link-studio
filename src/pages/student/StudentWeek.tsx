@@ -1,4 +1,5 @@
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot } from "lucide-react";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import DateBadge, { DateBadgeVariant } from "@/components/student/DateBadge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,7 @@ import { useWeekData } from "@/hooks/useWeekData";
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
   const { user } = useAuth();
+  const isAdvanced = useIsAdvanced();
   const { program, loading: programLoading, refreshing } = useStudentProgram();
   const DAYS = [
     t("common:days.mon"), t("common:days.tue"), t("common:days.wed"),
@@ -357,7 +359,7 @@ const StudentWeek = () => {
         />
       )}
 
-      {(programmedCount > 0 || weekExternals.length > 0) && (
+      {isAdvanced && (programmedCount > 0 || weekExternals.length > 0) && (
         <WeeklyLoadBar
           programmedSessions={programmedCount}
           externalSessions={weekExternals}

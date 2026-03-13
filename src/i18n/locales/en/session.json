@@ -102,5 +102,8 @@
   "builder_eq_bodyweight": "Bodyweight",
   "builder_eq_kettlebell": "Kettlebell",
   "builder_eq_bands": "Bands",
-  "builder_eq_trx": "TRX"
+  "builder_eq_trx": "TRX",
+  "coach_instructions": "📋 Coach instructions",
+  "rest_simple": "Rest: {{seconds}}s",
+  "exercise_progress": "Exercise progress"
 }

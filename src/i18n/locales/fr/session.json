@@ -102,5 +102,8 @@
   "builder_eq_bodyweight": "Poids du corps",
   "builder_eq_kettlebell": "Kettlebell",
   "builder_eq_bands": "Bandes",
-  "builder_eq_trx": "TRX"
+  "builder_eq_trx": "TRX",
+  "coach_instructions": "📋 Consignes coach",
+  "rest_simple": "Repos : {{seconds}}s",
+  "exercise_progress": "Progression des exercices"
 }

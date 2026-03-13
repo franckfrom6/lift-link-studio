@@ -10,6 +10,7 @@ import SessionSection from "@/components/student/SessionSection";
 import SessionRecap from "@/components/student/SessionRecap";
 import ProgressionTimeline, { ProgressionPhase } from "@/components/student/ProgressionTimeline";
 import { ArrowLeft, Clock, User, TrendingUp } from "lucide-react";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import ShareSessionButton from "@/components/student/ShareSessionButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ const LiveSession = () => {
   const { t } = useTranslation(['session', 'common']);
   const { user } = useAuth();
   const { program: dbProgram } = useStudentProgram();
+  const isAdvanced = useIsAdvanced();
   const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>({});
   const [sessionDone, setSessionDone] = useState(false);
   const [startTime] = useState(Date.now());
@@ -491,15 +493,17 @@ const LiveSession = () => {
               completedSessionId={completedSessionId || undefined}
               sessionName={sessionProgram.title}
             />
-            <Button
-              variant={showProgression ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setShowProgression(!showProgression)}
-              className="gap-1.5"
-            >
-              <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />
-              {t('session:progression')}
-            </Button>
+            {isAdvanced && (
+              <Button
+                variant={showProgression ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setShowProgression(!showProgression)}
+                className="gap-1.5"
+              >
+                <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />
+                {t('session:progression')}
+              </Button>
+            )}
             <div className="flex items-center gap-1.5 bg-surface px-3 py-1.5 rounded-lg">
               <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
               <span className="text-sm font-bold tabular-nums">
@@ -534,7 +538,7 @@ const LiveSession = () => {
           </span>
         </div>
 
-        {substitutions.length > 0 && (
+        {isAdvanced && substitutions.length > 0 && (
           <div className="mt-2 flex items-center gap-1.5 text-xs text-warning font-medium">
             <span>⚡ {substitutions.length > 1 ? t('session:exercises_modified_plural', { count: substitutions.length }) : t('session:exercises_modified', { count: substitutions.length })}</span>
           </div>

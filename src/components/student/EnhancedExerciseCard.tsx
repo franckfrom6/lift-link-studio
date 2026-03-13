@@ -4,9 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import CircularRestTimer from "./CircularRestTimer";
+import RestTimer from "./RestTimer";
 import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
 import RPESelector from "./RPESelector";
+import CoachInstructionsButton from "./CoachInstructionsButton";
 import { useTranslation } from "react-i18next";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 
 export type TrackingType = "weight_reps" | "reps_only" | "duration" | "distance";
 
@@ -55,6 +58,7 @@ const EnhancedExerciseCard = ({
 }: EnhancedExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const { t } = useTranslation('exercises');
+  const isAdvanced = useIsAdvanced();
   const [currentSetIdx, setCurrentSetIdx] = useState(
     completedSets.findIndex(s => s.reps === 0 && (s.durationSeconds || 0) === 0) >= 0
       ? completedSets.findIndex(s => s.reps === 0 && (s.durationSeconds || 0) === 0)
@@ -120,6 +124,7 @@ const EnhancedExerciseCard = ({
   };
 
   const getPrevComparison = (idx: number, field: "weight" | "reps") => {
+    if (!isAdvanced) return null; // Hide comparison in Simple mode
     if (!previousSets || !previousSets[idx]) return null;
     const current = completedSets[idx]?.[field] || 0;
     const prev = previousSets[idx][field];
@@ -289,7 +294,7 @@ const EnhancedExerciseCard = ({
               </button>
               {checkButton}
             </div>
-            {isDone && (
+            {isAdvanced && isDone && (
               <div className="pl-9 mt-1 mb-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-muted-foreground font-medium">RPE:</span>
@@ -372,7 +377,7 @@ const EnhancedExerciseCard = ({
               </button>
               {checkButton}
             </div>
-            {isDone && (
+            {isAdvanced && isDone && (
               <div className="pl-9 mt-1 mb-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-muted-foreground font-medium">RPE:</span>
@@ -434,7 +439,7 @@ const EnhancedExerciseCard = ({
             </div>
             <div className="flex flex-wrap gap-1.5 mt-1">
               {renderTags()}
-              {tempo && (
+              {isAdvanced && tempo && (
                 <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
                   {tempo}
                 </span>
@@ -444,7 +449,7 @@ const EnhancedExerciseCard = ({
                   {restSeconds >= 60 ? `${Math.floor(restSeconds / 60)}'${restSeconds % 60 > 0 ? (restSeconds % 60).toString().padStart(2, '0') + '"' : ''}` : `${restSeconds}s`}
                 </span>
               )}
-              {rpeTarget && (
+              {isAdvanced && rpeTarget && (
                 <span className="bg-tag-orange-bg text-tag-orange px-1.5 py-0.5 rounded-md text-[10px] font-medium">
                   RPE {rpeTarget}
                 </span>
@@ -453,6 +458,10 @@ const EnhancedExerciseCard = ({
           </div>
         </button>
         <div className="flex items-center gap-1 shrink-0">
+          {/* Coach instructions button in Simple mode when coach has set tempo/rpe */}
+          {!isAdvanced && (tempo || rpeTarget) && (
+            <CoachInstructionsButton tempo={tempo} rpe={rpeTarget} coachNotes={coachNotes} />
+          )}
           {onSkipExercise && !allDone && isActive && (
             <button
               onClick={(e) => { e.stopPropagation(); onSkipExercise?.(); }}
@@ -488,14 +497,14 @@ const EnhancedExerciseCard = ({
           {/* Video embed section */}
           <ExerciseVideoEmbed exerciseName={name} />
 
-          {(suggestedWeight || coachNotes) && (
+          {(suggestedWeight || (isAdvanced && coachNotes)) && (
             <div className="space-y-2">
               {suggestedWeight && trackingType === "weight_reps" && (
                 <p className="text-xs text-muted-foreground">
                   💪 <span className="font-medium">{t('target_weight')} :</span> {suggestedWeight} kg
                 </p>
               )}
-              {coachNotes && (
+              {isAdvanced && coachNotes && (
                 <p className="text-xs text-muted-foreground italic leading-relaxed">
                   📝 {coachNotes}
                 </p>
@@ -504,11 +513,19 @@ const EnhancedExerciseCard = ({
           )}
 
           {showTimer && isActive && (
-            <CircularRestTimer
-              key={currentSetIdx}
-              initialSeconds={restSeconds}
-              onComplete={() => setShowTimer(false)}
-            />
+            isAdvanced ? (
+              <CircularRestTimer
+                key={currentSetIdx}
+                initialSeconds={restSeconds}
+                onComplete={() => setShowTimer(false)}
+              />
+            ) : (
+              <RestTimer
+                key={currentSetIdx}
+                initialSeconds={restSeconds}
+                onComplete={() => setShowTimer(false)}
+              />
+            )
           )}
 
           {isActive && completedSets.length > 0 && (

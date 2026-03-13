@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Plus, Camera, Utensils } from "lucide-react";
+import { Plus, Utensils } from "lucide-react";
 import MacroDonut from "./MacroDonut";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 
 export interface MealLogData {
   id?: string;
@@ -25,6 +26,7 @@ interface MealCardProps {
   meal: MealLogData;
   onEdit: () => void;
   onDelete: () => void;
+  isAdvanced: boolean;
 }
 
 const MEAL_TYPE_KEYS = [
@@ -36,7 +38,7 @@ const MEAL_TYPE_KEYS = [
   { id: "post_workout", icon: "💪" },
 ];
 
-const MealCard = ({ meal, onEdit, onDelete }: MealCardProps) => {
+const MealCard = ({ meal, onEdit, onDelete, isAdvanced }: MealCardProps) => {
   const { t } = useTranslation("nutrition");
   const mealType = MEAL_TYPE_KEYS.find(m => m.id === meal.meal_type);
   const hasMacros = meal.calories || meal.protein_g || meal.carbs_g || meal.fat_g;
@@ -54,11 +56,13 @@ const MealCard = ({ meal, onEdit, onDelete }: MealCardProps) => {
         {hasMacros && (
           <div className="text-right text-[10px]">
             {meal.calories && <p className="font-bold">{meal.calories} kcal</p>}
-            <div className="flex gap-1.5 text-muted-foreground">
-              {meal.protein_g && <span style={{ color: "hsl(217 91% 60%)" }}>P:{meal.protein_g}g</span>}
-              {meal.carbs_g && <span style={{ color: "hsl(45 93% 47%)" }}>G:{meal.carbs_g}g</span>}
-              {meal.fat_g && <span style={{ color: "hsl(0 72% 51%)" }}>L:{meal.fat_g}g</span>}
-            </div>
+            {isAdvanced && (
+              <div className="flex gap-1.5 text-muted-foreground">
+                {meal.protein_g && <span style={{ color: "hsl(217 91% 60%)" }}>P:{meal.protein_g}g</span>}
+                {meal.carbs_g && <span style={{ color: "hsl(45 93% 47%)" }}>G:{meal.carbs_g}g</span>}
+                {meal.fat_g && <span style={{ color: "hsl(0 72% 51%)" }}>L:{meal.fat_g}g</span>}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -184,6 +188,7 @@ interface DailyNutritionLogProps {
 
 const DailyNutritionLog = ({ date, meals, onAddMeal, onEditMeal, onDeleteMeal, targets }: DailyNutritionLogProps) => {
   const { t, i18n } = useTranslation("nutrition");
+  const isAdvanced = useIsAdvanced();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MealLogData | null>(null);
 
@@ -205,6 +210,14 @@ const DailyNutritionLog = ({ date, meals, onAddMeal, onEditMeal, onDeleteMeal, t
     return "danger";
   };
 
+  const getProgressColor = (status: string) => {
+    switch (status) {
+      case "success": return "hsl(var(--success))";
+      case "warning": return "hsl(var(--warning))";
+      default: return "hsl(var(--muted-foreground))";
+    }
+  };
+
   const ProgressBar = ({ current, target, color }: { current: number; target: number; color: string }) => {
     const pct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
     return (
@@ -215,6 +228,7 @@ const DailyNutritionLog = ({ date, meals, onAddMeal, onEditMeal, onDeleteMeal, t
   };
 
   const dateFmt = i18n.language === "fr" ? "fr-FR" : "en-US";
+  const calorieStatus = targets ? getProgressStatus(totals.calories, targets.calorie_target) : "neutral";
 
   return (
     <div className="space-y-4">
@@ -226,35 +240,46 @@ const DailyNutritionLog = ({ date, meals, onAddMeal, onEditMeal, onDeleteMeal, t
               {date.toLocaleDateString(dateFmt, { weekday: "long", day: "numeric", month: "long" })}
             </span>
             <span className={cn("text-xs font-bold",
-              getProgressStatus(totals.calories, targets.calorie_target) === "success" ? "text-success" :
-              getProgressStatus(totals.calories, targets.calorie_target) === "warning" ? "text-warning" : "text-muted-foreground"
+              calorieStatus === "success" ? "text-success" :
+              calorieStatus === "warning" ? "text-warning" : "text-muted-foreground"
             )}>
               {totals.calories} / {targets.calorie_target} kcal
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <div className="flex justify-between text-[10px]">
-                <span style={{ color: "hsl(217 91% 60%)" }}>{t("protein")}</span>
-                <span className="font-bold">{totals.protein}/{targets.protein_g}g</span>
+
+          {isAdvanced ? (
+            /* Pro mode: 3 separate macro bars */
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <div className="flex justify-between text-[10px]">
+                  <span style={{ color: "hsl(217 91% 60%)" }}>{t("protein")}</span>
+                  <span className="font-bold">{totals.protein}/{targets.protein_g}g</span>
+                </div>
+                <ProgressBar current={totals.protein} target={targets.protein_g} color="hsl(217 91% 60%)" />
               </div>
-              <ProgressBar current={totals.protein} target={targets.protein_g} color="hsl(217 91% 60%)" />
-            </div>
-            <div className="space-y-1">
-              <div className="flex justify-between text-[10px]">
-                <span style={{ color: "hsl(45 93% 47%)" }}>{t("carbs")}</span>
-                <span className="font-bold">{totals.carbs}/{targets.carbs_g}g</span>
+              <div className="space-y-1">
+                <div className="flex justify-between text-[10px]">
+                  <span style={{ color: "hsl(45 93% 47%)" }}>{t("carbs")}</span>
+                  <span className="font-bold">{totals.carbs}/{targets.carbs_g}g</span>
+                </div>
+                <ProgressBar current={totals.carbs} target={targets.carbs_g} color="hsl(45 93% 47%)" />
               </div>
-              <ProgressBar current={totals.carbs} target={targets.carbs_g} color="hsl(45 93% 47%)" />
-            </div>
-            <div className="space-y-1">
-              <div className="flex justify-between text-[10px]">
-                <span style={{ color: "hsl(0 72% 51%)" }}>{t("fats")}</span>
-                <span className="font-bold">{totals.fat}/{targets.fat_g}g</span>
+              <div className="space-y-1">
+                <div className="flex justify-between text-[10px]">
+                  <span style={{ color: "hsl(0 72% 51%)" }}>{t("fats")}</span>
+                  <span className="font-bold">{totals.fat}/{targets.fat_g}g</span>
+                </div>
+                <ProgressBar current={totals.fat} target={targets.fat_g} color="hsl(0 72% 51%)" />
               </div>
-              <ProgressBar current={totals.fat} target={targets.fat_g} color="hsl(0 72% 51%)" />
             </div>
-          </div>
+          ) : (
+            /* Simple mode: single colored calorie progress bar */
+            <ProgressBar
+              current={totals.calories}
+              target={targets.calorie_target}
+              color={getProgressColor(calorieStatus)}
+            />
+          )}
         </div>
       )}
 
@@ -267,6 +292,7 @@ const DailyNutritionLog = ({ date, meals, onAddMeal, onEditMeal, onDeleteMeal, t
             <MealCard
               key={meal.id}
               meal={meal}
+              isAdvanced={isAdvanced}
               onEdit={() => { setEditing(meal); setFormOpen(true); }}
               onDelete={() => meal.id && onDeleteMeal(meal.id)}
             />
