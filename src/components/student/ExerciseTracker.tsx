@@ -103,12 +103,12 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
               {exercise.reps} {t("session:reps_unit")}
             </span>
           )}
-          {exercise.tempo && (
+          {isAdvanced && exercise.tempo && (
             <span className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded text-[11px] font-medium">
               {t("exercises:tempo")} {exercise.tempo}
             </span>
           )}
-          {exercise.rpe && (
+          {isAdvanced && exercise.rpe && (
             <span className="bg-primary/20 text-primary px-2 py-0.5 rounded text-[11px] font-medium">
               RPE {exercise.rpe}
             </span>
