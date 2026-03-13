@@ -5,6 +5,7 @@ import { User, Settings, Shield, LogOut } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import DisplayModeToggle from "@/components/DisplayModeToggle";
 
 const UserMenu = () => {
   const { t } = useTranslation(["auth", "common", "settings"]);
