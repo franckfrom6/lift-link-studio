@@ -9,6 +9,7 @@ import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 
 const StudentProfile = () => {
   const { t } = useTranslation(['nutrition', 'dashboard', 'common']);
+  const isAdvanced = useIsAdvanced();
   const [nutritionProfile, setNutritionProfile] = useState<NutritionProfileData | null>(null);
 
   const handleNutritionSubmit = (data: NutritionProfileData) => {
