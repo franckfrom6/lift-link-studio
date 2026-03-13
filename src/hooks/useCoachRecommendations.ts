@@ -1,78 +1,75 @@
-import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { NutritionRecommendation, RecoveryRecommendation } from "@/data/recommendation-templates";
 
-export const useCoachRecommendations = () => {
-  const { user } = useAuth();
-  const [nutritionRecos, setNutritionRecos] = useState<NutritionRecommendation[]>([]);
-  const [recoveryRecos, setRecoveryRecos] = useState<RecoveryRecommendation[]>([]);
-  const [students, setStudents] = useState<{ id: string; name: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+interface RecoData {
+  nutritionRecos: NutritionRecommendation[];
+  recoveryRecos: RecoveryRecommendation[];
+  students: { id: string; name: string }[];
+}
 
-  const fetchAll = async () => {
-    if (!user) return;
-    setLoading(true);
+async function fetchAll(userId: string): Promise<RecoData> {
+  const { data: relations } = await supabase
+    .from("coach_students")
+    .select("student_id")
+    .eq("coach_id", userId)
+    .eq("status", "active");
 
-    // Get students for name resolution
-    const { data: relations } = await supabase
-      .from("coach_students")
-      .select("student_id")
-      .eq("coach_id", user.id)
-      .eq("status", "active");
+  const studentIds = relations?.map((r) => r.student_id) || [];
+  const studentMap = new Map<string, string>();
+  let studentsList: { id: string; name: string }[] = [];
 
-    const studentIds = relations?.map((r) => r.student_id) || [];
-    let studentMap = new Map<string, string>();
+  if (studentIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", studentIds);
+    profiles?.forEach((p) => studentMap.set(p.user_id, p.full_name));
+    studentsList = profiles?.map((p) => ({ id: p.user_id, name: p.full_name })) || [];
+  }
 
-    if (studentIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name")
-        .in("user_id", studentIds);
-      profiles?.forEach((p) => studentMap.set(p.user_id, p.full_name));
-      setStudents(profiles?.map((p) => ({ id: p.user_id, name: p.full_name })) || []);
-    }
-
-    // Fetch nutrition recos
-    const { data: nRecos } = await supabase
+  const [nRes, rRes] = await Promise.all([
+    supabase
       .from("coach_nutrition_recommendations")
       .select("*")
-      .eq("coach_id", user.id)
+      .eq("coach_id", userId)
       .order("priority", { ascending: true })
-      .order("created_at", { ascending: false });
-
-    setNutritionRecos(
-      (nRecos || []).map((r: any) => ({
-        ...r,
-        student_name: r.student_id ? studentMap.get(r.student_id) : undefined,
-      }))
-    );
-
-    // Fetch recovery recos
-    const { data: rRecos } = await supabase
+      .order("created_at", { ascending: false }),
+    supabase
       .from("coach_recovery_recommendations")
       .select("*")
-      .eq("coach_id", user.id)
+      .eq("coach_id", userId)
       .order("priority", { ascending: true })
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }),
+  ]);
 
-    setRecoveryRecos(
-      (rRecos || []).map((r: any) => ({
-        ...r,
-        student_name: r.student_id ? studentMap.get(r.student_id) : undefined,
-      }))
-    );
-
-    setLoading(false);
+  return {
+    nutritionRecos: (nRes.data || []).map((r: any) => ({
+      ...r,
+      student_name: r.student_id ? studentMap.get(r.student_id) : undefined,
+    })),
+    recoveryRecos: (rRes.data || []).map((r: any) => ({
+      ...r,
+      student_name: r.student_id ? studentMap.get(r.student_id) : undefined,
+    })),
+    students: studentsList,
   };
+}
 
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    fetchAll();
-  }, [user]);
+export const useCoachRecommendations = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const queryKey = ["coach-recommendations", user?.id];
+
+  const { data, isLoading: loading } = useQuery({
+    queryKey,
+    queryFn: () => fetchAll(user!.id),
+    enabled: !!user,
+    staleTime: 60 * 1000,
+  });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
   const saveNutritionReco = async (reco: Partial<NutritionRecommendation>) => {
     if (!user) return;
@@ -88,12 +85,12 @@ export const useCoachRecommendations = () => {
         .insert({ ...reco, coach_id: user.id } as any);
       if (error) throw error;
     }
-    await fetchAll();
+    invalidate();
   };
 
   const deleteNutritionReco = async (id: string) => {
     await supabase.from("coach_nutrition_recommendations").delete().eq("id", id);
-    await fetchAll();
+    invalidate();
   };
 
   const saveRecoveryReco = async (reco: Partial<RecoveryRecommendation>) => {
@@ -110,23 +107,23 @@ export const useCoachRecommendations = () => {
         .insert({ ...reco, coach_id: user.id } as any);
       if (error) throw error;
     }
-    await fetchAll();
+    invalidate();
   };
 
   const deleteRecoveryReco = async (id: string) => {
     await supabase.from("coach_recovery_recommendations").delete().eq("id", id);
-    await fetchAll();
+    invalidate();
   };
 
   return {
-    nutritionRecos,
-    recoveryRecos,
-    students,
+    nutritionRecos: data?.nutritionRecos || [],
+    recoveryRecos: data?.recoveryRecos || [],
+    students: data?.students || [],
     loading,
     saveNutritionReco,
     deleteNutritionReco,
     saveRecoveryReco,
     deleteRecoveryReco,
-    refetch: fetchAll,
+    refetch: invalidate,
   };
 };

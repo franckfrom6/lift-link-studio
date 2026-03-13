@@ -1,4 +1,5 @@
 import React from "react";
+import i18next from "i18next";
 
 interface State {
   hasError: boolean;
@@ -21,20 +22,21 @@ export class ErrorBoundary extends React.Component<
 
   render() {
     if (this.state.hasError) {
+      const t = i18next.t.bind(i18next);
       return (
         this.props.fallback ?? (
           <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-8 text-center">
             <h1 className="text-xl font-bold text-foreground">
-              Une erreur est survenue
+              {t("common:error_occurred")}
             </h1>
             <p className="text-sm text-muted-foreground max-w-md">
-              {this.state.error?.message || "Erreur inattendue"}
+              {this.state.error?.message || t("common:error")}
             </p>
             <button
               onClick={() => this.setState({ hasError: false, error: null })}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"
             >
-              Réessayer
+              {t("common:back")}
             </button>
           </div>
         )

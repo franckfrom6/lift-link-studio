@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface ImpersonatedStudent {
   id: string;
@@ -9,15 +9,10 @@ interface ImpersonatedStudent {
 }
 
 interface ImpersonationContextType {
-  /** The student being impersonated, or null */
   impersonating: ImpersonatedStudent | null;
-  /** Start viewing as a student (coach only) */
   startImpersonation: (student: ImpersonatedStudent) => Promise<void>;
-  /** Stop impersonation and go back to coach space */
   stopImpersonation: () => void;
-  /** Returns the effective user ID for student queries */
   effectiveStudentId: (realUserId: string) => string;
-  /** True when a coach is viewing as a student */
   isImpersonating: boolean;
 }
 
@@ -31,12 +26,13 @@ export const useImpersonation = () => {
 
 export const ImpersonationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [impersonating, setImpersonating] = useState<ImpersonatedStudent | null>(null);
+  const { t } = useTranslation("common");
 
   const startImpersonation = useCallback(async (student: ImpersonatedStudent) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Non autorisé");
+        toast.error(t("error_occurred"));
         return;
       }
 
@@ -49,15 +45,15 @@ export const ImpersonationProvider: React.FC<{ children: React.ReactNode }> = ({
         .maybeSingle();
 
       if (error || !data) {
-        toast.error("Non autorisé");
+        toast.error(t("error_occurred"));
         return;
       }
 
       setImpersonating(student);
     } catch {
-      toast.error("Non autorisé");
+      toast.error(t("error_occurred"));
     }
-  }, []);
+  }, [t]);
 
   const stopImpersonation = useCallback(() => {
     setImpersonating(null);
