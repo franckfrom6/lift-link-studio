@@ -64,6 +64,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <ImpersonationProvider>
+            <DisplayModeProvider>
             <PlanProvider>
               <Routes>
                 <Route path="/" element={<LandingPage />} />
