@@ -23,6 +23,7 @@ const UserMenu = () => {
 
   return (
     <div className="flex items-center gap-1">
+      <DisplayModeToggle />
       <LanguageSwitcher />
       <ThemeToggle />
       <DropdownMenu>
