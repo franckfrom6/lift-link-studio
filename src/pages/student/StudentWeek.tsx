@@ -14,6 +14,7 @@ import CheckinBadge from "@/components/student/CheckinBadge";
 import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import SelfGuidedDashboard from "@/components/student/SelfGuidedDashboard";
 import FreeSessionCreator from "@/components/student/FreeSessionCreator";
+import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
@@ -43,6 +44,8 @@ const StudentWeek = () => {
   const [swapTargetDay, setSwapTargetDay] = useState<number | null>(null);
   const [freeSessionOpen, setFreeSessionOpen] = useState(false);
   const [freeSessionDate, setFreeSessionDate] = useState<Date>(new Date());
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderDate, setBuilderDate] = useState<Date>(new Date());
 
   const totalWeeks = program?.weeks?.length || 0;
 
@@ -532,8 +535,8 @@ const StudentWeek = () => {
                             <Button
                               variant="ghost" size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                              onClick={(e) => { e.stopPropagation(); setFreeSessionDate(day.date); setFreeSessionOpen(true); }}
-                              aria-label={t('session:free_session_btn')}
+                              onClick={(e) => { e.stopPropagation(); setBuilderDate(day.date); setBuilderOpen(true); }}
+                              aria-label={t('session:builder_title')}
                             >
                               <Dumbbell className="w-4 h-4" strokeWidth={1.5} />
                             </Button>
@@ -632,6 +635,13 @@ const StudentWeek = () => {
         open={freeSessionOpen}
         onClose={() => setFreeSessionOpen(false)}
         date={freeSessionDate}
+        onCreated={() => fetchFreeSessions()}
+      />
+
+      <SessionBuilderModal
+        open={builderOpen}
+        onClose={() => setBuilderOpen(false)}
+        date={builderDate}
         onCreated={() => fetchFreeSessions()}
       />
     </div>
