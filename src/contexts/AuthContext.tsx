@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -41,17 +41,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<UserRole>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const profileFetchInProgress = useRef(false);
+  
 
   const fetchProfile = useCallback(async (userId: string) => {
-    if (profileFetchInProgress.current) return;
-    profileFetchInProgress.current = true;
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        setProfile(null);
+        setRole(null);
+        return;
+      }
+
       if (data) {
         setProfile(data as Profile);
         setRole(data.role as UserRole);
@@ -59,8 +65,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(null);
         setRole(null);
       }
-    } finally {
-      profileFetchInProgress.current = false;
+    } catch (e) {
+      console.error("Error fetching profile:", e);
+      setProfile(null);
+      setRole(null);
     }
   }, []);
 
@@ -74,37 +82,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let isMounted = true;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         if (!isMounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
-        if (session?.user) {
-          try {
-            await fetchProfile(session.user.id);
-          } catch (e) {
-            console.error("Error fetching profile:", e);
-          }
-        } else {
+
+        if (!session?.user) {
           setProfile(null);
           setRole(null);
+          setLoading(false);
+          return;
         }
-        if (isMounted) setLoading(false);
+
+        setLoading(true);
+
+        // Avoid awaiting Supabase calls directly inside onAuthStateChange callback.
+        setTimeout(() => {
+          if (!isMounted) return;
+          void fetchProfile(session.user.id).finally(() => {
+            if (isMounted) setLoading(false);
+          });
+        }, 0);
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (!isMounted) return;
+
       setSession(session);
       setUser(session?.user ?? null);
+
       if (session?.user) {
-        try {
-          await fetchProfile(session.user.id);
-        } catch (e) {
-          console.error("Error fetching profile:", e);
-        }
+        await fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setRole(null);
       }
+
       if (isMounted) setLoading(false);
-    });
+    };
+
+    void init();
 
     return () => {
       isMounted = false;
