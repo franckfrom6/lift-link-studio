@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { PlanProvider } from "@/providers/PlanProvider";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
+import { DisplayModeProvider } from "@/contexts/DisplayModeContext";
 import AuthGuard from "@/components/AuthGuard";
 import AuthRedirect from "@/components/AuthRedirect";
 import LandingPage from "./pages/LandingPage";
