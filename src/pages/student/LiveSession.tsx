@@ -390,16 +390,13 @@ const LiveSession = () => {
   const handleDeleteSession = async () => {
     if (!user || !selectedSession) return;
 
-    if (completedSessionId) {
-      toast.error(t("session:session_already_completed"));
-      return;
-    }
-
+    // Check if session was actually completed (completed_at is set)
     const { data: completedSession, error: completedErr } = await supabase
       .from("completed_sessions")
       .select("id")
       .eq("student_id", user.id)
       .eq("session_id", selectedSession.id)
+      .not("completed_at", "is", null)
       .maybeSingle();
 
     if (completedErr) {
@@ -412,6 +409,11 @@ const LiveSession = () => {
       toast.error(t("session:session_already_completed"));
       setDeleteDialogOpen(false);
       return;
+    }
+
+    // Clean up the incomplete completed_sessions row if it exists
+    if (completedSessionId) {
+      await supabase.from("completed_sessions").delete().eq("id", completedSessionId);
     }
 
     const sessionName = selectedSession.name;
