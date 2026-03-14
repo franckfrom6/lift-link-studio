@@ -4,13 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import CircularRestTimer from "./CircularRestTimer";
-import RestTimer from "./RestTimer";
+import LinearRestTimer from "./LinearRestTimer";
 import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
 import RPESelector from "./RPESelector";
 import CoachInstructionsButton from "./CoachInstructionsButton";
 import { useTranslation } from "react-i18next";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import ExercisePhoto from "./ExercisePhoto";
+import { AnimatePresence, motion } from "framer-motion";
 
 export type TrackingType = "weight_reps" | "reps_only" | "duration" | "distance";
 
