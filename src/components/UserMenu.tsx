@@ -27,8 +27,9 @@ const UserMenu = () => {
     i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr");
   };
 
+  const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
+    setTheme(isDark ? "light" : "dark");
   };
 
   return (
