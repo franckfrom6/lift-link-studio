@@ -237,24 +237,54 @@ const StudentWeek = () => {
 
   const handleDeleteSession = async () => {
     if (!deleteTarget || !user) return;
-    const { error } = await supabase
+
+    const { data: completedSession, error: completedErr } = await supabase
+      .from("completed_sessions")
+      .select("id")
+      .eq("session_id", deleteTarget.id)
+      .maybeSingle();
+
+    if (completedErr) {
+      console.error("Error checking completed session:", completedErr);
+      toast.error(t("common:error"));
+      return;
+    }
+
+    if (completedSession) {
+      toast.error(t("session:session_already_completed"));
+      setDeleteDialogOpen(false);
+      setDeleteTarget(null);
+      return;
+    }
+
+    const { data: updatedSession, error } = await supabase
       .from("sessions")
       .update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: user.id })
-      .eq("id", deleteTarget.id);
+      .eq("id", deleteTarget.id)
+      .eq("is_deleted", false)
+      .select("id")
+      .maybeSingle();
+
     if (error) {
       console.error("Error deleting session:", error);
       toast.error(t("common:error"));
+    } else if (!updatedSession) {
+      toast.error(t("session:session_already_completed"));
     } else {
       toast.success(t("session:session_deleted"));
-      refetch();
-      // Also refresh free sessions list
-      queryClient.invalidateQueries({ queryKey: ['week-free-sessions'] });
+      await Promise.all([
+        refetch(),
+        queryClient.invalidateQueries({ queryKey: ["student-program", studentId] }),
+        queryClient.invalidateQueries({ queryKey: ["week-free-sessions", studentId] }),
+      ]);
+
       const { data: coachRel } = await supabase
         .from("coach_students")
         .select("coach_id")
         .eq("student_id", user.id)
         .eq("status", "active")
         .maybeSingle();
+
       if (coachRel) {
         const { data: profile } = await supabase
           .from("profiles")
@@ -269,6 +299,7 @@ const StudentWeek = () => {
         });
       }
     }
+
     setDeleteDialogOpen(false);
     setDeleteTarget(null);
   };
@@ -558,12 +589,28 @@ const StudentWeek = () => {
                                   onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
                                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
                                 >
-                                  <div className="flex items-center gap-1.5">
-                                    <p className="text-xs font-semibold text-foreground truncate">{fs.name}</p>
-                                    <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[8px] font-semibold px-1 py-0.5 rounded shrink-0">
-                                      <Bot className="w-2 h-2" strokeWidth={1.5} />
-                                      IA
-                                    </span>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <p className="text-xs font-semibold text-foreground truncate">{fs.name}</p>
+                                      <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[8px] font-semibold px-1 py-0.5 rounded shrink-0">
+                                        <Bot className="w-2 h-2" strokeWidth={1.5} />
+                                        IA
+                                      </span>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setDeleteTarget({ id: fs.id, name: fs.name });
+                                        setDeleteDialogOpen(true);
+                                      }}
+                                      aria-label={t('session:delete_session')}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                    </Button>
                                   </div>
                                   <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
                                 </div>
