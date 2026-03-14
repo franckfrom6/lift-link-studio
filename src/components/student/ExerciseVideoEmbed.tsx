@@ -106,7 +106,7 @@ export function ExerciseVideoEmbed({ exerciseName, directVideoUrl }: ExerciseVid
 
     fetchVideo();
     return () => { cancelled = true; };
-  }, [exerciseName]);
+  }, [exerciseName, directVideoUrl]);
 
   // Skeleton while loading
   if (loading) {
