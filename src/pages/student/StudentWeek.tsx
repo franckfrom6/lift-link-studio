@@ -1,4 +1,4 @@
-import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy } from "lucide-react";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import DateBadge, { DateBadgeVariant } from "@/components/student/DateBadge";
 import { Button } from "@/components/ui/button";
