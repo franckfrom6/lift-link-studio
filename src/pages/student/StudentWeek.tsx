@@ -1,4 +1,4 @@
-import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy, Trash2 } from "lucide-react";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
 import FirstStepsChecklist from "@/components/onboarding/FirstStepsChecklist";
