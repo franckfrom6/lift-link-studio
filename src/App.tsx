@@ -133,6 +133,7 @@ const App = () => (
               </Routes>
               </ErrorBoundary>
             </PlanProvider>
+            </OnboardingProvider>
             </DisplayModeProvider>
             </ImpersonationProvider>
           </AuthProvider>
