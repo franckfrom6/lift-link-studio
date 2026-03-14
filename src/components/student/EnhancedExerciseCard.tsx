@@ -46,6 +46,8 @@ interface EnhancedExerciseCardProps {
   isSkipped?: boolean;
   previousSets?: { weight: number; reps: number }[];
   trackingType?: TrackingType;
+  sessionExerciseId?: string;
+  completedSessionId?: string;
 }
 
 const EnhancedExerciseCard = ({
@@ -56,6 +58,8 @@ const EnhancedExerciseCard = ({
   onSwapExercise, onSkipExercise, hasAlternatives, isSubstituted, isSkipped,
   previousSets,
   trackingType = "weight_reps",
+  sessionExerciseId,
+  completedSessionId,
 }: EnhancedExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const { t } = useTranslation('exercises');
