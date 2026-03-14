@@ -245,6 +245,8 @@ const StudentWeek = () => {
     } else {
       toast.success(t("session:session_deleted"));
       refetch();
+      // Also refresh free sessions list
+      queryClient.invalidateQueries({ queryKey: ['week-free-sessions'] });
       const { data: coachRel } = await supabase
         .from("coach_students")
         .select("coach_id")
