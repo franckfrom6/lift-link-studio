@@ -142,17 +142,17 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
 
       {/* Adjust buttons */}
       <div className="flex items-center justify-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => adjust(-15)} className="h-8 px-2 text-xs" aria-label={t("common:rest_label") + " -15s"}>
-          <Minus className="w-3 h-3 mr-1" strokeWidth={1.5} />15s
+        <Button variant="outline" size="sm" onClick={() => adjust(-15)} className="h-11 min-w-[44px] px-2.5 text-xs" aria-label={t("common:rest_label") + " -15s"}>
+          <Minus className="w-4 h-4 mr-1" strokeWidth={1.5} />15s
         </Button>
-        <Button variant="outline" size="sm" onClick={toggle} className="h-8" aria-label={running ? "Pause" : "Play"}>
-          {running ? <Pause className="w-3.5 h-3.5" strokeWidth={1.5} /> : <Play className="w-3.5 h-3.5" strokeWidth={1.5} />}
+        <Button variant="outline" size="icon" onClick={toggle} className="h-11 w-11" aria-label={running ? "Pause" : "Play"}>
+          {running ? <Pause className="w-4 h-4" strokeWidth={1.5} /> : <Play className="w-4 h-4" strokeWidth={1.5} />}
         </Button>
-        <Button variant="outline" size="sm" onClick={reset} className="h-8" aria-label="Reset">
-          <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
+        <Button variant="outline" size="icon" onClick={reset} className="h-11 w-11" aria-label="Reset">
+          <RotateCcw className="w-4 h-4" strokeWidth={1.5} />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => adjust(15)} className="h-8 px-2 text-xs" aria-label={t("common:rest_label") + " +15s"}>
-          <Plus className="w-3 h-3 mr-1" strokeWidth={1.5} />15s
+        <Button variant="outline" size="sm" onClick={() => adjust(15)} className="h-11 min-w-[44px] px-2.5 text-xs" aria-label={t("common:rest_label") + " +15s"}>
+          <Plus className="w-4 h-4 mr-1" strokeWidth={1.5} />15s
         </Button>
       </div>
     </div>

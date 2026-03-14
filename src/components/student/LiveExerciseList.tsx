@@ -79,7 +79,9 @@ const LiveExerciseList = ({ exercises, onChange, onAddExercise, onSubstitute }: 
             onTouchEnd={e => handleTouchEnd(ex.id, e.changedTouches[0].clientX)}
           >
             <div className="flex items-center gap-2">
-              <GripVertical className="w-3.5 h-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+              <div className="w-6 h-11 flex items-center justify-center shrink-0" aria-hidden="true">
+                <GripVertical className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">
                   {idx + 1}. {getExerciseName({ name: ex.name, name_en: ex.nameEn })}
