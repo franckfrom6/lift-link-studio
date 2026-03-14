@@ -1,5 +1,7 @@
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy } from "lucide-react";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
+import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
+import FirstStepsChecklist from "@/components/onboarding/FirstStepsChecklist";
 import DateBadge, { DateBadgeVariant } from "@/components/student/DateBadge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
