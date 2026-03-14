@@ -497,7 +497,8 @@ const EnhancedExerciseCard = ({
   return (
     <div className={cn(
       "rounded-xl border transition-all",
-      isActive ? "bg-card border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "bg-card/50 border-border/50"
+      isActive ? "bg-card border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "bg-card/50 border-border/50",
+      "min-[0px]:p-0" // card wrapper — padding is on children
     )}>
       {/* Compact header */}
       <div className="flex items-center gap-3 p-3">
