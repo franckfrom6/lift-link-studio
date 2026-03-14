@@ -528,7 +528,7 @@ const EnhancedExerciseCard = ({
       {expanded && (
         <div className="px-3 pb-3 space-y-4 border-t border-border pt-3">
           {/* Video embed section */}
-          <ExerciseVideoEmbed exerciseName={name} />
+          <ExerciseVideoEmbed exerciseName={name} directVideoUrl={videoUrl} />
 
           {(suggestedWeight || (isAdvanced && coachNotes)) && (
             <div className="space-y-2">
