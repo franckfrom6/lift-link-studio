@@ -152,6 +152,9 @@ const LiveSession = () => {
         videoSearchQuery: ex.video_search_query || "",
         channel: "",
         notes: ex.coach_notes || "",
+        videoUrlFemale: (ex.exercise as any)?.video_url_female || "",
+        videoUrlMale: (ex.exercise as any)?.video_url_male || "",
+        exerciseVideoUrl: (ex.exercise as any)?.video_url || "",
       })),
     }));
   }, [selectedSession]);
