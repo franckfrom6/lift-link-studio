@@ -94,12 +94,22 @@ export function useSessionBuilder() {
         return;
       }
 
-      // Calculate target exercise count: ~4-5 min per set, including warmup
-      const warmupTime = 5;
-      const cooldownTime = 5;
-      const availableTime = duration - warmupTime - cooldownTime;
-      const avgTimePerExercise = 5; // avg minutes per exercise (including rest)
-      const targetCount = Math.max(3, Math.min(10, Math.floor(availableTime / avgTimePerExercise)));
+      // Duration-specific volume rules
+      const volumeRules: Record<number, { minEx: number; maxEx: number; compoundSets: number; isoSets: number }> = {
+        20: { minEx: 3, maxEx: 4, compoundSets: 3, isoSets: 2 },
+        30: { minEx: 4, maxEx: 5, compoundSets: 3, isoSets: 3 },
+        45: { minEx: 5, maxEx: 6, compoundSets: 4, isoSets: 3 },
+        60: { minEx: 6, maxEx: 8, compoundSets: 4, isoSets: 4 },
+        75: { minEx: 8, maxEx: 10, compoundSets: 4, isoSets: 4 },
+        90: { minEx: 8, maxEx: 10, compoundSets: 5, isoSets: 4 },
+      };
+      // Find closest duration bracket
+      const brackets = Object.keys(volumeRules).map(Number).sort((a, b) => a - b);
+      const closestBracket = brackets.reduce((prev, curr) =>
+        Math.abs(curr - duration) < Math.abs(prev - duration) ? curr : prev
+      );
+      const rules = volumeRules[closestBracket];
+      const targetCount = Math.round((rules.minEx + rules.maxEx) / 2);
 
       // Prioritize compound exercises first, then isolation
       const compounds = allExercises.filter(e => e.type === "compound");
