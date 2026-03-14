@@ -215,15 +215,36 @@ export const useStudentProgram = () => {
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'sessions' },
-        () => queryClient.invalidateQueries({ queryKey })
+        (payload) => {
+          const weekIds = queryClient.getQueryData<DBProgram>(queryKey)
+            ?.weeks?.map(w => w.id) || [];
+          const changedWeekId = (payload.new as any)?.week_id || (payload.old as any)?.week_id;
+          if (!changedWeekId || weekIds.includes(changedWeekId)) {
+            queryClient.invalidateQueries({ queryKey });
+          }
+        }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'session_sections' },
-        () => queryClient.invalidateQueries({ queryKey })
+        (payload) => {
+          const sessionIds = queryClient.getQueryData<DBProgram>(queryKey)
+            ?.weeks?.flatMap(w => w.sessions?.map(s => s.id) || []) || [];
+          const changedSessionId = (payload.new as any)?.session_id || (payload.old as any)?.session_id;
+          if (!changedSessionId || sessionIds.includes(changedSessionId)) {
+            queryClient.invalidateQueries({ queryKey });
+          }
+        }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'session_exercises' },
-        () => queryClient.invalidateQueries({ queryKey })
+        (payload) => {
+          const sessionIds = queryClient.getQueryData<DBProgram>(queryKey)
+            ?.weeks?.flatMap(w => w.sessions?.map(s => s.id) || []) || [];
+          const changedSessionId = (payload.new as any)?.session_id || (payload.old as any)?.session_id;
+          if (!changedSessionId || sessionIds.includes(changedSessionId)) {
+            queryClient.invalidateQueries({ queryKey });
+          }
+        }
       )
       .subscribe();
 
