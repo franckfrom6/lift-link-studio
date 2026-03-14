@@ -4,7 +4,6 @@ import { Trophy, Clock, Dumbbell, TrendingUp, MessageSquare, Sparkles } from "lu
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import RecommendationSheet from "@/components/nutrition/RecommendationSheet";
-import RecommendationSheet from "@/components/nutrition/RecommendationSheet";
 import SessionFeedbackWizard, { FeedbackData } from "@/components/student/SessionFeedbackWizard";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
