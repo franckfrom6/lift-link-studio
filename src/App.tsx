@@ -16,6 +16,7 @@ import LandingPage from "./pages/LandingPage";
 import LegalPage from "./pages/LegalPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
+import LoginPage from "./pages/LoginPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PricingPage from "./pages/PricingPage";
