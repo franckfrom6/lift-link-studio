@@ -158,6 +158,37 @@ const StudentWeek = () => {
     return sessions;
   }, [mappedSwaps, DEFAULT_SESSIONS]);
 
+  const visibleSessionIds = useMemo(() => {
+    const ids = new Set<string>();
+    Object.values(effectiveSessions).forEach((session) => ids.add(session.sessionId));
+    freeSessions.forEach((session) => ids.add(session.id));
+    return Array.from(ids);
+  }, [effectiveSessions, freeSessions]);
+
+  const { data: completedSessionIds = new Set<string>() } = useQuery<Set<string>>({
+    queryKey: ["week-completed-sessions", studentId, visibleSessionIds.join(",")],
+    queryFn: async () => {
+      if (!studentId || visibleSessionIds.length === 0) return new Set<string>();
+
+      const { data, error } = await supabase
+        .from("completed_sessions")
+        .select("session_id")
+        .eq("student_id", studentId)
+        .in("session_id", visibleSessionIds);
+
+      if (error) {
+        console.error("Error fetching completed sessions:", error);
+        return new Set<string>();
+      }
+
+      return new Set((data || []).map((row) => row.session_id));
+    },
+    enabled: !!studentId && visibleSessionIds.length > 0,
+    staleTime: 30 * 1000,
+  });
+
+  const isSessionCompleted = useCallback((sessionId: string) => completedSessionIds.has(sessionId), [completedSessionIds]);
+
   const swappedDays = useMemo(() => {
     const map: Record<number, { originalDay: number; reason: string | null }> = {};
     for (const swap of mappedSwaps) {
