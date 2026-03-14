@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Droplets, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { format, subDays } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 
 const calculateWaterGoal = (weightKg: number): number => {
   const raw = Math.round(weightKg * 35);
@@ -30,8 +31,8 @@ const WaterTracker = ({ date }: WaterTrackerProps) => {
   const [customOpen, setCustomOpen] = useState(false);
   const [customValue, setCustomValue] = useState("");
   const [history, setHistory] = useState<{ date: string; total: number }[]>([]);
+  const [justAdded, setJustAdded] = useState(false);
 
-  // Load goal from profile
   useEffect(() => {
     if (!profile) return;
     const profileGoal = (profile as any).water_goal_ml;
@@ -42,7 +43,6 @@ const WaterTracker = ({ date }: WaterTrackerProps) => {
     }
   }, [profile]);
 
-  // Load today's water total
   useEffect(() => {
     if (!user) return;
     const fetchWater = async () => {
@@ -59,7 +59,6 @@ const WaterTracker = ({ date }: WaterTrackerProps) => {
     fetchWater();
   }, [user, dateStr]);
 
-  // Load 7-day history (Pro mode)
   useEffect(() => {
     if (!user || !isAdvanced) return;
     const fetchHistory = async () => {
@@ -83,7 +82,6 @@ const WaterTracker = ({ date }: WaterTrackerProps) => {
 
   const addWater = async (ml: number) => {
     if (!user || ml <= 0) return;
-    // Upsert: add a water-only log entry for today
     const { error } = await supabase
       .from("daily_nutrition_logs")
       .insert({
@@ -101,6 +99,8 @@ const WaterTracker = ({ date }: WaterTrackerProps) => {
       setWaterMl(prev => prev + ml);
       setCustomOpen(false);
       setCustomValue("");
+      setJustAdded(true);
+      setTimeout(() => setJustAdded(false), 500);
     }
   };
 
@@ -112,7 +112,12 @@ const WaterTracker = ({ date }: WaterTrackerProps) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Droplets className="w-4 h-4 text-blue-500" strokeWidth={1.5} />
+          <motion.div
+            animate={justAdded ? { rotate: [0, -15, 15, -10, 10, 0], scale: [1, 1.2, 1] } : {}}
+            transition={{ duration: 0.5 }}
+          >
+            <Droplets className="w-4 h-4 text-info" strokeWidth={1.5} />
+          </motion.div>
           <span className="text-sm font-semibold">{t("nutrition:water_title")}</span>
         </div>
         <span className="text-xs font-bold text-muted-foreground">
@@ -121,39 +126,44 @@ const WaterTracker = ({ date }: WaterTrackerProps) => {
         </span>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar with spring animation */}
       <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-500"
+        <motion.div
+          className="h-full rounded-full"
+          animate={{ width: `${pct}%` }}
+          transition={{ type: "spring", stiffness: 200, damping: 25 }}
           style={{
-            width: `${pct}%`,
             background: isComplete
               ? "hsl(var(--success))"
-              : "hsl(210 100% 56%)",
+              : "hsl(var(--info))",
           }}
         />
       </div>
 
-      {/* Quick-add buttons */}
+      {/* Quick-add buttons with press scale */}
       <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 text-xs h-9"
-          onClick={() => addWater(250)}
-        >
-          <Plus className="w-3 h-3 mr-1" strokeWidth={2} />
-          250ml
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 text-xs h-9"
-          onClick={() => addWater(500)}
-        >
-          <Plus className="w-3 h-3 mr-1" strokeWidth={2} />
-          500ml
-        </Button>
+        <motion.div className="flex-1" whileTap={{ scale: 0.95 }}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-xs h-9"
+            onClick={() => addWater(250)}
+          >
+            <Plus className="w-3 h-3 mr-1" strokeWidth={2} />
+            250ml
+          </Button>
+        </motion.div>
+        <motion.div className="flex-1" whileTap={{ scale: 0.95 }}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-xs h-9"
+            onClick={() => addWater(500)}
+          >
+            <Plus className="w-3 h-3 mr-1" strokeWidth={2} />
+            500ml
+          </Button>
+        </motion.div>
         {customOpen ? (
           <div className="flex gap-1 flex-1">
             <Input
@@ -173,46 +183,65 @@ const WaterTracker = ({ date }: WaterTrackerProps) => {
             </Button>
           </div>
         ) : (
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 text-xs h-9"
-            onClick={() => setCustomOpen(true)}
-          >
-            {t("nutrition:water_other")}
-          </Button>
+          <motion.div className="flex-1" whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs h-9"
+              onClick={() => setCustomOpen(true)}
+            >
+              {t("nutrition:water_other")}
+            </Button>
+          </motion.div>
         )}
       </div>
 
-      {/* Pro: 7-day mini bar chart */}
-      {isAdvanced && history.length > 0 && (
-        <div className="pt-2 border-t border-border">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            {t("nutrition:water_history")}
-          </p>
-          <div className="flex items-end gap-1 h-12">
-            {history.map((day) => {
-              const dayPct = goalMl > 0 ? Math.min(100, (day.total / goalMl) * 100) : 0;
-              const dayLabel = day.date.slice(-2);
-              return (
-                <div key={day.date} className="flex-1 flex flex-col items-center gap-0.5">
-                  <div className="w-full bg-secondary rounded-sm overflow-hidden" style={{ height: "32px" }}>
-                    <div
-                      className="w-full rounded-sm transition-all"
-                      style={{
-                        height: `${dayPct}%`,
-                        marginTop: `${100 - dayPct}%`,
-                        background: dayPct >= 100 ? "hsl(var(--success))" : "hsl(210 100% 56%)",
-                      }}
-                    />
+      {/* Pro: 7-day mini bar chart with staggered animation */}
+      <AnimatePresence>
+        {isAdvanced && history.length > 0 && (
+          <motion.div
+            className="pt-2 border-t border-border"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          >
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+              {t("nutrition:water_history")}
+            </p>
+            <div className="flex items-end gap-1 h-12">
+              {history.map((day, idx) => {
+                const dayPct = goalMl > 0 ? Math.min(100, (day.total / goalMl) * 100) : 0;
+                const dayLabel = day.date.slice(-2);
+                return (
+                  <div key={day.date} className="flex-1 flex flex-col items-center gap-0.5">
+                    <div className="w-full bg-secondary rounded-sm overflow-hidden" style={{ height: "32px" }}>
+                      <motion.div
+                        className="w-full rounded-sm"
+                        initial={{ height: 0, marginTop: "100%" }}
+                        animate={{
+                          height: `${dayPct}%`,
+                          marginTop: `${100 - dayPct}%`,
+                        }}
+                        transition={{
+                          delay: idx * 0.08,
+                          type: "spring",
+                          stiffness: 200,
+                          damping: 20,
+                        }}
+                        style={{
+                          background: dayPct >= 100 ? "hsl(var(--success))" : "hsl(var(--info))",
+                        }}
+                      />
+                    </div>
+                    <span className="text-[8px] text-muted-foreground">{dayLabel}</span>
                   </div>
-                  <span className="text-[8px] text-muted-foreground">{dayLabel}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
