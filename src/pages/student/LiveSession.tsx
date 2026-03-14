@@ -616,6 +616,24 @@ const LiveSession = () => {
                 {mins}:{secs.toString().padStart(2, "0")}
               </span>
             </div>
+            {!completedSessionId && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('common:actions', 'Actions')}>
+                    <MoreVertical className="w-4 h-4" strokeWidth={1.5} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="gap-2 text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-[14px] w-[14px]" strokeWidth={1.5} />
+                    {t('session:delete_session')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 
