@@ -596,28 +596,49 @@ const StudentWeek = () => {
                               </div>
                             </div>
                           ) : dayFreeSessions.length > 0 ? (
-                <div className="space-y-1">
-                              {dayFreeSessions.map(fs => (
-                                <div
-                                  key={fs.id}
-                                  className="space-y-0.5 cursor-pointer"
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
-                                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
-                                >
-                                  <div className="flex items-center gap-1.5">
-                                    <p className="text-sm font-bold text-foreground truncate">{fs.name}</p>
-                                    <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[9px] font-semibold px-1.5 py-0.5 rounded-md border border-ai/15 shrink-0">
-                                      <Bot className="w-2.5 h-2.5" strokeWidth={1.5} />
-                                      IA
-                                    </span>
+                            <div className="space-y-1">
+                              {dayFreeSessions.map(fs => {
+                                const freeSessionCompleted = isSessionCompleted(fs.id);
+
+                                return (
+                                  <div
+                                    key={fs.id}
+                                    className="group/free-session relative space-y-0.5 cursor-pointer pr-8"
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
+                                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
+                                  >
+                                    {!freeSessionCompleted && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute right-0 top-0 h-6 w-6 text-muted-foreground opacity-0 pointer-events-none transition-opacity group-hover/free-session:opacity-100 group-hover/free-session:pointer-events-auto group-focus-within/free-session:opacity-100 group-focus-within/free-session:pointer-events-auto group-active/free-session:opacity-100 group-active/free-session:pointer-events-auto hover:text-destructive"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setDeleteTarget({ id: fs.id, name: fs.name, isFreeSession: true });
+                                          setDeleteDialogOpen(true);
+                                        }}
+                                        aria-label={t('session:delete_session')}
+                                      >
+                                        <Trash2 className="h-[14px] w-[14px]" strokeWidth={1.5} />
+                                      </Button>
+                                    )}
+
+                                    <div className="flex items-center gap-1.5">
+                                      <p className="text-sm font-bold text-foreground truncate">{fs.name}</p>
+                                      <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[9px] font-semibold px-1.5 py-0.5 rounded-md border border-ai/15 shrink-0">
+                                        <Bot className="w-2.5 h-2.5" strokeWidth={1.5} />
+                                        IA
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
-                                  </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           ) : dayExternals.length > 0 ? (
                             <div className="space-y-0.5">
