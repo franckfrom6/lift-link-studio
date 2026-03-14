@@ -77,6 +77,7 @@ const App = () => (
           <AuthProvider>
             <ImpersonationProvider>
             <DisplayModeProvider>
+            <OnboardingProvider>
             <PlanProvider>
               <ErrorBoundary>
               <Routes>
