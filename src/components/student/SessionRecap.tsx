@@ -27,6 +27,11 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
 
+  // Vibrate on session complete
+  useState(() => {
+    try { navigator.vibrate?.([300, 100, 300, 100, 500]); } catch {}
+  });
+
   const totalSets = Object.values(completedSets).reduce((acc, sets) => acc + sets.length, 0);
   const totalReps = Object.values(completedSets).reduce(
     (acc, sets) => acc + sets.reduce((a, s) => a + s.reps, 0), 0
