@@ -144,10 +144,10 @@ export function useSessionBuilder() {
         }
       }
 
-      // Build LiveExercise array
+      // Build LiveExercise array with duration-specific sets
       const exercises: LiveExercise[] = selected.map((ex, i) => {
         const isCompound = ex.type === "compound";
-        const useSupersets = duration < 45 && i > 0 && i % 2 === 1;
+        const useSupersets = duration <= 30 && i > 0 && i % 2 === 1;
         return {
           id: generateId(),
           exerciseId: ex.id,
@@ -157,11 +157,11 @@ export function useSessionBuilder() {
           equipment: ex.equipment,
           type: ex.type,
           trackingType: ex.tracking_type || "weight_reps",
-          sets: isCompound ? 4 : 3,
+          sets: isCompound ? rules.compoundSets : rules.isoSets,
           repsMin: isCompound ? 8 : 12,
           repsMax: isCompound ? 10 : 15,
           restSeconds: useSupersets ? 30 : (isCompound ? 90 : 60),
-          weightEnabled: ex.equipment !== "Poids du corps",
+          weightEnabled: ex.equipment !== "bodyweight" && ex.equipment !== "Poids du corps",
           order: i,
         };
       });
