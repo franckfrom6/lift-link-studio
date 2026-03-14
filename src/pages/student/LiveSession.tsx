@@ -392,13 +392,13 @@ const LiveSession = () => {
   };
 
   const handleDeleteSession = async () => {
-    if (!user || !selectedSession) return;
+    if (!user || !selectedSession || !studentId) return;
 
     // Check if session was actually completed (completed_at is set)
     const { data: completedSession, error: completedErr } = await supabase
       .from("completed_sessions")
       .select("id")
-      .eq("student_id", user.id)
+      .eq("student_id", studentId)
       .eq("session_id", selectedSession.id)
       .not("completed_at", "is", null)
       .maybeSingle();
@@ -417,7 +417,11 @@ const LiveSession = () => {
 
     // Clean up the incomplete completed_sessions row if it exists
     if (completedSessionId) {
-      await supabase.from("completed_sessions").delete().eq("id", completedSessionId);
+      await supabase
+        .from("completed_sessions")
+        .delete()
+        .eq("id", completedSessionId)
+        .eq("student_id", studentId);
     }
 
     const sessionName = selectedSession.name;
@@ -454,7 +458,7 @@ const LiveSession = () => {
     const { data: coachRow } = await supabase
       .from("coach_students")
       .select("coach_id")
-      .eq("student_id", user.id)
+      .eq("student_id", studentId)
       .eq("status", "active")
       .maybeSingle();
 
@@ -462,13 +466,13 @@ const LiveSession = () => {
       const { data: profile } = await supabase
         .from("profiles")
         .select("full_name")
-        .eq("user_id", user.id)
+        .eq("user_id", studentId)
         .maybeSingle();
 
       const athleteName = profile?.full_name || user.email?.split("@")[0] || "Athlète";
       await supabase.from("coach_notifications").insert({
         coach_id: coachRow.coach_id,
-        student_id: user.id,
+        student_id: studentId,
         message: `${athleteName} a supprimé la séance "${sessionName}"`,
       });
     }
