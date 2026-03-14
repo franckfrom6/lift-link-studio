@@ -244,7 +244,7 @@ const StudentWeek = () => {
       toast.error(t("common:error"));
     } else {
       toast.success(t("session:session_deleted"));
-      // Notify coach if linked
+      refetch();
       const { data: coachRel } = await supabase
         .from("coach_students")
         .select("coach_id")

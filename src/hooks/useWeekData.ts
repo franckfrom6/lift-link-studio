@@ -39,6 +39,7 @@ export function useWeekData(studentId: string | null, weekStart: Date) {
         .select("id, name, free_session_date, session_exercises(id)")
         .eq("is_free_session", true)
         .eq("created_by", studentId!)
+        .eq("is_deleted", false)
         .gte("free_session_date", weekKey)
         .lte("free_session_date", weekEndKey);
       if (error) { console.error("Error fetching free sessions:", error); return []; }
