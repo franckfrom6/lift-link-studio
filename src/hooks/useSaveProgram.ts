@@ -31,6 +31,105 @@ function buildExerciseRow(
   };
 }
 
+// Snapshot the current program state for rollback
+interface ProgramSnapshot {
+  program: any;
+  weeks: any[];
+  sessions: any[];
+  sections: any[];
+  exercises: any[];
+  progression: any[];
+}
+
+async function captureSnapshot(programId: string): Promise<ProgramSnapshot | null> {
+  try {
+    const { data: program } = await supabase
+      .from("programs")
+      .select("*")
+      .eq("id", programId)
+      .single();
+    if (!program) return null;
+
+    const { data: weeks } = await supabase
+      .from("program_weeks")
+      .select("*")
+      .eq("program_id", programId);
+
+    const weekIds = (weeks || []).map(w => w.id);
+    let sessions: any[] = [];
+    let sections: any[] = [];
+    let exercises: any[] = [];
+
+    if (weekIds.length > 0) {
+      const { data: s } = await supabase.from("sessions").select("*").in("week_id", weekIds);
+      sessions = s || [];
+      const sessionIds = sessions.map(s => s.id);
+      if (sessionIds.length > 0) {
+        const [secRes, exRes] = await Promise.all([
+          supabase.from("session_sections").select("*").in("session_id", sessionIds),
+          supabase.from("session_exercises").select("*").in("session_id", sessionIds),
+        ]);
+        sections = secRes.data || [];
+        exercises = exRes.data || [];
+      }
+    }
+
+    const { data: progression } = await supabase
+      .from("program_progression")
+      .select("*")
+      .eq("program_id", programId);
+
+    return { program, weeks: weeks || [], sessions, sections, exercises, progression: progression || [] };
+  } catch {
+    return null;
+  }
+}
+
+async function restoreSnapshot(snapshot: ProgramSnapshot) {
+  try {
+    const programId = snapshot.program.id;
+
+    // Delete everything current, then re-insert from snapshot
+    await supabase.from("program_progression").delete().eq("program_id", programId);
+
+    const weekIds = snapshot.weeks.map(w => w.id);
+    if (weekIds.length > 0) {
+      const { data: currentSessions } = await supabase.from("sessions").select("id").in("week_id", weekIds);
+      const currentSessionIds = (currentSessions || []).map(s => s.id);
+      if (currentSessionIds.length > 0) {
+        await supabase.from("session_exercises").delete().in("session_id", currentSessionIds);
+        await supabase.from("session_sections").delete().in("session_id", currentSessionIds);
+      }
+      await supabase.from("sessions").delete().in("week_id", weekIds);
+    }
+    await supabase.from("program_weeks").delete().eq("program_id", programId);
+
+    // Re-insert
+    if (snapshot.weeks.length > 0) {
+      await supabase.from("program_weeks").upsert(snapshot.weeks);
+    }
+    if (snapshot.sessions.length > 0) {
+      await supabase.from("sessions").upsert(snapshot.sessions);
+    }
+    if (snapshot.sections.length > 0) {
+      await supabase.from("session_sections").upsert(snapshot.sections);
+    }
+    if (snapshot.exercises.length > 0) {
+      for (let i = 0; i < snapshot.exercises.length; i += 500) {
+        await supabase.from("session_exercises").upsert(snapshot.exercises.slice(i, i + 500));
+      }
+    }
+    if (snapshot.progression.length > 0) {
+      await supabase.from("program_progression").insert(snapshot.progression);
+    }
+
+    await supabase.from("programs").upsert(snapshot.program);
+    console.log("Rollback completed successfully");
+  } catch (e) {
+    console.error("Rollback failed:", e);
+  }
+}
+
 export async function saveProgram(
   program: ProgramData,
   coachId: string | null,
@@ -40,6 +139,13 @@ export async function saveProgram(
   const t = i18next.t.bind(i18next);
   const totalSteps = 6;
   const report = (step: number) => onProgress?.(step, totalSteps);
+
+  // Capture snapshot for rollback (only for existing programs)
+  const isExisting = !!program.id;
+  let snapshot: ProgramSnapshot | null = null;
+  if (isExisting) {
+    snapshot = await captureSnapshot(program.id);
+  }
 
   try {
     // Step 1: Upsert program
@@ -241,7 +347,16 @@ export async function saveProgram(
     return { programId };
   } catch (e: any) {
     console.error("saveProgram error:", e);
-    toast.error(t("common:save_error") + ": " + (e.message || t("common:error")));
+
+    // Attempt rollback if we have a snapshot
+    if (snapshot) {
+      console.log("Attempting rollback...");
+      await restoreSnapshot(snapshot);
+      toast.error(t("common:save_error") + " — " + t("common:back") + ": " + (e.message || t("common:error")));
+    } else {
+      toast.error(t("common:save_error") + ": " + (e.message || t("common:error")));
+    }
+
     return null;
   }
 }

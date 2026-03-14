@@ -23,7 +23,7 @@ const WeekEditor = ({ week, onUpdate, onDuplicate }: WeekEditorProps) => {
     const newSession: SessionData = {
       id: crypto.randomUUID(),
       dayOfWeek,
-      name: t('session_default_name', { day: DAY_NAMES[dayOfWeek] }),
+      name: t('session_default_name', { day: t(`common:days.${DAY_NAMES[dayOfWeek]}`) }),
       sections: [],
       exercises: [],
     };
@@ -71,8 +71,8 @@ const WeekEditor = ({ week, onUpdate, onDuplicate }: WeekEditorProps) => {
               <SelectValue placeholder={t('add_session_placeholder')} />
             </SelectTrigger>
             <SelectContent>
-              {availableDays.map(([d, name]) => (
-                <SelectItem key={d} value={d}>{name}</SelectItem>
+              {availableDays.map(([d, key]) => (
+                <SelectItem key={d} value={d}>{t(`common:days.${key}`)}</SelectItem>
               ))}
             </SelectContent>
           </Select>

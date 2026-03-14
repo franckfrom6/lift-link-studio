@@ -54,33 +54,34 @@ export const EQUIPMENT_OPTIONS: EquipmentOption[] = [
 ];
 
 // Map pattern targets to DB muscle groups for filtering
+// Now uses English DB keys (matching updated exercises table)
 export const TARGET_TO_MUSCLE_GROUPS: Record<string, string[]> = {
-  push: ["Pectoraux", "Épaules", "Bras"],
-  pull: ["Dos", "Bras"],
-  legs: ["Jambes", "Fessiers"],
-  full_body: ["Pectoraux", "Dos", "Épaules", "Bras", "Jambes", "Fessiers", "Abdos"],
-  core: ["Abdos"],
+  push: ["chest", "shoulders", "arms"],
+  pull: ["back", "arms"],
+  legs: ["legs", "glutes"],
+  full_body: ["chest", "back", "shoulders", "arms", "legs", "glutes", "abs"],
+  core: ["abs"],
   cardio: [],
-  chest: ["Pectoraux"],
-  back: ["Dos"],
-  shoulders: ["Épaules"],
-  biceps: ["Bras"],
-  triceps: ["Bras"],
-  quads: ["Jambes"],
-  hamstrings: ["Jambes"],
-  glutes: ["Fessiers"],
-  calves: ["Jambes"],
-  abs: ["Abdos"],
+  chest: ["chest"],
+  back: ["back"],
+  shoulders: ["shoulders"],
+  biceps: ["arms"],
+  triceps: ["arms"],
+  quads: ["legs"],
+  hamstrings: ["legs"],
+  glutes: ["glutes"],
+  calves: ["legs"],
+  abs: ["abs"],
 };
 
-// Map equipment options to DB equipment values
+// Map equipment options to DB equipment values (now English)
 export const EQUIPMENT_TO_DB: Record<EquipmentOption, string> = {
-  dumbbells: "Haltères",
-  barbell: "Barre",
-  machine: "Machine",
-  cable: "Câble",
-  bodyweight: "Poids du corps",
-  kettlebell: "Haltères", // closest match
-  bands: "Poids du corps", // closest match
-  trx: "Poids du corps", // closest match
+  dumbbells: "dumbbells",
+  barbell: "barbell",
+  machine: "machine",
+  cable: "cable",
+  bodyweight: "bodyweight",
+  kettlebell: "dumbbells", // closest match
+  bands: "bodyweight", // closest match
+  trx: "bodyweight", // closest match
 };
