@@ -49,6 +49,9 @@ export interface DBSession {
   day_of_week: number;
   notes: string | null;
   sections: DBSection[];
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 }
 
 export interface DBWeek {
