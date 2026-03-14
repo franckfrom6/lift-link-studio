@@ -253,11 +253,11 @@ const EnhancedExerciseCard = ({
     const isCurrent = i === currentSetIdx && !allDone;
     const isDone = i < currentSetIdx || allDone;
     const rowClass = cn(
-      "gap-1.5 items-center p-1.5 rounded-lg transition-colors",
-      isCurrent && "bg-accent ring-1 ring-accent-foreground/20",
-      isDone && "opacity-60"
+      "gap-2 items-center p-1.5 rounded-xl transition-colors",
+      isCurrent && "bg-accent/80 ring-1 ring-primary/30",
+      isDone && "opacity-50"
     );
-    const inputClass = "h-9 text-center bg-background text-sm font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
+    const inputClass = "h-12 text-center bg-background text-base font-bold rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
     const checkButton = isCurrent ? (
       <Button size="icon" className="h-9 w-9" onClick={() => validateSet(i)} disabled={!isSetComplete(set)}>
