@@ -1,5 +1,5 @@
-import { Outlet, NavLink } from "react-router-dom";
-import { Calendar, BarChart3, User, BookOpen, HelpCircle } from "lucide-react";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Calendar, BarChart3, User, BookOpen, HelpCircle, Dumbbell, Apple } from "lucide-react";
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
@@ -8,14 +8,18 @@ import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import AISidebarToggle from "@/components/ai/AISidebarToggle";
 import AISidebar from "@/components/ai/AISidebar";
+import MobileBottomNav from "@/components/navigation/MobileBottomNav";
+import FloatingActionButton from "@/components/navigation/FloatingActionButton";
 
 const StudentLayout = () => {
-  const { t } = useTranslation(['settings', 'common']);
+  const { t } = useTranslation(['settings', 'common', 'session']);
   const [aiOpen, setAiOpen] = useState(false);
+  const navigate = useNavigate();
 
   const navItems = [
     { to: "/student", icon: Calendar, label: t('settings:nav_week'), end: true },
     { to: "/student/progress", icon: BarChart3, label: t('settings:nav_progress') },
+    { to: "/student/nutrition", icon: Apple, label: t('settings:nav_nutrition', 'Nutrition') },
     { to: "/student/recommendations", icon: BookOpen, label: t('settings:nav_recommendations') },
     { to: "/student/profile", icon: User, label: t('settings:nav_profile') },
     { to: "/support", icon: HelpCircle, label: t('settings:nav_support') },
@@ -33,7 +37,7 @@ const StudentLayout = () => {
 
         <nav className="flex-1 space-y-1">
           {navItems.map((item) => (
-            <NavLink key={item.to} to={item.to} end={(item as any).end}
+            <NavLink key={item.to} to={item.to} end={item.end}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
@@ -64,26 +68,21 @@ const StudentLayout = () => {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8">
           <div className="max-w-4xl mx-auto">
             <Outlet />
           </div>
         </main>
 
         {/* Mobile bottom nav */}
-        <nav className="md:hidden flex items-center justify-around border-t border-border bg-background py-2 px-2 safe-area-bottom">
-          {navItems.map((item) => (
-            <NavLink key={item.to} to={item.to} end={(item as any).end}
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 min-h-[44px] justify-center py-1 px-2 text-xs font-medium transition-colors ${
-                  isActive ? "text-foreground" : "text-muted-foreground"
-                }`
-              }>
-              <item.icon className="w-5 h-5" strokeWidth={1.5} />
-              <span className="truncate max-w-[64px] text-center leading-tight">{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
+        <MobileBottomNav items={navItems} />
+
+        {/* FAB: Start session */}
+        <FloatingActionButton
+          icon={Dumbbell}
+          label={t('session:start', 'Séance')}
+          onClick={() => navigate("/student")}
+        />
       </div>
 
       <AISidebarToggle onClick={() => setAiOpen(true)} />
