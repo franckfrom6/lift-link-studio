@@ -384,6 +384,90 @@ const LiveSession = () => {
     navigate("/student");
   };
 
+  const handleDeleteSession = async () => {
+    if (!user || !selectedSession) return;
+
+    if (completedSessionId) {
+      toast.error(t("session:session_already_completed"));
+      return;
+    }
+
+    const { data: completedSession, error: completedErr } = await supabase
+      .from("completed_sessions")
+      .select("id")
+      .eq("student_id", user.id)
+      .eq("session_id", selectedSession.id)
+      .maybeSingle();
+
+    if (completedErr) {
+      console.error("Error checking completed session:", completedErr);
+      toast.error(t("common:error"));
+      return;
+    }
+
+    if (completedSession) {
+      toast.error(t("session:session_already_completed"));
+      setDeleteDialogOpen(false);
+      return;
+    }
+
+    const sessionName = selectedSession.name;
+    const { data: updatedSession, error } = await supabase
+      .from("sessions")
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: user.id,
+      })
+      .eq("id", selectedSession.id)
+      .eq("is_deleted", false)
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error deleting session:", error);
+      toast.error(t("common:error"));
+      return;
+    }
+
+    if (!updatedSession) {
+      toast.error(t("session:session_already_completed"));
+      return;
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["student-program"] });
+    if ((selectedSession as any).is_free_session) {
+      await queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+    }
+
+    toast.success(t("session:session_deleted"));
+
+    const { data: coachRow } = await supabase
+      .from("coach_students")
+      .select("coach_id")
+      .eq("student_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (coachRow?.coach_id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const athleteName = profile?.full_name || user.email?.split("@")[0] || "Athlète";
+      await supabase.from("coach_notifications").insert({
+        coach_id: coachRow.coach_id,
+        student_id: user.id,
+        message: `${athleteName} a supprimé la séance "${sessionName}"`,
+      });
+    }
+
+    setDeleteDialogOpen(false);
+    navigate("/student");
+  };
+
   // Bug 3 fix: fetch alternatives from DB if not in static map
   const handleOpenSwap = async (key: string) => {
     setSwapTargetKey(key);
