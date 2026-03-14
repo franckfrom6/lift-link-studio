@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
 import { EXERCISE_ALTERNATIVES, AlternativeGroup } from "@/data/exercise-alternatives";
 import { EnhancedCompletedSet } from "@/components/student/EnhancedExerciseCard";
@@ -9,11 +10,27 @@ import ExerciseAlternativesSheet from "@/components/student/ExerciseAlternatives
 import SessionSection from "@/components/student/SessionSection";
 import SessionRecap from "@/components/student/SessionRecap";
 import ProgressionTimeline, { ProgressionPhase } from "@/components/student/ProgressionTimeline";
-import { ArrowLeft, Clock, User, TrendingUp } from "lucide-react";
+import { ArrowLeft, Clock, User, TrendingUp, MoreVertical, Trash2 } from "lucide-react";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import ShareSessionButton from "@/components/student/ShareSessionButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -31,6 +48,7 @@ interface Substitution {
 const LiveSession = () => {
   const navigate = useNavigate();
   const { sessionId: selectedSessionId } = useParams<{ sessionId: string }>();
+  const queryClient = useQueryClient();
   const { t } = useTranslation(['session', 'common']);
   const { user } = useAuth();
   const { program: dbProgram } = useStudentProgram();
@@ -50,6 +68,7 @@ const LiveSession = () => {
   const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
   const [skipModalOpen, setSkipModalOpen] = useState(false);
   const [skipTargetKey, setSkipTargetKey] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Track which exercises' sets have been saved to DB
   const savedExercisesRef = useRef<Set<string>>(new Set());
@@ -365,6 +384,90 @@ const LiveSession = () => {
     navigate("/student");
   };
 
+  const handleDeleteSession = async () => {
+    if (!user || !selectedSession) return;
+
+    if (completedSessionId) {
+      toast.error(t("session:session_already_completed"));
+      return;
+    }
+
+    const { data: completedSession, error: completedErr } = await supabase
+      .from("completed_sessions")
+      .select("id")
+      .eq("student_id", user.id)
+      .eq("session_id", selectedSession.id)
+      .maybeSingle();
+
+    if (completedErr) {
+      console.error("Error checking completed session:", completedErr);
+      toast.error(t("common:error"));
+      return;
+    }
+
+    if (completedSession) {
+      toast.error(t("session:session_already_completed"));
+      setDeleteDialogOpen(false);
+      return;
+    }
+
+    const sessionName = selectedSession.name;
+    const { data: updatedSession, error } = await supabase
+      .from("sessions")
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: user.id,
+      })
+      .eq("id", selectedSession.id)
+      .eq("is_deleted", false)
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error deleting session:", error);
+      toast.error(t("common:error"));
+      return;
+    }
+
+    if (!updatedSession) {
+      toast.error(t("session:session_already_completed"));
+      return;
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["student-program"] });
+    if ((selectedSession as any).is_free_session) {
+      await queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+    }
+
+    toast.success(t("session:session_deleted"));
+
+    const { data: coachRow } = await supabase
+      .from("coach_students")
+      .select("coach_id")
+      .eq("student_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (coachRow?.coach_id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const athleteName = profile?.full_name || user.email?.split("@")[0] || "Athlète";
+      await supabase.from("coach_notifications").insert({
+        coach_id: coachRow.coach_id,
+        student_id: user.id,
+        message: `${athleteName} a supprimé la séance "${sessionName}"`,
+      });
+    }
+
+    setDeleteDialogOpen(false);
+    navigate("/student");
+  };
+
   // Bug 3 fix: fetch alternatives from DB if not in static map
   const handleOpenSwap = async (key: string) => {
     setSwapTargetKey(key);
@@ -513,6 +616,24 @@ const LiveSession = () => {
                 {mins}:{secs.toString().padStart(2, "0")}
               </span>
             </div>
+            {!completedSessionId && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('common:actions', 'Actions')}>
+                    <MoreVertical className="w-4 h-4" strokeWidth={1.5} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="gap-2 text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-[14px] w-[14px]" strokeWidth={1.5} />
+                    {t('session:delete_session')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 
@@ -666,6 +787,26 @@ const LiveSession = () => {
         onConfirm={handleConfirmSkip}
         exerciseName={skipTargetKey ? getExerciseName(...skipTargetKey.split("-").map(Number) as [number, number]) : ""}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('session:delete_session_title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('session:delete_session_desc', { name: selectedSession?.name || '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSession}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('session:delete_session_confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

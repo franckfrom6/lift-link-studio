@@ -1,5 +1,5 @@
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy, Trash2 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
 import FirstStepsChecklist from "@/components/onboarding/FirstStepsChecklist";
@@ -34,7 +34,6 @@ import { useSessionSwaps } from "@/hooks/useSessionSwaps";
 import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { DraggableDayCard } from "@/components/student/DraggableDayCard";
 import { supabase } from "@/integrations/supabase/client";
-import { formatLocalDate } from "@/lib/date-utils";
 import { useWeekData } from "@/hooks/useWeekData";
 
 const StudentWeek = () => {
@@ -42,7 +41,7 @@ const StudentWeek = () => {
   const { user } = useAuth();
   const isAdvanced = useIsAdvanced();
   const queryClient = useQueryClient();
-  const { program, loading: programLoading, refreshing, refetch } = useStudentProgram();
+  const { program, loading: programLoading, refreshing } = useStudentProgram();
   const DAYS = [
     t("common:days.mon"), t("common:days.tue"), t("common:days.wed"),
     t("common:days.thu"), t("common:days.fri"), t("common:days.sat"), t("common:days.sun"),
@@ -60,7 +59,7 @@ const StudentWeek = () => {
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicateSession, setDuplicateSession] = useState<{ id: string; name: string } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; isFreeSession: boolean } | null>(null);
 
   const totalWeeks = program?.weeks?.length || 0;
 
@@ -159,6 +158,37 @@ const StudentWeek = () => {
     return sessions;
   }, [mappedSwaps, DEFAULT_SESSIONS]);
 
+  const visibleSessionIds = useMemo(() => {
+    const ids = new Set<string>();
+    Object.values(effectiveSessions).forEach((session) => ids.add(session.sessionId));
+    freeSessions.forEach((session) => ids.add(session.id));
+    return Array.from(ids);
+  }, [effectiveSessions, freeSessions]);
+
+  const { data: completedSessionIds = new Set<string>() } = useQuery<Set<string>>({
+    queryKey: ["week-completed-sessions", studentId, visibleSessionIds.join(",")],
+    queryFn: async () => {
+      if (!studentId || visibleSessionIds.length === 0) return new Set<string>();
+
+      const { data, error } = await supabase
+        .from("completed_sessions")
+        .select("session_id")
+        .eq("student_id", studentId)
+        .in("session_id", visibleSessionIds);
+
+      if (error) {
+        console.error("Error fetching completed sessions:", error);
+        return new Set<string>();
+      }
+
+      return new Set((data || []).map((row) => row.session_id));
+    },
+    enabled: !!studentId && visibleSessionIds.length > 0,
+    staleTime: 30 * 1000,
+  });
+
+  const isSessionCompleted = useCallback((sessionId: string) => completedSessionIds.has(sessionId), [completedSessionIds]);
+
   const swappedDays = useMemo(() => {
     const map: Record<number, { originalDay: number; reason: string | null }> = {};
     for (const swap of mappedSwaps) {
@@ -241,6 +271,7 @@ const StudentWeek = () => {
     const { data: completedSession, error: completedErr } = await supabase
       .from("completed_sessions")
       .select("id")
+      .eq("student_id", user.id)
       .eq("session_id", deleteTarget.id)
       .maybeSingle();
 
@@ -268,36 +299,40 @@ const StudentWeek = () => {
     if (error) {
       console.error("Error deleting session:", error);
       toast.error(t("common:error"));
-    } else if (!updatedSession) {
-      toast.error(t("session:session_already_completed"));
-    } else {
-      toast.success(t("session:session_deleted"));
-      await Promise.all([
-        refetch(),
-        queryClient.invalidateQueries({ queryKey: ["student-program", studentId] }),
-        queryClient.invalidateQueries({ queryKey: ["week-free-sessions", studentId] }),
-      ]);
+      return;
+    }
 
-      const { data: coachRel } = await supabase
-        .from("coach_students")
-        .select("coach_id")
-        .eq("student_id", user.id)
-        .eq("status", "active")
+    if (!updatedSession) {
+      toast.error(t("session:session_already_completed"));
+      return;
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["student-program"] });
+    if (deleteTarget.isFreeSession) {
+      await queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+    }
+    toast.success(t("session:session_deleted"));
+
+    const { data: coachRel } = await supabase
+      .from("coach_students")
+      .select("coach_id")
+      .eq("student_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (coachRel?.coach_id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
         .maybeSingle();
 
-      if (coachRel) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        const athleteName = profile?.full_name || user.email?.split("@")[0] || "";
-        await supabase.from("coach_notifications").insert({
-          coach_id: coachRel.coach_id,
-          student_id: user.id,
-          message: `🗑️ ${athleteName} a supprimé la séance "${deleteTarget.name}"`,
-        });
-      }
+      const athleteName = profile?.full_name || user.email?.split("@")[0] || "Athlète";
+      await supabase.from("coach_notifications").insert({
+        coach_id: coachRel.coach_id,
+        student_id: user.id,
+        message: `${athleteName} a supprimé la séance "${deleteTarget.name}"`,
+      });
     }
 
     setDeleteDialogOpen(false);
@@ -470,7 +505,7 @@ const StudentWeek = () => {
           {dates.map((day) => {
             const isSessionDay = day.hasSession;
             const sessionInfo = effectiveSessions[day.dayIndex];
-            const sessionCompleted = isSessionDay && day.isPast && weekOffset < 0;
+            const sessionCompleted = isSessionDay && !!sessionInfo && isSessionCompleted(sessionInfo.sessionId);
             const swapInfo = swappedDays[day.dayIndex];
             const isSwapSource = swapMode && day.dayIndex === swapSourceDay;
             const isDropTarget = swapMode && day.dayIndex !== swapSourceDay;
@@ -485,7 +520,7 @@ const StudentWeek = () => {
                   onMoveUp={isSessionDay && day.dayIndex > 0 ? () => { setSwapSourceDay(day.dayIndex); setSwapTargetDay(day.dayIndex - 1); setSwapModalOpen(true); } : undefined}
                   onMoveDown={isSessionDay && day.dayIndex < 6 ? () => { setSwapSourceDay(day.dayIndex); setSwapTargetDay(day.dayIndex + 1); setSwapModalOpen(true); } : undefined}
                   className={cn(
-                    "w-full glass p-4 transition-all text-left touch-manipulation",
+                    "group/day w-full glass p-4 transition-all text-left touch-manipulation",
                     day.isToday && "ring-1 ring-primary/40",
                     isSessionDay && !swapMode && "hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] cursor-pointer",
                     !isSessionDay && dayExternals.length === 0 && dayFreeSessions.length === 0 && !swapMode && "opacity-50",
@@ -494,6 +529,7 @@ const StudentWeek = () => {
                   )}
                 >
                   <div
+                    className="relative"
                     role={swapMode || (isSessionDay && sessionInfo) ? "button" : undefined}
                     tabIndex={swapMode || (isSessionDay && sessionInfo) ? 0 : undefined}
                     onClick={() => {
@@ -511,6 +547,23 @@ const StudentWeek = () => {
                       }
                     }}
                   >
+                    {isSessionDay && sessionInfo && !sessionCompleted && !swapMode && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-7 w-7 text-muted-foreground opacity-0 pointer-events-none transition-opacity group-hover/day:opacity-100 group-hover/day:pointer-events-auto group-focus-within/day:opacity-100 group-focus-within/day:pointer-events-auto group-active/day:opacity-100 group-active/day:pointer-events-auto hover:text-destructive"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDeleteTarget({ id: sessionInfo.sessionId, name: sessionInfo.name, isFreeSession: false });
+                          setDeleteDialogOpen(true);
+                        }}
+                        aria-label={t('session:delete_session')}
+                      >
+                        <Trash2 className="h-[14px] w-[14px]" strokeWidth={1.5} />
+                      </Button>
+                    )}
+
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
                         <DateBadge
@@ -543,28 +596,49 @@ const StudentWeek = () => {
                               </div>
                             </div>
                           ) : dayFreeSessions.length > 0 ? (
-                <div className="space-y-1">
-                              {dayFreeSessions.map(fs => (
-                                <div
-                                  key={fs.id}
-                                  className="space-y-0.5 cursor-pointer"
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
-                                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
-                                >
-                                  <div className="flex items-center gap-1.5">
-                                    <p className="text-sm font-bold text-foreground truncate">{fs.name}</p>
-                                    <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[9px] font-semibold px-1.5 py-0.5 rounded-md border border-ai/15 shrink-0">
-                                      <Bot className="w-2.5 h-2.5" strokeWidth={1.5} />
-                                      IA
-                                    </span>
+                            <div className="space-y-1">
+                              {dayFreeSessions.map(fs => {
+                                const freeSessionCompleted = isSessionCompleted(fs.id);
+
+                                return (
+                                  <div
+                                    key={fs.id}
+                                    className="group/free-session relative space-y-0.5 cursor-pointer pr-8"
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
+                                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
+                                  >
+                                    {!freeSessionCompleted && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute right-0 top-0 h-6 w-6 text-muted-foreground opacity-0 pointer-events-none transition-opacity group-hover/free-session:opacity-100 group-hover/free-session:pointer-events-auto group-focus-within/free-session:opacity-100 group-focus-within/free-session:pointer-events-auto group-active/free-session:opacity-100 group-active/free-session:pointer-events-auto hover:text-destructive"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setDeleteTarget({ id: fs.id, name: fs.name, isFreeSession: true });
+                                          setDeleteDialogOpen(true);
+                                        }}
+                                        aria-label={t('session:delete_session')}
+                                      >
+                                        <Trash2 className="h-[14px] w-[14px]" strokeWidth={1.5} />
+                                      </Button>
+                                    )}
+
+                                    <div className="flex items-center gap-1.5">
+                                      <p className="text-sm font-bold text-foreground truncate">{fs.name}</p>
+                                      <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[9px] font-semibold px-1.5 py-0.5 rounded-md border border-ai/15 shrink-0">
+                                        <Bot className="w-2.5 h-2.5" strokeWidth={1.5} />
+                                        IA
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
-                                  </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           ) : dayExternals.length > 0 ? (
                             <div className="space-y-0.5">
@@ -580,41 +654,48 @@ const StudentWeek = () => {
 
                           {isSessionDay && dayFreeSessions.length > 0 && (
                             <div className="mt-1.5 pt-1.5 border-t border-border space-y-1">
-                             {dayFreeSessions.map(fs => (
-                                <div
-                                  key={fs.id}
-                                  className="space-y-0.5 cursor-pointer"
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
-                                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
-                                >
-                                  <div className="flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                      <p className="text-xs font-semibold text-foreground truncate">{fs.name}</p>
-                                      <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[8px] font-semibold px-1 py-0.5 rounded shrink-0">
-                                        <Bot className="w-2 h-2" strokeWidth={1.5} />
-                                        IA
-                                      </span>
+                             {dayFreeSessions.map(fs => {
+                                const freeSessionCompleted = isSessionCompleted(fs.id);
+
+                                return (
+                                  <div
+                                    key={fs.id}
+                                    className="group/free-session relative space-y-0.5 cursor-pointer pr-8"
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
+                                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
+                                  >
+                                    {!freeSessionCompleted && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute right-0 top-0 h-6 w-6 text-muted-foreground opacity-0 pointer-events-none transition-opacity group-hover/free-session:opacity-100 group-hover/free-session:pointer-events-auto group-focus-within/free-session:opacity-100 group-focus-within/free-session:pointer-events-auto group-active/free-session:opacity-100 group-active/free-session:pointer-events-auto hover:text-destructive"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setDeleteTarget({ id: fs.id, name: fs.name, isFreeSession: true });
+                                          setDeleteDialogOpen(true);
+                                        }}
+                                        aria-label={t('session:delete_session')}
+                                      >
+                                        <Trash2 className="h-[14px] w-[14px]" strokeWidth={1.5} />
+                                      </Button>
+                                    )}
+
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <p className="text-xs font-semibold text-foreground truncate">{fs.name}</p>
+                                        <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[8px] font-semibold px-1 py-0.5 rounded shrink-0">
+                                          <Bot className="w-2 h-2" strokeWidth={1.5} />
+                                          IA
+                                        </span>
+                                      </div>
                                     </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setDeleteTarget({ id: fs.id, name: fs.name });
-                                        setDeleteDialogOpen(true);
-                                      }}
-                                      aria-label={t('session:delete_session')}
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-                                    </Button>
+                                    <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
                                   </div>
-                                  <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                         </div>
@@ -629,14 +710,6 @@ const StudentWeek = () => {
                               aria-label={t('session:duplicate_title', 'Duplicate session')}
                             >
                               <Copy className="w-4 h-4" strokeWidth={1.5} />
-                            </Button>
-                            <Button
-                              variant="ghost" size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                              onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: sessionInfo!.sessionId, name: sessionInfo!.name }); setDeleteDialogOpen(true); }}
-                              aria-label={t('session:delete_session')}
-                            >
-                              <Trash2 className="w-4 h-4" strokeWidth={1.5} />
                             </Button>
                             <Button
                               variant="ghost" size="icon"
