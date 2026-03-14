@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye, MessageSquare, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye, MessageSquare, Pencil, Zap } from "lucide-react";
 import AIAdaptationView from "@/components/coach/AIAdaptationView";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import SwapBadge from "@/components/student/SwapBadge";
@@ -20,6 +20,7 @@ import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
 import CoachFeedbackView from "@/components/coach/CoachFeedbackView";
+import StudentDisplayModeBanner from "@/components/coach/StudentDisplayModeBanner";
 
 interface StudentProfile {
   user_id: string;
@@ -30,6 +31,7 @@ interface StudentProfile {
   age: number | null;
   height: number | null;
   weight: number | null;
+  display_mode: string | null;
 }
 
 interface ProgramInfo {
@@ -80,7 +82,7 @@ const StudentDetail = () => {
     // Fetch profile
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("user_id, full_name, avatar_url, goal, level, age, height, weight")
+      .select("user_id, full_name, avatar_url, goal, level, age, height, weight, display_mode")
       .eq("user_id", studentId)
       .maybeSingle();
     if (profileError) console.error("Error fetching student profile:", profileError);
@@ -230,7 +232,14 @@ const StudentDetail = () => {
             {student.full_name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-bold truncate">{student.full_name}</h1>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-lg sm:text-xl font-bold truncate">{student.full_name}</h1>
+              {(student as any).display_mode === "advanced" ? (
+                <Zap className="w-4 h-4 text-primary shrink-0" strokeWidth={2} />
+              ) : (
+                <Target className="w-4 h-4 text-muted-foreground shrink-0" strokeWidth={2} />
+              )}
+            </div>
             <p className="text-xs sm:text-sm text-muted-foreground">
               {student.goal ? t('dashboard:goals.' + student.goal, student.goal) : '—'} · {student.level ? t('dashboard:levels.' + student.level, student.level) : '—'}
             </p>
@@ -258,6 +267,9 @@ const StudentDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Display mode banner */}
+      <StudentDisplayModeBanner displayMode={(student as any).display_mode as any} studentName={student.full_name} />
 
       {/* Deleted sessions warning */}
       {deletedSessionCount > 0 && program && (

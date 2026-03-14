@@ -10,6 +10,7 @@ export interface StudentOverview {
   avatar: string;
   goal: string | null;
   level: string | null;
+  displayMode: "simple" | "advanced" | null;
   programName: string | null;
   programWeekCurrent: number | null;
   programWeekTotal: number | null;
@@ -74,7 +75,7 @@ async function fetchDashboard(userId: string): Promise<DashboardData> {
     swapsRes,
     externalsRes,
   ] = await Promise.all([
-    supabase.from("profiles").select("user_id, full_name, avatar_url, goal, level").in("user_id", studentIds),
+    supabase.from("profiles").select("user_id, full_name, avatar_url, goal, level, display_mode").in("user_id", studentIds),
     supabase.from("programs").select("id, student_id, name, status").in("student_id", studentIds).eq("status", "active"),
     supabase.from("completed_sessions").select("id, student_id, started_at, session_id").in("student_id", studentIds).gte("started_at", weekStart.toISOString()).lte("started_at", weekEnd.toISOString()),
     supabase.from("completed_sessions").select("student_id, started_at").in("student_id", studentIds).order("started_at", { ascending: false }),
@@ -186,6 +187,7 @@ async function fetchDashboard(userId: string): Promise<DashboardData> {
       avatar: profile.full_name.charAt(0).toUpperCase(),
       goal: profile.goal,
       level: profile.level,
+      displayMode: ((profile as any).display_mode as "simple" | "advanced" | null) || null,
       programName: prog?.name || null,
       programWeekCurrent: 1,
       programWeekTotal: weekInfo?.total || null,

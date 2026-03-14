@@ -198,11 +198,9 @@ const CoachExercises = () => {
                         <Dumbbell className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" strokeWidth={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{getExerciseName(ex)}</p>
-                        {isAdvanced ? (
-                          <p className="text-xs text-muted-foreground truncate">{ex.description}</p>
-                        ) : (
-                          <p className="text-xs text-muted-foreground truncate">{ex.description?.split('.')[0]}</p>
+                        <p className="font-medium text-sm">{getExerciseName(ex)}</p>
+                        {ex.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{ex.description}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
