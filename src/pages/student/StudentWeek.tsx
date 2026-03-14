@@ -1,4 +1,5 @@
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy, Trash2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
 import FirstStepsChecklist from "@/components/onboarding/FirstStepsChecklist";
@@ -40,7 +41,8 @@ const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
   const { user } = useAuth();
   const isAdvanced = useIsAdvanced();
-  const { program, loading: programLoading, refreshing } = useStudentProgram();
+  const queryClient = useQueryClient();
+  const { program, loading: programLoading, refreshing, refetch } = useStudentProgram();
   const DAYS = [
     t("common:days.mon"), t("common:days.tue"), t("common:days.wed"),
     t("common:days.thu"), t("common:days.fri"), t("common:days.sat"), t("common:days.sun"),
@@ -244,7 +246,9 @@ const StudentWeek = () => {
       toast.error(t("common:error"));
     } else {
       toast.success(t("session:session_deleted"));
-      // Notify coach if linked
+      refetch();
+      // Also refresh free sessions list
+      queryClient.invalidateQueries({ queryKey: ['week-free-sessions'] });
       const { data: coachRel } = await supabase
         .from("coach_students")
         .select("coach_id")
