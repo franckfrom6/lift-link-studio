@@ -3,6 +3,7 @@ import { Dumbbell, Users, ClipboardList, LayoutDashboard, BookOpen, CreditCard, 
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
 import InviteClientModal from "@/components/InviteClientModal";
+import HelpButton from "@/components/onboarding/HelpButton";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -64,7 +65,10 @@ const CoachLayout = () => {
       <div className="flex-1 flex flex-col min-h-screen min-w-0">
         <header className="md:hidden flex items-center justify-between p-3 border-b border-border bg-background">
           <Logo variant="mobile" />
-          <UserMenu />
+          <div className="flex items-center gap-1">
+            <HelpButton />
+            <UserMenu />
+          </div>
         </header>
 
         <main className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden">

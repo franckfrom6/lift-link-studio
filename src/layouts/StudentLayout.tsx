@@ -3,6 +3,7 @@ import { Calendar, BarChart3, User, BookOpen, HelpCircle } from "lucide-react";
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
+import HelpButton from "@/components/onboarding/HelpButton";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import AISidebarToggle from "@/components/ai/AISidebarToggle";
@@ -57,7 +58,10 @@ const StudentLayout = () => {
         {/* Mobile header */}
         <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background">
           <Logo variant="mobile" />
-          <UserMenu />
+          <div className="flex items-center gap-1">
+            <HelpButton />
+            <UserMenu />
+          </div>
         </header>
 
         <main className="flex-1 p-4 md:p-8 overflow-y-auto">

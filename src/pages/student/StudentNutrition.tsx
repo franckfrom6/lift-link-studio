@@ -9,6 +9,7 @@ import ProteinTipsCard from "@/components/nutrition/ProteinTipsCard";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
+import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
 import FeatureGate from "@/components/plans/FeatureGate";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -198,6 +199,13 @@ const StudentNutrition = () => {
         <h2 className="font-bold text-sm">{t('recommendations:coach_tips')}</h2>
         <StudentRecommendationCards type="nutrition" />
       </div>
+
+      <OnboardingTooltip
+        stepKey="nutrition_seen"
+        title={t('common:onboarding_nutrition_title')}
+        description={t('common:onboarding_nutrition_desc')}
+        position="bottom"
+      />
     </div>
     </FeatureGate>
   );

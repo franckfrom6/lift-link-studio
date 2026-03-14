@@ -1,5 +1,7 @@
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy } from "lucide-react";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
+import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
+import FirstStepsChecklist from "@/components/onboarding/FirstStepsChecklist";
 import DateBadge, { DateBadgeVariant } from "@/components/student/DateBadge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -669,6 +671,23 @@ const StudentWeek = () => {
           programId={program?.id}
         />
       )}
+
+      {/* First steps checklist */}
+      <FirstStepsChecklist />
+
+      {/* Onboarding tooltips */}
+      <OnboardingTooltip
+        stepKey="welcome_seen"
+        title={t('common:onboarding_welcome_title')}
+        description={t('common:onboarding_welcome_desc')}
+        position="center"
+      />
+      <OnboardingTooltip
+        stepKey="program_seen"
+        title={t('common:onboarding_program_title')}
+        description={t('common:onboarding_program_desc')}
+        position="bottom"
+      />
     </div>
   );
 };

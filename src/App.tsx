@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { PlanProvider } from "@/providers/PlanProvider";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { DisplayModeProvider } from "@/contexts/DisplayModeContext";
+import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import AuthGuard from "@/components/AuthGuard";
 import AuthRedirect from "@/components/AuthRedirect";
 import LandingPage from "./pages/LandingPage";
@@ -76,6 +77,7 @@ const App = () => (
           <AuthProvider>
             <ImpersonationProvider>
             <DisplayModeProvider>
+            <OnboardingProvider>
             <PlanProvider>
               <ErrorBoundary>
               <Routes>
@@ -126,11 +128,17 @@ const App = () => (
                   <Route index element={<KBHome />} />
                   <Route path=":slug" element={<KBArticle />} />
                 </Route>
+                {/* Public /aide alias for KB */}
+                <Route path="/aide" element={<KBLayout />}>
+                  <Route index element={<KBHome />} />
+                  <Route path=":slug" element={<KBArticle />} />
+                </Route>
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </ErrorBoundary>
             </PlanProvider>
+            </OnboardingProvider>
             </DisplayModeProvider>
             </ImpersonationProvider>
           </AuthProvider>
