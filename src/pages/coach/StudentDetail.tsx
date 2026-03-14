@@ -259,6 +259,19 @@ const StudentDetail = () => {
         </div>
       </div>
 
+      {/* Deleted sessions warning */}
+      {deletedSessionCount > 0 && program && (
+        <button
+          onClick={() => navigate(`/coach/students/${studentId}/program/${program.id}`)}
+          className="w-full flex items-center gap-2 px-4 py-3 rounded-xl bg-warning/10 border border-warning/30 text-left hover:bg-warning/20 transition-colors"
+        >
+          <span className="text-sm">⚠️</span>
+          <span className="text-sm font-medium text-warning-foreground flex-1">
+            {deletedSessionCount} séance{deletedSessionCount > 1 ? "s" : ""} supprimée{deletedSessionCount > 1 ? "s" : ""} — <span className="underline">{t("common:view")} →</span>
+          </span>
+        </button>
+      )}
+
       {/* Check-in section */}
       {checkin && (
         <div className="space-y-3">

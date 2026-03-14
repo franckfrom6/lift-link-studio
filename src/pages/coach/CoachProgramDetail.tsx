@@ -711,21 +711,27 @@ const CoachProgramDetail = () => {
                         {dayLabel(session.day_of_week).slice(0, 2).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <InlineText
-                          value={session.name}
-                          onChange={(v) => updateSessionField(session.id, "name", v)}
-                          className="font-semibold"
-                        />
+                        {(session as any).is_deleted ? (
+                          <p className="font-semibold text-sm line-through text-muted-foreground">{session.name}</p>
+                        ) : (
+                          <InlineText
+                            value={session.name}
+                            onChange={(v) => updateSessionField(session.id, "name", v)}
+                            className="font-semibold"
+                          />
+                        )}
                         <p className="text-[11px] text-muted-foreground">
                           {dayLabel(session.day_of_week)} {format(getDayDate(week.week_number, session.day_of_week), "d MMMM", { locale: dateFnsLocale })} · {totalExercises} {t("program:exercises_count", { count: totalExercises })} · {session.sections.length} sections
                         </p>
                       </div>
-                      <button
-                        onClick={() => setDeleteDialog({ open: true, type: "session", id: session.id, name: session.name })}
-                        className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                      >
-                        <Trash2 className="w-4 h-4" strokeWidth={1.5} />
-                      </button>
+                      {!(session as any).is_deleted && (
+                        <button
+                          onClick={() => setDeleteDialog({ open: true, type: "session", id: session.id, name: session.name })}
+                          className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                        >
+                          <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                        </button>
+                      )}
                     </div>
 
                     {/* Session content */}
