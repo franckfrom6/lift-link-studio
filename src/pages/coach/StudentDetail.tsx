@@ -61,6 +61,7 @@ const StudentDetail = () => {
   const [checkin, setCheckin] = useState<CheckinData | null>(null);
   const [externals, setExternals] = useState<ExternalSessionData[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [deletedSessionCount, setDeletedSessionCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [coachFormOpen, setCoachFormOpen] = useState(false);
   
@@ -156,6 +157,24 @@ const StudentDetail = () => {
 
     setFeedbacks(fbData || []);
 
+    // Fetch deleted sessions count this week
+    if (prog) {
+      const { data: weekRows } = await supabase
+        .from("program_weeks")
+        .select("id")
+        .eq("program_id", prog.id);
+
+      if (weekRows && weekRows.length > 0) {
+        const weekIds = weekRows.map(w => w.id);
+        const { count } = await supabase
+          .from("sessions")
+          .select("id", { count: "exact", head: true })
+          .in("week_id", weekIds)
+          .eq("is_deleted", true);
+        setDeletedSessionCount(count || 0);
+      }
+    }
+
     setLoading(false);
   };
 
@@ -239,6 +258,19 @@ const StudentDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Deleted sessions warning */}
+      {deletedSessionCount > 0 && program && (
+        <button
+          onClick={() => navigate(`/coach/students/${studentId}/program/${program.id}`)}
+          className="w-full flex items-center gap-2 px-4 py-3 rounded-xl bg-warning/10 border border-warning/30 text-left hover:bg-warning/20 transition-colors"
+        >
+          <span className="text-sm">⚠️</span>
+          <span className="text-sm font-medium text-warning-foreground flex-1">
+            {deletedSessionCount} séance{deletedSessionCount > 1 ? "s" : ""} supprimée{deletedSessionCount > 1 ? "s" : ""} — <span className="underline">{t("common:view")} →</span>
+          </span>
+        </button>
+      )}
 
       {/* Check-in section */}
       {checkin && (
