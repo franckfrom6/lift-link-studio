@@ -65,9 +65,8 @@ const StudentLayout = () => {
         {/* Mobile header */}
         <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background">
           <Logo variant="mobile" />
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <DisplayModeToggle />
-            <HelpButton />
             <UserMenu />
           </div>
         </header>
