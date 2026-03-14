@@ -49,6 +49,8 @@ const StudentWeek = () => {
   const [freeSessionDate, setFreeSessionDate] = useState<Date>(new Date());
   const [builderOpen, setBuilderOpen] = useState(false);
   const [builderDate, setBuilderDate] = useState<Date>(new Date());
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [duplicateSession, setDuplicateSession] = useState<{ id: string; name: string } | null>(null);
 
   const totalWeeks = program?.weeks?.length || 0;
 
