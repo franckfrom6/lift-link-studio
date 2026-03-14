@@ -40,6 +40,7 @@ const AdminLayout = () => {
     { to: "/admin/support", icon: MessageSquare, label: "Support" },
     { to: "/admin/kb", icon: BookOpen, label: "KB" },
     { to: "/admin/videos", icon: Film, label: "Videos" },
+    { to: "/admin/pilot", icon: Rocket, label: "Pilot" },
   ];
 
   const backTo = role === "coach" ? "/coach" : "/student";

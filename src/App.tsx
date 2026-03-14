@@ -101,6 +101,7 @@ const App = () => (
                   <Route path="support" element={<AdminSupport />} />
                   <Route path="kb" element={<AdminKB />} />
                   <Route path="videos" element={<AdminVideoSuggestions />} />
+                  <Route path="pilot" element={<AdminPilotRequests />} />
                 </Route>
 
                 <Route path="/coach" element={<AuthGuard role="coach"><CoachLayout /></AuthGuard>}>
