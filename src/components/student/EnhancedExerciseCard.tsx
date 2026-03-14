@@ -260,12 +260,14 @@ const EnhancedExerciseCard = ({
     const inputClass = "h-12 text-center bg-background text-base font-bold rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
     const checkButton = isCurrent ? (
-      <Button size="icon" className="h-9 w-9" onClick={() => validateSet(i)} disabled={!isSetComplete(set)}>
-        <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
-      </Button>
+      <motion.div whileTap={{ scale: 0.85 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
+        <Button size="icon" className="h-12 w-12 rounded-xl bg-primary" onClick={() => validateSet(i)} disabled={!isSetComplete(set)}>
+          <Check className="w-5 h-5" strokeWidth={2} />
+        </Button>
+      </motion.div>
     ) : (
-      <div className="h-9 w-9 flex items-center justify-center">
-        {isDone && <Check className="w-3.5 h-3.5 text-success" strokeWidth={1.5} />}
+      <div className="h-12 w-12 flex items-center justify-center">
+        {isDone && <Check className="w-5 h-5 text-emerald-400" strokeWidth={2} />}
       </div>
     );
 
