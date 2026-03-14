@@ -125,5 +125,15 @@
   "duplicate_date_label": "Date",
   "duplicate_btn": "Dupliquer",
   "duplicate_success": "Séance dupliquée ! 🎯",
-  "duplicate_error": "Erreur lors de la duplication."
+  "duplicate_error": "Erreur lors de la duplication.",
+
+  "delete_session": "Supprimer cette séance",
+  "delete_session_title": "Supprimer cette séance ?",
+  "delete_session_desc": "\"{{name}}\" sera retirée de ton programme. Cette action peut être annulée par ton coach.",
+  "delete_session_confirm": "Supprimer",
+  "session_deleted": "Séance supprimée",
+  "session_already_completed": "Séance déjà complétée — non modifiable",
+  "session_restored": "Séance restaurée",
+  "restore_session": "Restaurer",
+  "deleted_by_athlete": "Supprimée par l'athlète"
 }
