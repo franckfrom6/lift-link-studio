@@ -199,6 +199,13 @@ const StudentNutrition = () => {
         <h2 className="font-bold text-sm">{t('recommendations:coach_tips')}</h2>
         <StudentRecommendationCards type="nutrition" />
       </div>
+
+      <OnboardingTooltip
+        stepKey="nutrition_seen"
+        title={t('common:onboarding_nutrition_title')}
+        description={t('common:onboarding_nutrition_desc')}
+        position="bottom"
+      />
     </div>
     </FeatureGate>
   );
