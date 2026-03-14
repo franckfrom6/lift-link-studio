@@ -228,7 +228,7 @@ const SessionFeedbackWizard = ({ exercises, onSubmit, onSkip }: SessionFeedbackW
 
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground">{t("mood_label")}</p>
-            <div className="flex gap-2 justify-center" role="radiogroup" aria-label={t("mood_label")}>
+            <div className="flex flex-wrap gap-2 justify-center" role="radiogroup" aria-label={t("mood_label")}>
               {MOODS.map((m) => (
                 <button
                   key={m.value}
@@ -237,7 +237,7 @@ const SessionFeedbackWizard = ({ exercises, onSubmit, onSkip }: SessionFeedbackW
                   aria-checked={mood === m.value}
                   aria-label={t(`mood_${m.value}`)}
                   className={cn(
-                    "flex flex-col items-center gap-1 px-3 py-2 rounded-xl border transition-all",
+                    "flex flex-col items-center gap-1 min-w-[48px] min-h-[48px] px-2.5 py-2 rounded-xl border transition-all basis-[calc(33%-8px)] xs:basis-0",
                     mood === m.value ? "bg-accent border-accent-foreground/20 scale-105" : "border-border hover:bg-secondary"
                   )}
                 >
