@@ -107,7 +107,7 @@ async function fetchProgramTree(studentId: string): Promise<DBProgram | null> {
 
   // Parallel: sessions, sections, exercises
   const [sessionsRes, sectionsRes, exercisesRes] = await Promise.all([
-    supabase.from("sessions").select("*").in("week_id", weekIds).order("day_of_week"),
+    supabase.from("sessions").select("*").in("week_id", weekIds).eq("is_deleted", false).order("day_of_week"),
     supabase.from("session_sections").select("*").in("session_id", weekIds.length > 0 ? weekIds : ['']),
     supabase.from("session_exercises").select("*, exercise:exercises(*)").in("session_id", weekIds.length > 0 ? weekIds : ['']),
   ]);
