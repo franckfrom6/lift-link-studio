@@ -229,6 +229,30 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_notifications: {
+        Row: {
+          coach_id: string
+          id: string
+          message: string
+          sent_at: string | null
+          student_id: string
+        }
+        Insert: {
+          coach_id: string
+          id?: string
+          message: string
+          sent_at?: string | null
+          student_id: string
+        }
+        Update: {
+          coach_id?: string
+          id?: string
+          message?: string
+          sent_at?: string | null
+          student_id?: string
+        }
+        Relationships: []
+      }
       coach_nutrition_recommendations: {
         Row: {
           category: string
@@ -938,7 +962,12 @@ export type Database = {
           id: string
           is_admin: boolean
           level: string | null
+          notif_coach_messages: boolean | null
+          notif_session_reminder: boolean | null
+          notif_session_reminder_time: string | null
+          notif_streak_motivation: boolean | null
           onboarding_completed: boolean
+          push_subscription: string | null
           role: Database["public"]["Enums"]["app_role"] | null
           specialty: string | null
           unit_preference: string | null
@@ -957,7 +986,12 @@ export type Database = {
           id?: string
           is_admin?: boolean
           level?: string | null
+          notif_coach_messages?: boolean | null
+          notif_session_reminder?: boolean | null
+          notif_session_reminder_time?: string | null
+          notif_streak_motivation?: boolean | null
           onboarding_completed?: boolean
+          push_subscription?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           specialty?: string | null
           unit_preference?: string | null
@@ -976,7 +1010,12 @@ export type Database = {
           id?: string
           is_admin?: boolean
           level?: string | null
+          notif_coach_messages?: boolean | null
+          notif_session_reminder?: boolean | null
+          notif_session_reminder_time?: string | null
+          notif_streak_motivation?: boolean | null
           onboarding_completed?: boolean
+          push_subscription?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           specialty?: string | null
           unit_preference?: string | null
