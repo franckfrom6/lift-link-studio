@@ -16,6 +16,7 @@ const SelfGuidedDashboard = ({ onStartAI, onJoinCoach }: SelfGuidedDashboardProp
   const { t } = useTranslation(['dashboard', 'common', 'program', 'leadgen']);
   const [coachCode, setCoachCode] = useState("");
   const [showCodeInput, setShowCodeInput] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
