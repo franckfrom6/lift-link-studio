@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface RPESelectorProps {
   value: number | null;
@@ -23,21 +24,27 @@ const RPESelector = ({ value, onChange, disabled }: RPESelectorProps) => {
   return (
     <div className="flex gap-1 flex-wrap">
       {Array.from({ length: 10 }, (_, i) => i + 1).map((rpe) => (
-        <button
+        <motion.button
           key={rpe}
           type="button"
           disabled={disabled}
           onClick={() => onChange(rpe)}
+          whileTap={{ scale: 0.85 }}
+          animate={value === rpe ? { scale: [1, 1.2, 1.1] } : { scale: 1 }}
+          transition={value === rpe
+            ? { type: "spring", stiffness: 500, damping: 15 }
+            : { type: "spring", stiffness: 400, damping: 25 }
+          }
           className={cn(
-            "w-7 h-7 rounded-md text-[11px] font-bold transition-all",
+            "w-7 h-7 rounded-md text-[11px] font-bold transition-colors",
             value === rpe
-              ? RPE_COLORS[rpe] + " ring-1 ring-current scale-110"
+              ? RPE_COLORS[rpe] + " ring-1 ring-current"
               : "bg-secondary text-muted-foreground hover:bg-secondary/80",
             disabled && "opacity-40 cursor-not-allowed"
           )}
         >
           {rpe}
-        </button>
+        </motion.button>
       ))}
     </div>
   );

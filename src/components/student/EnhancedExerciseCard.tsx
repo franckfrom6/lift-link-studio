@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward, Camera } from "lucide-react";
+import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward, Camera, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -81,6 +81,8 @@ const EnhancedExerciseCard = ({
     )
   );
   const [exercisePhotos, setExercisePhotos] = useState<string[]>([]);
+  const [justCompletedSet, setJustCompletedSet] = useState<number | null>(null);
+  const [prDetected, setPrDetected] = useState<number | null>(null);
 
   if (completedSets.length === 0 && isActive) {
     const initial: EnhancedCompletedSet[] = Array.from({ length: targetSets }, (_, i) => ({
@@ -107,6 +109,20 @@ const EnhancedExerciseCard = ({
   };
 
   const validateSet = (idx: number) => {
+    // Trigger completion animation
+    setJustCompletedSet(idx);
+    setTimeout(() => setJustCompletedSet(null), 600);
+
+    // PR detection in Advanced mode
+    if (isAdvanced && previousSets && previousSets[idx] && trackingType === "weight_reps") {
+      const current = completedSets[idx];
+      if (current.weight > previousSets[idx].weight) {
+        setPrDetected(idx);
+        setTimeout(() => setPrDetected(null), 1500);
+        try { navigator.vibrate?.([100, 50, 100]); } catch {}
+      }
+    }
+
     if (idx < completedSets.length - 1) {
       setCurrentSetIdx(idx + 1);
       const updated = [...completedSets];
@@ -135,7 +151,7 @@ const EnhancedExerciseCard = ({
   };
 
   const getPrevComparison = (idx: number, field: "weight" | "reps") => {
-    if (!isAdvanced) return null; // Hide comparison in Simple mode
+    if (!isAdvanced) return null;
     if (!previousSets || !previousSets[idx]) return null;
     const current = completedSets[idx]?.[field] || 0;
     const prev = previousSets[idx][field];
@@ -143,11 +159,6 @@ const EnhancedExerciseCard = ({
     if (current > prev) return "up";
     if (current < prev) return "down";
     return "same";
-  };
-
-  const formatDuration = (secs: number) => {
-    if (secs >= 60) return `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`;
-    return `${secs}s`;
   };
 
   // Tags display based on tracking type
@@ -167,11 +178,9 @@ const EnhancedExerciseCard = ({
         );
       case "reps_only":
         return (
-          <>
-            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-              {targetSets}×{repsMin === repsMax ? repsMin : `${repsMin}-${repsMax}`}
-            </span>
-          </>
+          <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+            {targetSets}×{repsMin === repsMax ? repsMin : `${repsMin}-${repsMax}`}
+          </span>
         );
       case "distance":
         return (
@@ -185,7 +194,7 @@ const EnhancedExerciseCard = ({
             </span>
           </>
         );
-      default: // weight_reps
+      default:
         return (
           <>
             <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
@@ -199,7 +208,6 @@ const EnhancedExerciseCard = ({
     }
   };
 
-  // Grid header and row based on tracking type
   const renderSetHeader = () => {
     switch (trackingType) {
       case "duration":
@@ -232,7 +240,6 @@ const EnhancedExerciseCard = ({
       default:
         return (
           <>
-            {/* Desktop: 5-col grid */}
             <div className="hidden xs:grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 min-w-[280px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
               <span>Set</span>
               <span>Kg</span>
@@ -240,7 +247,6 @@ const EnhancedExerciseCard = ({
               <span className="text-center">Fail</span>
               <span></span>
             </div>
-            {/* Small screens: stacked header */}
             <div className="xs:hidden text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
               <span>Set / Kg / Reps</span>
             </div>
@@ -249,9 +255,54 @@ const EnhancedExerciseCard = ({
     }
   };
 
+  // Comparison arrow component for Advanced mode
+  const ComparisonArrow = ({ direction }: { direction: "up" | "down" | "same" | null }) => {
+    if (!direction || direction === "same") return null;
+    return (
+      <motion.span
+        initial={isAdvanced ? { opacity: 0, y: direction === "up" ? 6 : -6 } : { opacity: 1 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 500, damping: 25 }}
+        className={cn(
+          "absolute -right-0.5 -top-0.5 text-[9px] font-bold",
+          direction === "up" && "text-success",
+          direction === "down" && "text-destructive",
+        )}
+      >
+        {direction === "up" ? "↑" : "↓"}
+      </motion.span>
+    );
+  };
+
+  // PR star burst for Advanced mode
+  const PRBurst = ({ visible }: { visible: boolean }) => (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ scale: 0, rotate: -30, opacity: 0 }}
+          animate={{ scale: 1, rotate: 0, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 500, damping: 20 }}
+          className="absolute -top-2 -right-2 z-10"
+        >
+          <div className="relative">
+            <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" strokeWidth={1.5} />
+            <motion.div
+              className="absolute inset-0 rounded-full bg-yellow-400/20"
+              initial={{ scale: 1 }}
+              animate={{ scale: 2.5, opacity: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   const renderSetRow = (set: EnhancedCompletedSet, i: number) => {
     const isCurrent = i === currentSetIdx && !allDone;
     const isDone = i < currentSetIdx || allDone;
+    const isJustCompleted = justCompletedSet === i;
     const rowClass = cn(
       "gap-2 items-center p-1.5 rounded-xl transition-colors",
       isCurrent && "bg-accent/80 ring-1 ring-primary/30",
@@ -260,14 +311,25 @@ const EnhancedExerciseCard = ({
     const inputClass = "h-12 text-center bg-background text-base font-bold rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
     const checkButton = isCurrent ? (
-      <motion.div whileTap={{ scale: 0.85 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
+      <motion.div
+        whileTap={{ scale: 0.85 }}
+        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+      >
         <Button size="icon" className="h-12 w-12 rounded-xl bg-primary" onClick={() => validateSet(i)} disabled={!isSetComplete(set)}>
           <Check className="w-5 h-5" strokeWidth={2} />
         </Button>
       </motion.div>
     ) : (
       <div className="h-12 w-12 flex items-center justify-center">
-        {isDone && <Check className="w-5 h-5 text-emerald-400" strokeWidth={2} />}
+        {isDone && (
+          <motion.div
+            initial={isJustCompleted ? { scale: 0 } : { scale: 1 }}
+            animate={{ scale: 1 }}
+            transition={isJustCompleted ? { type: "spring", stiffness: 600, damping: 15, delay: 0.05 } : {}}
+          >
+            <Check className="w-5 h-5 text-success" strokeWidth={2} />
+          </motion.div>
+        )}
       </div>
     );
 
@@ -283,7 +345,6 @@ const EnhancedExerciseCard = ({
               value={durationDisplay}
               onChange={(e) => {
                 const val = e.target.value;
-                // Parse mm:ss or raw seconds
                 const mmssMatch = val.match(/^(\d{0,2}):?(\d{0,2})$/);
                 if (mmssMatch) {
                   const mins = parseInt(mmssMatch[1] || "0");
@@ -297,7 +358,6 @@ const EnhancedExerciseCard = ({
               className={inputClass}
               disabled={!isCurrent}
             />
-            {/* +/- 5s steppers */}
             <div className="flex flex-col gap-1">
               <button
                 onClick={() => updateSet(i, "durationSeconds", (set.durationSeconds || 0) + 5)}
@@ -380,7 +440,8 @@ const EnhancedExerciseCard = ({
         );
       default: // weight_reps
         return (
-          <div key={i}>
+          <div key={i} className="relative">
+            <PRBurst visible={prDetected === i} />
             {/* Desktop: 5-col grid */}
             <div className={cn("hidden xs:grid grid-cols-[36px_1fr_1fr_40px_40px]", rowClass)}>
               <span className="text-sm font-bold text-center">{set.setNumber}</span>
@@ -395,15 +456,7 @@ const EnhancedExerciseCard = ({
                   min={0}
                   step={2.5}
                 />
-                {getPrevComparison(i, "weight") && isDone && (
-                  <span className={cn(
-                    "absolute -right-0.5 -top-0.5 text-[9px] font-bold",
-                    getPrevComparison(i, "weight") === "up" && "text-success",
-                    getPrevComparison(i, "weight") === "down" && "text-destructive",
-                  )}>
-                    {getPrevComparison(i, "weight") === "up" ? "↑" : getPrevComparison(i, "weight") === "down" ? "↓" : ""}
-                  </span>
-                )}
+                {isDone && <ComparisonArrow direction={getPrevComparison(i, "weight")} />}
               </div>
               <Input
                 type="number"
@@ -500,13 +553,21 @@ const EnhancedExerciseCard = ({
   }
 
   return (
-    <div className={cn(
-      "rounded-xl border transition-all",
-      isActive ? "bg-card border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "bg-card/50 border-border/50",
-      "min-[0px]:p-0" // card wrapper — padding is on children
-    )}>
+    <motion.div
+      layout
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className={cn(
+        "rounded-xl border transition-all",
+        isActive ? "bg-card border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "bg-card/50 border-border/50",
+        "min-[0px]:p-0"
+      )}
+    >
       {/* Compact header */}
-      <div className="flex items-center gap-3 p-3">
+      <motion.div
+        className="flex items-center gap-3 p-3"
+        whileTap={{ scale: 0.97 }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      >
         <button
           onClick={() => setExpanded(!expanded)}
           className="flex items-center gap-3 flex-1 min-w-0 text-left"
@@ -550,7 +611,6 @@ const EnhancedExerciseCard = ({
           </div>
         </button>
         <div className="flex items-center gap-1 shrink-0">
-          {/* Coach instructions button in Simple mode when coach has set tempo/rpe */}
           {!isAdvanced && (tempo || rpeTarget) && (
             <CoachInstructionsButton tempo={tempo} rpe={rpeTarget} coachNotes={coachNotes} />
           )}
@@ -573,88 +633,105 @@ const EnhancedExerciseCard = ({
               </button>
             </div>
           )}
-          {allDone && <Check className="w-5 h-5 text-success shrink-0" strokeWidth={1.5} />}
-          <button onClick={() => setExpanded(!expanded)}>
-            <ChevronDown className={cn(
-              "w-4 h-4 text-muted-foreground transition-transform shrink-0",
-              expanded && "rotate-180"
-            )} strokeWidth={1.5} />
-          </button>
-        </div>
-      </div>
-
-      {/* Expanded details */}
-      {expanded && (
-        <div className="px-3 pb-3 space-y-4 border-t border-border pt-3">
-          {/* Video embed section */}
-          <ExerciseVideoEmbed
-            exerciseName={name}
-            directVideoUrl={videoUrl}
-            videoUrlFemale={videoUrlFemale}
-            videoUrlMale={videoUrlMale}
-            exerciseVideoUrl={exerciseVideoUrl}
-          />
-
-          {(suggestedWeight || (isAdvanced && coachNotes)) && (
-            <div className="space-y-2">
-              {suggestedWeight && trackingType === "weight_reps" && (
-                <p className="text-xs text-muted-foreground">
-                  💪 <span className="font-medium">{t('target_weight')} :</span> {suggestedWeight} kg
-                </p>
-              )}
-              {isAdvanced && coachNotes && (
-                <p className="text-xs text-muted-foreground italic leading-relaxed">
-                  📝 {coachNotes}
-                </p>
-              )}
-            </div>
+          {allDone && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 500, damping: 20 }}
+            >
+              <Check className="w-5 h-5 text-success shrink-0" strokeWidth={1.5} />
+            </motion.div>
           )}
+          <motion.button
+            onClick={() => setExpanded(!expanded)}
+            animate={{ rotate: expanded ? 180 : 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          >
+            <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
+          </motion.button>
+        </div>
+      </motion.div>
 
-          <AnimatePresence>
-            {showTimer && isActive && (
-              isAdvanced ? (
-                <CircularRestTimer
-                  key={currentSetIdx}
-                  initialSeconds={restSeconds}
-                  onComplete={() => setShowTimer(false)}
-                />
-              ) : (
-                <LinearRestTimer
-                  key={currentSetIdx}
-                  initialSeconds={restSeconds}
-                  onComplete={() => setShowTimer(false)}
-                />
-              )
-            )}
-          </AnimatePresence>
+      {/* Expanded details with spring animation */}
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="overflow-hidden"
+          >
+            <div className="px-3 pb-3 space-y-4 border-t border-border pt-3">
+              <ExerciseVideoEmbed
+                exerciseName={name}
+                directVideoUrl={videoUrl}
+                videoUrlFemale={videoUrlFemale}
+                videoUrlMale={videoUrlMale}
+                exerciseVideoUrl={exerciseVideoUrl}
+              />
 
-          {isActive && completedSets.length > 0 && (
-            <div className="space-y-2">
-              <div className="overflow-x-auto -mx-3 px-3">
-                {renderSetHeader()}
-                {completedSets.map((set, i) => renderSetRow(set, i))}
-                {!allDone && (
-                  <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={addSet}>
-                    <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
-                    {t('add_set')}
-                  </Button>
+              {(suggestedWeight || (isAdvanced && coachNotes)) && (
+                <div className="space-y-2">
+                  {suggestedWeight && trackingType === "weight_reps" && (
+                    <p className="text-xs text-muted-foreground">
+                      💪 <span className="font-medium">{t('target_weight')} :</span> {suggestedWeight} kg
+                    </p>
+                  )}
+                  {isAdvanced && coachNotes && (
+                    <p className="text-xs text-muted-foreground italic leading-relaxed">
+                      📝 {coachNotes}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <AnimatePresence>
+                {showTimer && isActive && (
+                  isAdvanced ? (
+                    <CircularRestTimer
+                      key={currentSetIdx}
+                      initialSeconds={restSeconds}
+                      onComplete={() => setShowTimer(false)}
+                    />
+                  ) : (
+                    <LinearRestTimer
+                      key={currentSetIdx}
+                      initialSeconds={restSeconds}
+                      onComplete={() => setShowTimer(false)}
+                    />
+                  )
                 )}
-              </div>
+              </AnimatePresence>
 
-              {/* Exercise photos */}
-              {sessionExerciseId && completedSessionId && (
-                <ExercisePhoto
-                  sessionExerciseId={sessionExerciseId}
-                  completedSessionId={completedSessionId}
-                  photos={exercisePhotos}
-                  onPhotosChange={setExercisePhotos}
-                />
+              {isActive && completedSets.length > 0 && (
+                <div className="space-y-2">
+                  <div className="overflow-x-auto -mx-3 px-3">
+                    {renderSetHeader()}
+                    {completedSets.map((set, i) => renderSetRow(set, i))}
+                    {!allDone && (
+                      <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={addSet}>
+                        <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
+                        {t('add_set')}
+                      </Button>
+                    )}
+                  </div>
+
+                  {sessionExerciseId && completedSessionId && (
+                    <ExercisePhoto
+                      sessionExerciseId={sessionExerciseId}
+                      completedSessionId={completedSessionId}
+                      photos={exercisePhotos}
+                      onPhotosChange={setExercisePhotos}
+                    />
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
-      )}
-    </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 

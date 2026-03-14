@@ -2,13 +2,37 @@ import { CompletedSet } from "@/components/student/ExerciseTracker";
 import { ProgramExerciseDetail } from "@/data/yana-program";
 import { Trophy, Clock, Dumbbell, TrendingUp, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import RecommendationSheet from "@/components/nutrition/RecommendationSheet";
 import SessionFeedbackWizard, { FeedbackData } from "@/components/student/SessionFeedbackWizard";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
+import { motion } from "framer-motion";
+import confetti from "canvas-confetti";
+
+// Counting-up hook
+function useCountUp(target: number, duration = 1200, enabled = true) {
+  const [value, setValue] = useState(0);
+  const frameRef = useRef<number>(0);
+  useEffect(() => {
+    if (!enabled || target === 0) { setValue(target); return; }
+    const start = performance.now();
+    const animate = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out quad
+      const eased = 1 - (1 - progress) * (1 - progress);
+      setValue(Math.round(target * eased));
+      if (progress < 1) frameRef.current = requestAnimationFrame(animate);
+    };
+    frameRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameRef.current);
+  }, [target, duration, enabled]);
+  return value;
+}
 
 interface SessionRecapProps {
   exercises: ProgramExerciseDetail[];
@@ -23,13 +47,22 @@ interface SessionRecapProps {
 const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroups, activityType, completedSessionId }: SessionRecapProps) => {
   const { t } = useTranslation(['session', 'feedback']);
   const { user } = useAuth();
+  const isAdvanced = useIsAdvanced();
   const [recoOpen, setRecoOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
 
-  // Vibrate on session complete
+  // Confetti + vibrate on mount
   useEffect(() => {
     try { navigator.vibrate?.([300, 100, 300, 100, 500]); } catch {}
+    try {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#6366f1', '#f59e0b', '#ef4444'],
+      });
+    } catch {}
   }, []);
 
   const totalSets = Object.values(completedSets).reduce((acc, sets) => acc + sets.length, 0);
@@ -42,6 +75,11 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
 
   const mins = Math.floor(duration / 60);
   const secs = duration % 60;
+
+  // Count-up animations (Advanced = all, Simple = just volume)
+  const animatedVolume = useCountUp(Math.round(totalVolume), 1500, isAdvanced);
+  const animatedSets = useCountUp(totalSets, 800, isAdvanced);
+  const animatedReps = useCountUp(totalReps, 1000, isAdvanced);
 
   const handleFeedbackSubmit = async (feedback: FeedbackData) => {
     if (!user || !completedSessionId) {
@@ -92,46 +130,75 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
     );
   }
 
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.95 },
+    visible: (i: number) => ({
+      opacity: 1, y: 0, scale: 1,
+      transition: { delay: i * 0.1, type: "spring" as const, stiffness: 300, damping: 25 }
+    }),
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="text-center space-y-3 py-4">
-        <div className="w-16 h-16 rounded-2xl bg-success-bg flex items-center justify-center mx-auto">
+      <motion.div
+        className="text-center space-y-3 py-4"
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      >
+        <motion.div
+          className="w-16 h-16 rounded-2xl bg-success-bg flex items-center justify-center mx-auto"
+          initial={{ scale: 0, rotate: -20 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.2 }}
+        >
           <Trophy className="w-8 h-8 text-success" strokeWidth={1.5} />
-        </div>
+        </motion.div>
         <h1 className="text-2xl font-bold">{t('session:session_done')}</h1>
         <p className="text-muted-foreground">{t('session:excellent_work')}</p>
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="glass p-4 text-center">
-          <Clock className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
-          <p className="text-2xl font-bold">{mins}:{secs.toString().padStart(2, "0")}</p>
-          <p className="text-xs text-muted-foreground">{t('session:duration')}</p>
-        </div>
-        <div className="glass p-4 text-center">
-          <Dumbbell className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
-          <p className="text-2xl font-bold">{Math.round(totalVolume).toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">{t('session:volume')}</p>
-        </div>
-        <div className="glass p-4 text-center">
-          <TrendingUp className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />
-          <p className="text-2xl font-bold">{totalSets}</p>
-          <p className="text-xs text-muted-foreground">{t('session:sets')}</p>
-        </div>
-        <div className="glass p-4 text-center">
-          <p className="text-2xl font-bold">{totalReps}</p>
-          <p className="text-xs text-muted-foreground">{t('session:reps')}</p>
-        </div>
+        {[
+          { icon: Clock, value: `${mins}:${secs.toString().padStart(2, "0")}`, label: t('session:duration'), raw: true },
+          { icon: Dumbbell, value: isAdvanced ? animatedVolume.toLocaleString() : Math.round(totalVolume).toLocaleString(), label: t('session:volume') },
+          { icon: TrendingUp, value: isAdvanced ? animatedSets : totalSets, label: t('session:sets') },
+          { value: isAdvanced ? animatedReps : totalReps, label: t('session:reps') },
+        ].map((stat, i) => (
+          <motion.div
+            key={i}
+            className="glass p-4 text-center"
+            custom={i}
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {stat.icon && <stat.icon className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />}
+            <p className="text-2xl font-bold tabular-nums">{stat.value}</p>
+            <p className="text-xs text-muted-foreground">{stat.label}</p>
+          </motion.div>
+        ))}
       </div>
 
-      <div className="glass p-4 space-y-3">
+      <motion.div
+        className="glass p-4 space-y-3"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, type: "spring", stiffness: 300, damping: 25 }}
+      >
         <h3 className="font-bold text-sm">{t('session:exercise_detail')}</h3>
         {exercises.map((ex, i) => {
           const sets = completedSets[i] || [];
           if (sets.length === 0) return null;
           const exVolume = sets.reduce((a, s) => a + s.weight * s.reps, 0);
           return (
-            <div key={i} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
+            <motion.div
+              key={i}
+              className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 + i * 0.05 }}
+            >
               <span className="text-xs font-bold text-accent-foreground w-5">{i + 1}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{ex.name}</p>
@@ -142,12 +209,17 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
               {sets.some((s) => s.isFailure) && (
                 <span className="text-[10px] bg-destructive/10 text-destructive px-2 py-0.5 rounded-md font-medium">{t('session:failure')}</span>
               )}
-            </div>
+            </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
-      <div className="flex flex-col gap-2">
+      <motion.div
+        className="flex flex-col gap-2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8 }}
+      >
         {!feedbackDone && (
           <Button
             variant="outline"
@@ -170,7 +242,7 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
             {t('session:finish_save')}
           </Button>
         </div>
-      </div>
+      </motion.div>
 
       <RecommendationSheet
         open={recoOpen}

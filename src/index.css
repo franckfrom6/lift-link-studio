@@ -171,10 +171,13 @@
 @layer utilities {
   .glass {
     @apply bg-card border border-border rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.04)];
-    transition: box-shadow 150ms ease, border-color 150ms ease;
+    transition: box-shadow 150ms ease, border-color 150ms ease, transform 150ms ease;
   }
   .glass:hover {
     @apply shadow-[0_2px_8px_rgba(0,0,0,0.08)] border-border;
+  }
+  .press-scale {
+    @apply transition-transform duration-150 active:scale-[0.97];
   }
 }
 
