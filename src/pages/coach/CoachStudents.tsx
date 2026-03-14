@@ -8,6 +8,7 @@ import { useCoachDashboard } from "@/hooks/useCoachDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import InviteClientModal from "@/components/InviteClientModal";
 import CoachInviteToken from "@/components/coach/CoachInviteToken";
+import CoachNotifyModal from "@/components/coach/CoachNotifyModal";
 
 const CoachStudents = () => {
   const [search, setSearch] = useState("");
