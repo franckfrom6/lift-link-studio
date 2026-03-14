@@ -729,7 +729,7 @@ const CoachProgramDetail = () => {
                     </div>
 
                     {/* Session content */}
-                    <div className="p-4 space-y-4">
+                    <div className={`p-4 space-y-4 ${(session as any).is_deleted ? "pointer-events-none opacity-50" : ""}`}>
                       {/* Session notes */}
                       <Input
                         value={session.notes || ""}
