@@ -549,22 +549,6 @@ const StudentWeek = () => {
                       }
                     }}
                   >
-                    {isSessionDay && sessionInfo && !sessionCompleted && !swapMode && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-7 w-7 p-1 rounded-full text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 sm:opacity-30 sm:group-hover/day:opacity-100"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setDeleteTarget({ id: sessionInfo.sessionId, name: sessionInfo.name, isFreeSession: false });
-                          setDeleteDialogOpen(true);
-                        }}
-                        aria-label={t('session:delete_session')}
-                      >
-                        <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                      </Button>
-                    )}
 
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
