@@ -31,6 +31,7 @@ interface StudentProfile {
   age: number | null;
   height: number | null;
   weight: number | null;
+  display_mode: string | null;
 }
 
 interface ProgramInfo {
