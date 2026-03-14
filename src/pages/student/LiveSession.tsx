@@ -48,6 +48,7 @@ interface Substitution {
 const LiveSession = () => {
   const navigate = useNavigate();
   const { sessionId: selectedSessionId } = useParams<{ sessionId: string }>();
+  const queryClient = useQueryClient();
   const { t } = useTranslation(['session', 'common']);
   const { user } = useAuth();
   const { program: dbProgram } = useStudentProgram();
@@ -67,6 +68,7 @@ const LiveSession = () => {
   const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
   const [skipModalOpen, setSkipModalOpen] = useState(false);
   const [skipTargetKey, setSkipTargetKey] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Track which exercises' sets have been saved to DB
   const savedExercisesRef = useRef<Set<string>>(new Set());
