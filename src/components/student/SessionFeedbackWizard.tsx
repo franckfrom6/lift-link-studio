@@ -90,7 +90,7 @@ const SessionFeedbackWizard = ({ exercises, onSubmit, onSkip }: SessionFeedbackW
       {step === 0 && (
         <div className="space-y-6">
           <h2 className="text-lg font-bold text-center">{t("post_session_title")}</h2>
-          <div className="grid grid-cols-5 gap-2" role="radiogroup" aria-label={t("overall_rating")}>
+          <div className="flex flex-wrap justify-center gap-2" role="radiogroup" aria-label={t("overall_rating")}>
             {RATINGS.map((r) => (
               <button
                 key={r.value}
@@ -99,7 +99,7 @@ const SessionFeedbackWizard = ({ exercises, onSubmit, onSkip }: SessionFeedbackW
                 aria-checked={rating === r.value}
                 aria-label={t(`rating_${r.value}`)}
                 className={cn(
-                  "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
+                  "flex flex-col items-center gap-1.5 min-w-[56px] min-h-[56px] flex-1 basis-[calc(33%-8px)] xs:basis-0 p-2.5 rounded-xl border-2 transition-all",
                   rating === r.value ? r.color + " border-current scale-105" : "border-border bg-card hover:bg-secondary"
                 )}
               >
