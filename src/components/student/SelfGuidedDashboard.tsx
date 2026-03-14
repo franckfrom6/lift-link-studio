@@ -92,6 +92,12 @@ const SelfGuidedDashboard = ({ onStartAI, onJoinCoach }: SelfGuidedDashboardProp
 
       {/* Lead gen: Recommended coaches */}
       <CoachRecommendationList />
+
+      <SessionBuilderModal
+        open={builderOpen}
+        onClose={() => setBuilderOpen(false)}
+        date={new Date()}
+      />
     </div>
   );
 };
