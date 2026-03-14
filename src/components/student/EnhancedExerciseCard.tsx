@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward } from "lucide-react";
+import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward, Camera } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ import RPESelector from "./RPESelector";
 import CoachInstructionsButton from "./CoachInstructionsButton";
 import { useTranslation } from "react-i18next";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
+import ExercisePhoto from "./ExercisePhoto";
 
 export type TrackingType = "weight_reps" | "reps_only" | "duration" | "distance";
 
@@ -45,6 +46,8 @@ interface EnhancedExerciseCardProps {
   isSkipped?: boolean;
   previousSets?: { weight: number; reps: number }[];
   trackingType?: TrackingType;
+  sessionExerciseId?: string;
+  completedSessionId?: string;
 }
 
 const EnhancedExerciseCard = ({
@@ -55,6 +58,8 @@ const EnhancedExerciseCard = ({
   onSwapExercise, onSkipExercise, hasAlternatives, isSubstituted, isSkipped,
   previousSets,
   trackingType = "weight_reps",
+  sessionExerciseId,
+  completedSessionId,
 }: EnhancedExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const { t } = useTranslation('exercises');
@@ -70,6 +75,7 @@ const EnhancedExerciseCard = ({
       trackingType === "duration" ? (s.durationSeconds || 0) > 0 : s.reps > 0
     )
   );
+  const [exercisePhotos, setExercisePhotos] = useState<string[]>([]);
 
   if (completedSets.length === 0 && isActive) {
     const initial: EnhancedCompletedSet[] = Array.from({ length: targetSets }, (_, i) => ({
@@ -193,9 +199,10 @@ const EnhancedExerciseCard = ({
     switch (trackingType) {
       case "duration":
         return (
-          <div className="grid grid-cols-[36px_1fr_40px] gap-1.5 min-w-[200px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
+          <div className="grid grid-cols-[36px_1fr_40px_40px] gap-1.5 min-w-[240px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
             <span>Set</span>
-            <span>{t('duration_sec', 'Durée (s)')}</span>
+            <span>{t('duration_sec', 'Durée')}</span>
+            <span></span>
             <span></span>
           </div>
         );
@@ -251,22 +258,48 @@ const EnhancedExerciseCard = ({
     );
 
     switch (trackingType) {
-      case "duration":
+      case "duration": {
+        const durationVal = set.durationSeconds || 0;
+        const durationDisplay = durationVal > 0 ? `${Math.floor(durationVal / 60)}:${(durationVal % 60).toString().padStart(2, '0')}` : "";
         return (
-          <div key={i} className={cn("grid grid-cols-[36px_1fr_40px]", rowClass)}>
+          <div key={i} className={cn("grid grid-cols-[36px_1fr_40px_40px]", rowClass)}>
             <span className="text-sm font-bold text-center">{set.setNumber}</span>
             <Input
-              type="number"
-              value={set.durationSeconds || ""}
-              onChange={(e) => updateSet(i, "durationSeconds", Number(e.target.value))}
-              placeholder="0"
+              type="text"
+              value={durationDisplay}
+              onChange={(e) => {
+                const val = e.target.value;
+                // Parse mm:ss or raw seconds
+                const mmssMatch = val.match(/^(\d{0,2}):?(\d{0,2})$/);
+                if (mmssMatch) {
+                  const mins = parseInt(mmssMatch[1] || "0");
+                  const secs = parseInt(mmssMatch[2] || "0");
+                  updateSet(i, "durationSeconds", mins * 60 + secs);
+                } else if (/^\d+$/.test(val)) {
+                  updateSet(i, "durationSeconds", Number(val));
+                }
+              }}
+              placeholder="0:00"
               className={inputClass}
               disabled={!isCurrent}
-              min={0}
             />
+            {/* +/- 5s steppers */}
+            <div className="flex flex-col gap-0.5">
+              <button
+                onClick={() => updateSet(i, "durationSeconds", (set.durationSeconds || 0) + 5)}
+                disabled={!isCurrent}
+                className="h-4 rounded bg-secondary text-[9px] font-bold text-muted-foreground hover:text-foreground disabled:opacity-40"
+              >+5</button>
+              <button
+                onClick={() => updateSet(i, "durationSeconds", Math.max(0, (set.durationSeconds || 0) - 5))}
+                disabled={!isCurrent}
+                className="h-4 rounded bg-secondary text-[9px] font-bold text-muted-foreground hover:text-foreground disabled:opacity-40"
+              >-5</button>
+            </div>
             {checkButton}
           </div>
         );
+      }
       case "reps_only":
         return (
           <div key={i}>
@@ -540,6 +573,16 @@ const EnhancedExerciseCard = ({
                   </Button>
                 )}
               </div>
+
+              {/* Exercise photos */}
+              {sessionExerciseId && completedSessionId && (
+                <ExercisePhoto
+                  sessionExerciseId={sessionExerciseId}
+                  completedSessionId={completedSessionId}
+                  photos={exercisePhotos}
+                  onPhotosChange={setExercisePhotos}
+                />
+              )}
             </div>
           )}
         </div>

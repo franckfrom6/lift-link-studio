@@ -604,7 +604,7 @@ const LiveSession = () => {
                     onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isActive && !isSkipped) { e.preventDefault(); setActiveExerciseKey(key); } }}
                     className={cn(!isActive && !isSkipped && "cursor-pointer")}
                   >
-                    <EnhancedExerciseCard
+                     <EnhancedExerciseCard
                       name={displayName}
                       sets={targetSets}
                       repsMin={repsMin}
@@ -625,6 +625,8 @@ const LiveSession = () => {
                       isSubstituted={isSubstituted}
                       isSkipped={isSkipped}
                       trackingType={(trackingTypeMap[key] as any) || "weight_reps"}
+                      sessionExerciseId={sessionExerciseIdMap[key]}
+                      completedSessionId={completedSessionId || undefined}
                     />
                   </div>
                 );

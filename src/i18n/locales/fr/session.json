@@ -112,5 +112,13 @@
   "builder_draft_resume": "Reprendre le brouillon",
   "builder_draft_new": "Nouvelle séance",
   "builder_save_template": "Sauvegarder comme programme",
-  "builder_template_saved": "Programme sauvegardé ! 📋"
+  "builder_template_saved": "Programme sauvegardé ! 📋",
+
+  "duplicate_title": "Dupliquer la séance",
+  "duplicate_prefix": "Copie de",
+  "duplicate_name_label": "Nom de la nouvelle séance",
+  "duplicate_date_label": "Date",
+  "duplicate_btn": "Dupliquer",
+  "duplicate_success": "Séance dupliquée ! 🎯",
+  "duplicate_error": "Erreur lors de la duplication."
 }

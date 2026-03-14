@@ -1,4 +1,4 @@
-import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy } from "lucide-react";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import DateBadge, { DateBadgeVariant } from "@/components/student/DateBadge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import SelfGuidedDashboard from "@/components/student/SelfGuidedDashboard";
 import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
+import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
@@ -48,6 +49,8 @@ const StudentWeek = () => {
   const [freeSessionDate, setFreeSessionDate] = useState<Date>(new Date());
   const [builderOpen, setBuilderOpen] = useState(false);
   const [builderDate, setBuilderDate] = useState<Date>(new Date());
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [duplicateSession, setDuplicateSession] = useState<{ id: string; name: string } | null>(null);
 
   const totalWeeks = program?.weeks?.length || 0;
 
@@ -523,14 +526,24 @@ const StudentWeek = () => {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {isSessionDay && !swapMode && (
-                          <Button
-                            variant="ghost" size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            onClick={(e) => { e.stopPropagation(); setSwapMode(true); setSwapSourceDay(day.dayIndex); }}
-                            aria-label={t('calendar:swap_session', 'Swap session')}
-                          >
-                            <ArrowLeftRight className="w-4 h-4" strokeWidth={1.5} />
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => { e.stopPropagation(); setDuplicateSession({ id: sessionInfo!.sessionId, name: sessionInfo!.name }); setDuplicateOpen(true); }}
+                              aria-label={t('session:duplicate_title', 'Duplicate session')}
+                            >
+                              <Copy className="w-4 h-4" strokeWidth={1.5} />
+                            </Button>
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => { e.stopPropagation(); setSwapMode(true); setSwapSourceDay(day.dayIndex); }}
+                              aria-label={t('calendar:swap_session', 'Swap session')}
+                            >
+                              <ArrowLeftRight className="w-4 h-4" strokeWidth={1.5} />
+                            </Button>
+                          </>
                         )}
                         {!swapMode && (
                           <>
@@ -646,6 +659,16 @@ const StudentWeek = () => {
         date={builderDate}
         onCreated={() => fetchFreeSessions()}
       />
+
+      {duplicateSession && (
+        <DuplicateSessionModal
+          open={duplicateOpen}
+          onClose={() => { setDuplicateOpen(false); setDuplicateSession(null); }}
+          sessionId={duplicateSession.id}
+          sessionName={duplicateSession.name}
+          programId={program?.id}
+        />
+      )}
     </div>
   );
 };
