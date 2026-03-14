@@ -505,7 +505,7 @@ const StudentWeek = () => {
           {dates.map((day) => {
             const isSessionDay = day.hasSession;
             const sessionInfo = effectiveSessions[day.dayIndex];
-            const sessionCompleted = isSessionDay && day.isPast && weekOffset < 0;
+            const sessionCompleted = isSessionDay && !!sessionInfo && isSessionCompleted(sessionInfo.sessionId);
             const swapInfo = swappedDays[day.dayIndex];
             const isSwapSource = swapMode && day.dayIndex === swapSourceDay;
             const isDropTarget = swapMode && day.dayIndex !== swapSourceDay;
