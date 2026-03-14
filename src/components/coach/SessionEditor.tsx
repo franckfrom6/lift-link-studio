@@ -107,7 +107,7 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
           {collapsed ? <ChevronDown className="w-4 h-4" strokeWidth={1.5} /> : <ChevronUp className="w-4 h-4" strokeWidth={1.5} />}
         </button>
         <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-xs font-bold text-accent-foreground">
-          {DAY_NAMES[session.dayOfWeek]?.slice(0, 2)}
+          {t(`common:days.${DAY_NAMES[session.dayOfWeek]}`)?.slice(0, 2)}
         </div>
         <div className="flex-1 min-w-0">
           <Input
