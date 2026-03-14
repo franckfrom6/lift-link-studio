@@ -69,6 +69,7 @@ const LiveSession = () => {
   const [skipModalOpen, setSkipModalOpen] = useState(false);
   const [skipTargetKey, setSkipTargetKey] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [hasStartedWorkout, setHasStartedWorkout] = useState(false);
 
   // Track which exercises' sets have been saved to DB
   const savedExercisesRef = useRef<Set<string>>(new Set());
@@ -278,6 +279,8 @@ const LiveSession = () => {
   };
 
   const handleExerciseComplete = async (key: string) => {
+    // Mark workout as started once first exercise is completed
+    if (!hasStartedWorkout) setHasStartedWorkout(true);
     // Save sets for this exercise to DB
     await saveSetsForExercise(key);
 
@@ -387,16 +390,13 @@ const LiveSession = () => {
   const handleDeleteSession = async () => {
     if (!user || !selectedSession) return;
 
-    if (completedSessionId) {
-      toast.error(t("session:session_already_completed"));
-      return;
-    }
-
+    // Check if session was actually completed (completed_at is set)
     const { data: completedSession, error: completedErr } = await supabase
       .from("completed_sessions")
       .select("id")
       .eq("student_id", user.id)
       .eq("session_id", selectedSession.id)
+      .not("completed_at", "is", null)
       .maybeSingle();
 
     if (completedErr) {
@@ -409,6 +409,11 @@ const LiveSession = () => {
       toast.error(t("session:session_already_completed"));
       setDeleteDialogOpen(false);
       return;
+    }
+
+    // Clean up the incomplete completed_sessions row if it exists
+    if (completedSessionId) {
+      await supabase.from("completed_sessions").delete().eq("id", completedSessionId);
     }
 
     const sessionName = selectedSession.name;
@@ -616,7 +621,7 @@ const LiveSession = () => {
                 {mins}:{secs.toString().padStart(2, "0")}
               </span>
             </div>
-            {!completedSessionId && (
+            {!hasStartedWorkout && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('common:actions', 'Actions')}>

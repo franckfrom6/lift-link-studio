@@ -174,7 +174,8 @@ const StudentWeek = () => {
         .from("completed_sessions")
         .select("session_id")
         .eq("student_id", studentId)
-        .in("session_id", visibleSessionIds);
+        .in("session_id", visibleSessionIds)
+        .not("completed_at", "is", null);
 
       if (error) {
         console.error("Error fetching completed sessions:", error);
@@ -273,6 +274,7 @@ const StudentWeek = () => {
       .select("id")
       .eq("student_id", user.id)
       .eq("session_id", deleteTarget.id)
+      .not("completed_at", "is", null)
       .maybeSingle();
 
     if (completedErr) {
@@ -551,7 +553,7 @@ const StudentWeek = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="absolute right-0 top-0 h-7 w-7 p-1 rounded-full text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 sm:opacity-0 sm:pointer-events-none sm:group-hover/day:opacity-100 sm:group-hover/day:pointer-events-auto"
+                        className="absolute right-0 top-0 h-7 w-7 p-1 rounded-full text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 sm:opacity-30 sm:group-hover/day:opacity-100"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -613,7 +615,7 @@ const StudentWeek = () => {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="absolute right-0 top-0 h-6 w-6 p-1 rounded-full text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 sm:opacity-0 sm:pointer-events-none sm:group-hover/day:opacity-100 sm:group-hover/day:pointer-events-auto"
+                                        className="absolute right-0 top-0 h-6 w-6 p-1 rounded-full text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 sm:opacity-30 sm:group-hover/day:opacity-100"
                                         onClick={(e) => {
                                           e.preventDefault();
                                           e.stopPropagation();
@@ -670,7 +672,7 @@ const StudentWeek = () => {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="absolute right-0 top-0 h-6 w-6 p-1 rounded-full text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 sm:opacity-0 sm:pointer-events-none sm:group-hover/day:opacity-100 sm:group-hover/day:pointer-events-auto"
+                                        className="absolute right-0 top-0 h-6 w-6 p-1 rounded-full text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 sm:opacity-30 sm:group-hover/day:opacity-100"
                                         onClick={(e) => {
                                           e.preventDefault();
                                           e.stopPropagation();
