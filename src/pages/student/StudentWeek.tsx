@@ -659,6 +659,16 @@ const StudentWeek = () => {
         date={builderDate}
         onCreated={() => fetchFreeSessions()}
       />
+
+      {duplicateSession && (
+        <DuplicateSessionModal
+          open={duplicateOpen}
+          onClose={() => { setDuplicateOpen(false); setDuplicateSession(null); }}
+          sessionId={duplicateSession.id}
+          sessionName={duplicateSession.name}
+          programId={program?.id}
+        />
+      )}
     </div>
   );
 };

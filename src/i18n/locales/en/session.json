@@ -112,5 +112,13 @@
   "builder_draft_resume": "Resume draft",
   "builder_draft_new": "New session",
   "builder_save_template": "Save as program",
-  "builder_template_saved": "Program saved! 📋"
+  "builder_template_saved": "Program saved! 📋",
+
+  "duplicate_title": "Duplicate session",
+  "duplicate_prefix": "Copy of",
+  "duplicate_name_label": "New session name",
+  "duplicate_date_label": "Date",
+  "duplicate_btn": "Duplicate",
+  "duplicate_success": "Session duplicated! 🎯",
+  "duplicate_error": "Error duplicating session."
 }
