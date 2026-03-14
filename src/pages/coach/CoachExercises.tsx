@@ -280,6 +280,57 @@ const CoachExercises = () => {
           </div>
         )}
       </div>
+
+      {/* Video suggestion sheet */}
+      <Sheet open={!!suggestExId} onOpenChange={(open) => { if (!open) setSuggestExId(null); }}>
+        <SheetContent side="bottom" className="max-h-[80vh]">
+          <SheetHeader>
+            <SheetTitle>{t('suggest_video')}</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium">{t('video_url')}</label>
+              <Input
+                value={suggestUrl}
+                onChange={(e) => setSuggestUrl(e.target.value)}
+                placeholder="https://youtube.com/watch?v=..."
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">{t('gender_target')}</label>
+              <Select value={suggestGender} onValueChange={setSuggestGender}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="female">{t('gender_female')}</SelectItem>
+                  <SelectItem value="male">{t('gender_male')}</SelectItem>
+                  <SelectItem value="both">{t('gender_both')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">{t('suggestion_note')}</label>
+              <Textarea
+                value={suggestNote}
+                onChange={(e) => setSuggestNote(e.target.value)}
+                placeholder={t('suggestion_note_placeholder')}
+                className="mt-1"
+                rows={2}
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleSendSuggestion}
+              disabled={suggestSending || !suggestUrl}
+            >
+              {suggestSending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {t('send_suggestion')}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
