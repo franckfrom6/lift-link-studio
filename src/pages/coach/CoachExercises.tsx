@@ -18,12 +18,18 @@ import { Textarea } from "@/components/ui/textarea";
 
 const CoachExercises = () => {
   const { exercises, loading } = useExercises();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [videoEdits, setVideoEdits] = useState<Record<string, { video_url: string; video_url_female: string; video_url_male: string }>>({});
   const [saving, setSaving] = useState(false);
+  const [suggestExId, setSuggestExId] = useState<string | null>(null);
+  const [suggestUrl, setSuggestUrl] = useState("");
+  const [suggestGender, setSuggestGender] = useState<string>("both");
+  const [suggestNote, setSuggestNote] = useState("");
+  const [suggestSending, setSuggestSending] = useState(false);
   const { t } = useTranslation('exercises');
   const isAdvanced = useIsAdvanced();
 
