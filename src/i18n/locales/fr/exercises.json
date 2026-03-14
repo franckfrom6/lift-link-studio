@@ -20,7 +20,15 @@
     "dumbbells": "Haltères",
     "barbell": "Barre",
     "cable": "Câble",
-    "machine": "Machine"
+    "machine": "Machine",
+    "kettlebell": "Kettlebell",
+    "resistance_band": "Élastique",
+    "mini_band": "Mini-bande",
+    "fitness_ball": "Ballon de fitness",
+    "yoga_block": "Bloc de yoga",
+    "trx": "TRX / Sangles",
+    "bosu": "Bosu",
+    "step": "Step / Banc"
   },
   "sets_label": "Séries",
   "reps_min": "Reps min",

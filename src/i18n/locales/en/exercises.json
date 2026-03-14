@@ -20,7 +20,15 @@
     "dumbbells": "Dumbbells",
     "barbell": "Barbell",
     "cable": "Cable",
-    "machine": "Machine"
+    "machine": "Machine",
+    "kettlebell": "Kettlebell",
+    "resistance_band": "Resistance band",
+    "mini_band": "Mini band",
+    "fitness_ball": "Fitness ball",
+    "yoga_block": "Yoga block",
+    "trx": "TRX / Straps",
+    "bosu": "Bosu ball",
+    "step": "Step / Bench"
   },
   "sets_label": "Sets",
   "reps_min": "Reps min",
