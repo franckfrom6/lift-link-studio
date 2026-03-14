@@ -1774,6 +1774,50 @@ export type Database = {
           },
         ]
       }
+      video_suggestions: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          gender_target: string
+          id: string
+          note: string | null
+          reviewed_by: string | null
+          status: string
+          suggested_by: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          gender_target: string
+          id?: string
+          note?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_by: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          gender_target?: string
+          id?: string
+          note?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_by?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_suggestions_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_checkins: {
         Row: {
           availability_notes: string | null

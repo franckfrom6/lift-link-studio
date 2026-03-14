@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dumbbell, Search, ChevronDown, Film } from "lucide-react";
+import { Dumbbell, Search, ChevronDown, Film, Video } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,15 +11,25 @@ import { getExerciseName, getMuscleGroupLabel, getEquipmentLabel } from "@/lib/e
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 const CoachExercises = () => {
   const { exercises, loading } = useExercises();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [videoEdits, setVideoEdits] = useState<Record<string, { video_url: string; video_url_female: string; video_url_male: string }>>({});
   const [saving, setSaving] = useState(false);
+  const [suggestExId, setSuggestExId] = useState<string | null>(null);
+  const [suggestUrl, setSuggestUrl] = useState("");
+  const [suggestGender, setSuggestGender] = useState<string>("both");
+  const [suggestNote, setSuggestNote] = useState("");
+  const [suggestSending, setSuggestSending] = useState(false);
   const { t } = useTranslation('exercises');
   const isAdvanced = useIsAdvanced();
 
@@ -87,6 +97,33 @@ const CoachExercises = () => {
     } else {
       toast.success("✓");
       setExpandedId(null);
+    }
+  };
+
+  const handleSendSuggestion = async () => {
+    if (!suggestExId || !user || !suggestUrl) return;
+    if (!isValidYouTubeUrl(suggestUrl)) {
+      toast.error("URL YouTube invalide");
+      return;
+    }
+    setSuggestSending(true);
+    const { error } = await supabase.from("video_suggestions").insert({
+      exercise_id: suggestExId,
+      suggested_by: user.id,
+      video_url: suggestUrl,
+      gender_target: suggestGender,
+      note: suggestNote || null,
+    } as any);
+    setSuggestSending(false);
+    if (error) {
+      console.error(error);
+      toast.error("Error");
+    } else {
+      toast.success(t("suggestion_sent"));
+      setSuggestExId(null);
+      setSuggestUrl("");
+      setSuggestGender("both");
+      setSuggestNote("");
     }
   };
 
@@ -180,6 +217,13 @@ const CoachExercises = () => {
                         >
                           <Film className="w-4 h-4" strokeWidth={1.5} />
                         </button>
+                        <button
+                          onClick={() => { setSuggestExId(ex.id); setSuggestUrl(""); setSuggestGender("both"); setSuggestNote(""); }}
+                          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                          title={t('suggest_video')}
+                        >
+                          <Video className="w-4 h-4" strokeWidth={1.5} />
+                        </button>
                       </div>
                     </div>
 
@@ -236,6 +280,57 @@ const CoachExercises = () => {
           </div>
         )}
       </div>
+
+      {/* Video suggestion sheet */}
+      <Sheet open={!!suggestExId} onOpenChange={(open) => { if (!open) setSuggestExId(null); }}>
+        <SheetContent side="bottom" className="max-h-[80vh]">
+          <SheetHeader>
+            <SheetTitle>{t('suggest_video')}</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium">{t('video_url')}</label>
+              <Input
+                value={suggestUrl}
+                onChange={(e) => setSuggestUrl(e.target.value)}
+                placeholder="https://youtube.com/watch?v=..."
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">{t('gender_target')}</label>
+              <Select value={suggestGender} onValueChange={setSuggestGender}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="female">{t('gender_female')}</SelectItem>
+                  <SelectItem value="male">{t('gender_male')}</SelectItem>
+                  <SelectItem value="both">{t('gender_both')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">{t('suggestion_note')}</label>
+              <Textarea
+                value={suggestNote}
+                onChange={(e) => setSuggestNote(e.target.value)}
+                placeholder={t('suggestion_note_placeholder')}
+                className="mt-1"
+                rows={2}
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleSendSuggestion}
+              disabled={suggestSending || !suggestUrl}
+            >
+              {suggestSending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {t('send_suggestion')}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

@@ -99,5 +99,14 @@
     "ai_weekly_insight": "AI weekly insight",
     "progress_photos": "Progress photos",
     "strength_charts": "Strength charts"
-  }
+  },
+  "video_suggestions_title": "Video Suggestions",
+  "video_approved": "Video approved ✓",
+  "video_rejected": "Video rejected",
+  "no_pending_suggestions": "No pending suggestions",
+  "pending": "Pending",
+  "reviewed": "Reviewed",
+  "suggested_by": "By",
+  "approve": "Approve",
+  "reject": "Reject"
 }

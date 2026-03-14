@@ -99,5 +99,14 @@
     "ai_weekly_insight": "Insight IA hebdo",
     "progress_photos": "Photos progression",
     "strength_charts": "Graphiques progression"
-  }
+  },
+  "video_suggestions_title": "Suggestions vidéos",
+  "video_approved": "Vidéo approuvée ✓",
+  "video_rejected": "Vidéo rejetée",
+  "no_pending_suggestions": "Aucune suggestion en attente",
+  "pending": "En attente",
+  "reviewed": "Traitées",
+  "suggested_by": "Par",
+  "approve": "Approuver",
+  "reject": "Rejeter"
 }

@@ -28,6 +28,7 @@ import AdminFeatures from "./pages/admin/AdminFeatures";
 import AdminOverrides from "./pages/admin/AdminOverrides";
 import AdminSupport from "./pages/admin/AdminSupport";
 import AdminKB from "./pages/admin/AdminKB";
+import AdminVideoSuggestions from "./pages/admin/AdminVideoSuggestions";
 
 import CoachLayout from "./layouts/CoachLayout";
 import CoachDashboard from "./pages/coach/CoachDashboard";
@@ -96,6 +97,7 @@ const App = () => (
                   <Route path="overrides" element={<AdminOverrides />} />
                   <Route path="support" element={<AdminSupport />} />
                   <Route path="kb" element={<AdminKB />} />
+                  <Route path="videos" element={<AdminVideoSuggestions />} />
                 </Route>
 
                 <Route path="/coach" element={<AuthGuard role="coach"><CoachLayout /></AuthGuard>}>
