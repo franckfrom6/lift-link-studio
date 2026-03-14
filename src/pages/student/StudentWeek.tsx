@@ -138,9 +138,8 @@ const StudentWeek = () => {
 
   // Fetch free sessions callback for FreeSessionCreator
   const fetchFreeSessions = useCallback(async () => {
-    // Re-trigger by changing weekOffset slightly - the hook will refetch
-    setWeekOffset(prev => prev);
-  }, []);
+    queryClient.invalidateQueries({ queryKey: ['week-free-sessions'] });
+  }, [queryClient]);
 
   const mappedSwaps = useMemo(() =>
     dbSwaps.map(s => ({ originalDay: s.original_day - 1, newDay: s.new_day - 1, reason: s.reason })),
@@ -333,7 +332,11 @@ const StudentWeek = () => {
       await supabase.from("coach_notifications").insert({
         coach_id: coachRel.coach_id,
         student_id: studentId,
-        message: `${athleteName} a supprimé la séance "${deleteTarget.name}"`,
+        message: JSON.stringify({
+          key: "session_deleted_by_athlete",
+          athlete: athleteName,
+          session: deleteTarget.name
+        }),
       });
     }
 

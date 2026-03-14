@@ -135,5 +135,6 @@
   "session_already_completed": "Séance déjà complétée — non modifiable",
   "session_restored": "Séance restaurée",
   "restore_session": "Restaurer",
-  "deleted_by_athlete": "Supprimée par l'athlète"
+  "deleted_by_athlete": "Supprimée par l'athlète",
+  "session_deleted_by_athlete": "{{athlete}} a supprimé la séance \"{{session}}\""
 }
