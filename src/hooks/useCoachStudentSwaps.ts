@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface StudentSwap {
@@ -14,46 +15,42 @@ export interface StudentSwap {
 }
 
 export const useCoachStudentSwaps = (studentId?: string) => {
-  const [swaps, setSwaps] = useState<StudentSwap[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const queryKey = ['coach-student-swaps', studentId];
 
-  useEffect(() => {
-    if (!studentId) return;
-
-    const fetchData = async () => {
-      setLoading(true);
+  const { data: swaps = [], isLoading: loading } = useQuery({
+    queryKey,
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("session_swaps")
         .select("*")
-        .eq("student_id", studentId)
+        .eq("student_id", studentId!)
         .order("created_at", { ascending: false })
         .limit(20);
+      if (error) throw error;
+      return (data as StudentSwap[]) || [];
+    },
+    enabled: !!studentId,
+    staleTime: 30 * 1000,
+  });
 
-      if (!error && data) setSwaps(data as StudentSwap[]);
-      setLoading(false);
-    };
-
-    (async () => {
-      try {
-        await fetchData();
-      } catch (err) {
-        console.error("Fetch error:", err);
-      }
-    })();
-
-    // Realtime
+  // Realtime filtered by student_id
+  useEffect(() => {
+    if (!studentId) return;
     const channel = supabase
-      .channel(`coach-swaps-${studentId}`)
+      .channel(`coach-swaps-rt-${studentId}`)
       .on("postgres_changes", {
         event: "*",
         schema: "public",
         table: "session_swaps",
         filter: `student_id=eq.${studentId}`,
-      }, () => { fetchData().catch(console.error); })
+      }, () => {
+        queryClient.invalidateQueries({ queryKey });
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [studentId]);
+  }, [studentId, queryClient]);
 
   return { swaps, loading };
 };
