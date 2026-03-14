@@ -57,6 +57,7 @@ const EnhancedExerciseCard = ({
   name, sets: targetSets, repsMin, repsMax, restSeconds,
   tempo, rpeTarget, suggestedWeight, coachNotes,
   videoUrl, videoSearchQuery,
+  videoUrlFemale, videoUrlMale, exerciseVideoUrl,
   isActive, completedSets, onCompletedSetsChange, onAllSetsComplete,
   onSwapExercise, onSkipExercise, hasAlternatives, isSubstituted, isSkipped,
   previousSets,
