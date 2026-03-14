@@ -69,6 +69,7 @@ const LiveSession = () => {
   const [skipModalOpen, setSkipModalOpen] = useState(false);
   const [skipTargetKey, setSkipTargetKey] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [hasStartedWorkout, setHasStartedWorkout] = useState(false);
 
   // Track which exercises' sets have been saved to DB
   const savedExercisesRef = useRef<Set<string>>(new Set());
