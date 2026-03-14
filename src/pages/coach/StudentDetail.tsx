@@ -232,7 +232,14 @@ const StudentDetail = () => {
             {student.full_name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-bold truncate">{student.full_name}</h1>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-lg sm:text-xl font-bold truncate">{student.full_name}</h1>
+              {(student as any).display_mode === "advanced" ? (
+                <Zap className="w-4 h-4 text-primary shrink-0" strokeWidth={2} />
+              ) : (
+                <Target className="w-4 h-4 text-muted-foreground shrink-0" strokeWidth={2} />
+              )}
+            </div>
             <p className="text-xs sm:text-sm text-muted-foreground">
               {student.goal ? t('dashboard:goals.' + student.goal, student.goal) : '—'} · {student.level ? t('dashboard:levels.' + student.level, student.level) : '—'}
             </p>
