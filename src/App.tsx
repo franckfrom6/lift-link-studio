@@ -28,6 +28,7 @@ import AdminFeatures from "./pages/admin/AdminFeatures";
 import AdminOverrides from "./pages/admin/AdminOverrides";
 import AdminSupport from "./pages/admin/AdminSupport";
 import AdminKB from "./pages/admin/AdminKB";
+import AdminVideoSuggestions from "./pages/admin/AdminVideoSuggestions";
 
 import CoachLayout from "./layouts/CoachLayout";
 import CoachDashboard from "./pages/coach/CoachDashboard";
