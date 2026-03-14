@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dumbbell, Search, ChevronDown, Film } from "lucide-react";
+import { Dumbbell, Search, ChevronDown, Film, Video } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,10 @@ import { getExerciseName, getMuscleGroupLabel, getEquipmentLabel } from "@/lib/e
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 const CoachExercises = () => {
   const { exercises, loading } = useExercises();
