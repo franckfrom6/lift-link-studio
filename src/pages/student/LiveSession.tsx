@@ -619,6 +619,9 @@ const LiveSession = () => {
                       coachNotes={ex.notes || null}
                       videoUrl={ex.video || null}
                       videoSearchQuery={ex.videoSearchQuery || ex.name || null}
+                      videoUrlFemale={ex.videoUrlFemale || null}
+                      videoUrlMale={ex.videoUrlMale || null}
+                      exerciseVideoUrl={ex.exerciseVideoUrl || null}
                       isActive={isActive}
                       completedSets={sets}
                       onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
