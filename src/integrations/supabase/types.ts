@@ -1539,8 +1539,11 @@ export type Database = {
           created_at: string
           created_by: string | null
           day_of_week: number
+          deleted_at: string | null
+          deleted_by: string | null
           free_session_date: string | null
           id: string
+          is_deleted: boolean | null
           is_free_session: boolean
           name: string
           notes: string | null
@@ -1550,8 +1553,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           day_of_week: number
+          deleted_at?: string | null
+          deleted_by?: string | null
           free_session_date?: string | null
           id?: string
+          is_deleted?: boolean | null
           is_free_session?: boolean
           name: string
           notes?: string | null
@@ -1561,8 +1567,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           day_of_week?: number
+          deleted_at?: string | null
+          deleted_by?: string | null
           free_session_date?: string | null
           id?: string
+          is_deleted?: boolean | null
           is_free_session?: boolean
           name?: string
           notes?: string | null
