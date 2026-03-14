@@ -157,6 +157,24 @@ const StudentDetail = () => {
 
     setFeedbacks(fbData || []);
 
+    // Fetch deleted sessions count this week
+    if (prog) {
+      const { data: weekRows } = await supabase
+        .from("program_weeks")
+        .select("id")
+        .eq("program_id", prog.id);
+
+      if (weekRows && weekRows.length > 0) {
+        const weekIds = weekRows.map(w => w.id);
+        const { count } = await supabase
+          .from("sessions")
+          .select("id", { count: "exact", head: true })
+          .in("week_id", weekIds)
+          .eq("is_deleted", true);
+        setDeletedSessionCount(count || 0);
+      }
+    }
+
     setLoading(false);
   };
 
