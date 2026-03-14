@@ -671,6 +671,23 @@ const StudentWeek = () => {
           programId={program?.id}
         />
       )}
+
+      {/* First steps checklist */}
+      <FirstStepsChecklist />
+
+      {/* Onboarding tooltips */}
+      <OnboardingTooltip
+        stepKey="welcome_seen"
+        title={t('common:onboarding_welcome_title')}
+        description={t('common:onboarding_welcome_desc')}
+        position="center"
+      />
+      <OnboardingTooltip
+        stepKey="program_seen"
+        title={t('common:onboarding_program_title')}
+        description={t('common:onboarding_program_desc')}
+        position="bottom"
+      />
     </div>
   );
 };
