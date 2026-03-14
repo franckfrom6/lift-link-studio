@@ -50,9 +50,6 @@ const StudentLayout = () => {
         </nav>
 
         <div className="border-t border-border pt-4 space-y-3">
-          <div className="px-2">
-            <DisplayModeToggle />
-          </div>
           <div className="flex items-center justify-between px-2">
             <p className="text-sm font-medium truncate">{t('common:roles.student', 'Athlète')}</p>
             <UserMenu />
