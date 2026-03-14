@@ -1,4 +1,4 @@
-import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy, Trash2 } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy, Trash2, MoreVertical } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
