@@ -147,14 +147,14 @@ const WeeklyCheckinForm = ({ open, onClose, onSubmit, weekStart, initialData }: 
           {soreness >= 3 && (
             <div className="space-y-2 animate-fade-in">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('sore_areas')}</Label>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {SORENESS_LOCATIONS.map((loc) => (
                   <button
                     key={loc.id}
                     type="button"
                     onClick={() => toggleLocation(loc.id)}
                     className={cn(
-                      "px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all",
+                      "px-3 py-2.5 min-h-[44px] rounded-lg text-[11px] font-medium border transition-all",
                       sorenessLocations.includes(loc.id)
                         ? "border-destructive/50 bg-destructive/10 text-destructive"
                         : "border-border text-muted-foreground hover:border-destructive/30"
