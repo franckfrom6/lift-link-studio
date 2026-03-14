@@ -274,6 +274,7 @@ const StudentWeek = () => {
       .select("id")
       .eq("student_id", user.id)
       .eq("session_id", deleteTarget.id)
+      .not("completed_at", "is", null)
       .maybeSingle();
 
     if (completedErr) {
