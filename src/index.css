@@ -210,3 +210,23 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Minimum card padding on very small screens */
+@media (max-width: 374px) {
+  .glass,
+  [class*="rounded-xl"][class*="border"][class*="p-3"],
+  [class*="rounded-xl"][class*="border"][class*="p-2"] {
+    padding: 12px !important;
+  }
+}
+
+/* Scroll-snap for horizontal scroll containers */
+.snap-x {
+  scroll-snap-type: x mandatory;
+}
+.snap-start {
+  scroll-snap-align: start;
+}
+.snap-center {
+  scroll-snap-align: center;
+}
