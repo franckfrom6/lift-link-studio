@@ -3,6 +3,7 @@ import { Dumbbell, Users, ClipboardList, LayoutDashboard, BookOpen, CreditCard, 
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
 import InviteClientModal from "@/components/InviteClientModal";
+import HelpButton from "@/components/onboarding/HelpButton";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
