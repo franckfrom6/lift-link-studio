@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Apple } from "lucide-react";
+import { User, Apple, Bell } from "lucide-react";
 import NutritionProfileForm, { NutritionProfileData } from "@/components/nutrition/NutritionProfileForm";
 import MacroDonut from "@/components/nutrition/MacroDonut";
+import NotificationSettings from "@/components/student/NotificationSettings";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 
 const StudentProfile = () => {
-  const { t } = useTranslation(['nutrition', 'dashboard', 'common']);
+  const { t } = useTranslation(['nutrition', 'dashboard', 'common', 'settings']);
   const isAdvanced = useIsAdvanced();
   const [nutritionProfile, setNutritionProfile] = useState<NutritionProfileData | null>(null);
 
@@ -32,6 +33,10 @@ const StudentProfile = () => {
           <TabsTrigger value="nutrition" className="flex-1 gap-1.5">
             <Apple className="w-3.5 h-3.5" strokeWidth={1.5} />
             {t('nutrition:nutrition_tab')}
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-1 gap-1.5">
+            <Bell className="w-3.5 h-3.5" strokeWidth={1.5} />
+            {t('settings:notif_title')}
           </TabsTrigger>
         </TabsList>
 
@@ -95,6 +100,10 @@ const StudentProfile = () => {
               onSubmit={handleNutritionSubmit}
             />
           </div>
+        </TabsContent>
+
+        <TabsContent value="notifications" className="mt-4">
+          <NotificationSettings />
         </TabsContent>
       </Tabs>
     </div>

@@ -8,6 +8,7 @@ import { useCoachDashboard } from "@/hooks/useCoachDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import InviteClientModal from "@/components/InviteClientModal";
 import CoachInviteToken from "@/components/coach/CoachInviteToken";
+import CoachNotifyModal from "@/components/coach/CoachNotifyModal";
 
 const CoachStudents = () => {
   const [search, setSearch] = useState("");
@@ -74,9 +75,12 @@ const CoachStudents = () => {
                 {student.programName && (
                   <p className="text-[11px] text-muted-foreground/70 mt-0.5 truncate">{student.programName}</p>
                 )}
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" strokeWidth={1.5} />
-            </button>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <CoachNotifyModal studentId={student.id} studentName={student.name} />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" strokeWidth={1.5} />
+                </div>
+              </button>
           ))}
         </div>
       )}

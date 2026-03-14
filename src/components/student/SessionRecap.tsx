@@ -2,7 +2,7 @@ import { CompletedSet } from "@/components/student/ExerciseTracker";
 import { ProgramExerciseDetail } from "@/data/yana-program";
 import { Trophy, Clock, Dumbbell, TrendingUp, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import RecommendationSheet from "@/components/nutrition/RecommendationSheet";
 import SessionFeedbackWizard, { FeedbackData } from "@/components/student/SessionFeedbackWizard";
 import { useTranslation } from "react-i18next";
@@ -26,6 +26,11 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
   const [recoOpen, setRecoOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
+
+  // Vibrate on session complete
+  useEffect(() => {
+    try { navigator.vibrate?.([300, 100, 300, 100, 500]); } catch {}
+  }, []);
 
   const totalSets = Object.values(completedSets).reduce((acc, sets) => acc + sets.length, 0);
   const totalReps = Object.values(completedSets).reduce(

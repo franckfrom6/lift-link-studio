@@ -20,6 +20,8 @@ const RestTimer = ({ initialSeconds, onComplete, autoStart = true }: RestTimerPr
         if (s <= 1) {
           setRunning(false);
           setFinished(true);
+          // Vibrate on rest complete
+          try { navigator.vibrate?.([200, 100, 200]); } catch {}
           onComplete?.();
           return 0;
         }
