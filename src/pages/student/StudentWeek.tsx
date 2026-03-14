@@ -526,14 +526,24 @@ const StudentWeek = () => {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {isSessionDay && !swapMode && (
-                          <Button
-                            variant="ghost" size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            onClick={(e) => { e.stopPropagation(); setSwapMode(true); setSwapSourceDay(day.dayIndex); }}
-                            aria-label={t('calendar:swap_session', 'Swap session')}
-                          >
-                            <ArrowLeftRight className="w-4 h-4" strokeWidth={1.5} />
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => { e.stopPropagation(); setDuplicateSession({ id: sessionInfo!.sessionId, name: sessionInfo!.name }); setDuplicateOpen(true); }}
+                              aria-label={t('session:duplicate_title', 'Duplicate session')}
+                            >
+                              <Copy className="w-4 h-4" strokeWidth={1.5} />
+                            </Button>
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => { e.stopPropagation(); setSwapMode(true); setSwapSourceDay(day.dayIndex); }}
+                              aria-label={t('calendar:swap_session', 'Swap session')}
+                            >
+                              <ArrowLeftRight className="w-4 h-4" strokeWidth={1.5} />
+                            </Button>
+                          </>
                         )}
                         {!swapMode && (
                           <>
