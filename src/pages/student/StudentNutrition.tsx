@@ -4,6 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DailyNutritionLog from "@/components/nutrition/DailyNutritionLog";
 import { MealLogData } from "@/components/nutrition/DailyNutritionLog";
+import WaterTracker from "@/components/student/WaterTracker";
+import ProteinTipsCard from "@/components/nutrition/ProteinTipsCard";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
@@ -39,7 +41,6 @@ const StudentNutrition = () => {
           fat_g: data.fat_g || 0,
         });
       } else {
-        // Fallback defaults
         setTargets({ calorie_target: 2100, protein_g: 120, carbs_g: 240, fat_g: 65 });
       }
     };
@@ -56,6 +57,7 @@ const StudentNutrition = () => {
         .select("*")
         .eq("student_id", user.id)
         .eq("date", dateStr)
+        .neq("meal_type", "water")
         .order("created_at", { ascending: true });
       
       if (error) {
@@ -151,7 +153,6 @@ const StudentNutrition = () => {
     }
   };
 
-  // Navigate between days
   const goToDay = (offset: number) => {
     const d = new Date(date);
     d.setDate(d.getDate() + offset);
@@ -185,6 +186,12 @@ const StudentNutrition = () => {
         onDeleteMeal={handleDeleteMeal}
         targets={targets}
       />
+
+      {/* Water tracker */}
+      <WaterTracker date={date} />
+
+      {/* Protein tips */}
+      <ProteinTipsCard />
 
       {/* Coach nutrition tips */}
       <div className="space-y-2">
