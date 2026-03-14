@@ -279,6 +279,8 @@ const LiveSession = () => {
   };
 
   const handleExerciseComplete = async (key: string) => {
+    // Mark workout as started once first exercise is completed
+    if (!hasStartedWorkout) setHasStartedWorkout(true);
     // Save sets for this exercise to DB
     await saveSetsForExercise(key);
 
