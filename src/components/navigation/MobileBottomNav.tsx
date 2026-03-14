@@ -42,11 +42,11 @@ const MobileBottomNav = ({ items }: MobileBottomNavProps) => {
   return (
     <nav
       className={cn(
-        "md:hidden fixed bottom-0 left-0 right-0 z-40",
+        "fixed bottom-0 left-0 right-0 z-40 md:hidden",
         "border-t border-border/50",
         "bg-background/80 backdrop-blur-xl backdrop-saturate-150",
-        "safe-area-bottom",
       )}
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="flex items-center overflow-x-auto scrollbar-hide px-2 py-1.5 gap-1">
         {items.map((item) => {
