@@ -621,7 +621,7 @@ const LiveSession = () => {
                 {mins}:{secs.toString().padStart(2, "0")}
               </span>
             </div>
-            {!completedSessionId && (
+            {!hasStartedWorkout && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('common:actions', 'Actions')}>

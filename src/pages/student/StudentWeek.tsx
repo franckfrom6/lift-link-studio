@@ -672,7 +672,7 @@ const StudentWeek = () => {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="absolute right-0 top-0 h-6 w-6 p-1 rounded-full text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 sm:opacity-0 sm:pointer-events-none sm:group-hover/day:opacity-100 sm:group-hover/day:pointer-events-auto"
+                                        className="absolute right-0 top-0 h-6 w-6 p-1 rounded-full text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 sm:opacity-30 sm:group-hover/day:opacity-100"
                                         onClick={(e) => {
                                           e.preventDefault();
                                           e.stopPropagation();
