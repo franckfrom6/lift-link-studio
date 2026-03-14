@@ -49,5 +49,15 @@
   "duration_sec": "Durée (s)",
   "distance_m": "Distance (m)",
   "demo_video": "Vidéo de démonstration",
-  "search_youtube": "Voir sur YouTube"
+  "search_youtube": "Voir sur YouTube",
+  "suggest_video": "Suggérer une vidéo",
+  "suggest_video_desc": "Suggérer une vidéo de démo pour cet exercice",
+  "gender_target": "Genre cible",
+  "gender_female": "Femme",
+  "gender_male": "Homme",
+  "gender_both": "Les deux",
+  "suggestion_note": "Note (optionnel)",
+  "suggestion_note_placeholder": "ex: Meilleure démo hip thrust",
+  "send_suggestion": "Envoyer la suggestion",
+  "suggestion_sent": "Suggestion envoyée ✓"
 }
