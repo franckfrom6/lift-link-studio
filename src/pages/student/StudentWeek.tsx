@@ -237,24 +237,54 @@ const StudentWeek = () => {
 
   const handleDeleteSession = async () => {
     if (!deleteTarget || !user) return;
-    const { error } = await supabase
+
+    const { data: completedSession, error: completedErr } = await supabase
+      .from("completed_sessions")
+      .select("id")
+      .eq("session_id", deleteTarget.id)
+      .maybeSingle();
+
+    if (completedErr) {
+      console.error("Error checking completed session:", completedErr);
+      toast.error(t("common:error"));
+      return;
+    }
+
+    if (completedSession) {
+      toast.error(t("session:session_already_completed"));
+      setDeleteDialogOpen(false);
+      setDeleteTarget(null);
+      return;
+    }
+
+    const { data: updatedSession, error } = await supabase
       .from("sessions")
       .update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: user.id })
-      .eq("id", deleteTarget.id);
+      .eq("id", deleteTarget.id)
+      .eq("is_deleted", false)
+      .select("id")
+      .maybeSingle();
+
     if (error) {
       console.error("Error deleting session:", error);
       toast.error(t("common:error"));
+    } else if (!updatedSession) {
+      toast.error(t("session:session_already_completed"));
     } else {
       toast.success(t("session:session_deleted"));
-      refetch();
-      // Also refresh free sessions list
-      queryClient.invalidateQueries({ queryKey: ['week-free-sessions'] });
+      await Promise.all([
+        refetch(),
+        queryClient.invalidateQueries({ queryKey: ["student-program", studentId] }),
+        queryClient.invalidateQueries({ queryKey: ["week-free-sessions", studentId] }),
+      ]);
+
       const { data: coachRel } = await supabase
         .from("coach_students")
         .select("coach_id")
         .eq("student_id", user.id)
         .eq("status", "active")
         .maybeSingle();
+
       if (coachRel) {
         const { data: profile } = await supabase
           .from("profiles")
@@ -269,6 +299,7 @@ const StudentWeek = () => {
         });
       }
     }
+
     setDeleteDialogOpen(false);
     setDeleteTarget(null);
   };
