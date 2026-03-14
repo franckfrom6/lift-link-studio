@@ -687,7 +687,24 @@ const CoachProgramDetail = () => {
                 const totalExercises = session.sections.reduce((sum, s) => sum + s.exercises.length, 0);
 
                 return (
-                  <div className="border border-border rounded-xl overflow-hidden animate-fade-in">
+                  <div className={`border rounded-xl overflow-hidden animate-fade-in ${(session as any).is_deleted ? "border-destructive/40 opacity-70" : "border-border"}`}>
+                    {(session as any).is_deleted && (
+                      <div className="flex items-center justify-between px-4 py-2.5 bg-destructive/10 border-b border-destructive/20">
+                        <span className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                          {t("session:deleted_by_athlete")}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1 border-destructive/30 text-destructive hover:bg-destructive/10"
+                          onClick={() => restoreSession(session.id)}
+                        >
+                          <RotateCcw className="w-3 h-3" strokeWidth={1.5} />
+                          {t("session:restore_session")}
+                        </Button>
+                      </div>
+                    )}
                     {/* Session header */}
                     <div className="flex items-center gap-3 p-4 bg-secondary/30">
                       <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-xs font-bold text-accent-foreground">
