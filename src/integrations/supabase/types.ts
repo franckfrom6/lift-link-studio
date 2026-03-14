@@ -885,6 +885,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pilot_requests: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          objective: string | null
+          role: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          objective?: string | null
+          role?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          objective?: string | null
+          role?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       plan_features: {
         Row: {
           feature_key: string

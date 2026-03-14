@@ -16,6 +16,7 @@ import LandingPage from "./pages/LandingPage";
 import LegalPage from "./pages/LegalPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
+import LoginPage from "./pages/LoginPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PricingPage from "./pages/PricingPage";
@@ -29,6 +30,7 @@ import AdminOverrides from "./pages/admin/AdminOverrides";
 import AdminSupport from "./pages/admin/AdminSupport";
 import AdminKB from "./pages/admin/AdminKB";
 import AdminVideoSuggestions from "./pages/admin/AdminVideoSuggestions";
+import AdminPilotRequests from "./pages/admin/AdminPilotRequests";
 
 import CoachLayout from "./layouts/CoachLayout";
 import CoachDashboard from "./pages/coach/CoachDashboard";
@@ -84,6 +86,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/auth" element={<AuthRedirect><AuthPage /></AuthRedirect>} />
+                <Route path="/login" element={<AuthRedirect><LoginPage /></AuthRedirect>} />
                 <Route path="/legal/:slug" element={<LegalPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
@@ -98,6 +101,7 @@ const App = () => (
                   <Route path="support" element={<AdminSupport />} />
                   <Route path="kb" element={<AdminKB />} />
                   <Route path="videos" element={<AdminVideoSuggestions />} />
+                  <Route path="pilot" element={<AdminPilotRequests />} />
                 </Route>
 
                 <Route path="/coach" element={<AuthGuard role="coach"><CoachLayout /></AuthGuard>}>
