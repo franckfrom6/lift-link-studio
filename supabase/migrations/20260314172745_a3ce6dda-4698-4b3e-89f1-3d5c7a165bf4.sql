@@ -1,0 +1,1 @@
+UPDATE user_subscriptions SET plan_id = 'c9d6934e-64ab-4cd4-bb45-054a6f1ce691' WHERE user_id = '8eae4616-6a4c-4549-ab87-592b13d38825';
