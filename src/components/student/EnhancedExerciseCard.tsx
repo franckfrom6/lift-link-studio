@@ -534,13 +534,46 @@ const EnhancedExerciseCard = ({
     }
   };
 
+  // Format rest time as readable string
+  const formatRest = () => {
+    if (restSeconds <= 0) return "";
+    if (restSeconds >= 60) {
+      const m = Math.floor(restSeconds / 60);
+      const s = restSeconds % 60;
+      return s > 0 ? `${m}'${s.toString().padStart(2, '0')}` : `${m}'`;
+    }
+    return `${restSeconds}s`;
+  };
+
+  // Simple mode: inline text summary instead of badges
+  const renderSimpleSummary = () => {
+    const parts: string[] = [];
+    switch (trackingType) {
+      case "duration":
+        parts.push(`${targetSets}s`);
+        parts.push(repsMin >= 60 ? `${Math.floor(repsMin / 60)}min` : `${repsMin}s`);
+        break;
+      case "reps_only":
+        parts.push(`${targetSets} × ${repsMin === repsMax ? repsMin : `${repsMin}-${repsMax}`}`);
+        break;
+      case "distance":
+        parts.push(`${repsMin}m`);
+        parts.push(`${targetSets}s`);
+        break;
+      default:
+        parts.push(`${targetSets}s`);
+        parts.push(`${repsMin === repsMax ? repsMin : `${repsMin}-${repsMax}`} reps`);
+        break;
+    }
+    const rest = formatRest();
+    if (rest) parts.push(`${rest} rest`);
+    return parts.join(" · ");
+  };
+
   if (isSkipped) {
     return (
-      <div className="rounded-xl border border-border/50 bg-card/30 opacity-50 p-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-            <SkipForward className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-          </div>
+      <div className="rounded-xl border border-border/50 bg-card/30 opacity-50 p-2.5">
+        <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm truncate line-through">{name}</p>
           </div>
@@ -552,6 +585,158 @@ const EnhancedExerciseCard = ({
     );
   }
 
+  // ── SIMPLE MODE: compact collapsed header ──
+  const renderSimpleHeader = () => (
+    <div
+      className="flex items-center gap-2 p-2.5 cursor-pointer"
+      onClick={() => setExpanded(!expanded)}
+    >
+      <div className="flex-1 min-w-0">
+        {/* LINE 1: name + substituted badge */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-sm font-semibold truncate">{name}</p>
+          {isSubstituted && (
+            <span className="bg-warning/10 text-warning px-1 py-0.5 rounded text-[9px] font-bold shrink-0">
+              {t('modified')}
+            </span>
+          )}
+        </div>
+        {/* LINE 2: inline params */}
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">{renderSimpleSummary()}</p>
+      </div>
+
+      {/* Right side: action buttons (only if active) + status + chevron */}
+      <div className="flex items-center gap-0.5 shrink-0">
+        {isActive && !allDone && (
+          <>
+            {!isAdvanced && (tempo || rpeTarget) && (
+              <CoachInstructionsButton tempo={tempo} rpe={rpeTarget} coachNotes={coachNotes} />
+            )}
+            {onSkipExercise && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onSkipExercise?.(); }}
+                className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-warning hover:bg-warning/10 transition-colors"
+              >
+                <SkipForward className="w-3.5 h-3.5" strokeWidth={1.5} />
+              </button>
+            )}
+            {onSwapExercise && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}
+                className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+              </button>
+            )}
+          </>
+        )}
+        {allDone && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 20 }}
+          >
+            <Check className="w-4 h-4 text-success" strokeWidth={2} />
+          </motion.div>
+        )}
+        <motion.div
+          animate={{ rotate: expanded ? 180 : 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          className="ml-0.5"
+        >
+          <ChevronDown className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+        </motion.div>
+      </div>
+    </div>
+  );
+
+  // ── ADVANCED MODE: original header with icon + badges ──
+  const renderAdvancedHeader = () => (
+    <motion.div
+      className="flex items-center gap-3 p-3"
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+    >
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-3 flex-1 min-w-0 text-left"
+      >
+        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+          {trackingType === "duration" ? (
+            <Timer className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+          ) : trackingType === "distance" ? (
+            <Route className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+          ) : (
+            <Dumbbell className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start gap-1.5 flex-wrap">
+            <p className="font-semibold text-sm leading-snug break-words">{name}</p>
+            {isSubstituted && (
+              <span className="bg-warning/10 text-warning px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0">
+                {t('modified')}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {renderTags()}
+            {tempo && (
+              <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+                {tempo}
+              </span>
+            )}
+            {restSeconds > 0 && (
+              <span className="bg-tag-blue-bg text-tag-blue px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+                {formatRest()}
+              </span>
+            )}
+            {rpeTarget && (
+              <span className="bg-tag-orange-bg text-tag-orange px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+                RPE {rpeTarget}
+              </span>
+            )}
+          </div>
+        </div>
+      </button>
+      <div className="flex items-center gap-1 shrink-0">
+        {onSkipExercise && !allDone && isActive && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onSkipExercise?.(); }}
+            className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-warning hover:bg-warning/10 transition-colors"
+            title={t('skip_btn', 'Passer')}
+          >
+            <SkipForward className="w-3.5 h-3.5" strokeWidth={1.5} />
+          </button>
+        )}
+        {onSwapExercise && !allDone && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}
+            className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+          </button>
+        )}
+        {allDone && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 20 }}
+          >
+            <Check className="w-5 h-5 text-success shrink-0" strokeWidth={1.5} />
+          </motion.div>
+        )}
+        <motion.button
+          onClick={() => setExpanded(!expanded)}
+          animate={{ rotate: expanded ? 180 : 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        >
+          <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+
   return (
     <motion.div
       layout
@@ -559,98 +744,10 @@ const EnhancedExerciseCard = ({
       className={cn(
         "rounded-xl border transition-all",
         isActive ? "bg-card border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "bg-card/50 border-border/50",
-        "min-[0px]:p-0"
       )}
     >
-      {/* Compact header */}
-      <motion.div
-        className="flex items-center gap-3 p-3"
-        whileTap={{ scale: 0.97 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      >
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-3 flex-1 min-w-0 text-left"
-        >
-          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-            {trackingType === "duration" ? (
-              <Timer className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-            ) : trackingType === "distance" ? (
-              <Route className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-            ) : (
-              <Dumbbell className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start gap-1.5 flex-wrap">
-              <p className="font-semibold text-sm leading-snug break-words">{name}</p>
-              {isSubstituted && (
-                <span className="bg-warning-bg text-warning px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0">
-                  {t('modified')}
-                </span>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1.5 mt-1">
-              {renderTags()}
-              {isAdvanced && tempo && (
-                <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-                  {tempo}
-                </span>
-              )}
-              {restSeconds > 0 && (
-                <span className="bg-tag-blue-bg text-tag-blue px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-                  {restSeconds >= 60 ? `${Math.floor(restSeconds / 60)}'${restSeconds % 60 > 0 ? (restSeconds % 60).toString().padStart(2, '0') + '"' : ''}` : `${restSeconds}s`}
-                </span>
-              )}
-              {isAdvanced && rpeTarget && (
-                <span className="bg-tag-orange-bg text-tag-orange px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-                  RPE {rpeTarget}
-                </span>
-              )}
-            </div>
-          </div>
-        </button>
-        <div className="flex items-center gap-1 shrink-0">
-          {!isAdvanced && (tempo || rpeTarget) && (
-            <CoachInstructionsButton tempo={tempo} rpe={rpeTarget} coachNotes={coachNotes} />
-          )}
-          {onSkipExercise && !allDone && isActive && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onSkipExercise?.(); }}
-              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-warning hover:bg-warning/10 transition-colors"
-              title={t('skip_btn', 'Passer')}
-            >
-              <SkipForward className="w-3.5 h-3.5" strokeWidth={1.5} />
-            </button>
-          )}
-          {onSwapExercise && !allDone && (
-            <div className="flex items-center justify-center w-11 h-11">
-              <button
-                onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}
-                className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              >
-                <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
-              </button>
-            </div>
-          )}
-          {allDone && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 500, damping: 20 }}
-            >
-              <Check className="w-5 h-5 text-success shrink-0" strokeWidth={1.5} />
-            </motion.div>
-          )}
-          <motion.button
-            onClick={() => setExpanded(!expanded)}
-            animate={{ rotate: expanded ? 180 : 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          >
-            <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
-          </motion.button>
-        </div>
-      </motion.div>
+      {/* Header: Simple vs Advanced */}
+      {isAdvanced ? renderAdvancedHeader() : renderSimpleHeader()}
 
       {/* Expanded details with spring animation */}
       <AnimatePresence initial={false}>
