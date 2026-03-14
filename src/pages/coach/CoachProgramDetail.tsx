@@ -61,6 +61,9 @@ interface Session {
   notes: string | null;
   week_id: string;
   sections: Section[];
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 }
 
 interface Week {
