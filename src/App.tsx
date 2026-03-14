@@ -128,6 +128,11 @@ const App = () => (
                   <Route index element={<KBHome />} />
                   <Route path=":slug" element={<KBArticle />} />
                 </Route>
+                {/* Public /aide alias for KB */}
+                <Route path="/aide" element={<KBLayout />}>
+                  <Route index element={<KBHome />} />
+                  <Route path=":slug" element={<KBArticle />} />
+                </Route>
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
