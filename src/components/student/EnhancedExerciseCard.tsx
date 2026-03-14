@@ -230,13 +230,20 @@ const EnhancedExerciseCard = ({
         );
       default:
         return (
-          <div className="grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 min-w-[280px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
-            <span>Set</span>
-            <span>Kg</span>
-            <span>Reps</span>
-            <span className="text-center">Fail</span>
-            <span></span>
-          </div>
+          <>
+            {/* Desktop: 5-col grid */}
+            <div className="hidden xs:grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 min-w-[280px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
+              <span>Set</span>
+              <span>Kg</span>
+              <span>Reps</span>
+              <span className="text-center">Fail</span>
+              <span></span>
+            </div>
+            {/* Small screens: stacked header */}
+            <div className="xs:hidden text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
+              <span>Set / Kg / Reps</span>
+            </div>
+          </>
         );
     }
   };
