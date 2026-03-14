@@ -108,5 +108,19 @@
   "reviewed": "Traitées",
   "suggested_by": "Par",
   "approve": "Approuver",
-  "reject": "Rejeter"
+  "reject": "Rejeter",
+  "pilot_title": "Demandes pilote",
+  "pilot_filter_all": "Toutes",
+  "pilot_filter_pending": "En attente",
+  "pilot_filter_accepted": "Acceptées",
+  "pilot_filter_rejected": "Refusées",
+  "pilot_no_requests": "Aucune demande",
+  "pilot_accept": "Accepter",
+  "pilot_rejected": "Demande refusée",
+  "pilot_accepted": "Compte créé ✓",
+  "pilot_create_account": "Créer le compte",
+  "pilot_first_name": "Prénom",
+  "pilot_last_name": "Nom",
+  "pilot_temp_password": "Mot de passe temporaire",
+  "pilot_create_button": "Créer & Accepter"
 }

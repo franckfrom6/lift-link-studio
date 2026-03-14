@@ -108,5 +108,19 @@
   "reviewed": "Reviewed",
   "suggested_by": "By",
   "approve": "Approve",
-  "reject": "Reject"
+  "reject": "Reject",
+  "pilot_title": "Pilot Requests",
+  "pilot_filter_all": "All",
+  "pilot_filter_pending": "Pending",
+  "pilot_filter_accepted": "Accepted",
+  "pilot_filter_rejected": "Rejected",
+  "pilot_no_requests": "No requests",
+  "pilot_accept": "Accept",
+  "pilot_rejected": "Request rejected",
+  "pilot_accepted": "Account created ✓",
+  "pilot_create_account": "Create account",
+  "pilot_first_name": "First name",
+  "pilot_last_name": "Last name",
+  "pilot_temp_password": "Temporary password",
+  "pilot_create_button": "Create & Accept"
 }
