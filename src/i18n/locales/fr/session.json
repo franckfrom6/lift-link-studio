@@ -105,5 +105,12 @@
   "builder_eq_trx": "TRX",
   "coach_instructions": "📋 Consignes coach",
   "rest_simple": "Repos : {{seconds}}s",
-  "exercise_progress": "Progression des exercices"
+  "exercise_progress": "Progression des exercices",
+
+  "builder_draft_found": "Brouillon trouvé",
+  "builder_draft_desc": "Tu as une séance en cours de construction. Veux-tu la reprendre ?",
+  "builder_draft_resume": "Reprendre le brouillon",
+  "builder_draft_new": "Nouvelle séance",
+  "builder_save_template": "Sauvegarder comme programme",
+  "builder_template_saved": "Programme sauvegardé ! 📋"
 }

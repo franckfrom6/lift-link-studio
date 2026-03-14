@@ -105,5 +105,12 @@
   "builder_eq_trx": "TRX",
   "coach_instructions": "📋 Coach instructions",
   "rest_simple": "Rest: {{seconds}}s",
-  "exercise_progress": "Exercise progress"
+  "exercise_progress": "Exercise progress",
+
+  "builder_draft_found": "Draft found",
+  "builder_draft_desc": "You have a session being built. Want to resume?",
+  "builder_draft_resume": "Resume draft",
+  "builder_draft_new": "New session",
+  "builder_save_template": "Save as program",
+  "builder_template_saved": "Program saved! 📋"
 }

@@ -1,10 +1,11 @@
-import { UserRound, Dumbbell, Sparkles, Search } from "lucide-react";
+import { UserRound, Dumbbell, Sparkles, Search, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import CoachRecommendationList from "@/components/leadgen/CoachRecommendationList";
+import SessionBuilderModal from "./SessionBuilderModal";
 
 interface SelfGuidedDashboardProps {
   onStartAI: () => void;
@@ -15,6 +16,7 @@ const SelfGuidedDashboard = ({ onStartAI, onJoinCoach }: SelfGuidedDashboardProp
   const { t } = useTranslation(['dashboard', 'common', 'program', 'leadgen']);
   const [coachCode, setCoachCode] = useState("");
   const [showCodeInput, setShowCodeInput] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
@@ -90,6 +92,12 @@ const SelfGuidedDashboard = ({ onStartAI, onJoinCoach }: SelfGuidedDashboardProp
 
       {/* Lead gen: Recommended coaches */}
       <CoachRecommendationList />
+
+      <SessionBuilderModal
+        open={builderOpen}
+        onClose={() => setBuilderOpen(false)}
+        date={new Date()}
+      />
     </div>
   );
 };
