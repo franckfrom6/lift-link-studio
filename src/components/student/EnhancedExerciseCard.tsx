@@ -518,8 +518,8 @@ const EnhancedExerciseCard = ({
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="font-semibold text-sm truncate">{name}</p>
+            <div className="flex items-start gap-1.5 flex-wrap">
+              <p className="font-semibold text-sm leading-snug break-words">{name}</p>
               {isSubstituted && (
                 <span className="bg-warning-bg text-warning px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0">
                   {t('modified')}
