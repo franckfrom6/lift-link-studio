@@ -73,13 +73,6 @@ const CoachLayout = () => {
 
         {/* Mobile bottom nav */}
         <MobileBottomNav items={navItems} />
-
-        {/* FAB: Create program */}
-        <FloatingActionButton
-          icon={Plus}
-          label={t('program:create', 'Programme')}
-          onClick={() => navigate("/coach/programs")}
-        />
       </div>
 
       <AISidebarToggle onClick={() => setAiOpen(true)} />
