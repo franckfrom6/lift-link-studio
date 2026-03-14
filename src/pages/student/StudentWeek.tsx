@@ -233,6 +233,42 @@ const StudentWeek = () => {
     setSwapModalOpen(false);
   };
 
+  const handleDeleteSession = async () => {
+    if (!deleteTarget || !user) return;
+    const { error } = await supabase
+      .from("sessions")
+      .update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: user.id })
+      .eq("id", deleteTarget.id);
+    if (error) {
+      console.error("Error deleting session:", error);
+      toast.error(t("common:error"));
+    } else {
+      toast.success(t("session:session_deleted"));
+      // Notify coach if linked
+      const { data: coachRel } = await supabase
+        .from("coach_students")
+        .select("coach_id")
+        .eq("student_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (coachRel) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        const athleteName = profile?.full_name || user.email?.split("@")[0] || "";
+        await supabase.from("coach_notifications").insert({
+          coach_id: coachRel.coach_id,
+          student_id: user.id,
+          message: `🗑️ ${athleteName} a supprimé la séance "${deleteTarget.name}"`,
+        });
+      }
+    }
+    setDeleteDialogOpen(false);
+    setDeleteTarget(null);
+  };
+
   const targetHasSession = swapTargetDay !== null && !!effectiveSessions[swapTargetDay];
   const sourceDayHasSession = swapSourceDay !== null && !!effectiveSessions[swapSourceDay];
   const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "";
