@@ -174,7 +174,8 @@ const StudentWeek = () => {
         .from("completed_sessions")
         .select("session_id")
         .eq("student_id", studentId)
-        .in("session_id", visibleSessionIds);
+        .in("session_id", visibleSessionIds)
+        .not("completed_at", "is", null);
 
       if (error) {
         console.error("Error fetching completed sessions:", error);
