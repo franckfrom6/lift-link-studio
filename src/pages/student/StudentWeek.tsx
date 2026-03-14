@@ -547,6 +547,23 @@ const StudentWeek = () => {
                       }
                     }}
                   >
+                    {isSessionDay && sessionInfo && !sessionCompleted && !swapMode && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-7 w-7 text-muted-foreground opacity-0 pointer-events-none transition-opacity group-hover/day:opacity-100 group-hover/day:pointer-events-auto group-focus-within/day:opacity-100 group-focus-within/day:pointer-events-auto group-active/day:opacity-100 group-active/day:pointer-events-auto hover:text-destructive"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDeleteTarget({ id: sessionInfo.sessionId, name: sessionInfo.name, isFreeSession: false });
+                          setDeleteDialogOpen(true);
+                        }}
+                        aria-label={t('session:delete_session')}
+                      >
+                        <Trash2 className="h-[14px] w-[14px]" strokeWidth={1.5} />
+                      </Button>
+                    )}
+
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
                         <DateBadge
