@@ -20,6 +20,10 @@ import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
 import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import { useTranslation } from "react-i18next";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { useAuth } from "@/contexts/AuthContext";
