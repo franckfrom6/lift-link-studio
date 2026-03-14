@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -17,24 +17,24 @@ export const useProgressPhotos = () => {
   const { user } = useAuth();
   const { effectiveStudentId } = useImpersonation();
   const { t } = useTranslation("dashboard");
-  const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
-  const [loading, setLoading] = useState(true);
   const studentId = user ? effectiveStudentId(user.id) : null;
+  const queryClient = useQueryClient();
 
-  const fetchPhotos = async () => {
-    if (!studentId) return;
-    const { data } = await supabase
-      .from("progress_photos")
-      .select("*")
-      .eq("student_id", studentId)
-      .order("date", { ascending: false });
-    if (data) setPhotos(data as ProgressPhoto[]);
-    setLoading(false);
-  };
+  const queryKey = ['progress-photos', studentId];
 
-  useEffect(() => {
-    fetchPhotos();
-  }, [studentId]);
+  const { data: photos = [], isLoading: loading } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("progress_photos")
+        .select("*")
+        .eq("student_id", studentId!)
+        .order("date", { ascending: false });
+      return (data as ProgressPhoto[]) || [];
+    },
+    enabled: !!studentId,
+    staleTime: 2 * 60 * 1000,
+  });
 
   const uploadPhoto = async (file: File, category: string, date: string, notes?: string) => {
     if (!user) return;
@@ -56,7 +56,7 @@ export const useProgressPhotos = () => {
     });
     if (!error) {
       toast.success(t("photo_uploaded"));
-      fetchPhotos();
+      queryClient.invalidateQueries({ queryKey });
     }
   };
 

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -20,56 +21,46 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
   const { user } = useAuth();
   const { effectiveStudentId } = useImpersonation();
   const studentId = user ? effectiveStudentId(user.id) : null;
-  const [swaps, setSwaps] = useState<SessionSwap[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const weekKey = weekStartDate ? formatLocalDate(weekStartDate) : null;
 
-  const fetchSwaps = useCallback(async () => {
-    if (!studentId || !weekStartDate) return;
-    setLoading(true);
+  const queryKeyArr = ['session-swaps', studentId, weekKey];
 
-    const weekEnd = new Date(weekStartDate);
-    weekEnd.setDate(weekEnd.getDate() + 6);
+  const { data: swaps = [], isLoading: loading, refetch } = useQuery({
+    queryKey: queryKeyArr,
+    queryFn: async () => {
+      const weekEnd = new Date(weekStartDate!);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      const { data, error } = await supabase
+        .from("session_swaps")
+        .select("*")
+        .eq("student_id", studentId!)
+        .gte("new_date", formatLocalDate(weekStartDate!))
+        .lte("new_date", formatLocalDate(weekEnd));
+      if (error) throw error;
+      return (data as SessionSwap[]) || [];
+    },
+    enabled: !!studentId && !!weekStartDate,
+    staleTime: 30 * 1000,
+  });
 
-    const { data, error } = await supabase
-      .from("session_swaps")
-      .select("*")
-      .eq("student_id", studentId)
-      .gte("new_date", formatLocalDate(weekStartDate))
-      .lte("new_date", formatLocalDate(weekEnd));
-
-    if (!error && data) {
-      setSwaps(data as SessionSwap[]);
-    }
-    setLoading(false);
-  }, [studentId, weekStartDate]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        await fetchSwaps();
-      } catch (err) {
-        console.error("Fetch error:", err);
-      }
-    })();
-  }, [fetchSwaps]);
-
-  // Realtime subscription
+  // Realtime — already filtered by student_id
   useEffect(() => {
     if (!studentId) return;
     const channel = supabase
-      .channel("session-swaps-realtime")
+      .channel(`session-swaps-rt-${studentId}`)
       .on("postgres_changes", {
         event: "*",
         schema: "public",
         table: "session_swaps",
         filter: `student_id=eq.${studentId}`,
       }, () => {
-        fetchSwaps();
+        queryClient.invalidateQueries({ queryKey: ['session-swaps', studentId] });
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [studentId, fetchSwaps]);
+  }, [studentId, queryClient]);
 
   const createSwap = async (params: {
     sessionId: string;
@@ -80,7 +71,6 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
     reason?: string;
   }) => {
     if (!studentId) return null;
-
     const { data, error } = await supabase
       .from("session_swaps")
       .insert({
@@ -94,13 +84,13 @@ export const useSessionSwaps = (weekStartDate?: Date) => {
       })
       .select()
       .single();
-
     if (error) {
       console.error("Error creating swap:", error);
       return null;
     }
+    queryClient.invalidateQueries({ queryKey: ['session-swaps', studentId] });
     return data as SessionSwap;
   };
 
-  return { swaps, loading, createSwap, refetch: fetchSwaps };
+  return { swaps, loading, createSwap, refetch: () => refetch() };
 };
