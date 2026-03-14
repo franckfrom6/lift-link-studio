@@ -100,7 +100,32 @@ const CoachExercises = () => {
     }
   };
 
-  if (loading) {
+  const handleSendSuggestion = async () => {
+    if (!suggestExId || !user || !suggestUrl) return;
+    if (!isValidYouTubeUrl(suggestUrl)) {
+      toast.error("URL YouTube invalide");
+      return;
+    }
+    setSuggestSending(true);
+    const { error } = await supabase.from("video_suggestions").insert({
+      exercise_id: suggestExId,
+      suggested_by: user.id,
+      video_url: suggestUrl,
+      gender_target: suggestGender,
+      note: suggestNote || null,
+    } as any);
+    setSuggestSending(false);
+    if (error) {
+      console.error(error);
+      toast.error("Error");
+    } else {
+      toast.success(t("suggestion_sent"));
+      setSuggestExId(null);
+      setSuggestUrl("");
+      setSuggestGender("both");
+      setSuggestNote("");
+    }
+  };
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
