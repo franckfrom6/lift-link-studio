@@ -549,22 +549,6 @@ const StudentWeek = () => {
                       }
                     }}
                   >
-                    {isSessionDay && sessionInfo && !sessionCompleted && !swapMode && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-7 w-7 p-1 rounded-full text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 sm:opacity-30 sm:group-hover/day:opacity-100"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setDeleteTarget({ id: sessionInfo.sessionId, name: sessionInfo.name, isFreeSession: false });
-                          setDeleteDialogOpen(true);
-                        }}
-                        aria-label={t('session:delete_session')}
-                      >
-                        <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                      </Button>
-                    )}
 
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -702,12 +686,12 @@ const StudentWeek = () => {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0">
                         {isSessionDay && !swapMode && (
                           <>
                             <Button
                               variant="ghost" size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
                               onClick={(e) => { e.stopPropagation(); setDuplicateSession({ id: sessionInfo!.sessionId, name: sessionInfo!.name }); setDuplicateOpen(true); }}
                               aria-label={t('session:duplicate_title', 'Duplicate session')}
                             >
@@ -715,7 +699,7 @@ const StudentWeek = () => {
                             </Button>
                             <Button
                               variant="ghost" size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
                               onClick={(e) => { e.stopPropagation(); setSwapMode(true); setSwapSourceDay(day.dayIndex); }}
                               aria-label={t('calendar:swap_session', 'Swap session')}
                             >
@@ -727,7 +711,7 @@ const StudentWeek = () => {
                           <>
                             <Button
                               variant="ghost" size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
                               onClick={(e) => { e.stopPropagation(); setBuilderDate(day.date); setBuilderOpen(true); }}
                               aria-label={t('session:builder_title')}
                             >
@@ -735,13 +719,28 @@ const StudentWeek = () => {
                             </Button>
                             <Button
                               variant="ghost" size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
                               onClick={(e) => { e.stopPropagation(); handleAddExternal(day.date); }}
                               aria-label={t('calendar:add_external', 'Add external activity')}
                             >
                               <Plus className="w-4 h-4" strokeWidth={1.5} />
                             </Button>
                           </>
+                        )}
+                        {isSessionDay && sessionInfo && !sessionCompleted && !swapMode && (
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDeleteTarget({ id: sessionInfo.sessionId, name: sessionInfo.name, isFreeSession: false });
+                              setDeleteDialogOpen(true);
+                            }}
+                            aria-label={t('session:delete_session')}
+                          >
+                            <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                          </Button>
                         )}
                         {(isSessionDay || dayFreeSessions.length > 0) && !day.isPast && !swapMode ? (
                           <button
