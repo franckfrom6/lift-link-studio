@@ -80,6 +80,7 @@ const CoachStudents = () => {
                   <CoachNotifyModal studentId={student.id} studentName={student.name} />
                   <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" strokeWidth={1.5} />
                 </div>
+              </button>
           ))}
         </div>
       )}
