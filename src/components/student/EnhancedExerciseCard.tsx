@@ -4,13 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import CircularRestTimer from "./CircularRestTimer";
-import RestTimer from "./RestTimer";
+import LinearRestTimer from "./LinearRestTimer";
 import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
 import RPESelector from "./RPESelector";
 import CoachInstructionsButton from "./CoachInstructionsButton";
 import { useTranslation } from "react-i18next";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import ExercisePhoto from "./ExercisePhoto";
+import { AnimatePresence, motion } from "framer-motion";
 
 export type TrackingType = "weight_reps" | "reps_only" | "duration" | "distance";
 
@@ -252,19 +253,21 @@ const EnhancedExerciseCard = ({
     const isCurrent = i === currentSetIdx && !allDone;
     const isDone = i < currentSetIdx || allDone;
     const rowClass = cn(
-      "gap-1.5 items-center p-1.5 rounded-lg transition-colors",
-      isCurrent && "bg-accent ring-1 ring-accent-foreground/20",
-      isDone && "opacity-60"
+      "gap-2 items-center p-1.5 rounded-xl transition-colors",
+      isCurrent && "bg-accent/80 ring-1 ring-primary/30",
+      isDone && "opacity-50"
     );
-    const inputClass = "h-9 text-center bg-background text-sm font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
+    const inputClass = "h-12 text-center bg-background text-base font-bold rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
     const checkButton = isCurrent ? (
-      <Button size="icon" className="h-9 w-9" onClick={() => validateSet(i)} disabled={!isSetComplete(set)}>
-        <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
-      </Button>
+      <motion.div whileTap={{ scale: 0.85 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
+        <Button size="icon" className="h-12 w-12 rounded-xl bg-primary" onClick={() => validateSet(i)} disabled={!isSetComplete(set)}>
+          <Check className="w-5 h-5" strokeWidth={2} />
+        </Button>
+      </motion.div>
     ) : (
-      <div className="h-9 w-9 flex items-center justify-center">
-        {isDone && <Check className="w-3.5 h-3.5 text-success" strokeWidth={1.5} />}
+      <div className="h-12 w-12 flex items-center justify-center">
+        {isDone && <Check className="w-5 h-5 text-emerald-400" strokeWidth={2} />}
       </div>
     );
 
@@ -607,21 +610,23 @@ const EnhancedExerciseCard = ({
             </div>
           )}
 
-          {showTimer && isActive && (
-            isAdvanced ? (
-              <CircularRestTimer
-                key={currentSetIdx}
-                initialSeconds={restSeconds}
-                onComplete={() => setShowTimer(false)}
-              />
-            ) : (
-              <RestTimer
-                key={currentSetIdx}
-                initialSeconds={restSeconds}
-                onComplete={() => setShowTimer(false)}
-              />
-            )
-          )}
+          <AnimatePresence>
+            {showTimer && isActive && (
+              isAdvanced ? (
+                <CircularRestTimer
+                  key={currentSetIdx}
+                  initialSeconds={restSeconds}
+                  onComplete={() => setShowTimer(false)}
+                />
+              ) : (
+                <LinearRestTimer
+                  key={currentSetIdx}
+                  initialSeconds={restSeconds}
+                  onComplete={() => setShowTimer(false)}
+                />
+              )
+            )}
+          </AnimatePresence>
 
           {isActive && completedSets.length > 0 && (
             <div className="space-y-2">

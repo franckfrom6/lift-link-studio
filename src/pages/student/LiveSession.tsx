@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
@@ -10,26 +10,15 @@ import ExerciseAlternativesSheet from "@/components/student/ExerciseAlternatives
 import SessionSection from "@/components/student/SessionSection";
 import SessionRecap from "@/components/student/SessionRecap";
 import ProgressionTimeline, { ProgressionPhase } from "@/components/student/ProgressionTimeline";
-import { ArrowLeft, Clock, User, TrendingUp, MoreVertical, Trash2 } from "lucide-react";
-import { useIsAdvanced } from "@/contexts/DisplayModeContext";
+import WorkoutStatsBar from "@/components/student/WorkoutStatsBar";
+import NextExercisePreview from "@/components/student/NextExercisePreview";
 import ShareSessionButton from "@/components/student/ShareSessionButton";
+import { Clock } from "lucide-react";
+import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -38,6 +27,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { AnimatePresence, motion } from "framer-motion";
+import confetti from "canvas-confetti";
 
 interface Substitution {
   key: string;
@@ -56,7 +47,7 @@ const LiveSession = () => {
   const isAdvanced = useIsAdvanced();
   const { effectiveStudentId } = useImpersonation();
   const studentId = user ? effectiveStudentId(user.id) : null;
-  
+
   const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>({});
   const [sessionDone, setSessionDone] = useState(false);
   const [startTime] = useState(Date.now());
@@ -64,7 +55,6 @@ const LiveSession = () => {
   const [activeExerciseKey, setActiveExerciseKey] = useState<string>("0-0");
   const [showProgression, setShowProgression] = useState(false);
   const [completedSessionId, setCompletedSessionId] = useState<string | null>(null);
-
   const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
   const [swapTargetKey, setSwapTargetKey] = useState<string | null>(null);
@@ -74,22 +64,25 @@ const LiveSession = () => {
   const [skipTargetKey, setSkipTargetKey] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [hasStartedWorkout, setHasStartedWorkout] = useState(false);
-
-  // Track which exercises' sets have been saved to DB
   const savedExercisesRef = useRef<Set<string>>(new Set());
-
-  // selectedSessionId comes from URL params now
-
   const [freeSession, setFreeSession] = useState<any>(null);
   const [freeSessionLoading, setFreeSessionLoading] = useState(false);
 
+  // Apply dark theme on mount for immersive workout
+  useEffect(() => {
+    document.documentElement.classList.add("dark");
+    document.body.style.backgroundColor = "#09090b";
+    return () => {
+      // Restore theme on unmount — ThemeContext will handle it
+      document.body.style.backgroundColor = "";
+    };
+  }, []);
+
   const programSession = useMemo(() => {
     const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
-    if (sessions.length === 0) return null;
     return sessions.find((s) => s.id === selectedSessionId) || null;
   }, [dbProgram?.weeks, selectedSessionId]);
 
-  // If not found in program, fetch as free session
   useEffect(() => {
     if (programSession || !selectedSessionId) return;
     setFreeSessionLoading(true);
@@ -109,7 +102,6 @@ const LiveSession = () => {
         .eq("id", selectedSessionId)
         .maybeSingle();
       if (data) {
-        // Shape it like a program session
         const sections = (data.session_sections || [])
           .sort((a: any, b: any) => a.sort_order - b.sort_order)
           .map((sec: any) => ({
@@ -118,7 +110,6 @@ const LiveSession = () => {
               .filter((e: any) => e.section_id === sec.id)
               .sort((a: any, b: any) => a.sort_order - b.sort_order),
           }));
-        // Exercises without a section
         const unsectioned = (data.session_exercises || [])
           .filter((e: any) => !e.section_id)
           .sort((a: any, b: any) => a.sort_order - b.sort_order);
@@ -134,24 +125,22 @@ const LiveSession = () => {
 
   const selectedSession = programSession || freeSession;
 
-  // Map exercise keys to session_exercise IDs for DB persistence
   const sessionExerciseIdMap = useMemo(() => {
     if (!selectedSession) return {};
     const map: Record<string, string> = {};
-    selectedSession.sections.forEach((section, sIdx) => {
-      section.exercises.forEach((ex, eIdx) => {
+    selectedSession.sections.forEach((section: any, sIdx: number) => {
+      section.exercises.forEach((ex: any, eIdx: number) => {
         map[`${sIdx}-${eIdx}`] = ex.id;
       });
     });
     return map;
   }, [selectedSession]);
 
-  // Build a map of exercise key -> tracking type from DB data
   const trackingTypeMap = useMemo(() => {
     if (!selectedSession) return {};
     const map: Record<string, string> = {};
-    selectedSession.sections.forEach((section, sIdx) => {
-      section.exercises.forEach((ex, eIdx) => {
+    selectedSession.sections.forEach((section: any, sIdx: number) => {
+      section.exercises.forEach((ex: any, eIdx: number) => {
         map[`${sIdx}-${eIdx}`] = (ex.exercise as any)?.tracking_type || "weight_reps";
       });
     });
@@ -160,11 +149,11 @@ const LiveSession = () => {
 
   const mappedSections = useMemo<ProgramSection[]>(() => {
     if (!selectedSession) return [];
-    return selectedSession.sections.map((section) => ({
+    return selectedSession.sections.map((section: any) => ({
       name: section.name,
       duration: section.duration_estimate || "",
       notes: section.notes || "",
-      exercises: section.exercises.map((ex) => ({
+      exercises: section.exercises.map((ex: any) => ({
         name: ex.exercise?.name || "Exercice",
         sets: String(ex.sets ?? ""),
         reps: ex.reps_min === ex.reps_max ? String(ex.reps_min) : `${ex.reps_min}-${ex.reps_max}`,
@@ -184,35 +173,17 @@ const LiveSession = () => {
   }, [selectedSession]);
 
   const progressionPhases = useMemo<ProgressionPhase[]>(() => {
-    const phases = dbProgram?.progression?.length
-      ? dbProgram.progression.map((p) => ({
-          id: p.id,
-          weekLabel: p.week_label,
-          description: p.description,
-          weekStart: p.week_start,
-          weekEnd: p.week_end,
-          isDeload: p.is_deload,
-          order: p.sort_order,
-        }))
-      : [];
-
-    return phases;
+    return (dbProgram?.progression || []).map((p: any) => ({
+      id: p.id, weekLabel: p.week_label, description: p.description,
+      weekStart: p.week_start, weekEnd: p.week_end, isDeload: p.is_deload, order: p.sort_order,
+    }));
   }, [dbProgram?.progression]);
 
-  const sessionProgram = useMemo(() => {
-    if (!selectedSession || mappedSections.length === 0) {
-      return {
-        title: selectedSession?.name || "Séance",
-        sections: mappedSections.length > 0 ? mappedSections : [],
-        progression: [],
-      };
-    }
-    return {
-      title: selectedSession.name,
-      sections: mappedSections,
-      progression: progressionPhases.map((p) => `${p.weekLabel}: ${p.description}`),
-    };
-  }, [selectedSession, mappedSections, progressionPhases]);
+  const sessionProgram = useMemo(() => ({
+    title: selectedSession?.name || "Séance",
+    sections: mappedSections,
+    progression: progressionPhases.map((p) => `${p.weekLabel}: ${p.description}`),
+  }), [selectedSession, mappedSections, progressionPhases]);
 
   const getExerciseName = (sIdx: number, eIdx: number): string => {
     const key = `${sIdx}-${eIdx}`;
@@ -225,13 +196,11 @@ const LiveSession = () => {
   // Timer
   useEffect(() => {
     if (sessionDone) return;
-    const interval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startTime) / 1000));
-    }, 1000);
+    const interval = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000);
     return () => clearInterval(interval);
   }, [startTime, sessionDone]);
 
-  // Create completed_session at mount (Bug 2 fix)
+  // Create completed_session at mount
   useEffect(() => {
     if (!user || !selectedSession?.id || completedSessionId || sessionDone) return;
     const create = async () => {
@@ -243,23 +212,16 @@ const LiveSession = () => {
         }).select("id").single();
         if (error) throw error;
         if (data) setCompletedSessionId(data.id);
-      } catch (e) {
-        console.error("Error creating completed session:", e);
-      }
+      } catch (e) { console.error("Error creating completed session:", e); }
     };
     create();
   }, [user, selectedSession?.id, startTime, completedSessionId, sessionDone]);
 
-  const mins = Math.floor(elapsed / 60);
-  const secs = elapsed % 60;
-
   const completedCount = Object.entries(completedSets).filter(([key, sets]) => !skippedExercises.has(key) && sets.length > 0 && sets.every(s => s.reps > 0)).length;
   const skippedCount = skippedExercises.size;
 
-  // Save sets for a given exercise key to DB
   const saveSetsForExercise = async (key: string) => {
-    if (!completedSessionId) return;
-    if (savedExercisesRef.current.has(key)) return;
+    if (!completedSessionId || savedExercisesRef.current.has(key)) return;
     const sets = completedSets[key] || [];
     const sessionExId = sessionExerciseIdMap[key];
     if (!sessionExId) return;
@@ -274,32 +236,37 @@ const LiveSession = () => {
     }));
     if (rows.length > 0) {
       const { error } = await supabase.from("completed_sets").insert(rows);
-      if (error) {
-        console.error("Error saving sets:", error);
-      } else {
-        savedExercisesRef.current.add(key);
-      }
+      if (!error) savedExercisesRef.current.add(key);
     }
   };
 
-  const handleExerciseComplete = async (key: string) => {
-    // Mark workout as started once first exercise is completed
-    if (!hasStartedWorkout) setHasStartedWorkout(true);
-    // Save sets for this exercise to DB
-    await saveSetsForExercise(key);
-
-    const [sIdx, eIdx] = key.split("-").map(Number);
-    let nextKey: string | null = null;
-    
+  // Find next exercise key from current
+  const getNextExerciseKey = useCallback((fromKey: string): string | null => {
+    const [sIdx, eIdx] = fromKey.split("-").map(Number);
     for (let si = sIdx; si < sessionProgram.sections.length; si++) {
       const startEi = si === sIdx ? eIdx + 1 : 0;
       for (let ei = startEi; ei < sessionProgram.sections[si].exercises.length; ei++) {
-        nextKey = `${si}-${ei}`;
-        break;
+        const candidate = `${si}-${ei}`;
+        if (!skippedExercises.has(candidate)) return candidate;
       }
-      if (nextKey) break;
     }
+    return null;
+  }, [sessionProgram.sections, skippedExercises]);
 
+  // Next exercise info for preview
+  const nextExerciseInfo = useMemo(() => {
+    const nextKey = getNextExerciseKey(activeExerciseKey);
+    if (!nextKey) return null;
+    const [sIdx, eIdx] = nextKey.split("-").map(Number);
+    const ex = sessionProgram.sections[sIdx]?.exercises[eIdx];
+    if (!ex) return null;
+    return { name: getExerciseName(sIdx, eIdx), sets: ex.sets, reps: ex.reps };
+  }, [activeExerciseKey, sessionProgram.sections, getNextExerciseKey]);
+
+  const handleExerciseComplete = async (key: string) => {
+    if (!hasStartedWorkout) setHasStartedWorkout(true);
+    await saveSetsForExercise(key);
+    const nextKey = getNextExerciseKey(key);
     if (nextKey) {
       setActiveExerciseKey(nextKey);
     } else {
@@ -309,225 +276,118 @@ const LiveSession = () => {
 
   const finishSession = async () => {
     setSessionDone(true);
-    toast.success(t('session:session_done'));
 
+    // Confetti burst
+    try {
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"] });
+      setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.5 } }), 300);
+    } catch {}
+
+    // Vibrate celebration
+    try { navigator.vibrate?.([100, 50, 100, 50, 200]); } catch {}
+
+    toast.success(t('session:session_done'));
     if (!completedSessionId) return;
 
     try {
-      // Save any unsaved exercises' sets
       for (const key of Object.keys(completedSets)) {
-        if (!skippedExercises.has(key)) {
-          await saveSetsForExercise(key);
-        }
+        if (!skippedExercises.has(key)) await saveSetsForExercise(key);
       }
-
-      // Update session with completion time
       await supabase.from("completed_sessions").update({
         completed_at: new Date().toISOString(),
         duration: elapsed,
       }).eq("id", completedSessionId);
-    } catch (e) {
-      console.error("Error finishing session:", e);
-    }
+    } catch (e) { console.error("Error finishing session:", e); }
   };
 
-  const handleOpenSkip = (key: string) => {
-    setSkipTargetKey(key);
-    setSkipModalOpen(true);
-  };
+  const handleOpenSkip = (key: string) => { setSkipTargetKey(key); setSkipModalOpen(true); };
 
   const handleConfirmSkip = async (reason: string | null, reasonDetail: string | null) => {
     if (!skipTargetKey || !completedSessionId) return;
     const sessionExId = sessionExerciseIdMap[skipTargetKey];
-
-    // Save to DB
     if (sessionExId) {
       await supabase.from("skipped_exercises").insert({
         completed_session_id: completedSessionId,
         session_exercise_id: sessionExId,
-        reason,
-        reason_detail: reasonDetail,
+        reason, reason_detail: reasonDetail,
       });
     }
-
     setSkippedExercises(prev => new Set(prev).add(skipTargetKey));
     setSkipModalOpen(false);
-
-    // Move to next exercise
-    const [sIdx, eIdx] = skipTargetKey.split("-").map(Number);
-    let nextKey: string | null = null;
-    for (let si = sIdx; si < sessionProgram.sections.length; si++) {
-      const startEi = si === sIdx ? eIdx + 1 : 0;
-      for (let ei = startEi; ei < sessionProgram.sections[si].exercises.length; ei++) {
-        const candidate = `${si}-${ei}`;
-        if (!skippedExercises.has(candidate)) {
-          nextKey = candidate;
-          break;
-        }
-      }
-      if (nextKey) break;
-    }
-
-    if (nextKey) {
-      setActiveExerciseKey(nextKey);
-    }
+    const nextKey = getNextExerciseKey(skipTargetKey);
+    if (nextKey) setActiveExerciseKey(nextKey);
     setSkipTargetKey(null);
   };
 
   const handleClose = () => {
     const sessionData = {
-      date: new Date().toISOString(),
-      duration: elapsed,
-      completedSets,
-      substitutions,
-      exerciseCount: allExercises.length,
-      completedCount,
+      date: new Date().toISOString(), duration: elapsed, completedSets,
+      substitutions, exerciseCount: allExercises.length, completedCount,
     };
     const history = JSON.parse(localStorage.getItem("session_history") || "[]");
     history.push(sessionData);
     localStorage.setItem("session_history", JSON.stringify(history));
-
     toast.success(t('session:session_saved'));
     navigate("/student");
   };
 
   const handleDeleteSession = async () => {
     if (!user || !selectedSession || !studentId) return;
-
-    // Check if session was actually completed (completed_at is set)
-    const { data: completedSession, error: completedErr } = await supabase
-      .from("completed_sessions")
-      .select("id")
-      .eq("student_id", studentId)
-      .eq("session_id", selectedSession.id)
-      .not("completed_at", "is", null)
-      .maybeSingle();
-
-    if (completedErr) {
-      console.error("Error checking completed session:", completedErr);
-      toast.error(t("common:error"));
-      return;
-    }
-
+    const { data: completedSession } = await supabase
+      .from("completed_sessions").select("id")
+      .eq("student_id", studentId).eq("session_id", selectedSession.id)
+      .not("completed_at", "is", null).maybeSingle();
     if (completedSession) {
       toast.error(t("session:session_already_completed"));
       setDeleteDialogOpen(false);
       return;
     }
-
-    // Clean up the incomplete completed_sessions row if it exists
     if (completedSessionId) {
-      await supabase
-        .from("completed_sessions")
-        .delete()
-        .eq("id", completedSessionId)
-        .eq("student_id", studentId);
+      await supabase.from("completed_sessions").delete()
+        .eq("id", completedSessionId).eq("student_id", studentId);
     }
-
     const sessionName = selectedSession.name;
     const { data: updatedSession, error } = await supabase
-      .from("sessions")
-      .update({
-        is_deleted: true,
-        deleted_at: new Date().toISOString(),
-        deleted_by: user.id,
-      })
-      .eq("id", selectedSession.id)
-      .eq("is_deleted", false)
-      .select("id")
-      .maybeSingle();
-
-    if (error) {
-      console.error("Error deleting session:", error);
-      toast.error(t("common:error"));
-      return;
-    }
-
-    if (!updatedSession) {
-      toast.error(t("session:session_already_completed"));
-      return;
-    }
-
+      .from("sessions").update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: user.id })
+      .eq("id", selectedSession.id).eq("is_deleted", false).select("id").maybeSingle();
+    if (error) { toast.error(t("common:error")); return; }
+    if (!updatedSession) { toast.error(t("session:session_already_completed")); return; }
     await queryClient.invalidateQueries({ queryKey: ["student-program"] });
-    if ((selectedSession as any).is_free_session) {
-      await queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
-    }
-
+    if ((selectedSession as any).is_free_session) await queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
     toast.success(t("session:session_deleted"));
 
-    const { data: coachRow } = await supabase
-      .from("coach_students")
-      .select("coach_id")
-      .eq("student_id", studentId)
-      .eq("status", "active")
-      .maybeSingle();
-
+    const { data: coachRow } = await supabase.from("coach_students")
+      .select("coach_id").eq("student_id", studentId).eq("status", "active").maybeSingle();
     if (coachRow?.coach_id) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("user_id", studentId)
-        .maybeSingle();
-
+      const { data: profile } = await supabase.from("profiles")
+        .select("full_name").eq("user_id", studentId).maybeSingle();
       const athleteName = profile?.full_name || user.email?.split("@")[0] || "Athlète";
       await supabase.from("coach_notifications").insert({
-        coach_id: coachRow.coach_id,
-        student_id: studentId,
-        message: JSON.stringify({
-          key: "session_deleted_by_athlete",
-          athlete: athleteName,
-          session: sessionName
-        }),
+        coach_id: coachRow.coach_id, student_id: studentId,
+        message: JSON.stringify({ key: "session_deleted_by_athlete", athlete: athleteName, session: sessionName }),
       });
     }
-
     setDeleteDialogOpen(false);
     navigate("/student");
   };
 
-  // Bug 3 fix: fetch alternatives from DB if not in static map
   const handleOpenSwap = async (key: string) => {
     setSwapTargetKey(key);
     const [sIdx, eIdx] = key.split("-").map(Number);
     const exerciseName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || "";
-
-    // Check static alternatives first
-    if (EXERCISE_ALTERNATIVES[exerciseName]) {
-      setDynamicAlternatives(null);
-      setSwapSheetOpen(true);
-      return;
-    }
-
-    // Fetch from DB by muscle group
+    if (EXERCISE_ALTERNATIVES[exerciseName]) { setDynamicAlternatives(null); setSwapSheetOpen(true); return; }
     const sessionEx = selectedSession?.sections[sIdx]?.exercises[eIdx];
-    if (!sessionEx?.exercise) {
-      setDynamicAlternatives(null);
-      setSwapSheetOpen(true);
-      return;
-    }
-
+    if (!sessionEx?.exercise) { setDynamicAlternatives(null); setSwapSheetOpen(true); return; }
     const muscleGroup = sessionEx.exercise.muscle_group;
-    const { data: exercises } = await supabase
-      .from("exercises")
-      .select("name, equipment, muscle_group")
-      .eq("muscle_group", muscleGroup)
-      .neq("id", sessionEx.exercise_id)
-      .eq("is_default", true)
-      .limit(6);
-
+    const { data: exercises } = await supabase.from("exercises")
+      .select("name, equipment, muscle_group").eq("muscle_group", muscleGroup)
+      .neq("id", sessionEx.exercise_id).eq("is_default", true).limit(6);
     if (exercises && exercises.length > 0) {
       setDynamicAlternatives({
         muscleGroup,
-        alternatives: exercises.map(e => ({
-          name: e.name,
-          equipment: e.equipment,
-          difficulty: "medium" as const,
-          reason: t('session:same_muscle_group', { muscleGroup }),
-        })),
+        alternatives: exercises.map(e => ({ name: e.name, equipment: e.equipment, difficulty: "medium" as const, reason: t('session:same_muscle_group', { muscleGroup }) })),
       });
-    } else {
-      setDynamicAlternatives(null);
-    }
+    } else { setDynamicAlternatives(null); }
     setSwapSheetOpen(true);
   };
 
@@ -535,27 +395,9 @@ const LiveSession = () => {
     if (!swapTargetKey) return;
     const [sIdx, eIdx] = swapTargetKey.split("-").map(Number);
     const originalName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || "Exercice";
-
-    setSubstitutions(prev => {
-      const filtered = prev.filter(s => s.key !== swapTargetKey);
-      return [...filtered, {
-        key: swapTargetKey,
-        originalName,
-        newName: alternative.name,
-        newEquipment: alternative.equipment,
-      }];
-    });
-
-    // Clear completed sets for swapped exercise
-    setCompletedSets(prev => {
-      const updated = { ...prev };
-      delete updated[swapTargetKey];
-      return updated;
-    });
-
-    // Remove from saved so new sets can be saved
+    setSubstitutions(prev => [...prev.filter(s => s.key !== swapTargetKey), { key: swapTargetKey, originalName, newName: alternative.name, newEquipment: alternative.equipment }]);
+    setCompletedSets(prev => { const u = { ...prev }; delete u[swapTargetKey]; return u; });
     savedExercisesRef.current.delete(swapTargetKey);
-
     toast.success(`${originalName} → ${alternative.name}`);
     setSwapSheetOpen(false);
     setSwapTargetKey(null);
@@ -565,11 +407,11 @@ const LiveSession = () => {
     ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
 
-  // Show loading while fetching free session
+  // Loading
   if (freeSessionLoading || (!selectedSession && selectedSessionId)) {
     return (
-      <div className="max-w-2xl mx-auto flex items-center justify-center py-20">
-        <div className="flex items-center gap-2 text-muted-foreground">
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-zinc-400">
           <Clock className="w-4 h-4 animate-spin" />
           <span className="text-sm">{t('common:loading')}</span>
         </div>
@@ -577,9 +419,10 @@ const LiveSession = () => {
     );
   }
 
+  // Session complete recap
   if (sessionDone) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto p-4">
         <SessionRecap
           exercises={allExercises}
           completedSets={
@@ -602,194 +445,171 @@ const LiveSession = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-3 -mx-4 px-4 pt-2 border-b border-border">
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/student")} aria-label={t('session:quit')}>
-            <ArrowLeft className="w-4 h-4 mr-1" strokeWidth={1.5} />
-            {t('session:quit')}
-          </Button>
-          <div className="flex items-center gap-2">
-            <ShareSessionButton
-              sessionId={selectedSession?.id || ""}
-              completedSessionId={completedSessionId || undefined}
-              sessionName={sessionProgram.title}
-            />
-            {isAdvanced && (
-              <Button
-                variant={showProgression ? "secondary" : "outline"}
-                size="sm"
-                onClick={() => setShowProgression(!showProgression)}
-                className="gap-1.5"
-              >
-                <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />
-                {t('session:progression')}
-              </Button>
-            )}
-            <div className="flex items-center gap-1.5 bg-surface px-3 py-1.5 rounded-lg">
-              <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
-              <span className="text-sm font-bold tabular-nums">
-                {mins}:{secs.toString().padStart(2, "0")}
-              </span>
-            </div>
-            {!hasStartedWorkout && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('common:actions', 'Actions')}>
-                    <MoreVertical className="w-4 h-4" strokeWidth={1.5} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => setDeleteDialogOpen(true)}
-                    className="gap-2 text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-[14px] w-[14px]" strokeWidth={1.5} />
-                    {t('session:delete_session')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        </div>
+    <div className="min-h-screen bg-zinc-950 -m-4 md:-m-8">
+      {/* Immersive stats bar */}
+      <WorkoutStatsBar
+        elapsed={elapsed}
+        completedSets={completedSets}
+        totalExercises={allExercises.length}
+        completedExerciseCount={completedCount}
+        sessionTitle={sessionProgram.title}
+        onBack={() => navigate("/student")}
+        onProgression={() => setShowProgression(!showProgression)}
+        showProgression={showProgression}
+        showDelete={!hasStartedWorkout}
+        onDelete={() => setDeleteDialogOpen(true)}
+      />
 
-        <div className="flex items-center gap-3 mt-2">
-          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-            <User className="w-4 h-4 text-accent-foreground" strokeWidth={1.5} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate">{sessionProgram.title}</p>
-            {selectedSession?.notes && <p className="text-[11px] text-muted-foreground">{selectedSession.notes}</p>}
-          </div>
-          <Badge variant="outline" className="shrink-0 text-xs">
-            {allExercises.length} ex.
-          </Badge>
-        </div>
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-3 py-4 space-y-3 pb-32">
+        {/* Substitution + skip notices (Advanced only) */}
+        <AnimatePresence>
+          {isAdvanced && substitutions.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex items-center gap-1.5 text-xs text-amber-400 font-medium px-1"
+            >
+              <span>⚡ {substitutions.length} {t('session:exercises_modified', { count: substitutions.length })}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden" role="progressbar" aria-valuenow={completedCount} aria-valuemin={0} aria-valuemax={allExercises.length} aria-label={t('session:exercise_progress', 'Exercise progress')}>
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-500"
-              style={{ width: `${(completedCount / allExercises.length) * 100}%` }}
-            />
-          </div>
-          <span className="text-xs text-muted-foreground font-medium tabular-nums">
-            {completedCount}/{allExercises.length}
-          </span>
-        </div>
-
-        {isAdvanced && substitutions.length > 0 && (
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-warning font-medium">
-            <span>⚡ {substitutions.length > 1 ? t('session:exercises_modified_plural', { count: substitutions.length }) : t('session:exercises_modified', { count: substitutions.length })}</span>
-          </div>
-        )}
         {skippedCount > 0 && (
-          <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-            <span>⏭ {t('session:exercises_skipped', { count: skippedCount })}</span>
-          </div>
+          <p className="text-xs text-zinc-500 font-medium px-1">
+            ⏭ {t('session:exercises_skipped', { count: skippedCount })}
+          </p>
         )}
+
+        {/* Progression timeline (Advanced) */}
+        <AnimatePresence>
+          {showProgression && isAdvanced && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-xl p-4"
+            >
+              <h3 className="font-bold text-sm mb-3 text-zinc-200">{t('session:progression_plan')}</h3>
+              <ProgressionTimeline phases={progressionPhases} currentWeek={1} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Exercise sections */}
+        <div className="space-y-3">
+          {sessionProgram.sections.map((section, sIdx) => {
+            const sectionHasActive = section.exercises.some((_, eIdx) => `${sIdx}-${eIdx}` === activeExerciseKey);
+            const emojiMatch = section.name.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})/u);
+            const icon = emojiMatch ? emojiMatch[1] : null;
+            const cleanName = icon ? section.name.replace(icon, "").trim() : section.name;
+
+            return (
+              <SessionSection
+                key={sIdx}
+                name={cleanName}
+                icon={icon}
+                durationEstimate={section.duration}
+                notes={section.notes}
+                isActive={sectionHasActive}
+              >
+                {section.exercises.map((ex, eIdx) => {
+                  const key = `${sIdx}-${eIdx}`;
+                  const isActive = key === activeExerciseKey;
+                  const sets = completedSets[key] || [];
+                  const displayName = getExerciseName(sIdx, eIdx);
+                  const isSubstituted = substitutions.some(s => s.key === key);
+                  const targetSets = parseInt(ex.sets) || 1;
+                  const repsMatch = ex.reps.match(/(\d+)(?:\s*[-–]\s*(\d+))?/);
+                  const repsMin = repsMatch ? parseInt(repsMatch[1]) : 0;
+                  const repsMax = repsMatch && repsMatch[2] ? parseInt(repsMatch[2]) : repsMin;
+                  const restMatch = ex.rest.match(/(\d+)/);
+                  let restSeconds = 60;
+                  if (restMatch) {
+                    const num = parseInt(restMatch[1]);
+                    restSeconds = (ex.rest.includes("'") || ex.rest.includes("min")) ? num * 60 : num;
+                  }
+                  if (ex.rest === "—" || !ex.rest) restSeconds = 0;
+                  const isSkipped = skippedExercises.has(key);
+
+                  return (
+                    <motion.div
+                      key={key}
+                      layout
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      role={!isActive && !isSkipped ? "button" : undefined}
+                      tabIndex={!isActive && !isSkipped ? 0 : undefined}
+                      onClick={() => !isActive && !isSkipped && setActiveExerciseKey(key)}
+                      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isActive && !isSkipped) { e.preventDefault(); setActiveExerciseKey(key); } }}
+                      className={cn(!isActive && !isSkipped && "cursor-pointer")}
+                    >
+                      <EnhancedExerciseCard
+                        name={displayName}
+                        sets={targetSets}
+                        repsMin={repsMin}
+                        repsMax={repsMax}
+                        restSeconds={restSeconds}
+                        tempo={ex.tempo || null}
+                        rpeTarget={ex.rpe || null}
+                        suggestedWeight={ex.load ? parseFloat(ex.load) || null : null}
+                        coachNotes={ex.notes || null}
+                        videoUrl={ex.video || null}
+                        videoSearchQuery={ex.videoSearchQuery || ex.name || null}
+                        videoUrlFemale={ex.videoUrlFemale || null}
+                        videoUrlMale={ex.videoUrlMale || null}
+                        exerciseVideoUrl={ex.exerciseVideoUrl || null}
+                        isActive={isActive}
+                        completedSets={sets}
+                        onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
+                        onAllSetsComplete={() => handleExerciseComplete(key)}
+                        onSwapExercise={() => handleOpenSwap(key)}
+                        onSkipExercise={() => handleOpenSkip(key)}
+                        isSubstituted={isSubstituted}
+                        isSkipped={isSkipped}
+                        trackingType={(trackingTypeMap[key] as any) || "weight_reps"}
+                        sessionExerciseId={sessionExerciseIdMap[key]}
+                        completedSessionId={completedSessionId || undefined}
+                      />
+                    </motion.div>
+                  );
+                })}
+              </SessionSection>
+            );
+          })}
+        </div>
+
+        {/* Finish button */}
+        <div className="py-4">
+          <Button
+            className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90"
+            onClick={() => finishSession()}
+            disabled={completedCount === 0}
+          >
+            {t('session:finish_session', { completed: completedCount, total: allExercises.length })}
+          </Button>
+        </div>
       </div>
 
-      {showProgression && (
-        <div className="glass p-4 animate-fade-in">
-          <h3 className="font-bold text-sm mb-3">{t('session:progression_plan')}</h3>
-          <ProgressionTimeline phases={progressionPhases} currentWeek={1} />
-        </div>
+      {/* Next exercise preview (Simple mode — always visible) */}
+      {!isAdvanced && nextExerciseInfo && (
+        <NextExercisePreview
+          name={nextExerciseInfo.name}
+          sets={nextExerciseInfo.sets}
+          reps={nextExerciseInfo.reps}
+        />
       )}
 
-      <div className="space-y-4">
-        {sessionProgram.sections.map((section, sIdx) => {
-          const sectionHasActive = section.exercises.some((_, eIdx) => `${sIdx}-${eIdx}` === activeExerciseKey);
-
-          const emojiMatch = section.name.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})/u);
-          const icon = emojiMatch ? emojiMatch[1] : null;
-          const cleanName = icon ? section.name.replace(icon, "").trim() : section.name;
-
-          return (
-            <SessionSection
-              key={sIdx}
-              name={cleanName}
-              icon={icon}
-              durationEstimate={section.duration}
-              notes={section.notes}
-              isActive={sectionHasActive}
-            >
-              {section.exercises.map((ex, eIdx) => {
-                const key = `${sIdx}-${eIdx}`;
-                const isActive = key === activeExerciseKey;
-                const sets = completedSets[key] || [];
-                const displayName = getExerciseName(sIdx, eIdx);
-                const isSubstituted = substitutions.some(s => s.key === key);
-
-                const targetSets = parseInt(ex.sets) || 1;
-                const repsMatch = ex.reps.match(/(\d+)(?:\s*[-–]\s*(\d+))?/);
-                const repsMin = repsMatch ? parseInt(repsMatch[1]) : 0;
-                const repsMax = repsMatch && repsMatch[2] ? parseInt(repsMatch[2]) : repsMin;
-                const restMatch = ex.rest.match(/(\d+)/);
-                let restSeconds = 60;
-                if (restMatch) {
-                  const num = parseInt(restMatch[1]);
-                  restSeconds = (ex.rest.includes("'") || ex.rest.includes("min")) ? num * 60 : num;
-                }
-                if (ex.rest === "—" || !ex.rest) restSeconds = 0;
-
-                const isSkipped = skippedExercises.has(key);
-
-                return (
-                  <div
-                    key={key}
-                    role={!isActive && !isSkipped ? "button" : undefined}
-                    tabIndex={!isActive && !isSkipped ? 0 : undefined}
-                    onClick={() => !isActive && !isSkipped && setActiveExerciseKey(key)}
-                    onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isActive && !isSkipped) { e.preventDefault(); setActiveExerciseKey(key); } }}
-                    className={cn(!isActive && !isSkipped && "cursor-pointer")}
-                  >
-                     <EnhancedExerciseCard
-                      name={displayName}
-                      sets={targetSets}
-                      repsMin={repsMin}
-                      repsMax={repsMax}
-                      restSeconds={restSeconds}
-                      tempo={ex.tempo || null}
-                      rpeTarget={ex.rpe || null}
-                      suggestedWeight={ex.load ? parseFloat(ex.load) || null : null}
-                      coachNotes={ex.notes || null}
-                      videoUrl={ex.video || null}
-                      videoSearchQuery={ex.videoSearchQuery || ex.name || null}
-                      videoUrlFemale={ex.videoUrlFemale || null}
-                      videoUrlMale={ex.videoUrlMale || null}
-                      exerciseVideoUrl={ex.exerciseVideoUrl || null}
-                      isActive={isActive}
-                      completedSets={sets}
-                      onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
-                      onAllSetsComplete={() => handleExerciseComplete(key)}
-                      onSwapExercise={() => handleOpenSwap(key)}
-                      onSkipExercise={() => handleOpenSkip(key)}
-                      isSubstituted={isSubstituted}
-                      isSkipped={isSkipped}
-                      trackingType={(trackingTypeMap[key] as any) || "weight_reps"}
-                      sessionExerciseId={sessionExerciseIdMap[key]}
-                      completedSessionId={completedSessionId || undefined}
-                    />
-                  </div>
-                );
-              })}
-            </SessionSection>
-          );
-        })}
+      {/* Share button */}
+      <div className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] md:bottom-20 right-4 z-20">
+        <ShareSessionButton
+          sessionId={selectedSession?.id || ""}
+          completedSessionId={completedSessionId || undefined}
+          sessionName={sessionProgram.title}
+        />
       </div>
 
-      <div className="py-4">
-        <Button
-          className="w-full h-12 text-base font-semibold"
-          onClick={() => finishSession()}
-          disabled={completedCount === 0}
-        >
-          {t('session:finish_session', { completed: completedCount, total: allExercises.length })}
-        </Button>
-      </div>
-
+      {/* Modals */}
       <ExerciseAlternativesSheet
         open={swapSheetOpen}
         onClose={() => { setSwapSheetOpen(false); setSwapTargetKey(null); }}
@@ -797,28 +617,21 @@ const LiveSession = () => {
         group={EXERCISE_ALTERNATIVES[swapExerciseOriginalName] || dynamicAlternatives}
         onSelect={handleSwapSelect}
       />
-
       <SkipExerciseModal
         open={skipModalOpen}
         onClose={() => { setSkipModalOpen(false); setSkipTargetKey(null); }}
         onConfirm={handleConfirmSkip}
         exerciseName={skipTargetKey ? getExerciseName(...skipTargetKey.split("-").map(Number) as [number, number]) : ""}
       />
-
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('session:delete_session_title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('session:delete_session_desc', { name: selectedSession?.name || '' })}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{t('session:delete_session_desc', { name: selectedSession?.name || '' })}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteSession}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={handleDeleteSession} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {t('session:delete_session_confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
