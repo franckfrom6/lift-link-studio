@@ -473,7 +473,11 @@ const LiveSession = () => {
       await supabase.from("coach_notifications").insert({
         coach_id: coachRow.coach_id,
         student_id: studentId,
-        message: `${athleteName} a supprimé la séance "${sessionName}"`,
+        message: JSON.stringify({
+          key: "session_deleted_by_athlete",
+          athlete: athleteName,
+          session: sessionName
+        }),
       });
     }
 

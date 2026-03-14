@@ -135,5 +135,6 @@
   "session_already_completed": "Session already completed — cannot modify",
   "session_restored": "Session restored",
   "restore_session": "Restore",
-  "deleted_by_athlete": "Deleted by athlete"
+  "deleted_by_athlete": "Deleted by athlete",
+  "session_deleted_by_athlete": "{{athlete}} deleted the session \"{{session}}\""
 }

@@ -332,7 +332,11 @@ const StudentWeek = () => {
       await supabase.from("coach_notifications").insert({
         coach_id: coachRel.coach_id,
         student_id: studentId,
-        message: `${athleteName} a supprimé la séance "${deleteTarget.name}"`,
+        message: JSON.stringify({
+          key: "session_deleted_by_athlete",
+          athlete: athleteName,
+          session: deleteTarget.name
+        }),
       });
     }
 
