@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Dumbbell, Users, ClipboardList, LayoutDashboard, BookOpen, CreditCard, Shield, HelpCircle, Plus } from "lucide-react";
+import { Dumbbell, Users, ClipboardList, LayoutDashboard, BookOpen, CreditCard, Shield, HelpCircle } from "lucide-react";
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
 import InviteClientModal from "@/components/InviteClientModal";

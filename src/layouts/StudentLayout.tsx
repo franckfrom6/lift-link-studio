@@ -75,13 +75,6 @@ const StudentLayout = () => {
 
         {/* Mobile bottom nav */}
         <MobileBottomNav items={navItems} />
-
-        {/* FAB: Start session */}
-        <FloatingActionButton
-          icon={Dumbbell}
-          label={t('session:start', 'Séance')}
-          onClick={() => navigate("/student")}
-        />
       </div>
 
       <AISidebarToggle onClick={() => setAiOpen(true)} />
