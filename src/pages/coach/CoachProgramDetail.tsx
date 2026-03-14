@@ -498,6 +498,25 @@ const CoachProgramDetail = () => {
     toast.success(t("common:added"));
   };
 
+  const restoreSession = async (sessionId: string) => {
+    const { error } = await supabase
+      .from("sessions")
+      .update({ is_deleted: false, deleted_at: null, deleted_by: null })
+      .eq("id", sessionId);
+    if (error) { toast.error(t("common:error")); return; }
+    setProgram(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        weeks: prev.weeks.map(w => ({
+          ...w,
+          sessions: w.sessions.map(s => s.id === sessionId ? { ...s, is_deleted: false, deleted_at: null, deleted_by: null } : s),
+        })),
+      };
+    });
+    toast.success(t("session:session_restored"));
+  };
+
   const activateProgram = async () => {
     if (!program) return;
     await supabase.from("programs").update({ status: "active" }).eq("id", program.id);
