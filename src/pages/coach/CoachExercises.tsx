@@ -217,6 +217,13 @@ const CoachExercises = () => {
                         >
                           <Film className="w-4 h-4" strokeWidth={1.5} />
                         </button>
+                        <button
+                          onClick={() => { setSuggestExId(ex.id); setSuggestUrl(""); setSuggestGender("both"); setSuggestNote(""); }}
+                          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                          title={t('suggest_video')}
+                        >
+                          <Video className="w-4 h-4" strokeWidth={1.5} />
+                        </button>
                       </div>
                     </div>
 
