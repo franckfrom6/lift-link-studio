@@ -1,18 +1,19 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Dumbbell, Users, ClipboardList, LayoutDashboard, BookOpen, CreditCard, Shield, HelpCircle, MoreHorizontal } from "lucide-react";
+import { Dumbbell, Users, ClipboardList, LayoutDashboard, BookOpen, CreditCard, Shield, HelpCircle, Plus } from "lucide-react";
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
 import InviteClientModal from "@/components/InviteClientModal";
 import HelpButton from "@/components/onboarding/HelpButton";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import AISidebarToggle from "@/components/ai/AISidebarToggle";
 import AISidebar from "@/components/ai/AISidebar";
+import MobileBottomNav from "@/components/navigation/MobileBottomNav";
+import FloatingActionButton from "@/components/navigation/FloatingActionButton";
 
 const CoachLayout = () => {
-  const { t } = useTranslation(['settings', 'common']);
+  const { t } = useTranslation(['settings', 'common', 'program']);
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [aiOpen, setAiOpen] = useState(false);
@@ -28,10 +29,6 @@ const CoachLayout = () => {
     ...(profile?.is_admin ? [{ to: "/admin", icon: Shield, label: "Admin" }] : []),
   ];
 
-  // Mobile: show first 4 items + "More" dropdown for the rest
-  const mobileMainItems = navItems.slice(0, 4);
-  const mobileOverflowItems = navItems.slice(4);
-
   return (
     <div className="min-h-screen bg-background flex">
       <aside className="hidden md:flex flex-col w-[220px] lg:w-[260px] border-r border-border bg-secondary/50 p-4 shrink-0">
@@ -41,7 +38,7 @@ const CoachLayout = () => {
 
         <nav className="flex-1 space-y-1">
           {navItems.map((item) => (
-            <NavLink key={item.to} to={item.to} end={(item as any).end}
+            <NavLink key={item.to} to={item.to} end={item.end}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
@@ -71,39 +68,19 @@ const CoachLayout = () => {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden">
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden pb-24 md:pb-8">
           <div className="max-w-4xl mx-auto"><Outlet /></div>
         </main>
 
-        <nav className="md:hidden flex items-center justify-around border-t border-border bg-background py-1.5 px-1 safe-area-bottom">
-          {mobileMainItems.map((item) => (
-            <NavLink key={item.to} to={item.to} end={(item as any).end}
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-1 px-1.5 text-xs font-medium transition-colors ${
-                  isActive ? "text-foreground" : "text-muted-foreground"
-                }`
-              }>
-              <item.icon className="w-5 h-5" strokeWidth={1.5} />
-              <span className="truncate max-w-[64px] text-center leading-tight">{item.label}</span>
-            </NavLink>
-          ))}
-          {mobileOverflowItems.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex flex-col items-center gap-0.5 py-1 px-1.5 text-xs font-medium text-muted-foreground">
-                <MoreHorizontal className="w-5 h-5" strokeWidth={1.5} />
-                <span className="leading-tight">{t('common:more', 'Plus')}</span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="top" className="mb-2">
-                {mobileOverflowItems.map((item) => (
-                  <DropdownMenuItem key={item.to} onClick={() => navigate(item.to)} className="gap-2">
-                    <item.icon className="w-4 h-4" strokeWidth={1.5} />
-                    {item.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </nav>
+        {/* Mobile bottom nav */}
+        <MobileBottomNav items={navItems} />
+
+        {/* FAB: Create program */}
+        <FloatingActionButton
+          icon={Plus}
+          label={t('program:create', 'Programme')}
+          onClick={() => navigate("/coach/programs")}
+        />
       </div>
 
       <AISidebarToggle onClick={() => setAiOpen(true)} />
