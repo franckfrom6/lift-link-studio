@@ -977,6 +977,7 @@ export type Database = {
           notif_water_reminder: boolean | null
           notif_water_start_time: string | null
           onboarding_completed: boolean
+          onboarding_steps: Json | null
           push_subscription: string | null
           role: Database["public"]["Enums"]["app_role"] | null
           specialty: string | null
@@ -1006,6 +1007,7 @@ export type Database = {
           notif_water_reminder?: boolean | null
           notif_water_start_time?: string | null
           onboarding_completed?: boolean
+          onboarding_steps?: Json | null
           push_subscription?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           specialty?: string | null
@@ -1035,6 +1037,7 @@ export type Database = {
           notif_water_reminder?: boolean | null
           notif_water_start_time?: string | null
           onboarding_completed?: boolean
+          onboarding_steps?: Json | null
           push_subscription?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           specialty?: string | null
