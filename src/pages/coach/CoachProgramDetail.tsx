@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Calendar, Dumbbell, ChevronDown, ChevronUp, Plus, Trash2,
-  GripVertical, Check, Pencil, FolderPlus, Loader2, Save, Send
+  GripVertical, Check, Pencil, FolderPlus, Loader2, Save, Send, RotateCcw
 } from "lucide-react";
 import { toast } from "sonner";
 import ExercisePicker from "@/components/coach/ExercisePicker";
