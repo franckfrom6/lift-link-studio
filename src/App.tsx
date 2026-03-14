@@ -77,6 +77,7 @@ const App = () => (
             <ImpersonationProvider>
             <DisplayModeProvider>
             <PlanProvider>
+              <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/auth" element={<AuthRedirect><AuthPage /></AuthRedirect>} />
@@ -128,6 +129,7 @@ const App = () => (
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </ErrorBoundary>
             </PlanProvider>
             </DisplayModeProvider>
             </ImpersonationProvider>

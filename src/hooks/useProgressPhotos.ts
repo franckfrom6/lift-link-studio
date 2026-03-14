@@ -37,8 +37,9 @@ export const useProgressPhotos = () => {
   });
 
   const uploadPhoto = async (file: File, category: string, date: string, notes?: string) => {
-    if (!user) return;
-    const path = `${user.id}/${Date.now()}_${file.name}`;
+    if (!user || !studentId) return;
+    const targetId = studentId;
+    const path = `${targetId}/${Date.now()}_${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from("progress-photos")
       .upload(path, file);
@@ -48,7 +49,7 @@ export const useProgressPhotos = () => {
     }
     const { data: urlData } = supabase.storage.from("progress-photos").getPublicUrl(path);
     const { error } = await supabase.from("progress_photos").insert({
-      student_id: user.id,
+      student_id: targetId,
       date,
       photo_url: urlData.publicUrl,
       category,
