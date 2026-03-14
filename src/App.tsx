@@ -30,6 +30,7 @@ import AdminOverrides from "./pages/admin/AdminOverrides";
 import AdminSupport from "./pages/admin/AdminSupport";
 import AdminKB from "./pages/admin/AdminKB";
 import AdminVideoSuggestions from "./pages/admin/AdminVideoSuggestions";
+import AdminPilotRequests from "./pages/admin/AdminPilotRequests";
 
 import CoachLayout from "./layouts/CoachLayout";
 import CoachDashboard from "./pages/coach/CoachDashboard";
