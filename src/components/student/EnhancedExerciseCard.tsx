@@ -199,9 +199,10 @@ const EnhancedExerciseCard = ({
     switch (trackingType) {
       case "duration":
         return (
-          <div className="grid grid-cols-[36px_1fr_40px] gap-1.5 min-w-[200px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
+          <div className="grid grid-cols-[36px_1fr_40px_40px] gap-1.5 min-w-[240px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
             <span>Set</span>
-            <span>{t('duration_sec', 'Durée (s)')}</span>
+            <span>{t('duration_sec', 'Durée')}</span>
+            <span></span>
             <span></span>
           </div>
         );
