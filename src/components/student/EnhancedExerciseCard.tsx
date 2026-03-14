@@ -35,6 +35,9 @@ interface EnhancedExerciseCardProps {
   coachNotes?: string | null;
   videoUrl?: string | null;
   videoSearchQuery?: string | null;
+  videoUrlFemale?: string | null;
+  videoUrlMale?: string | null;
+  exerciseVideoUrl?: string | null;
   isActive: boolean;
   completedSets: EnhancedCompletedSet[];
   onCompletedSetsChange: (sets: EnhancedCompletedSet[]) => void;
