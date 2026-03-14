@@ -35,5 +35,13 @@
   "notif_message_placeholder": "Write a short motivational message…",
   "notif_send": "Send",
   "notif_sent_success": "Notification sent to {{name}}! 📣",
-  "notif_coach_push_title": "Message from your coach"
+  "notif_coach_push_title": "Message from your coach",
+  "notif_water_reminder": "Water reminders",
+  "notif_water_interval": "Every:",
+  "notif_water_between": "Between:",
+  "notif_water_and": "and",
+  "notif_water_1h": "1h",
+  "notif_water_1h30": "1h30",
+  "notif_water_2h": "2h",
+  "notif_water_3h": "3h"
 }

@@ -67,5 +67,20 @@
   "prot_short": "Prot. (g)",
   "carbs_short": "Carbs (g)",
   "fats_short": "Fats (g)",
-  "meal_photo_alt": "Meal"
+  "meal_photo_alt": "Meal",
+  "water_title": "💧 Hydration",
+  "water_other": "Other",
+  "water_history": "Last 7 days",
+  "water_goal_label": "Daily goal (ml)",
+  "water_goal_auto": "Calculated from your weight (35ml/kg)",
+  "protein_tips_title": "🥩 Protein — the essentials",
+  "protein_tips_goal": "Goal: 1.6 to 2.2g per kg of body weight per day",
+  "protein_tips_sources_title": "Recommended sources",
+  "protein_source_chicken": "Lean meats (chicken, turkey, veal): ~25g/100g",
+  "protein_source_fish": "Fish (tuna, salmon, cod): ~20-25g/100g",
+  "protein_source_eggs": "Eggs: ~13g/100g (6g per egg)",
+  "protein_source_legumes": "Legumes (lentils, chickpeas): ~8-9g/100g",
+  "protein_source_dairy": "Plain Greek yogurt: ~10g/100g",
+  "protein_source_whey": "Whey protein powder: ~20-25g/scoop",
+  "protein_tips_timing": "Timing: spread across 3-4 meals throughout the day to maximize protein synthesis."
 }
