@@ -86,6 +86,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/auth" element={<AuthRedirect><AuthPage /></AuthRedirect>} />
+                <Route path="/login" element={<AuthRedirect><LoginPage /></AuthRedirect>} />
                 <Route path="/legal/:slug" element={<LegalPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
