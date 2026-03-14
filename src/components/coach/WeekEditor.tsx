@@ -23,7 +23,7 @@ const WeekEditor = ({ week, onUpdate, onDuplicate }: WeekEditorProps) => {
     const newSession: SessionData = {
       id: crypto.randomUUID(),
       dayOfWeek,
-      name: t('session_default_name', { day: DAY_NAMES[dayOfWeek] }),
+      name: t('session_default_name', { day: t(`common:days.${DAY_NAMES[dayOfWeek]}`) }),
       sections: [],
       exercises: [],
     };
