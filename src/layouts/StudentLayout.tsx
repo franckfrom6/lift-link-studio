@@ -50,9 +50,6 @@ const StudentLayout = () => {
         </nav>
 
         <div className="border-t border-border pt-4 space-y-3">
-          <div className="px-2">
-            <DisplayModeToggle />
-          </div>
           <div className="flex items-center justify-between px-2">
             <p className="text-sm font-medium truncate">{t('common:roles.student', 'Athlète')}</p>
             <UserMenu />
@@ -65,9 +62,8 @@ const StudentLayout = () => {
         {/* Mobile header */}
         <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background">
           <Logo variant="mobile" />
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <DisplayModeToggle />
-            <HelpButton />
             <UserMenu />
           </div>
         </header>
