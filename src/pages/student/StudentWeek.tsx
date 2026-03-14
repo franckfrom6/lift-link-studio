@@ -271,6 +271,7 @@ const StudentWeek = () => {
     const { data: completedSession, error: completedErr } = await supabase
       .from("completed_sessions")
       .select("id")
+      .eq("student_id", user.id)
       .eq("session_id", deleteTarget.id)
       .maybeSingle();
 
@@ -298,36 +299,40 @@ const StudentWeek = () => {
     if (error) {
       console.error("Error deleting session:", error);
       toast.error(t("common:error"));
-    } else if (!updatedSession) {
-      toast.error(t("session:session_already_completed"));
-    } else {
-      toast.success(t("session:session_deleted"));
-      await Promise.all([
-        refetch(),
-        queryClient.invalidateQueries({ queryKey: ["student-program", studentId] }),
-        queryClient.invalidateQueries({ queryKey: ["week-free-sessions", studentId] }),
-      ]);
+      return;
+    }
 
-      const { data: coachRel } = await supabase
-        .from("coach_students")
-        .select("coach_id")
-        .eq("student_id", user.id)
-        .eq("status", "active")
+    if (!updatedSession) {
+      toast.error(t("session:session_already_completed"));
+      return;
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["student-program"] });
+    if (deleteTarget.isFreeSession) {
+      await queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+    }
+    toast.success(t("session:session_deleted"));
+
+    const { data: coachRel } = await supabase
+      .from("coach_students")
+      .select("coach_id")
+      .eq("student_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (coachRel?.coach_id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
         .maybeSingle();
 
-      if (coachRel) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        const athleteName = profile?.full_name || user.email?.split("@")[0] || "";
-        await supabase.from("coach_notifications").insert({
-          coach_id: coachRel.coach_id,
-          student_id: user.id,
-          message: `🗑️ ${athleteName} a supprimé la séance "${deleteTarget.name}"`,
-        });
-      }
+      const athleteName = profile?.full_name || user.email?.split("@")[0] || "Athlète";
+      await supabase.from("coach_notifications").insert({
+        coach_id: coachRel.coach_id,
+        student_id: user.id,
+        message: `${athleteName} a supprimé la séance "${deleteTarget.name}"`,
+      });
     }
 
     setDeleteDialogOpen(false);
