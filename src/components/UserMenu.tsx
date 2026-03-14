@@ -58,8 +58,8 @@ const UserMenu = () => {
           <Globe className="w-4 h-4 mr-2" /> {i18n.language === "fr" ? "English" : "Français"}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={toggleTheme}>
-          {theme === "dark" ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
-          {theme === "dark" ? t("common:light_mode", "Light") : t("common:dark_mode", "Dark")}
+          {isDark ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
+          {isDark ? t("common:light_mode", "Light") : t("common:dark_mode", "Dark")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
