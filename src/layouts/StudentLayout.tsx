@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Calendar, BarChart3, User, BookOpen, HelpCircle, Dumbbell, Apple } from "lucide-react";
+import { Calendar, BarChart3, User, BookOpen, HelpCircle, Apple } from "lucide-react";
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
@@ -9,7 +9,6 @@ import { useState } from "react";
 import AISidebarToggle from "@/components/ai/AISidebarToggle";
 import AISidebar from "@/components/ai/AISidebar";
 import MobileBottomNav from "@/components/navigation/MobileBottomNav";
-import FloatingActionButton from "@/components/navigation/FloatingActionButton";
 
 const StudentLayout = () => {
   const { t } = useTranslation(['settings', 'common', 'session']);
@@ -76,13 +75,6 @@ const StudentLayout = () => {
 
         {/* Mobile bottom nav */}
         <MobileBottomNav items={navItems} />
-
-        {/* FAB: Start session */}
-        <FloatingActionButton
-          icon={Dumbbell}
-          label={t('session:start', 'Séance')}
-          onClick={() => navigate("/student")}
-        />
       </div>
 
       <AISidebarToggle onClick={() => setAiOpen(true)} />

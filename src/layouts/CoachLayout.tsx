@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Dumbbell, Users, ClipboardList, LayoutDashboard, BookOpen, CreditCard, Shield, HelpCircle, Plus } from "lucide-react";
+import { Dumbbell, Users, ClipboardList, LayoutDashboard, BookOpen, CreditCard, Shield, HelpCircle } from "lucide-react";
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
 import InviteClientModal from "@/components/InviteClientModal";
@@ -10,7 +10,6 @@ import { useState } from "react";
 import AISidebarToggle from "@/components/ai/AISidebarToggle";
 import AISidebar from "@/components/ai/AISidebar";
 import MobileBottomNav from "@/components/navigation/MobileBottomNav";
-import FloatingActionButton from "@/components/navigation/FloatingActionButton";
 
 const CoachLayout = () => {
   const { t } = useTranslation(['settings', 'common', 'program']);
@@ -74,13 +73,6 @@ const CoachLayout = () => {
 
         {/* Mobile bottom nav */}
         <MobileBottomNav items={navItems} />
-
-        {/* FAB: Create program */}
-        <FloatingActionButton
-          icon={Plus}
-          label={t('program:create', 'Programme')}
-          onClick={() => navigate("/coach/programs")}
-        />
       </div>
 
       <AISidebarToggle onClick={() => setAiOpen(true)} />
