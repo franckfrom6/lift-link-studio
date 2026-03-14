@@ -54,6 +54,9 @@ const LiveSession = () => {
   const { user } = useAuth();
   const { program: dbProgram } = useStudentProgram();
   const isAdvanced = useIsAdvanced();
+  const { effectiveStudentId } = useImpersonation();
+  const studentId = user ? effectiveStudentId(user.id) : null;
+  
   const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>({});
   const [sessionDone, setSessionDone] = useState(false);
   const [startTime] = useState(Date.now());
