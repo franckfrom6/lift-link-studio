@@ -295,16 +295,18 @@ const EnhancedExerciseCard = ({
               disabled={!isCurrent}
             />
             {/* +/- 5s steppers */}
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-1">
               <button
                 onClick={() => updateSet(i, "durationSeconds", (set.durationSeconds || 0) + 5)}
                 disabled={!isCurrent}
-                className="h-4 rounded bg-secondary text-[9px] font-bold text-muted-foreground hover:text-foreground disabled:opacity-40"
+                className="h-[20px] min-w-[40px] px-1 rounded bg-secondary text-[10px] font-bold text-muted-foreground hover:text-foreground disabled:opacity-40 touch-manipulation"
+                style={{ minHeight: '20px', padding: '10px 4px' }}
               >+5</button>
               <button
                 onClick={() => updateSet(i, "durationSeconds", Math.max(0, (set.durationSeconds || 0) - 5))}
                 disabled={!isCurrent}
-                className="h-4 rounded bg-secondary text-[9px] font-bold text-muted-foreground hover:text-foreground disabled:opacity-40"
+                className="h-[20px] min-w-[40px] px-1 rounded bg-secondary text-[10px] font-bold text-muted-foreground hover:text-foreground disabled:opacity-40 touch-manipulation"
+                style={{ minHeight: '20px', padding: '10px 4px' }}
               >-5</button>
             </div>
             {checkButton}
