@@ -97,6 +97,7 @@ const App = () => (
                   <Route path="overrides" element={<AdminOverrides />} />
                   <Route path="support" element={<AdminSupport />} />
                   <Route path="kb" element={<AdminKB />} />
+                  <Route path="videos" element={<AdminVideoSuggestions />} />
                 </Route>
 
                 <Route path="/coach" element={<AuthGuard role="coach"><CoachLayout /></AuthGuard>}>
