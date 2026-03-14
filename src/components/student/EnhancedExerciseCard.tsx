@@ -10,6 +10,7 @@ import RPESelector from "./RPESelector";
 import CoachInstructionsButton from "./CoachInstructionsButton";
 import { useTranslation } from "react-i18next";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
+import ExercisePhoto from "./ExercisePhoto";
 
 export type TrackingType = "weight_reps" | "reps_only" | "duration" | "distance";
 
