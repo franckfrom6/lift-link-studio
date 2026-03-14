@@ -49,6 +49,9 @@ export interface DBSession {
   day_of_week: number;
   notes: string | null;
   sections: DBSection[];
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 }
 
 export interface DBWeek {
@@ -104,7 +107,7 @@ async function fetchProgramTree(studentId: string): Promise<DBProgram | null> {
 
   // Parallel: sessions, sections, exercises
   const [sessionsRes, sectionsRes, exercisesRes] = await Promise.all([
-    supabase.from("sessions").select("*").in("week_id", weekIds).order("day_of_week"),
+    supabase.from("sessions").select("*").in("week_id", weekIds).eq("is_deleted", false).order("day_of_week"),
     supabase.from("session_sections").select("*").in("session_id", weekIds.length > 0 ? weekIds : ['']),
     supabase.from("session_exercises").select("*, exercise:exercises(*)").in("session_id", weekIds.length > 0 ? weekIds : ['']),
   ]);

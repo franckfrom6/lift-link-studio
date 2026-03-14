@@ -1,4 +1,4 @@
-import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy, Trash2 } from "lucide-react";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
 import FirstStepsChecklist from "@/components/onboarding/FirstStepsChecklist";
@@ -20,6 +20,10 @@ import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
 import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import { useTranslation } from "react-i18next";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,6 +57,8 @@ const StudentWeek = () => {
   const [builderDate, setBuilderDate] = useState<Date>(new Date());
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicateSession, setDuplicateSession] = useState<{ id: string; name: string } | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const totalWeeks = program?.weeks?.length || 0;
 
@@ -225,6 +231,42 @@ const StudentWeek = () => {
     setSwapSourceDay(null);
     setSwapTargetDay(null);
     setSwapModalOpen(false);
+  };
+
+  const handleDeleteSession = async () => {
+    if (!deleteTarget || !user) return;
+    const { error } = await supabase
+      .from("sessions")
+      .update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: user.id })
+      .eq("id", deleteTarget.id);
+    if (error) {
+      console.error("Error deleting session:", error);
+      toast.error(t("common:error"));
+    } else {
+      toast.success(t("session:session_deleted"));
+      // Notify coach if linked
+      const { data: coachRel } = await supabase
+        .from("coach_students")
+        .select("coach_id")
+        .eq("student_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (coachRel) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        const athleteName = profile?.full_name || user.email?.split("@")[0] || "";
+        await supabase.from("coach_notifications").insert({
+          coach_id: coachRel.coach_id,
+          student_id: user.id,
+          message: `🗑️ ${athleteName} a supprimé la séance "${deleteTarget.name}"`,
+        });
+      }
+    }
+    setDeleteDialogOpen(false);
+    setDeleteTarget(null);
   };
 
   const targetHasSession = swapTargetDay !== null && !!effectiveSessions[swapTargetDay];
@@ -539,6 +581,14 @@ const StudentWeek = () => {
                             </Button>
                             <Button
                               variant="ghost" size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: sessionInfo!.sessionId, name: sessionInfo!.name }); setDeleteDialogOpen(true); }}
+                              aria-label={t('session:delete_session')}
+                            >
+                              <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                            </Button>
+                            <Button
+                              variant="ghost" size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-foreground"
                               onClick={(e) => { e.stopPropagation(); setSwapMode(true); setSwapSourceDay(day.dayIndex); }}
                               aria-label={t('calendar:swap_session', 'Swap session')}
@@ -671,6 +721,28 @@ const StudentWeek = () => {
           programId={program?.id}
         />
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('session:delete_session_title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('session:delete_session_desc', { name: deleteTarget?.name || '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setDeleteDialogOpen(false); setDeleteTarget(null); }}>
+              {t('common:cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSession}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('session:delete_session_confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* First steps checklist */}
       <FirstStepsChecklist />

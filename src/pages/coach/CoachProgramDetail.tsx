@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Calendar, Dumbbell, ChevronDown, ChevronUp, Plus, Trash2,
-  GripVertical, Check, Pencil, FolderPlus, Loader2, Save, Send
+  GripVertical, Check, Pencil, FolderPlus, Loader2, Save, Send, RotateCcw
 } from "lucide-react";
 import { toast } from "sonner";
 import ExercisePicker from "@/components/coach/ExercisePicker";
@@ -61,6 +61,9 @@ interface Session {
   notes: string | null;
   week_id: string;
   sections: Section[];
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 }
 
 interface Week {
@@ -495,6 +498,25 @@ const CoachProgramDetail = () => {
     toast.success(t("common:added"));
   };
 
+  const restoreSession = async (sessionId: string) => {
+    const { error } = await supabase
+      .from("sessions")
+      .update({ is_deleted: false, deleted_at: null, deleted_by: null })
+      .eq("id", sessionId);
+    if (error) { toast.error(t("common:error")); return; }
+    setProgram(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        weeks: prev.weeks.map(w => ({
+          ...w,
+          sessions: w.sessions.map(s => s.id === sessionId ? { ...s, is_deleted: false, deleted_at: null, deleted_by: null } : s),
+        })),
+      };
+    });
+    toast.success(t("session:session_restored"));
+  };
+
   const activateProgram = async () => {
     if (!program) return;
     await supabase.from("programs").update({ status: "active" }).eq("id", program.id);
@@ -615,6 +637,7 @@ const CoachProgramDetail = () => {
                   const session = week.sessions.find(s => s.day_of_week === day);
                   const hasSession = !!session;
                   const isActive = session?.id === activeSessionId;
+                  const isDeleted = !!(session as any)?.is_deleted;
                   const dayDate = getDayDate(week.week_number, day);
                   return (
                     <button
@@ -624,11 +647,13 @@ const CoachProgramDetail = () => {
                         else addSessionToDay(week.id, day);
                       }}
                       className={`flex flex-col items-center gap-0.5 p-2 rounded-lg transition-all text-center min-h-[68px] ${
-                        isActive
-                          ? "bg-accent border-2 border-accent-foreground/30 shadow-sm"
-                          : hasSession
-                            ? "bg-accent/40 border border-accent-foreground/15 hover:bg-accent/60 cursor-pointer"
-                            : "bg-background/50 border border-dashed border-border hover:bg-accent/20 hover:border-accent cursor-pointer group"
+                        isDeleted
+                          ? "bg-destructive/10 border border-destructive/30 opacity-60"
+                          : isActive
+                            ? "bg-accent border-2 border-accent-foreground/30 shadow-sm"
+                            : hasSession
+                              ? "bg-accent/40 border border-accent-foreground/15 hover:bg-accent/60 cursor-pointer"
+                              : "bg-background/50 border border-dashed border-border hover:bg-accent/20 hover:border-accent cursor-pointer group"
                       }`}
                     >
                       <span className={`text-[10px] font-semibold uppercase ${isActive ? "text-accent-foreground" : "text-muted-foreground"}`}>
@@ -638,8 +663,8 @@ const CoachProgramDetail = () => {
                         {format(dayDate, "d MMM", { locale: dateFnsLocale })}
                       </span>
                       {hasSession ? (
-                        <span className={`text-[10px] font-medium leading-tight line-clamp-2 ${isActive ? "text-accent-foreground" : "text-accent-foreground/70"}`}>
-                          {session.name}
+                        <span className={`text-[10px] font-medium leading-tight line-clamp-2 ${isDeleted ? "line-through text-destructive/70" : isActive ? "text-accent-foreground" : "text-accent-foreground/70"}`}>
+                          {isDeleted ? "🗑️ " : ""}{session.name}
                         </span>
                       ) : (
                         <Plus className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-accent-foreground/60 transition-colors" />
@@ -662,7 +687,24 @@ const CoachProgramDetail = () => {
                 const totalExercises = session.sections.reduce((sum, s) => sum + s.exercises.length, 0);
 
                 return (
-                  <div className="border border-border rounded-xl overflow-hidden animate-fade-in">
+                  <div className={`border rounded-xl overflow-hidden animate-fade-in ${(session as any).is_deleted ? "border-destructive/40 opacity-70" : "border-border"}`}>
+                    {(session as any).is_deleted && (
+                      <div className="flex items-center justify-between px-4 py-2.5 bg-destructive/10 border-b border-destructive/20">
+                        <span className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                          {t("session:deleted_by_athlete")}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1 border-destructive/30 text-destructive hover:bg-destructive/10"
+                          onClick={() => restoreSession(session.id)}
+                        >
+                          <RotateCcw className="w-3 h-3" strokeWidth={1.5} />
+                          {t("session:restore_session")}
+                        </Button>
+                      </div>
+                    )}
                     {/* Session header */}
                     <div className="flex items-center gap-3 p-4 bg-secondary/30">
                       <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-xs font-bold text-accent-foreground">

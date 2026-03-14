@@ -125,5 +125,15 @@
   "duplicate_date_label": "Date",
   "duplicate_btn": "Duplicate",
   "duplicate_success": "Session duplicated! 🎯",
-  "duplicate_error": "Error duplicating session."
+  "duplicate_error": "Error duplicating session.",
+
+  "delete_session": "Delete this session",
+  "delete_session_title": "Delete this session?",
+  "delete_session_desc": "\"{{name}}\" will be removed from your program. Your coach can undo this action.",
+  "delete_session_confirm": "Delete",
+  "session_deleted": "Session deleted",
+  "session_already_completed": "Session already completed — cannot modify",
+  "session_restored": "Session restored",
+  "restore_session": "Restore",
+  "deleted_by_athlete": "Deleted by athlete"
 }
