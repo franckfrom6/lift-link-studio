@@ -10,7 +10,6 @@ import { useState } from "react";
 import AISidebarToggle from "@/components/ai/AISidebarToggle";
 import AISidebar from "@/components/ai/AISidebar";
 import MobileBottomNav from "@/components/navigation/MobileBottomNav";
-import FloatingActionButton from "@/components/navigation/FloatingActionButton";
 
 const CoachLayout = () => {
   const { t } = useTranslation(['settings', 'common', 'program']);
