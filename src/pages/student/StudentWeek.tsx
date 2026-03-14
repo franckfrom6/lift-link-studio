@@ -41,6 +41,7 @@ const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
   const { user } = useAuth();
   const isAdvanced = useIsAdvanced();
+  const queryClient = useQueryClient();
   const { program, loading: programLoading, refreshing, refetch } = useStudentProgram();
   const DAYS = [
     t("common:days.mon"), t("common:days.tue"), t("common:days.wed"),
