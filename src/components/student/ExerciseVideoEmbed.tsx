@@ -5,6 +5,8 @@ import { useTranslation } from "react-i18next";
 
 interface ExerciseVideoEmbedProps {
   exerciseName: string;
+  /** Pre-resolved video URL (from useExerciseVideo). If provided, skips YouTube search. */
+  directVideoUrl?: string | null;
 }
 
 interface CachedVideo {
