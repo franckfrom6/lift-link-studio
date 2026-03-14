@@ -585,6 +585,7 @@ export type Database = {
           muscle_group: string
           name: string
           name_en: string | null
+          public_cible: string | null
           secondary_muscle: string | null
           tracking_type: string | null
           type: string
@@ -600,6 +601,7 @@ export type Database = {
           muscle_group: string
           name: string
           name_en?: string | null
+          public_cible?: string | null
           secondary_muscle?: string | null
           tracking_type?: string | null
           type: string
@@ -615,6 +617,7 @@ export type Database = {
           muscle_group?: string
           name?: string
           name_en?: string | null
+          public_cible?: string | null
           secondary_muscle?: string | null
           tracking_type?: string | null
           type?: string

@@ -6,7 +6,8 @@ export type MuscleTarget =
 
 export type EquipmentOption = 
   | "dumbbells" | "barbell" | "machine" | "cable" 
-  | "bodyweight" | "kettlebell" | "bands" | "trx";
+  | "bodyweight" | "kettlebell" | "resistance_band" | "mini_band"
+  | "fitness_ball" | "yoga_block" | "trx" | "bosu" | "step";
 
 export interface LiveExercise {
   id: string; // local UUID
@@ -50,7 +51,8 @@ export const ADVANCED_TARGETS: MuscleTarget[] = [
 
 export const EQUIPMENT_OPTIONS: EquipmentOption[] = [
   "dumbbells", "barbell", "machine", "cable", 
-  "bodyweight", "kettlebell", "bands", "trx",
+  "bodyweight", "kettlebell", "resistance_band", "mini_band",
+  "fitness_ball", "yoga_block", "trx", "bosu", "step",
 ];
 
 // Map pattern targets to DB muscle groups for filtering
@@ -81,7 +83,12 @@ export const EQUIPMENT_TO_DB: Record<EquipmentOption, string> = {
   machine: "machine",
   cable: "cable",
   bodyweight: "bodyweight",
-  kettlebell: "dumbbells", // closest match
-  bands: "bodyweight", // closest match
-  trx: "bodyweight", // closest match
+  kettlebell: "kettlebell",
+  resistance_band: "resistance_band",
+  mini_band: "mini_band",
+  fitness_ball: "fitness_ball",
+  yoga_block: "yoga_block",
+  trx: "trx",
+  bosu: "bosu",
+  step: "step",
 };

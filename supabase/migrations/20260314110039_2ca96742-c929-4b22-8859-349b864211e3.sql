@@ -1,0 +1,1 @@
+ALTER TABLE public.exercises ADD COLUMN IF NOT EXISTS public_cible TEXT DEFAULT 'all';

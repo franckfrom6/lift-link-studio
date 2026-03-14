@@ -19,6 +19,14 @@ export const EQUIPMENT_TYPES = [
   "machine",
   "cable",
   "bodyweight",
+  "kettlebell",
+  "resistance_band",
+  "mini_band",
+  "fitness_ball",
+  "yoga_block",
+  "trx",
+  "bosu",
+  "step",
 ];
 
 // Mapping from old French DB values to new English keys (backwards compatibility)
@@ -52,4 +60,12 @@ export const EQUIPMENT_DB_MAP: Record<string, string> = {
   "machine": "machine",
   "cable": "cable",
   "bodyweight": "bodyweight",
+  "kettlebell": "kettlebell",
+  "resistance_band": "resistance_band",
+  "mini_band": "mini_band",
+  "fitness_ball": "fitness_ball",
+  "yoga_block": "yoga_block",
+  "trx": "trx",
+  "bosu": "bosu",
+  "step": "step",
 };
