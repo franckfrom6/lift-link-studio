@@ -546,6 +546,16 @@ const EnhancedExerciseCard = ({
                   </Button>
                 )}
               </div>
+
+              {/* Exercise photos */}
+              {sessionExerciseId && completedSessionId && (
+                <ExercisePhoto
+                  sessionExerciseId={sessionExerciseId}
+                  completedSessionId={completedSessionId}
+                  photos={exercisePhotos}
+                  onPhotosChange={setExercisePhotos}
+                />
+              )}
             </div>
           )}
         </div>
