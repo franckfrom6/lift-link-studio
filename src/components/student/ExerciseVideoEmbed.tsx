@@ -47,13 +47,27 @@ function setCache(name: string, videoId: string | null, title: string | null) {
   }
 }
 
-export function ExerciseVideoEmbed({ exerciseName }: ExerciseVideoEmbedProps) {
+export function ExerciseVideoEmbed({ exerciseName, directVideoUrl }: ExerciseVideoEmbedProps) {
   const [videoId, setVideoId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const { t } = useTranslation("exercises");
 
+  // Extract YouTube video ID from a full URL
+  const extractYouTubeId = (url: string): string | null => {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+    return match ? match[1] : null;
+  };
+
   useEffect(() => {
+    // If a direct URL is provided, use it instead of searching
+    if (directVideoUrl) {
+      const id = extractYouTubeId(directVideoUrl);
+      setVideoId(id);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function fetchVideo() {
