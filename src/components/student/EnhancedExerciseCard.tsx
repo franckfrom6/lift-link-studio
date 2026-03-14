@@ -230,13 +230,20 @@ const EnhancedExerciseCard = ({
         );
       default:
         return (
-          <div className="grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 min-w-[280px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
-            <span>Set</span>
-            <span>Kg</span>
-            <span>Reps</span>
-            <span className="text-center">Fail</span>
-            <span></span>
-          </div>
+          <>
+            {/* Desktop: 5-col grid */}
+            <div className="hidden xs:grid grid-cols-[36px_1fr_1fr_40px_40px] gap-1.5 min-w-[280px] text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
+              <span>Set</span>
+              <span>Kg</span>
+              <span>Reps</span>
+              <span className="text-center">Fail</span>
+              <span></span>
+            </div>
+            {/* Small screens: stacked header */}
+            <div className="xs:hidden text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-semibold px-1">
+              <span>Set / Kg / Reps</span>
+            </div>
+          </>
         );
     }
   };
@@ -369,7 +376,8 @@ const EnhancedExerciseCard = ({
       default: // weight_reps
         return (
           <div key={i}>
-            <div className={cn("grid grid-cols-[36px_1fr_1fr_40px_40px]", rowClass)}>
+            {/* Desktop: 5-col grid */}
+            <div className={cn("hidden xs:grid grid-cols-[36px_1fr_1fr_40px_40px]", rowClass)}>
               <span className="text-sm font-bold text-center">{set.setNumber}</span>
               <div className="relative">
                 <Input
@@ -414,6 +422,47 @@ const EnhancedExerciseCard = ({
               </button>
               {checkButton}
             </div>
+            {/* Small screens: stacked layout */}
+            <div className={cn("xs:hidden flex flex-col gap-1.5", rowClass)}>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold w-8 text-center shrink-0">{set.setNumber}</span>
+                <div className="relative flex-1">
+                  <Input
+                    type="number"
+                    value={set.weight || ""}
+                    onChange={(e) => updateSet(i, "weight", Number(e.target.value))}
+                    placeholder="Kg"
+                    className={inputClass}
+                    disabled={!isCurrent}
+                    min={0}
+                    step={2.5}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input
+                    type="number"
+                    value={set.reps || ""}
+                    onChange={(e) => updateSet(i, "reps", Number(e.target.value))}
+                    placeholder="Reps"
+                    className={inputClass}
+                    disabled={!isCurrent}
+                    min={0}
+                  />
+                </div>
+                <button
+                  onClick={() => updateSet(i, "isFailure", !set.isFailure)}
+                  disabled={!isCurrent}
+                  className={cn(
+                    "h-9 w-9 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                    set.isFailure ? "bg-destructive/10 text-destructive" : "bg-secondary text-muted-foreground",
+                    "disabled:opacity-40"
+                  )}
+                >
+                  <X className="w-3.5 h-3.5" strokeWidth={1.5} />
+                </button>
+                {checkButton}
+              </div>
+            </div>
             {isAdvanced && isDone && (
               <div className="pl-9 mt-1 mb-1">
                 <div className="flex items-center gap-2">
@@ -448,7 +497,8 @@ const EnhancedExerciseCard = ({
   return (
     <div className={cn(
       "rounded-xl border transition-all",
-      isActive ? "bg-card border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "bg-card/50 border-border/50"
+      isActive ? "bg-card border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "bg-card/50 border-border/50",
+      "min-[0px]:p-0" // card wrapper — padding is on children
     )}>
       {/* Compact header */}
       <div className="flex items-center gap-3 p-3">

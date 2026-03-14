@@ -43,14 +43,14 @@ const EmojiSlider = ({ label, value, onChange, emojis, lowLabel, highLabel }: Em
         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</Label>
         <span className="text-lg">{emojis[value - 1]}</span>
       </div>
-      <div className="flex gap-1.5">
+      <div className="flex flex-wrap gap-1.5">
         {[1, 2, 3, 4, 5].map((level) => (
           <button
             key={level}
             type="button"
             onClick={() => onChange(level)}
             className={cn(
-              "flex-1 h-12 rounded-lg text-base font-bold transition-all border",
+              "min-w-[48px] min-h-[48px] flex-1 basis-[calc(33%-6px)] xs:basis-0 rounded-lg text-base font-bold transition-all border",
               value === level
                 ? "border-primary bg-accent scale-105 shadow-sm"
                 : "border-border text-muted-foreground hover:border-primary/30"
