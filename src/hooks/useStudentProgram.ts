@@ -10,6 +10,9 @@ export interface DBExercise {
   muscle_group: string;
   equipment: string;
   type: string;
+  video_url?: string | null;
+  video_url_female?: string | null;
+  video_url_male?: string | null;
 }
 
 export interface DBSessionExercise {

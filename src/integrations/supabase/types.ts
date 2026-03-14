@@ -619,6 +619,8 @@ export type Database = {
           secondary_muscle: string | null
           tracking_type: string | null
           type: string
+          video_url_female: string | null
+          video_url_male: string | null
         }
         Insert: {
           created_at?: string
@@ -635,6 +637,8 @@ export type Database = {
           secondary_muscle?: string | null
           tracking_type?: string | null
           type: string
+          video_url_female?: string | null
+          video_url_male?: string | null
         }
         Update: {
           created_at?: string
@@ -651,6 +655,8 @@ export type Database = {
           secondary_muscle?: string | null
           tracking_type?: string | null
           type?: string
+          video_url_female?: string | null
+          video_url_male?: string | null
         }
         Relationships: []
       }

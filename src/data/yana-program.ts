@@ -17,6 +17,9 @@ export interface ProgramExerciseDetail {
   videoSearchQuery?: string;
   channel: string;
   notes: string;
+  videoUrlFemale?: string;
+  videoUrlMale?: string;
+  exerciseVideoUrl?: string;
 }
 
 export interface FullProgram {

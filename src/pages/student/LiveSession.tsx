@@ -79,7 +79,7 @@ const LiveSession = () => {
             id, sort_order, sets, reps_min, reps_max, rest_seconds, tempo,
             rpe_target, suggested_weight, coach_notes, video_url, video_search_query,
             section_id,
-            exercise:exercises(id, name, name_en, muscle_group, equipment, type, tracking_type)
+            exercise:exercises(id, name, name_en, muscle_group, equipment, type, tracking_type, video_url, video_url_female, video_url_male)
           )
         `)
         .eq("id", selectedSessionId)
@@ -152,6 +152,9 @@ const LiveSession = () => {
         videoSearchQuery: ex.video_search_query || "",
         channel: "",
         notes: ex.coach_notes || "",
+        videoUrlFemale: (ex.exercise as any)?.video_url_female || "",
+        videoUrlMale: (ex.exercise as any)?.video_url_male || "",
+        exerciseVideoUrl: (ex.exercise as any)?.video_url || "",
       })),
     }));
   }, [selectedSession]);
@@ -616,6 +619,9 @@ const LiveSession = () => {
                       coachNotes={ex.notes || null}
                       videoUrl={ex.video || null}
                       videoSearchQuery={ex.videoSearchQuery || ex.name || null}
+                      videoUrlFemale={ex.videoUrlFemale || null}
+                      videoUrlMale={ex.videoUrlMale || null}
+                      exerciseVideoUrl={ex.exerciseVideoUrl || null}
                       isActive={isActive}
                       completedSets={sets}
                       onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
