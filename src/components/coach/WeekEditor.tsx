@@ -71,8 +71,8 @@ const WeekEditor = ({ week, onUpdate, onDuplicate }: WeekEditorProps) => {
               <SelectValue placeholder={t('add_session_placeholder')} />
             </SelectTrigger>
             <SelectContent>
-              {availableDays.map(([d, name]) => (
-                <SelectItem key={d} value={d}>{name}</SelectItem>
+              {availableDays.map(([d, key]) => (
+                <SelectItem key={d} value={d}>{t(`common:days.${key}`)}</SelectItem>
               ))}
             </SelectContent>
           </Select>

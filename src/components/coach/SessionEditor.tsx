@@ -117,7 +117,7 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
             placeholder={t('session_name_placeholder')}
           />
           <p className="text-[11px] text-muted-foreground">
-            {DAY_NAMES[session.dayOfWeek]} · {t('exercises_count', { count: totalExercises })} · {totalSections} {t('section').toLowerCase()}{totalSections !== 1 ? "s" : ""}
+            {t(`common:days.${DAY_NAMES[session.dayOfWeek]}`)} · {t('exercises_count', { count: totalExercises })} · {totalSections} {t('section').toLowerCase()}{totalSections !== 1 ? "s" : ""}
           </p>
         </div>
         <button onClick={onRemove} className="text-muted-foreground hover:text-destructive transition-colors p-1">

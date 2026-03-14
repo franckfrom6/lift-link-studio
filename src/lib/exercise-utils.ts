@@ -1,23 +1,5 @@
 import i18n from "@/i18n";
-
-// Mapping FR muscle group → i18n key
-const MUSCLE_GROUP_MAP: Record<string, string> = {
-  "Abdos": "abs",
-  "Bras": "arms",
-  "Dos": "back",
-  "Épaules": "shoulders",
-  "Fessiers": "glutes",
-  "Jambes": "legs",
-  "Pectoraux": "chest",
-};
-
-const EQUIPMENT_MAP: Record<string, string> = {
-  "Poids du corps": "bodyweight",
-  "Haltères": "dumbbells",
-  "Barre": "barbell",
-  "Câble": "cable",
-  "Machine": "machine",
-};
+import { MUSCLE_GROUP_DB_MAP, EQUIPMENT_DB_MAP } from "@/types/exercise";
 
 /**
  * Returns the exercise name in the current language.
@@ -32,22 +14,20 @@ export const getExerciseName = (exercise: { name: string; name_en?: string | nul
 
 /**
  * Returns the translated muscle group label.
+ * Handles both old French DB values and new English keys.
  */
-export const getMuscleGroupLabel = (muscleGroupFr: string): string => {
-  const key = MUSCLE_GROUP_MAP[muscleGroupFr];
-  if (key && i18n.language === "en") {
-    return i18n.t(`exercises:muscle_groups.${key}`);
-  }
-  return muscleGroupFr;
+export const getMuscleGroupLabel = (dbValue: string): string => {
+  // Normalize to English key (handles both French and English input)
+  const key = MUSCLE_GROUP_DB_MAP[dbValue] || dbValue;
+  return i18n.t(`exercises:muscle_groups.${key}`, { defaultValue: dbValue });
 };
 
 /**
  * Returns the translated equipment label.
+ * Handles both old French DB values and new English keys.
  */
-export const getEquipmentLabel = (equipmentFr: string): string => {
-  const key = EQUIPMENT_MAP[equipmentFr];
-  if (key && i18n.language === "en") {
-    return i18n.t(`exercises:equipment.${key}`);
-  }
-  return equipmentFr;
+export const getEquipmentLabel = (dbValue: string): string => {
+  // Normalize to English key (handles both French and English input)
+  const key = EQUIPMENT_DB_MAP[dbValue] || dbValue;
+  return i18n.t(`exercises:equipment.${key}`, { defaultValue: dbValue });
 };
