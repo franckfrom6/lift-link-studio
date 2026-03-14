@@ -41,7 +41,7 @@ const StudentWeek = () => {
   const { user } = useAuth();
   const isAdvanced = useIsAdvanced();
   const queryClient = useQueryClient();
-  const { program, loading: programLoading, refreshing, refetch } = useStudentProgram();
+  const { program, loading: programLoading, refreshing } = useStudentProgram();
   const DAYS = [
     t("common:days.mon"), t("common:days.tue"), t("common:days.wed"),
     t("common:days.thu"), t("common:days.fri"), t("common:days.sat"), t("common:days.sun"),
@@ -59,7 +59,7 @@ const StudentWeek = () => {
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicateSession, setDuplicateSession] = useState<{ id: string; name: string } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; isFreeSession: boolean } | null>(null);
 
   const totalWeeks = program?.weeks?.length || 0;
 
