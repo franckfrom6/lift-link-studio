@@ -1915,6 +1915,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      session_is_completed: { Args: { _session_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "coach" | "student"
