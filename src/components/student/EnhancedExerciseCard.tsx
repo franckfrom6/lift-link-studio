@@ -75,6 +75,7 @@ const EnhancedExerciseCard = ({
       trackingType === "duration" ? (s.durationSeconds || 0) > 0 : s.reps > 0
     )
   );
+  const [exercisePhotos, setExercisePhotos] = useState<string[]>([]);
 
   if (completedSets.length === 0 && isActive) {
     const initial: EnhancedCompletedSet[] = Array.from({ length: targetSets }, (_, i) => ({
