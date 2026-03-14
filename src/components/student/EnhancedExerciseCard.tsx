@@ -257,22 +257,48 @@ const EnhancedExerciseCard = ({
     );
 
     switch (trackingType) {
-      case "duration":
+      case "duration": {
+        const durationVal = set.durationSeconds || 0;
+        const durationDisplay = durationVal > 0 ? `${Math.floor(durationVal / 60)}:${(durationVal % 60).toString().padStart(2, '0')}` : "";
         return (
-          <div key={i} className={cn("grid grid-cols-[36px_1fr_40px]", rowClass)}>
+          <div key={i} className={cn("grid grid-cols-[36px_1fr_40px_40px]", rowClass)}>
             <span className="text-sm font-bold text-center">{set.setNumber}</span>
             <Input
-              type="number"
-              value={set.durationSeconds || ""}
-              onChange={(e) => updateSet(i, "durationSeconds", Number(e.target.value))}
-              placeholder="0"
+              type="text"
+              value={durationDisplay}
+              onChange={(e) => {
+                const val = e.target.value;
+                // Parse mm:ss or raw seconds
+                const mmssMatch = val.match(/^(\d{0,2}):?(\d{0,2})$/);
+                if (mmssMatch) {
+                  const mins = parseInt(mmssMatch[1] || "0");
+                  const secs = parseInt(mmssMatch[2] || "0");
+                  updateSet(i, "durationSeconds", mins * 60 + secs);
+                } else if (/^\d+$/.test(val)) {
+                  updateSet(i, "durationSeconds", Number(val));
+                }
+              }}
+              placeholder="0:00"
               className={inputClass}
               disabled={!isCurrent}
-              min={0}
             />
+            {/* +/- 5s steppers */}
+            <div className="flex flex-col gap-0.5">
+              <button
+                onClick={() => updateSet(i, "durationSeconds", (set.durationSeconds || 0) + 5)}
+                disabled={!isCurrent}
+                className="h-4 rounded bg-secondary text-[9px] font-bold text-muted-foreground hover:text-foreground disabled:opacity-40"
+              >+5</button>
+              <button
+                onClick={() => updateSet(i, "durationSeconds", Math.max(0, (set.durationSeconds || 0) - 5))}
+                disabled={!isCurrent}
+                className="h-4 rounded bg-secondary text-[9px] font-bold text-muted-foreground hover:text-foreground disabled:opacity-40"
+              >-5</button>
+            </div>
             {checkButton}
           </div>
         );
+      }
       case "reps_only":
         return (
           <div key={i}>
