@@ -187,6 +187,7 @@ async function fetchDashboard(userId: string): Promise<DashboardData> {
       avatar: profile.full_name.charAt(0).toUpperCase(),
       goal: profile.goal,
       level: profile.level,
+      displayMode: ((profile as any).display_mode as "simple" | "advanced" | null) || null,
       programName: prog?.name || null,
       programWeekCurrent: 1,
       programWeekTotal: weekInfo?.total || null,
