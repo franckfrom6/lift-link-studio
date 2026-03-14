@@ -1,12 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ExerciseVideoEmbedProps {
   exerciseName: string;
-  /** Pre-resolved video URL (from useExerciseVideo). If provided, skips YouTube search. */
+  /** Direct video URL override (e.g. from session_exercises.video_url). Skips gender & YouTube resolution. */
   directVideoUrl?: string | null;
+  /** Exercise-level gendered video URL for female athletes */
+  videoUrlFemale?: string | null;
+  /** Exercise-level gendered video URL for male athletes */
+  videoUrlMale?: string | null;
+  /** Exercise-level generic video URL */
+  exerciseVideoUrl?: string | null;
 }
 
 interface CachedVideo {
@@ -47,31 +55,70 @@ function setCache(name: string, videoId: string | null, title: string | null) {
   }
 }
 
-export function ExerciseVideoEmbed({ exerciseName, directVideoUrl }: ExerciseVideoEmbedProps) {
+function extractYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+}
+
+export function ExerciseVideoEmbed({
+  exerciseName,
+  directVideoUrl,
+  videoUrlFemale,
+  videoUrlMale,
+  exerciseVideoUrl,
+}: ExerciseVideoEmbedProps) {
   const [videoId, setVideoId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const { t } = useTranslation("exercises");
+  const { user } = useAuth();
 
-  // Extract YouTube video ID from a full URL
-  const extractYouTubeId = (url: string): string | null => {
-    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
-    return match ? match[1] : null;
-  };
+  // Fetch user sex from nutrition_profiles for gender-based video selection
+  const { data: userSex } = useQuery({
+    queryKey: ["nutrition-profile-sex", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("nutrition_profiles")
+        .select("sex")
+        .eq("student_id", user.id)
+        .maybeSingle();
+      return data?.sex as string | null;
+    },
+    enabled: !!user,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
+
+  // Resolve the best video URL based on gender, with fallback chain
+  const resolvedUrl = useMemo(() => {
+    // 1. Direct override from session_exercises always wins
+    if (directVideoUrl) return directVideoUrl;
+
+    // 2. Gender-specific exercise-level video
+    if (userSex === "female" && videoUrlFemale) return videoUrlFemale;
+    if (userSex === "male" && videoUrlMale) return videoUrlMale;
+
+    // 3. Generic exercise-level video
+    if (exerciseVideoUrl) return exerciseVideoUrl;
+
+    // 4. No URL available — will fall back to YouTube search
+    return null;
+  }, [directVideoUrl, videoUrlFemale, videoUrlMale, exerciseVideoUrl, userSex]);
 
   useEffect(() => {
-    // If a direct URL is provided, use it instead of searching
-    if (directVideoUrl) {
-      const id = extractYouTubeId(directVideoUrl);
+    // If we have a resolved URL, extract the YouTube ID
+    if (resolvedUrl) {
+      const id = extractYouTubeId(resolvedUrl);
       setVideoId(id);
       setLoading(false);
       return;
     }
 
+    // Otherwise, search YouTube by exercise name
     let cancelled = false;
 
     async function fetchVideo() {
-      // Check cache first
       const cached = getCached(exerciseName);
       if (cached) {
         setVideoId(cached.videoId);
@@ -104,9 +151,12 @@ export function ExerciseVideoEmbed({ exerciseName, directVideoUrl }: ExerciseVid
       }
     }
 
+    setLoading(true);
+    setError(false);
+    setVideoId(null);
     fetchVideo();
     return () => { cancelled = true; };
-  }, [exerciseName, directVideoUrl]);
+  }, [exerciseName, resolvedUrl]);
 
   // Skeleton while loading
   if (loading) {
