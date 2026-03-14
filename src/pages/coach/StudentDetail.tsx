@@ -82,7 +82,7 @@ const StudentDetail = () => {
     // Fetch profile
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("user_id, full_name, avatar_url, goal, level, age, height, weight")
+      .select("user_id, full_name, avatar_url, goal, level, age, height, weight, display_mode")
       .eq("user_id", studentId)
       .maybeSingle();
     if (profileError) console.error("Error fetching student profile:", profileError);
