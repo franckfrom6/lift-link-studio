@@ -268,6 +268,9 @@ const StudentDetail = () => {
         </div>
       </div>
 
+      {/* Display mode banner */}
+      <StudentDisplayModeBanner displayMode={(student as any).display_mode as any} studentName={student.full_name} />
+
       {/* Deleted sessions warning */}
       {deletedSessionCount > 0 && program && (
         <button
