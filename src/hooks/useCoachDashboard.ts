@@ -10,6 +10,7 @@ export interface StudentOverview {
   avatar: string;
   goal: string | null;
   level: string | null;
+  displayMode: "simple" | "advanced" | null;
   programName: string | null;
   programWeekCurrent: number | null;
   programWeekTotal: number | null;
