@@ -1,0 +1,10 @@
+ALTER TABLE daily_nutrition_logs 
+  ADD COLUMN IF NOT EXISTS water_ml INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS water_goal_ml INTEGER DEFAULT 2500;
+
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS water_goal_ml INTEGER DEFAULT 2500,
+  ADD COLUMN IF NOT EXISTS notif_water_reminder BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS notif_water_interval_hours INTEGER DEFAULT 2,
+  ADD COLUMN IF NOT EXISTS notif_water_start_time TIME DEFAULT '08:00',
+  ADD COLUMN IF NOT EXISTS notif_water_end_time TIME DEFAULT '21:00';
