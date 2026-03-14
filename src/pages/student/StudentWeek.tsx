@@ -529,6 +529,7 @@ const StudentWeek = () => {
                   )}
                 >
                   <div
+                    className="relative"
                     role={swapMode || (isSessionDay && sessionInfo) ? "button" : undefined}
                     tabIndex={swapMode || (isSessionDay && sessionInfo) ? 0 : undefined}
                     onClick={() => {
