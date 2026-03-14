@@ -9,7 +9,6 @@ import { useState } from "react";
 import AISidebarToggle from "@/components/ai/AISidebarToggle";
 import AISidebar from "@/components/ai/AISidebar";
 import MobileBottomNav from "@/components/navigation/MobileBottomNav";
-import FloatingActionButton from "@/components/navigation/FloatingActionButton";
 
 const StudentLayout = () => {
   const { t } = useTranslation(['settings', 'common', 'session']);
