@@ -105,17 +105,14 @@ async function fetchProgramTree(studentId: string): Promise<DBProgram | null> {
 
   const weekIds = weeks.map(w => w.id);
 
-  // Parallel: sessions, sections, exercises
-  const [sessionsRes, sectionsRes, exercisesRes] = await Promise.all([
-    supabase.from("sessions").select("*").in("week_id", weekIds).eq("is_deleted", false).order("day_of_week"),
-    supabase.from("session_sections").select("*").in("session_id", weekIds.length > 0 ? weekIds : ['']),
-    supabase.from("session_exercises").select("*, exercise:exercises(*)").in("session_id", weekIds.length > 0 ? weekIds : ['']),
-  ]);
+  // Fetch sessions scoped to week IDs
+  const sessionsRes = await supabase
+    .from("sessions").select("*").in("week_id", weekIds).eq("is_deleted", false).order("day_of_week");
 
   const sessions = sessionsRes.data || [];
   const sessionIds = sessions.map(s => s.id);
 
-  // If we have sessions, re-fetch sections/exercises scoped to session IDs
+  // Fetch sections + exercises scoped to actual session IDs
   let sections: any[] = [];
   let sessionExercises: any[] = [];
   if (sessionIds.length > 0) {
@@ -218,15 +215,36 @@ export const useStudentProgram = () => {
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'sessions' },
-        () => queryClient.invalidateQueries({ queryKey })
+        (payload) => {
+          const weekIds = queryClient.getQueryData<DBProgram>(queryKey)
+            ?.weeks?.map(w => w.id) || [];
+          const changedWeekId = (payload.new as any)?.week_id || (payload.old as any)?.week_id;
+          if (!changedWeekId || weekIds.includes(changedWeekId)) {
+            queryClient.invalidateQueries({ queryKey });
+          }
+        }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'session_sections' },
-        () => queryClient.invalidateQueries({ queryKey })
+        (payload) => {
+          const sessionIds = queryClient.getQueryData<DBProgram>(queryKey)
+            ?.weeks?.flatMap(w => w.sessions?.map(s => s.id) || []) || [];
+          const changedSessionId = (payload.new as any)?.session_id || (payload.old as any)?.session_id;
+          if (!changedSessionId || sessionIds.includes(changedSessionId)) {
+            queryClient.invalidateQueries({ queryKey });
+          }
+        }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'session_exercises' },
-        () => queryClient.invalidateQueries({ queryKey })
+        (payload) => {
+          const sessionIds = queryClient.getQueryData<DBProgram>(queryKey)
+            ?.weeks?.flatMap(w => w.sessions?.map(s => s.id) || []) || [];
+          const changedSessionId = (payload.new as any)?.session_id || (payload.old as any)?.session_id;
+          if (!changedSessionId || sessionIds.includes(changedSessionId)) {
+            queryClient.invalidateQueries({ queryKey });
+          }
+        }
       )
       .subscribe();
 
