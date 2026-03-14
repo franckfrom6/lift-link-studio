@@ -637,6 +637,7 @@ const CoachProgramDetail = () => {
                   const session = week.sessions.find(s => s.day_of_week === day);
                   const hasSession = !!session;
                   const isActive = session?.id === activeSessionId;
+                  const isDeleted = !!(session as any)?.is_deleted;
                   const dayDate = getDayDate(week.week_number, day);
                   return (
                     <button
@@ -646,11 +647,13 @@ const CoachProgramDetail = () => {
                         else addSessionToDay(week.id, day);
                       }}
                       className={`flex flex-col items-center gap-0.5 p-2 rounded-lg transition-all text-center min-h-[68px] ${
-                        isActive
-                          ? "bg-accent border-2 border-accent-foreground/30 shadow-sm"
-                          : hasSession
-                            ? "bg-accent/40 border border-accent-foreground/15 hover:bg-accent/60 cursor-pointer"
-                            : "bg-background/50 border border-dashed border-border hover:bg-accent/20 hover:border-accent cursor-pointer group"
+                        isDeleted
+                          ? "bg-destructive/10 border border-destructive/30 opacity-60"
+                          : isActive
+                            ? "bg-accent border-2 border-accent-foreground/30 shadow-sm"
+                            : hasSession
+                              ? "bg-accent/40 border border-accent-foreground/15 hover:bg-accent/60 cursor-pointer"
+                              : "bg-background/50 border border-dashed border-border hover:bg-accent/20 hover:border-accent cursor-pointer group"
                       }`}
                     >
                       <span className={`text-[10px] font-semibold uppercase ${isActive ? "text-accent-foreground" : "text-muted-foreground"}`}>
@@ -660,8 +663,8 @@ const CoachProgramDetail = () => {
                         {format(dayDate, "d MMM", { locale: dateFnsLocale })}
                       </span>
                       {hasSession ? (
-                        <span className={`text-[10px] font-medium leading-tight line-clamp-2 ${isActive ? "text-accent-foreground" : "text-accent-foreground/70"}`}>
-                          {session.name}
+                        <span className={`text-[10px] font-medium leading-tight line-clamp-2 ${isDeleted ? "line-through text-destructive/70" : isActive ? "text-accent-foreground" : "text-accent-foreground/70"}`}>
+                          {isDeleted ? "🗑️ " : ""}{session.name}
                         </span>
                       ) : (
                         <Plus className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-accent-foreground/60 transition-colors" />
