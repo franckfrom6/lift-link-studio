@@ -693,11 +693,13 @@ const StudentWeek = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
+                      {/* Desktop: individual buttons */}
+                      <div className="hidden sm:flex items-center gap-1 shrink-0">
                         {isSessionDay && !swapMode && (
                           <>
                             <Button
                               variant="ghost" size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
                               onClick={(e) => { e.stopPropagation(); setDuplicateSession({ id: sessionInfo!.sessionId, name: sessionInfo!.name }); setDuplicateOpen(true); }}
                               aria-label={t('session:duplicate_title', 'Duplicate session')}
                             >
@@ -705,7 +707,7 @@ const StudentWeek = () => {
                             </Button>
                             <Button
                               variant="ghost" size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
                               onClick={(e) => { e.stopPropagation(); setSwapMode(true); setSwapSourceDay(day.dayIndex); }}
                               aria-label={t('calendar:swap_session', 'Swap session')}
                             >
@@ -725,7 +727,7 @@ const StudentWeek = () => {
                             </Button>
                             <Button
                               variant="ghost" size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
                               onClick={(e) => { e.stopPropagation(); handleAddExternal(day.date); }}
                               aria-label={t('calendar:add_external', 'Add external activity')}
                             >
@@ -747,6 +749,72 @@ const StudentWeek = () => {
                           >
                             <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
+                        )}
+                        {(isSessionDay || dayFreeSessions.length > 0) && !day.isPast && !swapMode ? (
+                          <button
+                            className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg cursor-pointer"
+                            aria-label={t('session:start_session', 'Start session')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isSessionDay && sessionInfo) {
+                                navigate(`/student/session/${sessionInfo.sessionId}`);
+                              } else if (dayFreeSessions.length > 0) {
+                                navigate(`/student/session/${dayFreeSessions[0].id}`);
+                              }
+                            }}
+                          >
+                            <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            <span className="text-xs font-semibold">Go</span>
+                          </button>
+                        ) : isSessionDay && sessionCompleted ? (
+                          <CheckCircle className="w-5 h-5 text-success" strokeWidth={1.5} />
+                        ) : null}
+                      </div>
+
+                      {/* Mobile: dropdown menu + Go button */}
+                      <div className="flex sm:hidden items-center gap-1 shrink-0">
+                        {!swapMode && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                                <MoreVertical className="w-4 h-4" strokeWidth={1.5} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem onClick={() => { setBuilderDate(day.date); setBuilderOpen(true); }}>
+                                <Dumbbell className="w-4 h-4 mr-2" />
+                                {t('session:builder_title', 'Session Builder')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
+                                <Plus className="w-4 h-4 mr-2" />
+                                {t('calendar:add_external', 'Add external activity')}
+                              </DropdownMenuItem>
+                              {isSessionDay && sessionInfo && (
+                                <>
+                                  <DropdownMenuItem onClick={() => { setDuplicateSession({ id: sessionInfo.sessionId, name: sessionInfo.name }); setDuplicateOpen(true); }}>
+                                    <Copy className="w-4 h-4 mr-2" />
+                                    {t('session:duplicate_title', 'Duplicate')}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => { setSwapMode(true); setSwapSourceDay(day.dayIndex); }}>
+                                    <ArrowLeftRight className="w-4 h-4 mr-2" />
+                                    {t('calendar:swap_session', 'Swap')}
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              {isSessionDay && sessionInfo && !sessionCompleted && (
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => {
+                                    setDeleteTarget({ id: sessionInfo.sessionId, name: sessionInfo.name, isFreeSession: false });
+                                    setDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  {t('session:delete_session', 'Delete')}
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         )}
                         {(isSessionDay || dayFreeSessions.length > 0) && !day.isPast && !swapMode ? (
                           <button
