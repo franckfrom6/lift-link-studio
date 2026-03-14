@@ -608,21 +608,23 @@ const EnhancedExerciseCard = ({
             </div>
           )}
 
-          {showTimer && isActive && (
-            isAdvanced ? (
-              <CircularRestTimer
-                key={currentSetIdx}
-                initialSeconds={restSeconds}
-                onComplete={() => setShowTimer(false)}
-              />
-            ) : (
-              <RestTimer
-                key={currentSetIdx}
-                initialSeconds={restSeconds}
-                onComplete={() => setShowTimer(false)}
-              />
-            )
-          )}
+          <AnimatePresence>
+            {showTimer && isActive && (
+              isAdvanced ? (
+                <CircularRestTimer
+                  key={currentSetIdx}
+                  initialSeconds={restSeconds}
+                  onComplete={() => setShowTimer(false)}
+                />
+              ) : (
+                <LinearRestTimer
+                  key={currentSetIdx}
+                  initialSeconds={restSeconds}
+                  onComplete={() => setShowTimer(false)}
+                />
+              )
+            )}
+          </AnimatePresence>
 
           {isActive && completedSets.length > 0 && (
             <div className="space-y-2">
