@@ -1,10 +1,11 @@
-import { UserRound, Dumbbell, Sparkles, Search } from "lucide-react";
+import { UserRound, Dumbbell, Sparkles, Search, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import CoachRecommendationList from "@/components/leadgen/CoachRecommendationList";
+import SessionBuilderModal from "./SessionBuilderModal";
 
 interface SelfGuidedDashboardProps {
   onStartAI: () => void;
