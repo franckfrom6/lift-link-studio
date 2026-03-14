@@ -589,12 +589,28 @@ const StudentWeek = () => {
                                   onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
                                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
                                 >
-                                  <div className="flex items-center gap-1.5">
-                                    <p className="text-xs font-semibold text-foreground truncate">{fs.name}</p>
-                                    <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[8px] font-semibold px-1 py-0.5 rounded shrink-0">
-                                      <Bot className="w-2 h-2" strokeWidth={1.5} />
-                                      IA
-                                    </span>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <p className="text-xs font-semibold text-foreground truncate">{fs.name}</p>
+                                      <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[8px] font-semibold px-1 py-0.5 rounded shrink-0">
+                                        <Bot className="w-2 h-2" strokeWidth={1.5} />
+                                        IA
+                                      </span>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setDeleteTarget({ id: fs.id, name: fs.name });
+                                        setDeleteDialogOpen(true);
+                                      }}
+                                      aria-label={t('session:delete_session')}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                    </Button>
                                   </div>
                                   <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
                                 </div>
