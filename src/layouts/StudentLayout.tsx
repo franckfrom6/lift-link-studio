@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Calendar, BarChart3, User, BookOpen, HelpCircle, Dumbbell, Apple } from "lucide-react";
+import { Calendar, BarChart3, User, BookOpen, HelpCircle, Apple } from "lucide-react";
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
