@@ -67,5 +67,20 @@
   "prot_short": "Prot. (g)",
   "carbs_short": "Gluc. (g)",
   "fats_short": "Lip. (g)",
-  "meal_photo_alt": "Repas"
+  "meal_photo_alt": "Repas",
+  "water_title": "💧 Hydratation",
+  "water_other": "Autre",
+  "water_history": "7 derniers jours",
+  "water_goal_label": "Objectif quotidien (ml)",
+  "water_goal_auto": "Calculé depuis ton poids (35ml/kg)",
+  "protein_tips_title": "🥩 Protéines — les essentiels",
+  "protein_tips_goal": "Objectif : 1.6 à 2.2g par kg de poids de corps par jour",
+  "protein_tips_sources_title": "Sources recommandées",
+  "protein_source_chicken": "Viandes maigres (poulet, dinde, veau) : ~25g/100g",
+  "protein_source_fish": "Poisson (thon, saumon, cabillaud) : ~20-25g/100g",
+  "protein_source_eggs": "Œufs : ~13g/100g (6g par œuf)",
+  "protein_source_legumes": "Légumineuses (lentilles, pois chiches) : ~8-9g/100g",
+  "protein_source_dairy": "Fromage blanc 0% : ~8g/100g",
+  "protein_source_whey": "Protéines en poudre (whey) : ~20-25g/dose",
+  "protein_tips_timing": "Timing : répartir sur 3-4 prises dans la journée pour maximiser la synthèse protéique."
 }

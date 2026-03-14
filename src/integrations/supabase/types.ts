@@ -564,6 +564,8 @@ export type Database = {
           photo_url: string | null
           protein_g: number | null
           student_id: string
+          water_goal_ml: number | null
+          water_ml: number | null
         }
         Insert: {
           calories?: number | null
@@ -579,6 +581,8 @@ export type Database = {
           photo_url?: string | null
           protein_g?: number | null
           student_id: string
+          water_goal_ml?: number | null
+          water_ml?: number | null
         }
         Update: {
           calories?: number | null
@@ -594,6 +598,8 @@ export type Database = {
           photo_url?: string | null
           protein_g?: number | null
           student_id?: string
+          water_goal_ml?: number | null
+          water_ml?: number | null
         }
         Relationships: []
       }
@@ -966,6 +972,10 @@ export type Database = {
           notif_session_reminder: boolean | null
           notif_session_reminder_time: string | null
           notif_streak_motivation: boolean | null
+          notif_water_end_time: string | null
+          notif_water_interval_hours: number | null
+          notif_water_reminder: boolean | null
+          notif_water_start_time: string | null
           onboarding_completed: boolean
           push_subscription: string | null
           role: Database["public"]["Enums"]["app_role"] | null
@@ -973,6 +983,7 @@ export type Database = {
           unit_preference: string | null
           updated_at: string
           user_id: string
+          water_goal_ml: number | null
           weight: number | null
         }
         Insert: {
@@ -990,6 +1001,10 @@ export type Database = {
           notif_session_reminder?: boolean | null
           notif_session_reminder_time?: string | null
           notif_streak_motivation?: boolean | null
+          notif_water_end_time?: string | null
+          notif_water_interval_hours?: number | null
+          notif_water_reminder?: boolean | null
+          notif_water_start_time?: string | null
           onboarding_completed?: boolean
           push_subscription?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
@@ -997,6 +1012,7 @@ export type Database = {
           unit_preference?: string | null
           updated_at?: string
           user_id: string
+          water_goal_ml?: number | null
           weight?: number | null
         }
         Update: {
@@ -1014,6 +1030,10 @@ export type Database = {
           notif_session_reminder?: boolean | null
           notif_session_reminder_time?: string | null
           notif_streak_motivation?: boolean | null
+          notif_water_end_time?: string | null
+          notif_water_interval_hours?: number | null
+          notif_water_reminder?: boolean | null
+          notif_water_start_time?: string | null
           onboarding_completed?: boolean
           push_subscription?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
@@ -1021,6 +1041,7 @@ export type Database = {
           unit_preference?: string | null
           updated_at?: string
           user_id?: string
+          water_goal_ml?: number | null
           weight?: number | null
         }
         Relationships: []
