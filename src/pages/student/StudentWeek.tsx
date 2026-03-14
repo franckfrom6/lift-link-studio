@@ -520,7 +520,7 @@ const StudentWeek = () => {
                   onMoveUp={isSessionDay && day.dayIndex > 0 ? () => { setSwapSourceDay(day.dayIndex); setSwapTargetDay(day.dayIndex - 1); setSwapModalOpen(true); } : undefined}
                   onMoveDown={isSessionDay && day.dayIndex < 6 ? () => { setSwapSourceDay(day.dayIndex); setSwapTargetDay(day.dayIndex + 1); setSwapModalOpen(true); } : undefined}
                   className={cn(
-                    "w-full glass p-4 transition-all text-left touch-manipulation",
+                    "group/day w-full glass p-4 transition-all text-left touch-manipulation",
                     day.isToday && "ring-1 ring-primary/40",
                     isSessionDay && !swapMode && "hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] cursor-pointer",
                     !isSessionDay && dayExternals.length === 0 && dayFreeSessions.length === 0 && !swapMode && "opacity-50",
