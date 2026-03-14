@@ -670,7 +670,7 @@ const StudentWeek = () => {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="absolute right-0 top-0 h-6 w-6 text-muted-foreground opacity-0 pointer-events-none transition-opacity group-hover/free-session:opacity-100 group-hover/free-session:pointer-events-auto group-focus-within/free-session:opacity-100 group-focus-within/free-session:pointer-events-auto group-active/free-session:opacity-100 group-active/free-session:pointer-events-auto hover:text-destructive"
+                                        className="absolute right-0 top-0 h-6 w-6 p-1 rounded-full text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 sm:opacity-0 sm:pointer-events-none sm:group-hover/day:opacity-100 sm:group-hover/day:pointer-events-auto"
                                         onClick={(e) => {
                                           e.preventDefault();
                                           e.stopPropagation();
@@ -679,7 +679,7 @@ const StudentWeek = () => {
                                         }}
                                         aria-label={t('session:delete_session')}
                                       >
-                                        <Trash2 className="h-[14px] w-[14px]" strokeWidth={1.5} />
+                                        <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                                       </Button>
                                     )}
 
