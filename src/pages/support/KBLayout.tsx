@@ -116,7 +116,7 @@ const KBLayout = () => {
 
       <div className="flex">
         {/* Desktop sidebar */}
-        <aside className="hidden lg:block w-[260px] shrink-0 border-r border-border sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+        <aside className="hidden lg:block w-[260px] shrink-0 border-r border-border sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">
           <KBSidebar articles={filteredArticles} activeSlug={slug} />
         </aside>
 

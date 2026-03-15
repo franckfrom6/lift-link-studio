@@ -281,7 +281,7 @@ const CoachExercises = () => {
 
       {/* Video suggestion sheet */}
       <Sheet open={!!suggestExId} onOpenChange={(open) => { if (!open) setSuggestExId(null); }}>
-        <SheetContent side="bottom" className="max-h-[80vh]">
+        <SheetContent side="bottom" className="max-h-[80dvh]">
           <SheetHeader>
             <SheetTitle>{t('suggest_video')}</SheetTitle>
           </SheetHeader>

@@ -139,7 +139,7 @@ const DuplicateSessionModal = ({ open, onClose, sessionId, sessionName, programI
 
   return (
     <Sheet open={open} onOpenChange={v => !v && onClose()}>
-      <SheetContent side="bottom" className="max-h-[80vh]">
+      <SheetContent side="bottom" className="max-h-[80dvh]">
         <SheetHeader>
           <SheetTitle className="text-base flex items-center gap-2">
             <Copy className="w-4 h-4" strokeWidth={1.5} />

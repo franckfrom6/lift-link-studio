@@ -31,7 +31,7 @@ const ExerciseEditSheet = ({ exercise, open, onClose, onUpdate, onDelete, onSubs
 
   return (
     <Sheet open={open} onOpenChange={v => !v && onClose()}>
-      <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
+      <SheetContent side="bottom" className="max-h-[80dvh] overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="text-base truncate">
             {getExerciseName({ name: exercise.name, name_en: exercise.nameEn })}

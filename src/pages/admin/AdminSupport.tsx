@@ -148,7 +148,7 @@ const AdminSupport = () => {
       </Table>
 
       <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80dvh] overflow-y-auto">
           {selectedTicket && (
             <>
               <DialogHeader>

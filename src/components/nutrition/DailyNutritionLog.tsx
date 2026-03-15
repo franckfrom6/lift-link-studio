@@ -106,7 +106,7 @@ const MealFormSheet = ({ open, onClose, onSubmit, initialData }: MealFormSheetPr
 
   return (
     <Sheet open={open} onOpenChange={v => !v && onClose()}>
-      <SheetContent side="bottom" className="max-h-[90vh] rounded-t-2xl overflow-y-auto">
+      <SheetContent side="bottom" className="max-h-[90dvh] rounded-t-2xl overflow-y-auto">
         <SheetHeader className="text-left pb-2">
           <SheetTitle className="text-base">{initialData ? t("edit_meal") : t("add_meal")}</SheetTitle>
         </SheetHeader>

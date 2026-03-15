@@ -66,7 +66,7 @@ const RecommendationSheet = ({ open, onClose, triggerType, activityType, muscleG
 
   return (
     <Sheet open={open} onOpenChange={v => !v && onClose()}>
-      <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl overflow-y-auto">
+      <SheetContent side="bottom" className="max-h-[85dvh] rounded-t-2xl overflow-y-auto">
         <SheetHeader className="text-left pb-2">
           <SheetTitle className="text-base">{title}</SheetTitle>
           <p className="text-xs text-muted-foreground">{t('recovery:subtitle')}</p>
