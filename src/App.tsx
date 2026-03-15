@@ -52,6 +52,7 @@ import AthleteProgramEditor from "./pages/student/AthleteProgramEditor";
 import StudentNutrition from "./pages/student/StudentNutrition";
 import StudentRecommendations from "./pages/student/StudentRecommendations";
 
+import SupportLayout from "./layouts/SupportLayout";
 import SupportPage from "./pages/support/SupportPage";
 import TicketForm from "./pages/support/TicketForm";
 import TicketDetail from "./pages/support/TicketDetail";
