@@ -95,7 +95,7 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
     <>
       {/* Backdrop overlay */}
       <div
-        className="fixed inset-0 z-50 bg-black/50 animate-in fade-in-0"
+        className="fixed inset-0 z-40 bg-black/50 animate-in fade-in-0"
         onClick={onClose}
         aria-hidden="true"
       />
