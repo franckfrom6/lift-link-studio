@@ -43,7 +43,7 @@ const LiveSession = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation(['session', 'common']);
   const { user } = useAuth();
-  const { program: dbProgram } = useStudentProgram();
+  const { program: dbProgram, loading: programLoading } = useStudentProgram();
   const isAdvanced = useIsAdvanced();
   const { effectiveStudentId } = useImpersonation();
   const studentId = user ? effectiveStudentId(user.id) : null;
@@ -84,7 +84,11 @@ const LiveSession = () => {
   }, [dbProgram?.weeks, selectedSessionId]);
 
   useEffect(() => {
-    if (programSession || !selectedSessionId) return;
+    // Wait for program to finish loading before deciding to fetch as free/fallback session
+    if (programLoading || programSession || !selectedSessionId) {
+      if (programSession) setFreeSessionLoading(false);
+      return;
+    }
     setFreeSessionLoading(true);
     const fetchFree = async () => {
       const { data } = await supabase
@@ -121,7 +125,7 @@ const LiveSession = () => {
       setFreeSessionLoading(false);
     };
     fetchFree();
-  }, [programSession, selectedSessionId]);
+  }, [programLoading, programSession, selectedSessionId]);
 
   const selectedSession = programSession || freeSession;
 
@@ -407,8 +411,8 @@ const LiveSession = () => {
     ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
 
-  // Loading
-  if (freeSessionLoading) {
+  // Loading — wait for both program and free session fetch to complete
+  if (programLoading || freeSessionLoading) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="flex items-center gap-2 text-zinc-400">
