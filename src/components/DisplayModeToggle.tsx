@@ -82,8 +82,7 @@ const DisplayModeToggle = () => {
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[85vw] max-w-[260px]"
           >
-            <div className="bg-popover border border-border rounded-xl shadow-lg p-3 text-xs text-popover-foreground">
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-popover border-l border-t border-border rotate-45" />
+            <div className="bg-popover border border-border rounded-xl shadow-lg p-3 text-xs text-popover-foreground relative">
               <p className="font-medium mb-1">✨ {t("mode_tooltip_title", "Display mode")}</p>
               <p className="text-muted-foreground leading-relaxed">
                 {t("mode_tooltip_desc", "Switch between Essential (clean & simple) and Pro (detailed analytics) anytime.")}
