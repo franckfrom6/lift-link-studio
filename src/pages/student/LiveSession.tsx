@@ -408,13 +408,29 @@ const LiveSession = () => {
     : "";
 
   // Loading
-  if (freeSessionLoading || (!selectedSession && selectedSessionId)) {
+  if (freeSessionLoading) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="flex items-center gap-2 text-zinc-400">
           <Clock className="w-4 h-4 animate-spin" />
           <span className="text-sm">{t('common:loading')}</span>
         </div>
+      </div>
+    );
+  }
+
+  // Session not found — past session or deleted
+  if (!selectedSession && selectedSessionId) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <Clock className="w-8 h-8 text-zinc-500" />
+        <p className="text-zinc-300 font-semibold">{t('session:session_not_found', 'Séance introuvable')}</p>
+        <p className="text-zinc-500 text-sm max-w-xs">
+          {t('session:session_not_found_desc', 'Cette séance a peut-être été supprimée ou appartient à un programme précédent.')}
+        </p>
+        <Button variant="outline" onClick={() => navigate("/student")} className="mt-2">
+          {t('common:back_to_app', 'Retour')}
+        </Button>
       </div>
     );
   }
