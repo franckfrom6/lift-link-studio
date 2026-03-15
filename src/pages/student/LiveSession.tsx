@@ -84,7 +84,11 @@ const LiveSession = () => {
   }, [dbProgram?.weeks, selectedSessionId]);
 
   useEffect(() => {
-    if (programSession || !selectedSessionId) return;
+    // Wait for program to finish loading before deciding to fetch as free/fallback session
+    if (programLoading || programSession || !selectedSessionId) {
+      if (programSession) setFreeSessionLoading(false);
+      return;
+    }
     setFreeSessionLoading(true);
     const fetchFree = async () => {
       const { data } = await supabase
@@ -121,7 +125,7 @@ const LiveSession = () => {
       setFreeSessionLoading(false);
     };
     fetchFree();
-  }, [programSession, selectedSessionId]);
+  }, [programLoading, programSession, selectedSessionId]);
 
   const selectedSession = programSession || freeSession;
 
