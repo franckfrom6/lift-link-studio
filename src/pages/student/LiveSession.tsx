@@ -43,7 +43,7 @@ const LiveSession = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation(['session', 'common']);
   const { user } = useAuth();
-  const { program: dbProgram } = useStudentProgram();
+  const { program: dbProgram, loading: programLoading } = useStudentProgram();
   const isAdvanced = useIsAdvanced();
   const { effectiveStudentId } = useImpersonation();
   const studentId = user ? effectiveStudentId(user.id) : null;
