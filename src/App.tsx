@@ -128,12 +128,14 @@ const App = () => (
                   <Route path="recommendations" element={<StudentRecommendations />} />
                 </Route>
 
-                <Route path="/support" element={<SupportPage />} />
-                <Route path="/support/new" element={<TicketForm />} />
-                <Route path="/support/ticket/:ticketId" element={<TicketDetail />} />
-                <Route path="/support/help" element={<KBLayout />}>
-                  <Route index element={<KBHome />} />
-                  <Route path=":slug" element={<KBArticle />} />
+                <Route path="/support" element={<AuthGuard><SupportLayout /></AuthGuard>}>
+                  <Route index element={<SupportPage />} />
+                  <Route path="new" element={<TicketForm />} />
+                  <Route path="ticket/:ticketId" element={<TicketDetail />} />
+                  <Route path="help" element={<KBLayout />}>
+                    <Route index element={<KBHome />} />
+                    <Route path=":slug" element={<KBArticle />} />
+                  </Route>
                 </Route>
                 {/* Public /aide alias for KB */}
                 <Route path="/aide" element={<KBLayout />}>
