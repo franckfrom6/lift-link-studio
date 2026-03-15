@@ -80,7 +80,7 @@ const DisplayModeToggle = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-64"
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[85vw] max-w-[260px]"
           >
             <div className="bg-popover border border-border rounded-xl shadow-lg p-3 text-xs text-popover-foreground">
               <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-popover border-l border-t border-border rotate-45" />
