@@ -118,7 +118,7 @@ const AdminLayout = () => {
         </main>
 
         <nav
-          className="fixed bottom-0 left-0 right-0 z-40 md:hidden flex items-center justify-around border-t border-border/50 bg-background/80 backdrop-blur-xl backdrop-saturate-150 py-1.5 px-1"
+          className="fixed bottom-0 left-0 right-0 z-30 md:hidden flex items-center justify-around border-t border-border/50 bg-background/80 backdrop-blur-xl backdrop-saturate-150 py-1.5 px-1"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           {mobileMainItems.map((item) => (

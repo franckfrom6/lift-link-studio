@@ -42,7 +42,7 @@ const MobileBottomNav = ({ items }: MobileBottomNavProps) => {
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-40 md:hidden",
+        "fixed bottom-0 left-0 right-0 z-30 md:hidden",
         "border-t border-border/50",
         "bg-background/80 backdrop-blur-xl backdrop-saturate-150",
       )}

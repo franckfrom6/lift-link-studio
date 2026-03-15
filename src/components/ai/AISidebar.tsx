@@ -95,7 +95,7 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
     <>
       {/* Backdrop overlay */}
       <div
-        className="fixed inset-0 z-50 bg-black/50 animate-in fade-in-0"
+        className="fixed inset-0 z-40 bg-black/50 animate-in fade-in-0"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -106,7 +106,7 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
         role="dialog"
         aria-modal="true"
         aria-label={t("ai_chat:title")}
-        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[340px] md:w-[380px] lg:w-[400px] bg-background border-l border-border shadow-xl flex flex-col animate-slide-in-right"
+        className="fixed inset-y-0 right-0 z-40 w-full sm:w-[340px] md:w-[380px] lg:w-[400px] bg-background border-l border-border shadow-xl flex flex-col animate-slide-in-right"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
