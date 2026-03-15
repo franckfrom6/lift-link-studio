@@ -48,7 +48,7 @@ const OnboardingTooltip = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[45] flex items-end sm:items-center justify-center animate-in fade-in duration-300">
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/30" onClick={handleDismiss} />
 
