@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Apple, Bell } from "lucide-react";
 import NutritionProfileForm, { NutritionProfileData } from "@/components/nutrition/NutritionProfileForm";
@@ -7,13 +7,82 @@ import NotificationSettings from "@/components/student/NotificationSettings";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const StudentProfile = () => {
   const { t } = useTranslation(['nutrition', 'dashboard', 'common', 'settings']);
   const isAdvanced = useIsAdvanced();
+  const { user } = useAuth();
   const [nutritionProfile, setNutritionProfile] = useState<NutritionProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleNutritionSubmit = (data: NutritionProfileData) => {
+  // Load nutrition profile from database
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("nutrition_profiles")
+        .select("*")
+        .eq("student_id", user.id)
+        .maybeSingle();
+
+      if (data && !error) {
+        setNutritionProfile({
+          height_cm: data.height_cm ?? 0,
+          weight_kg: data.weight_kg ?? 0,
+          age: data.age ?? 0,
+          sex: (data.sex as "male" | "female") ?? "male",
+          activity_multiplier: data.activity_multiplier ?? 1.55,
+          objective: (data.objective as NutritionProfileData["objective"]) ?? "maintenance",
+          bmr: data.bmr ?? 0,
+          tdee: data.tdee ?? 0,
+          calorie_target: data.calorie_target ?? 0,
+          protein_g: data.protein_g ?? 0,
+          carbs_g: data.carbs_g ?? 0,
+          fat_g: data.fat_g ?? 0,
+          dietary_restrictions: data.dietary_restrictions ?? [],
+          allergies: data.allergies ?? [],
+        });
+      }
+      setLoading(false);
+    };
+    load();
+  }, [user]);
+
+  const handleNutritionSubmit = async (data: NutritionProfileData) => {
+    if (!user) return;
+
+    const payload = {
+      student_id: user.id,
+      height_cm: data.height_cm,
+      weight_kg: data.weight_kg,
+      age: data.age,
+      sex: data.sex,
+      activity_multiplier: data.activity_multiplier,
+      objective: data.objective,
+      bmr: data.bmr,
+      tdee: data.tdee,
+      calorie_target: data.calorie_target,
+      protein_g: data.protein_g,
+      carbs_g: data.carbs_g,
+      fat_g: data.fat_g,
+      dietary_restrictions: data.dietary_restrictions,
+      allergies: data.allergies,
+      updated_by: user.id,
+    };
+
+    const { error } = await supabase
+      .from("nutrition_profiles")
+      .upsert(payload, { onConflict: "student_id" });
+
+    if (error) {
+      console.error("Error saving nutrition profile:", error);
+      toast.error(t('common:error'));
+      return;
+    }
+
     setNutritionProfile(data);
     toast.success(t('nutrition:profile_saved'));
   };
