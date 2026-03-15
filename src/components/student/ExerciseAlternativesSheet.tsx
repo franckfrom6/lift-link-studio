@@ -29,7 +29,7 @@ const ExerciseAlternativesSheet = ({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="max-h-[80vh] rounded-t-2xl">
+      <SheetContent side="bottom" className="max-h-[80dvh] rounded-t-2xl">
         <SheetHeader className="text-left pb-2">
           <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
             <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -43,7 +43,7 @@ const ExerciseAlternativesSheet = ({
           )}
         </SheetHeader>
 
-        <div className="space-y-2 mt-4 overflow-y-auto max-h-[55vh] pb-4">
+        <div className="space-y-2 mt-4 overflow-y-auto max-h-[55dvh] pb-4">
           {isEmpty ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
               {t('session:no_alternatives', 'Aucune alternative disponible pour cet exercice.')}

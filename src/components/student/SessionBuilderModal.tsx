@@ -212,7 +212,7 @@ const SessionBuilderModal = ({ open, onClose, date, onCreated }: SessionBuilderM
   return (
     <>
       <Sheet open={open} onOpenChange={v => !v && handleClose()}>
-        <SheetContent side="bottom" className="h-[92vh] flex flex-col p-0">
+        <SheetContent side="bottom" className="h-[92dvh] flex flex-col p-0">
           <SheetHeader className="p-4 border-b border-border shrink-0">
             <div className="flex items-center gap-2">
               {step === "edit" && (

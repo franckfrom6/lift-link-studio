@@ -31,7 +31,7 @@ const ExercisePicker = ({ open, onClose, onSelect, excludeIds = [] }: ExercisePi
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+      <DialogContent className="max-w-lg max-h-[80dvh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{t('common:add')} {t('exercise_library').toLowerCase()}</DialogTitle>
         </DialogHeader>

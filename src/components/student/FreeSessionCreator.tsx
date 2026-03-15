@@ -164,7 +164,7 @@ const FreeSessionCreator = ({ open, onClose, date, onCreated }: FreeSessionCreat
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && handleClose()}>
-      <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
+      <SheetContent side="bottom" className="h-[90dvh] flex flex-col p-0">
         <SheetHeader className="p-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
             {step === 2 && (
