@@ -9,7 +9,8 @@ const ACCENT = "#6C5CE7";
 
 const Logo = ({ variant = "header", className = "" }: LogoProps) => {
   const { theme } = useTheme();
-  const textColor = theme === "dark" ? "#F3F4F6" : "#1A1A1A";
+  const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const textColor = isDark ? "#F3F4F6" : "#1A1A1A";
 
   if (variant === "compact") {
     return (
