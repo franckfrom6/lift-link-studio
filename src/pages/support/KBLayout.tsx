@@ -124,18 +124,23 @@ const KBLayout = () => {
         <main className="flex-1 min-w-0">
           {/* Mobile breadcrumb */}
           {slug && activeArticle && (
-            <div className="lg:hidden flex items-center gap-1 px-4 py-2 text-xs text-muted-foreground border-b border-border">
-              <button onClick={() => navigate("/support/help")} className="hover:text-foreground">
+            <div className="flex items-center gap-1 px-4 lg:px-0 py-2.5 text-xs text-muted-foreground border-b border-border lg:border-0 lg:pt-0">
+              <button onClick={() => navigate("/support/help")} className="hover:text-foreground transition-colors">
                 {t("help_center")}
               </button>
-              <ChevronRight className="w-3 h-3" />
+              <ChevronRight className="w-3 h-3 shrink-0" />
               {activeCategory && (
                 <>
-                  <span>{CATEGORY_LABELS[activeCategory] || activeCategory}</span>
-                  <ChevronRight className="w-3 h-3" />
+                  <button
+                    onClick={() => navigate(`/support/help?category=${activeCategory}`)}
+                    className="hover:text-foreground transition-colors"
+                  >
+                    {CATEGORY_LABELS[activeCategory] || activeCategory}
+                  </button>
+                  <ChevronRight className="w-3 h-3 shrink-0" />
                 </>
               )}
-              <span className="text-foreground truncate">
+              <span className="text-foreground font-medium truncate">
                 {lang === "fr" ? activeArticle.title_fr : activeArticle.title_en}
               </span>
             </div>
