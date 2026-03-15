@@ -80,9 +80,9 @@ const DisplayModeToggle = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[85vw] max-w-[260px]"
+            className="fixed top-16 inset-x-0 z-50 px-4 flex justify-center"
           >
-            <div className="bg-popover border border-border rounded-xl shadow-lg p-3 text-xs text-popover-foreground relative">
+            <div className="bg-popover border border-border rounded-xl shadow-lg p-3 text-xs text-popover-foreground relative w-full max-w-[260px]">
               <p className="font-medium mb-1">✨ {t("mode_tooltip_title", "Display mode")}</p>
               <p className="text-muted-foreground leading-relaxed">
                 {t("mode_tooltip_desc", "Switch between Essential (clean & simple) and Pro (detailed analytics) anytime.")}
@@ -106,10 +106,10 @@ const DisplayModeToggle = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -12, scale: 0.9 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[calc(100vw-2rem)] max-w-sm"
+            className="fixed top-4 inset-x-0 z-[60] px-4 flex justify-center"
           >
             <div className={cn(
-              "rounded-xl border shadow-lg p-4 backdrop-blur-sm",
+              "rounded-xl border shadow-lg p-4 backdrop-blur-sm w-full max-w-sm",
               isPro
                 ? "bg-primary/5 border-primary/20"
                 : "bg-card border-border"
