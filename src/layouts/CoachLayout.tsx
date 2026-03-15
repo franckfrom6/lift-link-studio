@@ -152,7 +152,7 @@ const CoachLayout = () => {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden pb-24 md:pb-8">
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden md:pb-8" style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom, 0px))" }}>
           <div className="max-w-5xl mx-auto"><Outlet /></div>
         </main>
 

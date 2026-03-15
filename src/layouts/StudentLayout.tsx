@@ -71,7 +71,7 @@ const StudentLayout = () => {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8">
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto md:pb-8" style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom, 0px))" }}>
           <div className="max-w-4xl mx-auto">
             <Outlet />
           </div>
