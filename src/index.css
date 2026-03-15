@@ -179,6 +179,9 @@
   .press-scale {
     @apply transition-transform duration-150 active:scale-[0.97];
   }
+  .pb-safe-nav {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* Scroll reveal animations for landing page */
