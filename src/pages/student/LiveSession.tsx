@@ -407,8 +407,8 @@ const LiveSession = () => {
     ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
 
-  // Loading
-  if (freeSessionLoading) {
+  // Loading — wait for both program and free session fetch to complete
+  if (programLoading || freeSessionLoading) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="flex items-center gap-2 text-zinc-400">
