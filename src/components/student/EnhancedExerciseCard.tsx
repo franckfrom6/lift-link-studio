@@ -362,14 +362,14 @@ const EnhancedExerciseCard = ({
               <button
                 onClick={() => updateSet(i, "durationSeconds", (set.durationSeconds || 0) + 5)}
                 disabled={!isCurrent}
-                className="h-[20px] min-w-[40px] px-1 rounded bg-secondary text-[10px] font-bold text-muted-foreground hover:text-foreground disabled:opacity-40 touch-manipulation"
-                style={{ minHeight: '20px', padding: '10px 4px' }}
+                className="min-h-[40px] min-w-[40px] px-2 rounded-lg bg-secondary text-xs font-bold text-muted-foreground hover:text-foreground disabled:opacity-40 touch-manipulation"
+                aria-label="+5 seconds"
               >+5</button>
               <button
                 onClick={() => updateSet(i, "durationSeconds", Math.max(0, (set.durationSeconds || 0) - 5))}
                 disabled={!isCurrent}
-                className="h-[20px] min-w-[40px] px-1 rounded bg-secondary text-[10px] font-bold text-muted-foreground hover:text-foreground disabled:opacity-40 touch-manipulation"
-                style={{ minHeight: '20px', padding: '10px 4px' }}
+                className="min-h-[40px] min-w-[40px] px-2 rounded-lg bg-secondary text-xs font-bold text-muted-foreground hover:text-foreground disabled:opacity-40 touch-manipulation"
+                aria-label="-5 seconds"
               >-5</button>
             </div>
             {checkButton}

@@ -62,7 +62,7 @@ const MobileBottomNav = ({ items }: MobileBottomNavProps) => {
               <motion.div
                 className={cn(
                   "relative flex items-center justify-center rounded-2xl transition-colors",
-                  "min-w-[48px] min-h-[48px]",
+                  "min-w-[44px] min-h-[44px]",
                   active
                     ? "text-primary"
                     : "text-muted-foreground active:text-foreground",
