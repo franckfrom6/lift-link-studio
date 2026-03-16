@@ -714,7 +714,7 @@ const StudentWeek = () => {
                                   <Dumbbell className="w-4 h-4 mr-2" />{t('session:builder_title')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
-                                  <Plus className="w-4 h-4 mr-2" />{t('calendar:add_external')}
+                                  <Plus className="w-4 h-4 mr-2" />{t('calendar:log_activity')}
                                 </DropdownMenuItem>
                                 {isSessionDay && sessionInfo && (
                                   <>
