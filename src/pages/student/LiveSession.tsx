@@ -225,7 +225,7 @@ const LiveSession = () => {
   const skippedCount = skippedExercises.size;
 
   const saveSetsForExercise = async (key: string) => {
-    if (!completedSessionId || savedExercisesRef.current.has(key)) return;
+    if (!completedSessionId) return;
     const sets = completedSets[key] || [];
     const sessionExId = sessionExerciseIdMap[key];
     if (!sessionExId) return;
@@ -238,11 +238,31 @@ const LiveSession = () => {
       rpe_actual: s.rpeActual,
       is_failure: s.isFailure,
     }));
+    // Delete existing rows then re-insert to handle updates
+    await supabase.from("completed_sets")
+      .delete()
+      .eq("completed_session_id", completedSessionId)
+      .eq("session_exercise_id", sessionExId);
     if (rows.length > 0) {
       const { error } = await supabase.from("completed_sets").insert(rows);
-      if (!error) savedExercisesRef.current.add(key);
+      if (error) console.error("Error saving sets:", error);
     }
   };
+
+  // Auto-save sets with debounce whenever completedSets change
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!completedSessionId || Object.keys(completedSets).length === 0) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(async () => {
+      for (const key of Object.keys(completedSets)) {
+        if (!skippedExercises.has(key)) {
+          await saveSetsForExercise(key);
+        }
+      }
+    }, 2000);
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
+  }, [completedSets, completedSessionId]);
 
   // Find next exercise key from current
   const getNextExerciseKey = useCallback((fromKey: string): string | null => {
