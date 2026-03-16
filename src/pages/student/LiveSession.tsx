@@ -696,6 +696,20 @@ const LiveSession = () => {
               </SessionSection>
             );
           })}
+
+          {/* Add exercise button */}
+          <Button
+            variant="outline"
+            className="w-full border-dashed border-border text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              // Default to last section
+              setAddToSectionIdx(sessionProgram.sections.length > 0 ? sessionProgram.sections.length - 1 : 0);
+              setExercisePickerOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {t("session:add_exercise", { defaultValue: "Ajouter un exercice" })}
+          </Button>
         </div>
 
         {/* Finish button */}
