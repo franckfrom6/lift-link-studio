@@ -743,6 +743,11 @@ const LiveSession = () => {
       </div>
 
       {/* Modals */}
+      <ExercisePicker
+        open={exercisePickerOpen}
+        onClose={() => setExercisePickerOpen(false)}
+        onSelect={handleAddExercise}
+      />
       <ExerciseAlternativesSheet
         open={swapSheetOpen}
         onClose={() => { setSwapSheetOpen(false); setSwapTargetKey(null); }}
