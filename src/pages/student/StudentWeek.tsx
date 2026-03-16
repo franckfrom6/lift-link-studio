@@ -324,20 +324,12 @@ const StudentWeek = () => {
   const handleDeleteSession = async () => {
     if (!deleteTarget || !user || !studentId) return;
 
-    const { data: completedSession } = await supabase
+    // Delete any completed session records first
+    await supabase
       .from("completed_sessions")
-      .select("id")
+      .delete()
       .eq("student_id", studentId)
-      .eq("session_id", deleteTarget.id)
-      .not("completed_at", "is", null)
-      .maybeSingle();
-
-    if (completedSession) {
-      toast.error(t("session:session_already_completed"));
-      setDeleteDialogOpen(false);
-      setDeleteTarget(null);
-      return;
-    }
+      .eq("session_id", deleteTarget.id);
 
     const { data: updatedSession, error } = await supabase
       .from("sessions")

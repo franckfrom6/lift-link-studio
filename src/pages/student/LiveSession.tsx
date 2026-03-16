@@ -361,19 +361,9 @@ const LiveSession = () => {
 
   const handleDeleteSession = async () => {
     if (!user || !selectedSession || !studentId) return;
-    const { data: completedSession } = await supabase
-      .from("completed_sessions").select("id")
-      .eq("student_id", studentId).eq("session_id", selectedSession.id)
-      .not("completed_at", "is", null).maybeSingle();
-    if (completedSession) {
-      toast.error(t("session:session_already_completed"));
-      setDeleteDialogOpen(false);
-      return;
-    }
-    if (completedSessionId) {
-      await supabase.from("completed_sessions").delete()
-        .eq("id", completedSessionId).eq("student_id", studentId);
-    }
+    // Delete any completed session records first
+    await supabase.from("completed_sessions").delete()
+      .eq("student_id", studentId).eq("session_id", selectedSession.id);
     const sessionName = selectedSession.name;
     const { data: updatedSession, error } = await supabase
       .from("sessions").update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: user.id })
