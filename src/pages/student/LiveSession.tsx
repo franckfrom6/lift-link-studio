@@ -421,7 +421,7 @@ const LiveSession = () => {
     const originalName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || "Exercice";
     setSubstitutions(prev => [...prev.filter(s => s.key !== swapTargetKey), { key: swapTargetKey, originalName, newName: alternative.name, newEquipment: alternative.equipment }]);
     setCompletedSets(prev => { const u = { ...prev }; delete u[swapTargetKey]; return u; });
-    savedExercisesRef.current.delete(swapTargetKey);
+    
     toast.success(`${originalName} → ${alternative.name}`);
     setSwapSheetOpen(false);
     setSwapTargetKey(null);
