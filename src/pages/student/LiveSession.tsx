@@ -64,7 +64,7 @@ const LiveSession = () => {
   const [skipTargetKey, setSkipTargetKey] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [hasStartedWorkout, setHasStartedWorkout] = useState(false);
-  const savedExercisesRef = useRef<Set<string>>(new Set());
+  
   const [freeSession, setFreeSession] = useState<any>(null);
   const [freeSessionLoading, setFreeSessionLoading] = useState(false);
 
