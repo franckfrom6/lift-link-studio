@@ -431,6 +431,81 @@ const LiveSession = () => {
     setSwapTargetKey(null);
   };
 
+  const handleAddExercise = async (exercise: Exercise) => {
+    if (!selectedSession?.id) return;
+    // Determine section to add to
+    const targetSection = selectedSession.sections[addToSectionIdx];
+    const sectionId = targetSection?.id && targetSection.id !== "default" ? targetSection.id : null;
+    const existingExCount = targetSection?.exercises?.length || 0;
+
+    // Insert into DB
+    const { data: newRow, error } = await supabase.from("session_exercises").insert({
+      session_id: selectedSession.id,
+      exercise_id: exercise.id,
+      section_id: sectionId,
+      sort_order: existingExCount,
+      sets: 3,
+      reps_min: 10,
+      reps_max: 12,
+      rest_seconds: 90,
+    }).select("id").single();
+
+    if (error) {
+      console.error("Error adding exercise:", error);
+      toast.error(t("common:error"));
+      return;
+    }
+
+    // Update local session data
+    const newExercise = {
+      id: newRow.id,
+      exercise_id: exercise.id,
+      sort_order: existingExCount,
+      sets: 3,
+      reps_min: 10,
+      reps_max: 12,
+      rest_seconds: 90,
+      tempo: null,
+      rpe_target: null,
+      suggested_weight: null,
+      coach_notes: null,
+      video_url: null,
+      video_search_query: null,
+      section_id: sectionId,
+      exercise: {
+        id: exercise.id,
+        name: exercise.name,
+        name_en: exercise.name_en || null,
+        muscle_group: exercise.muscle_group,
+        equipment: exercise.equipment,
+        type: exercise.type,
+        tracking_type: exercise.tracking_type || "weight_reps",
+        video_url_female: exercise.video_url_female || null,
+        video_url_male: exercise.video_url_male || null,
+      },
+    };
+
+    // Update the session object (works for both program and free sessions)
+    const updateSession = (session: any) => {
+      const updated = { ...session, sections: session.sections.map((sec: any, idx: number) => {
+        if (idx === addToSectionIdx) {
+          return { ...sec, exercises: [...sec.exercises, newExercise] };
+        }
+        return sec;
+      })};
+      return updated;
+    };
+
+    if (freeSession) {
+      setFreeSession(updateSession(freeSession));
+    } else if (programSession) {
+      // For program sessions, invalidate query to refetch
+      queryClient.invalidateQueries({ queryKey: ["student-program"] });
+    }
+
+    toast.success(t("session:exercise_added", { name: exercise.name, defaultValue: `${exercise.name} ajouté` }));
+  };
+
   const swapExerciseOriginalName = swapTargetKey
     ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
