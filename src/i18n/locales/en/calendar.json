@@ -17,6 +17,7 @@
   "swap": "Swap",
   "move": "Move",
   "add_activity": "Add activity",
+  "log_activity": "Log an activity",
   "edit_activity": "Edit activity",
   "activity_added": "Activity added!",
   "activity_modified": "Activity modified!",
