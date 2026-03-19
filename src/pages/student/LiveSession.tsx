@@ -578,6 +578,36 @@ const LiveSession = () => {
     );
   }
 
+  // Finish failed — show retry
+  if (finishError && !sessionDone) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <CloudOff className="w-10 h-10 text-destructive" />
+        <p className="text-zinc-100 font-semibold text-lg">{t("session:finish_failed")}</p>
+        <p className="text-zinc-400 text-sm max-w-xs">
+          {t("session:save_failed_final")}
+        </p>
+        <Button
+          onClick={async () => {
+            setIsSaving(true);
+            try {
+              await finishSession();
+            } finally {
+              setIsSaving(false);
+            }
+          }}
+          disabled={isSaving}
+          className="mt-2"
+        >
+          {isSaving ? t("session:saving") : t("session:retry")}
+        </Button>
+        <Button variant="ghost" onClick={() => navigate("/student")} className="text-zinc-500">
+          {t("common:back")}
+        </Button>
+      </div>
+    );
+  }
+
   // Session complete recap
   if (sessionDone) {
     return (
