@@ -87,7 +87,45 @@ const LiveSession = () => {
     };
   }, []);
 
-  const programSession = useMemo(() => {
+  // Check for orphaned localStorage backup on mount
+  useEffect(() => {
+    const backup = localStorage.getItem("live_session_backup");
+    if (backup) {
+      try {
+        const parsed = JSON.parse(backup);
+        // Only show recovery if the backup matches the current session
+        if (parsed.sessionId === selectedSessionId) {
+          setRecoveryData(parsed);
+          setShowRecoveryPrompt(true);
+        } else {
+          // Stale backup for a different session — clean up
+          localStorage.removeItem("live_session_backup");
+        }
+      } catch {
+        localStorage.removeItem("live_session_backup");
+      }
+    }
+  }, [selectedSessionId]);
+
+  const handleRestoreBackup = () => {
+    if (recoveryData?.completedSets) {
+      setCompletedSets(recoveryData.completedSets);
+    }
+    if (recoveryData?.substitutions) {
+      setSubstitutions(recoveryData.substitutions);
+    }
+    localStorage.removeItem("live_session_backup");
+    setShowRecoveryPrompt(false);
+    setRecoveryData(null);
+    toast.success(t('session:session_restored', 'Session restaurée'));
+  };
+
+  const handleDismissBackup = () => {
+    localStorage.removeItem("live_session_backup");
+    setShowRecoveryPrompt(false);
+    setRecoveryData(null);
+  };
+
     const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
     return sessions.find((s) => s.id === selectedSessionId) || null;
   }, [dbProgram?.weeks, selectedSessionId]);
