@@ -74,6 +74,8 @@ const LiveSession = () => {
   const [freeSessionLoading, setFreeSessionLoading] = useState(false);
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
   const [addToSectionIdx, setAddToSectionIdx] = useState<number>(0);
+  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
+  const [recoveryData, setRecoveryData] = useState<any>(null);
 
   // Apply dark theme on mount for immersive workout
   useEffect(() => {
@@ -84,6 +86,45 @@ const LiveSession = () => {
       document.body.style.backgroundColor = "";
     };
   }, []);
+
+  // Check for orphaned localStorage backup on mount
+  useEffect(() => {
+    const backup = localStorage.getItem("live_session_backup");
+    if (backup) {
+      try {
+        const parsed = JSON.parse(backup);
+        // Only show recovery if the backup matches the current session
+        if (parsed.sessionId === selectedSessionId) {
+          setRecoveryData(parsed);
+          setShowRecoveryPrompt(true);
+        } else {
+          // Stale backup for a different session — clean up
+          localStorage.removeItem("live_session_backup");
+        }
+      } catch {
+        localStorage.removeItem("live_session_backup");
+      }
+    }
+  }, [selectedSessionId]);
+
+  const handleRestoreBackup = () => {
+    if (recoveryData?.completedSets) {
+      setCompletedSets(recoveryData.completedSets);
+    }
+    if (recoveryData?.substitutions) {
+      setSubstitutions(recoveryData.substitutions);
+    }
+    localStorage.removeItem("live_session_backup");
+    setShowRecoveryPrompt(false);
+    setRecoveryData(null);
+    toast.success(t('session:session_restored', 'Session restaurée'));
+  };
+
+  const handleDismissBackup = () => {
+    localStorage.removeItem("live_session_backup");
+    setShowRecoveryPrompt(false);
+    setRecoveryData(null);
+  };
 
   const programSession = useMemo(() => {
     const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
@@ -408,13 +449,23 @@ const LiveSession = () => {
   };
 
   const handleClose = () => {
-    const sessionData = {
-      date: new Date().toISOString(), duration: elapsed, completedSets,
-      substitutions, exerciseCount: allExercises.length, completedCount,
-    };
-    const history = JSON.parse(localStorage.getItem("session_history") || "[]");
-    history.push(sessionData);
-    localStorage.setItem("session_history", JSON.stringify(history));
+    if (completedSessionId) {
+      // Session is persisted in DB — clean up any stale localStorage backup
+      localStorage.removeItem("live_session_backup");
+    } else {
+      // No DB record yet (offline / error) — save to localStorage as safety net
+      console.warn("[LiveSession] No DB session ID — saving backup to localStorage");
+      const backupData = {
+        sessionId: selectedSession?.id,
+        date: new Date().toISOString(),
+        duration: elapsed,
+        completedSets,
+        substitutions,
+        exerciseCount: allExercises.length,
+        completedCount,
+      };
+      localStorage.setItem("live_session_backup", JSON.stringify(backupData));
+    }
     toast.success(t('session:session_saved'));
     navigate("/student");
   };
@@ -645,6 +696,27 @@ const LiveSession = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 -m-4 md:-m-8">
+      {/* Recovery prompt for orphaned localStorage backup */}
+      {showRecoveryPrompt && (
+        <AlertDialog open={showRecoveryPrompt} onOpenChange={setShowRecoveryPrompt}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('session:unsaved_session_found', 'Session non sauvegardée trouvée')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('session:unsaved_session_description', 'Une session précédente n\'a pas pu être sauvegardée. Voulez-vous restaurer vos données ?')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleDismissBackup}>
+                {t('common:ignore', 'Ignorer')}
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleRestoreBackup}>
+                {t('common:restore', 'Restaurer')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
       {/* Immersive stats bar */}
       <WorkoutStatsBar
         elapsed={elapsed}
