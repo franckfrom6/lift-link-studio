@@ -642,6 +642,7 @@ const LiveSession = () => {
         completedSets={completedSets}
         totalExercises={allExercises.length}
         completedExerciseCount={completedCount}
+        inProgressExerciseCount={inProgressCount}
         sessionTitle={sessionProgram.title}
         onBack={() => navigate("/student")}
         onProgression={() => setShowProgression(!showProgression)}

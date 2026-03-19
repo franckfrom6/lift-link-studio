@@ -85,7 +85,8 @@ const WorkoutStatsBar = ({
     return count;
   }, [completedSets]);
 
-  const progress = totalExercises > 0 ? (completedExerciseCount / totalExercises) * 100 : 0;
+  const completedProgress = totalExercises > 0 ? (completedExerciseCount / totalExercises) * 100 : 0;
+  const inProgressProgress = totalExercises > 0 ? (inProgressExerciseCount / totalExercises) * 100 : 0;
 
   return (
     <div className="sticky top-0 z-30 bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800">
@@ -163,12 +164,20 @@ const WorkoutStatsBar = ({
         </span>
       </div>
 
-      {/* Progress bar */}
-      <div className="h-0.5 bg-zinc-800">
+      {/* Progress bar — layered: in-progress (amber) behind completed (green/primary) */}
+      <div className="h-1 bg-zinc-800 relative">
+        {/* In-progress segment (amber) — sits behind completed */}
         <motion.div
-          className="h-full bg-primary"
+          className="h-full bg-amber-500/60 absolute top-0 left-0"
           initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
+          animate={{ width: `${completedProgress + inProgressProgress}%` }}
+          transition={{ type: "spring", stiffness: 100, damping: 20 }}
+        />
+        {/* Completed segment (primary/green) — on top */}
+        <motion.div
+          className="h-full bg-primary absolute top-0 left-0"
+          initial={{ width: 0 }}
+          animate={{ width: `${completedProgress}%` }}
           transition={{ type: "spring", stiffness: 100, damping: 20 }}
         />
       </div>
