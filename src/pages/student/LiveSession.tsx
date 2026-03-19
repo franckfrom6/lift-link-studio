@@ -52,6 +52,7 @@ const LiveSession = () => {
 
   const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>({});
   const [sessionDone, setSessionDone] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [startTime] = useState(Date.now());
   const [elapsed, setElapsed] = useState(0);
   const [activeExerciseKey, setActiveExerciseKey] = useState<string>("0-0");
@@ -292,13 +293,19 @@ const LiveSession = () => {
   }, [activeExerciseKey, sessionProgram.sections, getNextExerciseKey]);
 
   const handleExerciseComplete = async (key: string) => {
+    if (isSaving) return;
     if (!hasStartedWorkout) setHasStartedWorkout(true);
     await saveSetsForExercise(key);
     const nextKey = getNextExerciseKey(key);
     if (nextKey) {
       setActiveExerciseKey(nextKey);
     } else {
-      finishSession();
+      setIsSaving(true);
+      try {
+        await finishSession();
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
