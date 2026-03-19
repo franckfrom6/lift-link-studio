@@ -232,6 +232,7 @@ const LiveSession = () => {
   }, [user, selectedSession?.id, startTime, completedSessionId, sessionDone]);
 
   const completedCount = Object.entries(completedSets).filter(([key, sets]) => !skippedExercises.has(key) && sets.length > 0 && sets.every(s => s.reps > 0)).length;
+  const inProgressCount = Object.entries(completedSets).filter(([key, sets]) => !skippedExercises.has(key) && sets.length > 0 && sets.some(s => s.reps > 0 || s.weight > 0) && !sets.every(s => s.reps > 0)).length;
   const skippedCount = skippedExercises.size;
 
   const saveSetsForExercise = async (key: string): Promise<boolean> => {
