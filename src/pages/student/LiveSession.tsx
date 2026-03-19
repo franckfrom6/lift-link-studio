@@ -234,11 +234,11 @@ const LiveSession = () => {
   const completedCount = Object.entries(completedSets).filter(([key, sets]) => !skippedExercises.has(key) && sets.length > 0 && sets.every(s => s.reps > 0)).length;
   const skippedCount = skippedExercises.size;
 
-  const saveSetsForExercise = async (key: string) => {
-    if (!completedSessionId) return;
+  const saveSetsForExercise = async (key: string): Promise<boolean> => {
+    if (!completedSessionId) return false;
     const sets = completedSets[key] || [];
     const sessionExId = sessionExerciseIdMap[key];
-    if (!sessionExId) return;
+    if (!sessionExId) return false;
     const rows = sets.filter(s => s.reps > 0).map(s => ({
       completed_session_id: completedSessionId,
       session_exercise_id: sessionExId,
@@ -249,14 +249,16 @@ const LiveSession = () => {
       is_failure: s.isFailure,
     }));
     // Delete existing rows then re-insert to handle updates
-    await supabase.from("completed_sets")
+    const { error: delError } = await supabase.from("completed_sets")
       .delete()
       .eq("completed_session_id", completedSessionId)
       .eq("session_exercise_id", sessionExId);
+    if (delError) { console.error("Error deleting sets:", delError); return false; }
     if (rows.length > 0) {
       const { error } = await supabase.from("completed_sets").insert(rows);
-      if (error) console.error("Error saving sets:", error);
+      if (error) { console.error("Error saving sets:", error); return false; }
     }
+    return true;
   };
 
   // Auto-save sets with debounce whenever completedSets change
