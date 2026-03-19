@@ -13,6 +13,7 @@ interface WorkoutStatsBarProps {
   completedSets: Record<string, { weight: number; reps: number }[]>;
   totalExercises: number;
   completedExerciseCount: number;
+  inProgressExerciseCount?: number;
   sessionTitle: string;
   onBack: () => void;
   onMenu?: () => void;
