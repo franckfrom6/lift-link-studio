@@ -74,6 +74,8 @@ const LiveSession = () => {
   const [freeSessionLoading, setFreeSessionLoading] = useState(false);
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
   const [addToSectionIdx, setAddToSectionIdx] = useState<number>(0);
+  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
+  const [recoveryData, setRecoveryData] = useState<any>(null);
 
   // Apply dark theme on mount for immersive workout
   useEffect(() => {
