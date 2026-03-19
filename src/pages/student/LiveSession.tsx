@@ -410,13 +410,23 @@ const LiveSession = () => {
   };
 
   const handleClose = () => {
-    const sessionData = {
-      date: new Date().toISOString(), duration: elapsed, completedSets,
-      substitutions, exerciseCount: allExercises.length, completedCount,
-    };
-    const history = JSON.parse(localStorage.getItem("session_history") || "[]");
-    history.push(sessionData);
-    localStorage.setItem("session_history", JSON.stringify(history));
+    if (completedSessionId) {
+      // Session is persisted in DB — clean up any stale localStorage backup
+      localStorage.removeItem("live_session_backup");
+    } else {
+      // No DB record yet (offline / error) — save to localStorage as safety net
+      console.warn("[LiveSession] No DB session ID — saving backup to localStorage");
+      const backupData = {
+        sessionId: selectedSession?.id,
+        date: new Date().toISOString(),
+        duration: elapsed,
+        completedSets,
+        substitutions,
+        exerciseCount: allExercises.length,
+        completedCount,
+      };
+      localStorage.setItem("live_session_backup", JSON.stringify(backupData));
+    }
     toast.success(t('session:session_saved'));
     navigate("/student");
   };
