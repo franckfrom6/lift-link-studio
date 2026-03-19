@@ -223,7 +223,10 @@ const LiveSession = () => {
         }).select("id").single();
         if (error) throw error;
         if (data) setCompletedSessionId(data.id);
-      } catch (e) { console.error("Error creating completed session:", e); }
+      } catch (e) {
+        console.error("Error creating completed session:", e);
+        toast.error(t("session:session_create_failed"));
+      }
     };
     create();
   }, [user, selectedSession?.id, startTime, completedSessionId, sessionDone]);
