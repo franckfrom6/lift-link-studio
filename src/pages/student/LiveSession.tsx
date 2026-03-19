@@ -293,13 +293,19 @@ const LiveSession = () => {
   }, [activeExerciseKey, sessionProgram.sections, getNextExerciseKey]);
 
   const handleExerciseComplete = async (key: string) => {
+    if (isSaving) return;
     if (!hasStartedWorkout) setHasStartedWorkout(true);
     await saveSetsForExercise(key);
     const nextKey = getNextExerciseKey(key);
     if (nextKey) {
       setActiveExerciseKey(nextKey);
     } else {
-      finishSession();
+      setIsSaving(true);
+      try {
+        await finishSession();
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
