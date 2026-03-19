@@ -342,29 +342,40 @@ const LiveSession = () => {
   };
 
   const finishSession = async () => {
-    setSessionDone(true);
-
-    // Confetti burst
-    try {
-      confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"] });
-      setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.5 } }), 300);
-    } catch {}
-
-    // Vibrate celebration
-    try { navigator.vibrate?.([100, 50, 100, 50, 200]); } catch {}
-
-    toast.success(t('session:session_done'));
-    if (!completedSessionId) return;
+    setFinishError(false);
+    if (!completedSessionId) {
+      setSessionDone(true);
+      return;
+    }
 
     try {
+      // Save all unsaved sets first
       for (const key of Object.keys(completedSets)) {
-        if (!skippedExercises.has(key)) await saveSetsForExercise(key);
+        if (!skippedExercises.has(key)) {
+          const ok = await saveSetsForExercise(key);
+          if (!ok) throw new Error("Failed to save sets for " + key);
+        }
       }
-      await supabase.from("completed_sessions").update({
+      // Mark session as completed
+      const { error } = await supabase.from("completed_sessions").update({
         completed_at: new Date().toISOString(),
         duration: elapsed,
       }).eq("id", completedSessionId);
-    } catch (e) { console.error("Error finishing session:", e); }
+      if (error) throw error;
+
+      // Success — show celebration
+      setSessionDone(true);
+      try {
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"] });
+        setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.5 } }), 300);
+      } catch {}
+      try { navigator.vibrate?.([100, 50, 100, 50, 200]); } catch {}
+      toast.success(t('session:session_done'));
+    } catch (e) {
+      console.error("Error finishing session:", e);
+      setFinishError(true);
+      toast.error(t("session:finish_failed"));
+    }
   };
 
   const handleOpenSkip = (key: string) => { setSkipTargetKey(key); setSkipModalOpen(true); };
