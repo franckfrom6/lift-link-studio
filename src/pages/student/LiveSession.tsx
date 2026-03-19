@@ -126,6 +126,7 @@ const LiveSession = () => {
     setRecoveryData(null);
   };
 
+  const programSession = useMemo(() => {
     const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
     return sessions.find((s) => s.id === selectedSessionId) || null;
   }, [dbProgram?.weeks, selectedSessionId]);
