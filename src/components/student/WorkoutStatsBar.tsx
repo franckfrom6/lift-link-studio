@@ -1,10 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Clock, Zap, Dumbbell, MoreVertical, Trash2, TrendingUp } from "lucide-react";
+import { ArrowLeft, Clock, Zap, Dumbbell, MoreVertical, Trash2, TrendingUp, Cloud, CloudOff, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
+
+type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 interface WorkoutStatsBarProps {
   elapsed: number;
@@ -18,7 +20,30 @@ interface WorkoutStatsBarProps {
   showProgression?: boolean;
   showDelete?: boolean;
   onDelete?: () => void;
+  saveStatus?: SaveStatus;
 }
+
+const SaveStatusIndicator = ({ status }: { status: SaveStatus }) => {
+  const { t } = useTranslation("session");
+  if (status === "idle") return null;
+  return (
+    <div className="flex items-center gap-1">
+      {status === "saving" && <Loader2 className="w-3 h-3 text-muted-foreground animate-spin" />}
+      {status === "saved" && <Check className="w-3 h-3 text-primary" />}
+      {status === "error" && <CloudOff className="w-3 h-3 text-destructive" />}
+      <span className={cn(
+        "text-[10px] font-medium",
+        status === "saving" && "text-muted-foreground",
+        status === "saved" && "text-primary",
+        status === "error" && "text-destructive",
+      )}>
+        {status === "saving" && t("save_status_saving")}
+        {status === "saved" && t("save_status_saved")}
+        {status === "error" && t("save_status_error")}
+      </span>
+    </div>
+  );
+};
 
 const WorkoutStatsBar = ({
   elapsed,
@@ -31,6 +56,7 @@ const WorkoutStatsBar = ({
   showProgression,
   showDelete,
   onDelete,
+  saveStatus = "idle",
 }: WorkoutStatsBarProps) => {
   const { t } = useTranslation(["session", "common"]);
   const isAdvanced = useIsAdvanced();
@@ -61,7 +87,7 @@ const WorkoutStatsBar = ({
 
   return (
     <div className="sticky top-0 z-30 bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800">
-      {/* Top row: back + title + timer */}
+      {/* Top row: back + title + save status + timer */}
       <div className="flex items-center justify-between px-3 py-2">
         <Button
           variant="ghost"
@@ -73,9 +99,12 @@ const WorkoutStatsBar = ({
           <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
         </Button>
 
-        <p className="text-sm font-semibold text-zinc-100 truncate mx-2 flex-1 text-center">
-          {sessionTitle}
-        </p>
+        <div className="flex flex-col items-center mx-2 flex-1 min-w-0">
+          <p className="text-sm font-semibold text-zinc-100 truncate w-full text-center">
+            {sessionTitle}
+          </p>
+          <SaveStatusIndicator status={saveStatus} />
+        </div>
 
         <div className="flex items-center gap-1">
           {isAdvanced && onProgression && (

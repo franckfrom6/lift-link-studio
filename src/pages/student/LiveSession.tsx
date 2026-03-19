@@ -647,6 +647,7 @@ const LiveSession = () => {
         showProgression={showProgression}
         showDelete={!hasStartedWorkout}
         onDelete={() => setDeleteDialogOpen(true)}
+        saveStatus={saveStatus}
       />
 
       {/* Content */}
