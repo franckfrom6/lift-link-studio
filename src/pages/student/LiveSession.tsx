@@ -267,9 +267,34 @@ const LiveSession = () => {
     if (!completedSessionId || Object.keys(completedSets).length === 0) return;
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(async () => {
+      setSaveStatus("saving");
+      let allOk = true;
       for (const key of Object.keys(completedSets)) {
         if (!skippedExercises.has(key)) {
-          await saveSetsForExercise(key);
+          const ok = await saveSetsForExercise(key);
+          if (!ok) allOk = false;
+        }
+      }
+      if (allOk) {
+        setSaveStatus("saved");
+      } else {
+        // First failure — toast + retry once after 3s
+        toast.error(t("session:save_failed"));
+        setSaveStatus("error");
+        await new Promise(r => setTimeout(r, 3000));
+        setSaveStatus("saving");
+        let retryOk = true;
+        for (const key of Object.keys(completedSets)) {
+          if (!skippedExercises.has(key)) {
+            const ok = await saveSetsForExercise(key);
+            if (!ok) retryOk = false;
+          }
+        }
+        if (retryOk) {
+          setSaveStatus("saved");
+        } else {
+          setSaveStatus("error");
+          toast.error(t("session:save_failed_final"));
         }
       }
     }, 2000);
