@@ -696,6 +696,27 @@ const LiveSession = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 -m-4 md:-m-8">
+      {/* Recovery prompt for orphaned localStorage backup */}
+      {showRecoveryPrompt && (
+        <AlertDialog open={showRecoveryPrompt} onOpenChange={setShowRecoveryPrompt}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('session:unsaved_session_found', 'Session non sauvegardée trouvée')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('session:unsaved_session_description', 'Une session précédente n\'a pas pu être sauvegardée. Voulez-vous restaurer vos données ?')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleDismissBackup}>
+                {t('common:ignore', 'Ignorer')}
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleRestoreBackup}>
+                {t('common:restore', 'Restaurer')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
       {/* Immersive stats bar */}
       <WorkoutStatsBar
         elapsed={elapsed}
