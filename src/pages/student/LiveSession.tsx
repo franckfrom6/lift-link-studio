@@ -196,11 +196,20 @@ const LiveSession = () => {
     progression: progressionPhases.map((p) => `${p.weekLabel}: ${p.description}`),
   }), [selectedSession, mappedSections, progressionPhases]);
 
-  const getExerciseName = (sIdx: number, eIdx: number): string => {
-    const key = `${sIdx}-${eIdx}`;
-    const sub = substitutions.find(s => s.key === key);
-    return sub ? sub.newName : sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || "Exercice";
-  };
+  const exerciseNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    sessionProgram.sections.forEach((section, sIdx) => {
+      section.exercises.forEach((ex, eIdx) => {
+        const key = `${sIdx}-${eIdx}`;
+        const sub = substitutions.find(s => s.key === key);
+        map.set(key, sub ? sub.newName : ex.name || "Exercice");
+      });
+    });
+    return map;
+  }, [sessionProgram.sections, substitutions]);
+
+  const getExerciseName = (sIdx: number, eIdx: number): string =>
+    exerciseNameMap.get(`${sIdx}-${eIdx}`) || "Exercice";
 
   const allExercises: ProgramExerciseDetail[] = sessionProgram.sections.flatMap((s) => s.exercises);
 
