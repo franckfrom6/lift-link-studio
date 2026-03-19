@@ -136,5 +136,14 @@
   "session_restored": "Session restored",
   "restore_session": "Restore",
   "deleted_by_athlete": "Deleted by athlete",
-  "session_deleted_by_athlete": "{{athlete}} deleted the session \"{{session}}\""
+  "session_deleted_by_athlete": "{{athlete}} deleted the session \"{{session}}\"",
+  "save_failed": "Save failed, retrying…",
+  "save_failed_final": "Could not save some sets. Check your connection.",
+  "finish_failed": "Error finalizing session. Your data is preserved.",
+  "retry": "Retry",
+  "saving": "Saving…",
+  "session_create_failed": "Could not start session. Check your connection.",
+  "save_status_saved": "Saved",
+  "save_status_saving": "Saving…",
+  "save_status_error": "Save error"
 }

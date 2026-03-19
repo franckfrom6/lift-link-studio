@@ -15,7 +15,7 @@ import ProgressionTimeline, { ProgressionPhase } from "@/components/student/Prog
 import WorkoutStatsBar from "@/components/student/WorkoutStatsBar";
 import NextExercisePreview from "@/components/student/NextExercisePreview";
 import ShareSessionButton from "@/components/student/ShareSessionButton";
-import { Clock, Plus } from "lucide-react";
+import { Clock, Plus, CloudOff } from "lucide-react";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +53,8 @@ const LiveSession = () => {
   const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>({});
   const [sessionDone, setSessionDone] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [finishError, setFinishError] = useState(false);
   const [startTime] = useState(Date.now());
   const [elapsed, setElapsed] = useState(0);
   const [activeExerciseKey, setActiveExerciseKey] = useState<string>("0-0");
@@ -221,7 +223,10 @@ const LiveSession = () => {
         }).select("id").single();
         if (error) throw error;
         if (data) setCompletedSessionId(data.id);
-      } catch (e) { console.error("Error creating completed session:", e); }
+      } catch (e) {
+        console.error("Error creating completed session:", e);
+        toast.error(t("session:session_create_failed"));
+      }
     };
     create();
   }, [user, selectedSession?.id, startTime, completedSessionId, sessionDone]);
@@ -229,11 +234,11 @@ const LiveSession = () => {
   const completedCount = Object.entries(completedSets).filter(([key, sets]) => !skippedExercises.has(key) && sets.length > 0 && sets.every(s => s.reps > 0)).length;
   const skippedCount = skippedExercises.size;
 
-  const saveSetsForExercise = async (key: string) => {
-    if (!completedSessionId) return;
+  const saveSetsForExercise = async (key: string): Promise<boolean> => {
+    if (!completedSessionId) return false;
     const sets = completedSets[key] || [];
     const sessionExId = sessionExerciseIdMap[key];
-    if (!sessionExId) return;
+    if (!sessionExId) return false;
     const rows = sets.filter(s => s.reps > 0).map(s => ({
       completed_session_id: completedSessionId,
       session_exercise_id: sessionExId,
@@ -244,14 +249,16 @@ const LiveSession = () => {
       is_failure: s.isFailure,
     }));
     // Delete existing rows then re-insert to handle updates
-    await supabase.from("completed_sets")
+    const { error: delError } = await supabase.from("completed_sets")
       .delete()
       .eq("completed_session_id", completedSessionId)
       .eq("session_exercise_id", sessionExId);
+    if (delError) { console.error("Error deleting sets:", delError); return false; }
     if (rows.length > 0) {
       const { error } = await supabase.from("completed_sets").insert(rows);
-      if (error) console.error("Error saving sets:", error);
+      if (error) { console.error("Error saving sets:", error); return false; }
     }
+    return true;
   };
 
   // Auto-save sets with debounce whenever completedSets change
@@ -260,9 +267,34 @@ const LiveSession = () => {
     if (!completedSessionId || Object.keys(completedSets).length === 0) return;
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(async () => {
+      setSaveStatus("saving");
+      let allOk = true;
       for (const key of Object.keys(completedSets)) {
         if (!skippedExercises.has(key)) {
-          await saveSetsForExercise(key);
+          const ok = await saveSetsForExercise(key);
+          if (!ok) allOk = false;
+        }
+      }
+      if (allOk) {
+        setSaveStatus("saved");
+      } else {
+        // First failure — toast + retry once after 3s
+        toast.error(t("session:save_failed"));
+        setSaveStatus("error");
+        await new Promise(r => setTimeout(r, 3000));
+        setSaveStatus("saving");
+        let retryOk = true;
+        for (const key of Object.keys(completedSets)) {
+          if (!skippedExercises.has(key)) {
+            const ok = await saveSetsForExercise(key);
+            if (!ok) retryOk = false;
+          }
+        }
+        if (retryOk) {
+          setSaveStatus("saved");
+        } else {
+          setSaveStatus("error");
+          toast.error(t("session:save_failed_final"));
         }
       }
     }, 2000);
@@ -310,29 +342,40 @@ const LiveSession = () => {
   };
 
   const finishSession = async () => {
-    setSessionDone(true);
-
-    // Confetti burst
-    try {
-      confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"] });
-      setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.5 } }), 300);
-    } catch {}
-
-    // Vibrate celebration
-    try { navigator.vibrate?.([100, 50, 100, 50, 200]); } catch {}
-
-    toast.success(t('session:session_done'));
-    if (!completedSessionId) return;
+    setFinishError(false);
+    if (!completedSessionId) {
+      setSessionDone(true);
+      return;
+    }
 
     try {
+      // Save all unsaved sets first
       for (const key of Object.keys(completedSets)) {
-        if (!skippedExercises.has(key)) await saveSetsForExercise(key);
+        if (!skippedExercises.has(key)) {
+          const ok = await saveSetsForExercise(key);
+          if (!ok) throw new Error("Failed to save sets for " + key);
+        }
       }
-      await supabase.from("completed_sessions").update({
+      // Mark session as completed
+      const { error } = await supabase.from("completed_sessions").update({
         completed_at: new Date().toISOString(),
         duration: elapsed,
       }).eq("id", completedSessionId);
-    } catch (e) { console.error("Error finishing session:", e); }
+      if (error) throw error;
+
+      // Success — show celebration
+      setSessionDone(true);
+      try {
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"] });
+        setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.5 } }), 300);
+      } catch {}
+      try { navigator.vibrate?.([100, 50, 100, 50, 200]); } catch {}
+      toast.success(t('session:session_done'));
+    } catch (e) {
+      console.error("Error finishing session:", e);
+      setFinishError(true);
+      toast.error(t("session:finish_failed"));
+    }
   };
 
   const handleOpenSkip = (key: string) => { setSkipTargetKey(key); setSkipModalOpen(true); };
@@ -535,6 +578,36 @@ const LiveSession = () => {
     );
   }
 
+  // Finish failed — show retry
+  if (finishError && !sessionDone) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <CloudOff className="w-10 h-10 text-destructive" />
+        <p className="text-zinc-100 font-semibold text-lg">{t("session:finish_failed")}</p>
+        <p className="text-zinc-400 text-sm max-w-xs">
+          {t("session:save_failed_final")}
+        </p>
+        <Button
+          onClick={async () => {
+            setIsSaving(true);
+            try {
+              await finishSession();
+            } finally {
+              setIsSaving(false);
+            }
+          }}
+          disabled={isSaving}
+          className="mt-2"
+        >
+          {isSaving ? t("session:saving") : t("session:retry")}
+        </Button>
+        <Button variant="ghost" onClick={() => navigate("/student")} className="text-zinc-500">
+          {t("common:back")}
+        </Button>
+      </div>
+    );
+  }
+
   // Session complete recap
   if (sessionDone) {
     return (
@@ -574,6 +647,7 @@ const LiveSession = () => {
         showProgression={showProgression}
         showDelete={!hasStartedWorkout}
         onDelete={() => setDeleteDialogOpen(true)}
+        saveStatus={saveStatus}
       />
 
       {/* Content */}

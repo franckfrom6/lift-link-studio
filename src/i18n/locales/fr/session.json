@@ -136,5 +136,14 @@
   "session_restored": "Séance restaurée",
   "restore_session": "Restaurer",
   "deleted_by_athlete": "Supprimée par l'athlète",
-  "session_deleted_by_athlete": "{{athlete}} a supprimé la séance \"{{session}}\""
+  "session_deleted_by_athlete": "{{athlete}} a supprimé la séance \"{{session}}\"",
+  "save_failed": "Sauvegarde échouée, nouvelle tentative…",
+  "save_failed_final": "Impossible de sauvegarder certaines séries. Vérifie ta connexion.",
+  "finish_failed": "Erreur lors de la finalisation. Tes données sont conservées.",
+  "retry": "Réessayer",
+  "saving": "Sauvegarde…",
+  "session_create_failed": "Impossible de démarrer la séance. Vérifie ta connexion.",
+  "save_status_saved": "Sauvegardé",
+  "save_status_saving": "Sauvegarde…",
+  "save_status_error": "Erreur de sauvegarde"
 }
