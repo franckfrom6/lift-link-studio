@@ -51,6 +51,7 @@ const WorkoutStatsBar = ({
   completedSets,
   totalExercises,
   completedExerciseCount,
+  inProgressExerciseCount = 0,
   sessionTitle,
   onBack,
   onProgression,
