@@ -142,7 +142,7 @@ const FreeSessionCreator = ({ open, onClose, date, onCreated }: FreeSessionCreat
     setDurationMin(60);
     setSearch("");
     setMuscleFilter(null);
-    setSearchResults([]);
+    setSearch("");
     setExercises([]);
   };
 
