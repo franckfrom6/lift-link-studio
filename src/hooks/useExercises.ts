@@ -6,7 +6,6 @@ const fetchExercises = async (): Promise<Exercise[]> => {
   const { data, error } = await supabase
     .from("exercises")
     .select("*")
-    .eq("is_default", true)
     .order("muscle_group")
     .order("name");
 
@@ -33,7 +32,7 @@ function sortByPublicCible(exercises: Exercise[], userSex?: string | null): Exer
 
 export const useExercises = (userSex?: string | null) => {
   const { data: exercises = [], isLoading: loading } = useQuery({
-    queryKey: ["exercises", "default"],
+    queryKey: ["exercises", "all"],
     queryFn: fetchExercises,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
