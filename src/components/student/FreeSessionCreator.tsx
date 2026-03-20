@@ -275,7 +275,7 @@ const FreeSessionCreator = ({ open, onClose, date, onCreated }: FreeSessionCreat
                   </div>
                 )}
 
-                {searchResults.length === 0 && !searching && (search.length >= 2 || muscleFilter) && (
+                {searchResults.length === 0 && (search.length >= 2 || muscleFilter) && (
                   <p className="text-sm text-muted-foreground text-center py-4">{t("free_session_no_results")}</p>
                 )}
 
