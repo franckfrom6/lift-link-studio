@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dumbbell, Search, Film, Video, Plus, Pencil, Loader2 } from "lucide-react";
+import { useExerciseSearch, highlightMatch } from "@/hooks/useExerciseSearch";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
