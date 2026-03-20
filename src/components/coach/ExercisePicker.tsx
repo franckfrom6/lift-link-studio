@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useExerciseSearch, highlightMatch } from "@/hooks/useExerciseSearch";
 import { Exercise, MUSCLE_GROUPS } from "@/types/coach";
 import { useCoachExercises } from "@/hooks/useCoachExercises";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
