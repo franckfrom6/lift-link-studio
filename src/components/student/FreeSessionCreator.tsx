@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { formatLocalDate } from "@/lib/date-utils";
+import { useExercises } from "@/hooks/useExercises";
+import { useExerciseSearch } from "@/hooks/useExerciseSearch";
 
 interface FreeExercise {
   exercise_id: string;
