@@ -45,36 +45,27 @@ const FreeSessionCreator = ({ open, onClose, date, onCreated }: FreeSessionCreat
   const [durationMin, setDurationMin] = useState(60);
 
   // Step 2
-  const [search, setSearch] = useState("");
   const [muscleFilter, setMuscleFilter] = useState<string | null>(null);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [exercises, setExercises] = useState<FreeExercise[]>([]);
-  const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const searchExercises = async (query: string, muscle: string | null) => {
-    setSearching(true);
-    let q = supabase.from("exercises").select("id, name, name_en, muscle_group, equipment, type, tracking_type").eq("is_default", true).limit(20);
-    if (query.trim()) {
-      q = q.or(`name.ilike.%${query}%,name_en.ilike.%${query}%`);
-    }
-    if (muscle) {
-      q = q.eq("muscle_group", muscle);
-    }
-    const { data } = await q.order("name");
-    setSearchResults(data || []);
-    setSearching(false);
-  };
+  const { exercises: allExercises } = useExercises();
+  const { search: searchFn, query: search, setQuery: setSearch } = useExerciseSearch(allExercises, { debounceMs: 150 });
+
+  const searchResults = useMemo(() => {
+    if (!search.trim() && !muscleFilter) return allExercises.slice(0, 20);
+    let results = search.trim() ? searchFn(search) : allExercises;
+    if (muscleFilter) results = results.filter(ex => ex.muscle_group.toLowerCase().includes(muscleFilter));
+    return results.slice(0, 20);
+  }, [search, searchFn, allExercises, muscleFilter]);
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
-    if (val.length >= 2 || muscleFilter) searchExercises(val, muscleFilter);
   };
 
   const handleMuscleFilter = (muscle: string) => {
     const newFilter = muscleFilter === muscle ? null : muscle;
     setMuscleFilter(newFilter);
-    searchExercises(search, newFilter);
   };
 
   const addExercise = (ex: any) => {
