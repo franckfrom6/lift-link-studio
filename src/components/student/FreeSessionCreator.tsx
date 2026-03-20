@@ -199,7 +199,7 @@ const FreeSessionCreator = ({ open, onClose, date, onCreated }: FreeSessionCreat
             </div>
             <Button
               className="w-full mt-6"
-              onClick={() => { setStep(2); searchExercises("", null); }}
+              onClick={() => { setStep(2); }}
               disabled={!sessionName.trim()}
             >
               {t("free_session_next")}
