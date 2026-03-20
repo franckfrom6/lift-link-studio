@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dumbbell, Search, Film, Video, Plus, Pencil, Loader2 } from "lucide-react";
+import { useExerciseSearch, highlightMatch } from "@/hooks/useExerciseSearch";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,6 @@ import { Exercise } from "@/types/exercise";
 const CoachExercises = () => {
   const { exercises, isLoading: loading, isCustomExercise } = useCoachExercises();
   const { user } = useAuth();
-  const [search, setSearch] = useState("");
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -37,23 +37,15 @@ const CoachExercises = () => {
   const { t } = useTranslation('exercises');
   const isAdvanced = useIsAdvanced();
 
+  const { search: searchExercises, query: search, setQuery: setSearch } = useExerciseSearch(exercises, { userId: user?.id });
+
   const EQUIPMENT_LIST = [...new Set(exercises.map(e => e.equipment))].filter(Boolean).sort();
 
-  const filtered = exercises.filter((ex) => {
-    const name = getExerciseName(ex);
-    const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) || ex.name.toLowerCase().includes(search.toLowerCase());
-    const matchesMuscle = !selectedMuscle || ex.muscle_group === selectedMuscle;
-    const matchesEquipment = !selectedEquipment || ex.equipment === selectedEquipment;
-    return matchesSearch && matchesMuscle && matchesEquipment;
-  });
-
-  // Sort: custom exercises first
-  const sorted = [...filtered].sort((a, b) => {
-    const aCustom = isCustomExercise(a.id) ? 0 : 1;
-    const bCustom = isCustomExercise(b.id) ? 0 : 1;
-    if (aCustom !== bCustom) return aCustom - bCustom;
-    return 0;
-  });
+  const sorted = useMemo(() => {
+    const searched = search ? searchExercises(search) : exercises;
+    return searched
+      .filter(ex => (!selectedMuscle || ex.muscle_group === selectedMuscle) && (!selectedEquipment || ex.equipment === selectedEquipment));
+  }, [search, searchExercises, exercises, selectedMuscle, selectedEquipment]);
 
   const grouped = sorted.reduce<Record<string, typeof sorted>>((acc, ex) => {
     if (!acc[ex.muscle_group]) acc[ex.muscle_group] = [];
