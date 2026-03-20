@@ -19,26 +19,17 @@ interface ExercisePickerProps {
 
 const ExercisePicker = ({ open, onClose, onSelect, excludeIds = [] }: ExercisePickerProps) => {
   const { exercises, isLoading: loading, isCustomExercise } = useCoachExercises();
-  const [search, setSearch] = useState("");
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const { t } = useTranslation('exercises');
 
-  const filtered = exercises
-    .filter((ex) => !excludeIds.includes(ex.id))
-    .filter((ex) => {
-      const name = getExerciseName(ex);
-      const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) || ex.name.toLowerCase().includes(search.toLowerCase());
-      const matchesMuscle = !selectedMuscle || ex.muscle_group === selectedMuscle;
-      return matchesSearch && matchesMuscle;
-    });
+  const available = useMemo(() => exercises.filter(ex => !excludeIds.includes(ex.id)), [exercises, excludeIds]);
+  const { search: searchFn, query: search, setQuery: setSearch } = useExerciseSearch(available);
 
-  // Custom exercises first
-  const sorted = [...filtered].sort((a, b) => {
-    const aCustom = isCustomExercise(a.id) ? 0 : 1;
-    const bCustom = isCustomExercise(b.id) ? 0 : 1;
-    return aCustom - bCustom;
-  });
+  const sorted = useMemo(() => {
+    const searched = search ? searchFn(search) : available;
+    return searched.filter(ex => !selectedMuscle || ex.muscle_group === selectedMuscle);
+  }, [search, searchFn, available, selectedMuscle]);
 
   return (
     <>
