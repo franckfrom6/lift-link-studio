@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward, Camera, Star } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import NumericInput from "./NumericInput";
+import DurationInput from "./DurationInput";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import CircularRestTimer from "./CircularRestTimer";
