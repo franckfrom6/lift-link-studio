@@ -309,7 +309,8 @@ const EnhancedExerciseCard = ({
       isCurrent && "bg-accent/80 ring-1 ring-primary/30",
       isDone && "opacity-50"
     );
-    const inputClass = "h-12 text-center bg-background text-base font-bold rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
+    const inputClass = "h-12 text-center bg-background text-base font-bold rounded-lg";
+    const stableKey = `set-${i}`;
 
     const checkButton = isCurrent ? (
       <motion.div
