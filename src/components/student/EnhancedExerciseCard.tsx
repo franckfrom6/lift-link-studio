@@ -337,25 +337,12 @@ const EnhancedExerciseCard = ({
 
     switch (trackingType) {
       case "duration": {
-        const durationVal = set.durationSeconds || 0;
-        const durationDisplay = durationVal > 0 ? `${Math.floor(durationVal / 60)}:${(durationVal % 60).toString().padStart(2, '0')}` : "";
         return (
-          <div key={i} className={cn("grid grid-cols-[36px_1fr_40px_40px]", rowClass)}>
+          <div key={stableKey} className={cn("grid grid-cols-[36px_1fr_40px_40px]", rowClass)}>
             <span className="text-sm font-bold text-center">{set.setNumber}</span>
-            <Input
-              type="text"
-              value={durationDisplay}
-              onChange={(e) => {
-                const val = e.target.value;
-                const mmssMatch = val.match(/^(\d{0,2}):?(\d{0,2})$/);
-                if (mmssMatch) {
-                  const mins = parseInt(mmssMatch[1] || "0");
-                  const secs = parseInt(mmssMatch[2] || "0");
-                  updateSet(i, "durationSeconds", mins * 60 + secs);
-                } else if (/^\d+$/.test(val)) {
-                  updateSet(i, "durationSeconds", Number(val));
-                }
-              }}
+            <DurationInput
+              value={set.durationSeconds || 0}
+              onChange={(secs) => updateSet(i, "durationSeconds", secs)}
               placeholder="0:00"
               className={inputClass}
               disabled={!isCurrent}
@@ -380,13 +367,12 @@ const EnhancedExerciseCard = ({
       }
       case "reps_only":
         return (
-          <div key={i}>
+          <div key={stableKey}>
             <div className={cn("grid grid-cols-[36px_1fr_40px_40px]", rowClass)}>
               <span className="text-sm font-bold text-center">{set.setNumber}</span>
-              <Input
-                type="number"
-                value={set.reps || ""}
-                onChange={(e) => updateSet(i, "reps", Number(e.target.value))}
+              <NumericInput
+                value={set.reps}
+                onChange={(v) => updateSet(i, "reps", v)}
                 placeholder="0"
                 className={inputClass}
                 disabled={!isCurrent}
@@ -417,21 +403,19 @@ const EnhancedExerciseCard = ({
         );
       case "distance":
         return (
-          <div key={i} className={cn("grid grid-cols-[36px_1fr_1fr_40px]", rowClass)}>
+          <div key={stableKey} className={cn("grid grid-cols-[36px_1fr_1fr_40px]", rowClass)}>
             <span className="text-sm font-bold text-center">{set.setNumber}</span>
-            <Input
-              type="number"
-              value={set.reps || ""}
-              onChange={(e) => updateSet(i, "reps", Number(e.target.value))}
+            <NumericInput
+              value={set.reps}
+              onChange={(v) => updateSet(i, "reps", v)}
               placeholder="0"
               className={inputClass}
               disabled={!isCurrent}
               min={0}
             />
-            <Input
-              type="number"
-              value={set.durationSeconds || ""}
-              onChange={(e) => updateSet(i, "durationSeconds", Number(e.target.value))}
+            <NumericInput
+              value={set.durationSeconds || 0}
+              onChange={(v) => updateSet(i, "durationSeconds", v)}
               placeholder="0"
               className={inputClass}
               disabled={!isCurrent}
@@ -442,16 +426,15 @@ const EnhancedExerciseCard = ({
         );
       default: // weight_reps
         return (
-          <div key={i} className="relative">
+          <div key={stableKey} className="relative">
             <PRBurst visible={prDetected === i} />
             {/* Desktop: 5-col grid */}
             <div className={cn("hidden xs:grid grid-cols-[36px_1fr_1fr_40px_40px]", rowClass)}>
               <span className="text-sm font-bold text-center">{set.setNumber}</span>
               <div className="relative">
-                <Input
-                  type="number"
-                  value={set.weight || ""}
-                  onChange={(e) => updateSet(i, "weight", Number(e.target.value))}
+                <NumericInput
+                  value={set.weight}
+                  onChange={(v) => updateSet(i, "weight", v)}
                   placeholder="0"
                   className={inputClass}
                   disabled={!isCurrent}
@@ -460,10 +443,9 @@ const EnhancedExerciseCard = ({
                 />
                 {isDone && <ComparisonArrow direction={getPrevComparison(i, "weight")} />}
               </div>
-              <Input
-                type="number"
-                value={set.reps || ""}
-                onChange={(e) => updateSet(i, "reps", Number(e.target.value))}
+              <NumericInput
+                value={set.reps}
+                onChange={(v) => updateSet(i, "reps", v)}
                 placeholder="0"
                 className={inputClass}
                 disabled={!isCurrent}
@@ -487,10 +469,9 @@ const EnhancedExerciseCard = ({
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold w-8 text-center shrink-0">{set.setNumber}</span>
                 <div className="relative flex-1">
-                  <Input
-                    type="number"
-                    value={set.weight || ""}
-                    onChange={(e) => updateSet(i, "weight", Number(e.target.value))}
+                  <NumericInput
+                    value={set.weight}
+                    onChange={(v) => updateSet(i, "weight", v)}
                     placeholder="Kg"
                     className={inputClass}
                     disabled={!isCurrent}
@@ -499,10 +480,9 @@ const EnhancedExerciseCard = ({
                   />
                 </div>
                 <div className="flex-1">
-                  <Input
-                    type="number"
-                    value={set.reps || ""}
-                    onChange={(e) => updateSet(i, "reps", Number(e.target.value))}
+                  <NumericInput
+                    value={set.reps}
+                    onChange={(v) => updateSet(i, "reps", v)}
                     placeholder="Reps"
                     className={inputClass}
                     disabled={!isCurrent}
