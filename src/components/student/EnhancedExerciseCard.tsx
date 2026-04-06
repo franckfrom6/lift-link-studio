@@ -1,4 +1,4 @@
-import { useState, useCallback, memo } from "react";
+import { useState } from "react";
 import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward, Camera, Star } from "lucide-react";
 import NumericInput from "./NumericInput";
 import DurationInput from "./DurationInput";
