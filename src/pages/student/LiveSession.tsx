@@ -262,25 +262,126 @@ const LiveSession = () => {
     return () => clearInterval(interval);
   }, [startTime, sessionDone]);
 
-  // Create completed_session at mount
+  // Hydrate or create completed_session at mount.
+  // - If an in-progress completed_session already exists for (student, session),
+  //   reuse it and rehydrate completedSets + skippedExercises from DB.
+  // - Otherwise insert a new completed_session.
   useEffect(() => {
-    if (!user || !selectedSession?.id || completedSessionId || sessionDone) return;
-    const create = async () => {
+    if (!user || !selectedSession?.id || completedSessionId || sessionDone || hydrated) return;
+    // Wait until the session_exercise id map is populated so we can key sets correctly
+    if (Object.keys(sessionExerciseIdMap).length === 0) return;
+
+    const hydrateOrCreate = async () => {
       try {
-        const { data, error } = await supabase.from("completed_sessions").insert({
-          student_id: user.id,
-          session_id: selectedSession.id,
-          started_at: new Date(startTime).toISOString(),
-        }).select("id").single();
-        if (error) throw error;
-        if (data) setCompletedSessionId(data.id);
+        // 1. Look up an existing in-progress session (completed_at IS NULL)
+        const { data: existing, error: lookupError } = await supabase
+          .from("completed_sessions")
+          .select("id, started_at")
+          .eq("student_id", user.id)
+          .eq("session_id", selectedSession.id)
+          .is("completed_at", null)
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (lookupError) throw lookupError;
+
+        let csId = existing?.id;
+
+        if (!csId) {
+          // 2a. No in-progress session — create one
+          const { data: created, error: insertError } = await supabase
+            .from("completed_sessions")
+            .insert({
+              student_id: user.id,
+              session_id: selectedSession.id,
+              started_at: new Date(startTime).toISOString(),
+            })
+            .select("id")
+            .single();
+          if (insertError) throw insertError;
+          csId = created.id;
+        } else {
+          // 2b. Existing session — fetch already-logged sets + skipped exercises
+          const [setsRes, skippedRes] = await Promise.all([
+            supabase
+              .from("completed_sets")
+              .select("session_exercise_id, set_number, weight, reps, rpe_actual, is_failure, duration_seconds")
+              .eq("completed_session_id", csId),
+            supabase
+              .from("skipped_exercises")
+              .select("session_exercise_id")
+              .eq("completed_session_id", csId),
+          ]);
+
+          // Build reverse map: session_exercise_id -> "sIdx-eIdx" key
+          const reverseMap: Record<string, string> = {};
+          for (const [key, seId] of Object.entries(sessionExerciseIdMap)) {
+            if (seId) reverseMap[seId] = key;
+          }
+
+          // Rehydrate completedSets
+          if (setsRes.data && setsRes.data.length > 0) {
+            const grouped: Record<string, EnhancedCompletedSet[]> = {};
+            for (const row of setsRes.data) {
+              const key = reverseMap[row.session_exercise_id];
+              if (!key) continue;
+              if (!grouped[key]) grouped[key] = [];
+              grouped[key].push({
+                setNumber: row.set_number,
+                weight: Number(row.weight) || 0,
+                reps: row.reps || 0,
+                isFailure: !!row.is_failure,
+                rpeActual: row.rpe_actual ?? null,
+                durationSeconds: row.duration_seconds || 0,
+              });
+            }
+            // Sort each group by set_number
+            for (const k of Object.keys(grouped)) {
+              grouped[k].sort((a, b) => a.setNumber - b.setNumber);
+            }
+            setCompletedSets(grouped);
+            setHasStartedWorkout(true);
+
+            // Position activeExerciseKey on first non-finished, non-skipped exercise
+            const skippedKeys = new Set(
+              (skippedRes.data || [])
+                .map(s => reverseMap[s.session_exercise_id])
+                .filter(Boolean) as string[]
+            );
+            outer: for (let si = 0; si < selectedSession.sections.length; si++) {
+              for (let ei = 0; ei < selectedSession.sections[si].exercises.length; ei++) {
+                const k = `${si}-${ei}`;
+                if (skippedKeys.has(k)) continue;
+                const setsForKey = grouped[k] || [];
+                const allDone = setsForKey.length > 0 && setsForKey.every(s => s.reps > 0 || (s.durationSeconds || 0) > 0);
+                if (!allDone) {
+                  setActiveExerciseKey(k);
+                  break outer;
+                }
+              }
+            }
+          }
+
+          // Rehydrate skippedExercises
+          if (skippedRes.data && skippedRes.data.length > 0) {
+            const skippedKeys = (skippedRes.data
+              .map(s => reverseMap[s.session_exercise_id])
+              .filter(Boolean) as string[]);
+            setSkippedExercises(new Set(skippedKeys));
+          }
+
+          toast.success(t("session:session_resumed", { defaultValue: "Séance reprise" }));
+        }
+
+        setCompletedSessionId(csId!);
+        setHydrated(true);
       } catch (e) {
-        console.error("Error creating completed session:", e);
+        console.error("Error hydrating/creating completed session:", e);
         toast.error(t("session:session_create_failed"));
       }
     };
-    create();
-  }, [user, selectedSession?.id, startTime, completedSessionId, sessionDone]);
+    hydrateOrCreate();
+  }, [user, selectedSession?.id, startTime, completedSessionId, sessionDone, hydrated, sessionExerciseIdMap, t]);
 
   const completedCount = Object.entries(completedSets).filter(([key, sets]) => !skippedExercises.has(key) && sets.length > 0 && sets.every(s => s.reps > 0)).length;
   const inProgressCount = Object.entries(completedSets).filter(([key, sets]) => !skippedExercises.has(key) && sets.length > 0 && sets.some(s => s.reps > 0 || s.weight > 0) && !sets.every(s => s.reps > 0)).length;
