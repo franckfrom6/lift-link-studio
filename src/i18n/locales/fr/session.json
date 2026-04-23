@@ -145,5 +145,6 @@
   "session_create_failed": "Impossible de démarrer la séance. Vérifie ta connexion.",
   "save_status_saved": "Sauvegardé",
   "save_status_saving": "Sauvegarde…",
-  "save_status_error": "Erreur de sauvegarde"
+  "save_status_error": "Erreur de sauvegarde",
+  "session_resumed": "Séance reprise — tes données sont restaurées"
 }
