@@ -145,5 +145,6 @@
   "session_create_failed": "Could not start session. Check your connection.",
   "save_status_saved": "Saved",
   "save_status_saving": "Saving…",
-  "save_status_error": "Save error"
+  "save_status_error": "Save error",
+  "session_resumed": "Session resumed — your data is restored"
 }
