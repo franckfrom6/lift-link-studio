@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.seed-demo-program]
 verify_jwt = false
+
+[functions.strava-oauth-callback]
+verify_jwt = false
