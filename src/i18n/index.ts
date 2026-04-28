@@ -23,6 +23,7 @@ import frLanding from './locales/fr/landing.json';
 import frTeammate from './locales/fr/teammate.json';
 import frAiChat from './locales/fr/ai_chat.json';
 import frLeadgen from './locales/fr/leadgen.json';
+import frStrava from './locales/fr/strava.json';
 
 import enCommon from './locales/en/common.json';
 import enAuth from './locales/en/auth.json';
@@ -45,6 +46,7 @@ import enLanding from './locales/en/landing.json';
 import enTeammate from './locales/en/teammate.json';
 import enAiChat from './locales/en/ai_chat.json';
 import enLeadgen from './locales/en/leadgen.json';
+import enStrava from './locales/en/strava.json';
 
 i18n
   .use(LanguageDetector)
@@ -73,6 +75,7 @@ i18n
         teammate: frTeammate,
         ai_chat: frAiChat,
         leadgen: frLeadgen,
+        strava: frStrava,
       },
       en: {
         common: enCommon,
@@ -96,6 +99,7 @@ i18n
         teammate: enTeammate,
         ai_chat: enAiChat,
         leadgen: enLeadgen,
+        strava: enStrava,
       },
     },
     lng: 'fr',
