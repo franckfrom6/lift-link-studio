@@ -664,15 +664,22 @@ export type Database = {
         Row: {
           activity_label: string | null
           activity_type: string
+          avg_heart_rate: number | null
+          calories: number | null
           created_at: string
           date: string
+          distance_meters: number | null
           duration_minutes: number | null
+          elevation_gain_m: number | null
           id: string
           intensity_perceived: number | null
           location: string | null
+          max_heart_rate: number | null
           muscle_groups_involved: string[] | null
           notes: string | null
           provider: string | null
+          strava_activity_id: number | null
+          strava_raw: Json | null
           student_id: string
           time_end: string | null
           time_start: string | null
@@ -680,15 +687,22 @@ export type Database = {
         Insert: {
           activity_label?: string | null
           activity_type?: string
+          avg_heart_rate?: number | null
+          calories?: number | null
           created_at?: string
           date: string
+          distance_meters?: number | null
           duration_minutes?: number | null
+          elevation_gain_m?: number | null
           id?: string
           intensity_perceived?: number | null
           location?: string | null
+          max_heart_rate?: number | null
           muscle_groups_involved?: string[] | null
           notes?: string | null
           provider?: string | null
+          strava_activity_id?: number | null
+          strava_raw?: Json | null
           student_id: string
           time_end?: string | null
           time_start?: string | null
@@ -696,15 +710,22 @@ export type Database = {
         Update: {
           activity_label?: string | null
           activity_type?: string
+          avg_heart_rate?: number | null
+          calories?: number | null
           created_at?: string
           date?: string
+          distance_meters?: number | null
           duration_minutes?: number | null
+          elevation_gain_m?: number | null
           id?: string
           intensity_perceived?: number | null
           location?: string | null
+          max_heart_rate?: number | null
           muscle_groups_involved?: string[] | null
           notes?: string | null
           provider?: string | null
+          strava_activity_id?: number | null
+          strava_raw?: Json | null
           student_id?: string
           time_end?: string | null
           time_start?: string | null
@@ -1670,6 +1691,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      strava_connections: {
+        Row: {
+          access_token: string
+          created_at: string
+          id: string
+          last_sync_at: string | null
+          refresh_token: string
+          scope: string | null
+          strava_athlete_id: number
+          strava_profile: Json | null
+          token_expires_at: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          refresh_token: string
+          scope?: string | null
+          strava_athlete_id: number
+          strava_profile?: Json | null
+          token_expires_at: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          refresh_token?: string
+          scope?: string | null
+          strava_athlete_id?: number
+          strava_profile?: Json | null
+          token_expires_at?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       support_tickets: {
         Row: {
