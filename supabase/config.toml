@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.strava-oauth-callback]
 verify_jwt = false
+
+[functions.strava-sync-activities]
+verify_jwt = false
