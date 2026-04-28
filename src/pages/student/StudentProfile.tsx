@@ -4,6 +4,7 @@ import { User, Apple, Bell } from "lucide-react";
 import NutritionProfileForm, { NutritionProfileData } from "@/components/nutrition/NutritionProfileForm";
 import MacroDonut from "@/components/nutrition/MacroDonut";
 import NotificationSettings from "@/components/student/NotificationSettings";
+import StravaConnectionCard from "@/components/student/StravaConnectionCard";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
@@ -159,6 +160,13 @@ const StudentProfile = () => {
                 )}
               </div>
             )}
+          </div>
+
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+              Intégrations
+            </p>
+            <StravaConnectionCard />
           </div>
         </TabsContent>
 
