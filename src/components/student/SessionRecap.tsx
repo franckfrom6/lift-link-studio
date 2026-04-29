@@ -141,41 +141,58 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
   return (
     <div className="space-y-6 animate-fade-in">
       <motion.div
-        className="text-center space-y-3 py-4"
+        className="text-center space-y-3 py-2"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
       >
         <motion.div
-          className="w-16 h-16 rounded-2xl bg-success-bg flex items-center justify-center mx-auto"
+          className="w-14 h-14 rounded-2xl bg-success-bg flex items-center justify-center mx-auto"
           initial={{ scale: 0, rotate: -20 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.2 }}
         >
-          <Trophy className="w-8 h-8 text-success" strokeWidth={1.5} />
+          <Trophy className="w-7 h-7 text-success" strokeWidth={2} />
         </motion.div>
-        <h1 className="text-2xl font-bold">{t('session:session_done')}</h1>
-        <p className="text-muted-foreground">{t('session:excellent_work')}</p>
+        <h1 className="text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground">{t('session:session_done')}</h1>
+        <p className="text-sm text-muted-foreground">{t('session:excellent_work')}</p>
       </motion.div>
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* HERO METRIC — Volume géant en signature primary */}
+      <motion.div
+        className="text-center py-2"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, type: "spring", stiffness: 300, damping: 25 }}
+      >
+        <span className="block text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-bold mb-1">
+          {t('session:volume', 'Volume total')}
+        </span>
+        <div className="flex items-baseline justify-center gap-2">
+          <span className="text-7xl font-black tabular-nums text-primary leading-none">
+            {(isAdvanced ? animatedVolume : Math.round(totalVolume)).toLocaleString()}
+          </span>
+          <span className="text-xl font-bold text-muted-foreground">kg</span>
+        </div>
+      </motion.div>
+
+      <div className="grid grid-cols-3 gap-2">
         {[
           { icon: Clock, value: `${mins}:${secs.toString().padStart(2, "0")}`, label: t('session:duration'), raw: true },
-          { icon: Dumbbell, value: isAdvanced ? animatedVolume.toLocaleString() : Math.round(totalVolume).toLocaleString(), label: t('session:volume') },
           { icon: TrendingUp, value: isAdvanced ? animatedSets : totalSets, label: t('session:sets') },
-          { value: isAdvanced ? animatedReps : totalReps, label: t('session:reps') },
+          { icon: Dumbbell, value: isAdvanced ? animatedReps : totalReps, label: t('session:reps') },
         ].map((stat, i) => (
           <motion.div
             key={i}
-            className="glass p-4 text-center"
+            className="rounded-xl border border-border bg-card p-3 text-center"
             custom={i}
             variants={cardVariants}
             initial="hidden"
             animate="visible"
           >
-            {stat.icon && <stat.icon className="w-5 h-5 text-muted-foreground mx-auto mb-1" strokeWidth={1.5} />}
-            <p className="text-2xl font-bold tabular-nums">{stat.value}</p>
-            <p className="text-xs text-muted-foreground">{stat.label}</p>
+            {stat.icon && <stat.icon className="w-4 h-4 text-muted-foreground mx-auto mb-1" strokeWidth={2} />}
+            <p className="text-xl font-black tabular-nums leading-none">{stat.value}</p>
+            <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground font-semibold mt-1">{stat.label}</p>
           </motion.div>
         ))}
       </div>
