@@ -23,6 +23,8 @@ import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
 import ActivityRing from "@/components/student/ActivityRing";
 import TodayFocusCard from "@/components/student/TodayFocusCard";
 import DayTimeline from "@/components/student/DayTimeline";
+import SignatureHeader from "@/components/student/SignatureHeader";
+import SignatureStartCTA from "@/components/student/SignatureStartCTA";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
