@@ -461,6 +461,24 @@ const StudentWeek = () => {
 
   const activeDayIndex = selectedDayIndex ?? 0;
 
+  // Per-day state for the SignatureHeader dot row (Mon..Sun).
+  // "rest" = no programmed/free session, "today" = current day with a session,
+  // "done" = completed, "planned" = scheduled but not yet done.
+  const headerWeekDays = useMemo(() => {
+    return dates.map((d) => {
+      const session = effectiveSessions[d.dayIndex];
+      const dayFree = getFreeForDay(d.date);
+      const hasAny = !!session || dayFree.length > 0;
+      if (!hasAny) return { state: "rest" as const };
+      const completed =
+        (session && completedSessionIds.has(session.sessionId)) ||
+        (dayFree[0] && completedSessionIds.has(dayFree[0].id));
+      if (completed) return { state: "done" as const };
+      if (d.isToday) return { state: "today" as const };
+      return { state: "planned" as const };
+    });
+  }, [dates, effectiveSessions, completedSessionIds, getFreeForDay]);
+
   return (
     <div className="space-y-4 animate-fade-in max-w-2xl mx-auto relative">
       {refreshing && (
@@ -470,19 +488,19 @@ const StudentWeek = () => {
         </div>
       )}
 
-      {/* Header: greeting + activity ring */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t('calendar:hello', { name: userName })}</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {program.name} · {t('common:week')} {selectedWeekIndex + 1}
-          </p>
-        </div>
-        <ActivityRing completed={completedSessionCount} total={programmedCount} />
-      </div>
+      {/* Signature header — greeting + ambient program/week + dot row */}
+      <SignatureHeader
+        userName={userName}
+        programName={program.name}
+        weekIndex={selectedWeekIndex}
+        totalWeeks={totalWeeks}
+        weekDays={headerWeekDays}
+        completed={completedSessionCount}
+        total={programmedCount}
+      />
 
-      {/* Today's Focus hero card */}
-      {weekOffset === 0 && todayFocus && (
+      {/* Today's Focus hero card — kept on past/future weeks where the floating CTA isn't shown */}
+      {weekOffset !== 0 && todayFocus && (
         <TodayFocusCard
           sessionName={todayFocus.name}
           sessionId={todayFocus.sessionId}
