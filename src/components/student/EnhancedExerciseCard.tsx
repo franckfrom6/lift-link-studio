@@ -570,13 +570,13 @@ const EnhancedExerciseCard = ({
   // ── SIMPLE MODE: compact collapsed header ──
   const renderSimpleHeader = () => (
     <div
-      className="flex items-center gap-2 p-2.5 cursor-pointer"
+      className={cn("flex items-center gap-2 cursor-pointer", isActive ? "p-3.5" : "p-2.5")}
       onClick={() => setExpanded(!expanded)}
     >
       <div className="flex-1 min-w-0">
         {/* LINE 1: name + substituted badge */}
         <div className="flex items-center gap-1.5 min-w-0">
-          <p className="text-sm font-semibold truncate">{name}</p>
+          <p className={cn("font-bold truncate", isActive ? "text-base" : "text-sm font-semibold")}>{name}</p>
           {isSubstituted && (
             <span className="bg-warning/10 text-warning px-1 py-0.5 rounded text-[9px] font-bold shrink-0">
               {t('modified')}
