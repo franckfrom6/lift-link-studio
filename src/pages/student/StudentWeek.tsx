@@ -797,6 +797,19 @@ const StudentWeek = () => {
         </AnimatePresence>
       </DndContext>
 
+      {/* Floating "Démarrer la séance" CTA — replaces the mobile bottom nav on /student */}
+      {weekOffset === 0 && todayFocus && (
+        <SignatureStartCTA
+          sessionId={todayFocus.sessionId}
+          sessionName={todayFocus.name}
+          exerciseCount={todayFocus.exerciseCount}
+          muscleGroups={todayFocus.muscleGroups}
+          weekIndex={selectedWeekIndex}
+          totalWeeks={totalWeeks}
+          isCompleted={todayFocus.isCompleted}
+        />
+      )}
+
       {/* Modals */}
       {swapSourceDay !== null && swapTargetDay !== null && (
         <SessionSwapModal
