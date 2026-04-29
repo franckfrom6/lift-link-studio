@@ -20,7 +20,6 @@ import SelfGuidedDashboard from "@/components/student/SelfGuidedDashboard";
 import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
-import ActivityRing from "@/components/student/ActivityRing";
 import TodayFocusCard from "@/components/student/TodayFocusCard";
 import DayTimeline from "@/components/student/DayTimeline";
 import SignatureHeader from "@/components/student/SignatureHeader";
