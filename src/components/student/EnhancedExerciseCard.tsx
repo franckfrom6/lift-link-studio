@@ -635,7 +635,7 @@ const EnhancedExerciseCard = ({
   // ── ADVANCED MODE: original header with icon + badges ──
   const renderAdvancedHeader = () => (
     <motion.div
-      className="flex items-center gap-3 p-3"
+      className={cn("flex items-center gap-3 p-3", isActive && "p-4")}
       whileTap={{ scale: 0.97 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
@@ -643,18 +643,24 @@ const EnhancedExerciseCard = ({
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-3 flex-1 min-w-0 text-left"
       >
-        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+        <div className={cn(
+          "rounded-lg flex items-center justify-center shrink-0 transition-all",
+          isActive ? "w-10 h-10 bg-primary/10" : "w-8 h-8 bg-secondary"
+        )}>
           {trackingType === "duration" ? (
-            <Timer className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            <Timer className={cn("w-4 h-4", isActive ? "text-primary" : "text-muted-foreground")} strokeWidth={2} />
           ) : trackingType === "distance" ? (
-            <Route className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            <Route className={cn("w-4 h-4", isActive ? "text-primary" : "text-muted-foreground")} strokeWidth={2} />
           ) : (
-            <Dumbbell className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            <Dumbbell className={cn("w-4 h-4", isActive ? "text-primary" : "text-muted-foreground")} strokeWidth={2} />
           )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-1.5 flex-wrap">
-            <p className="font-semibold text-sm leading-snug break-words">{name}</p>
+            <p className={cn(
+              "font-bold leading-tight break-words",
+              isActive ? "text-lg" : "text-sm font-semibold"
+            )}>{name}</p>
             {isSubstituted && (
               <span className="bg-warning/10 text-warning px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0">
                 {t('modified')}
@@ -724,8 +730,10 @@ const EnhancedExerciseCard = ({
       layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={cn(
-        "rounded-xl border transition-all",
-        isActive ? "bg-card border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "bg-card/50 border-border/50",
+        "rounded-2xl border transition-all overflow-hidden",
+        isActive
+          ? "bg-card border-primary/30 shadow-[0_4px_24px_-8px_hsl(var(--primary)/0.25)] ring-1 ring-primary/10"
+          : "bg-card/50 border-border/50",
       )}
     >
       {/* Header: Simple vs Advanced */}
