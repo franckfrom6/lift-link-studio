@@ -93,15 +93,15 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      className={`rounded-xl p-4 text-center space-y-3 transition-colors border ${
-        finished ? "bg-success-bg border-success/20" : "bg-info-bg border-info/20"
+      className={`rounded-2xl p-4 text-center space-y-3 transition-colors border ${
+        finished ? "bg-success-bg border-success/20" : "bg-accent border-primary/20"
       }`}
       role="timer"
       aria-label={timerLabel}
     >
       <div className="flex items-center justify-center gap-2">
-        <Timer className="w-4 h-4 text-info" strokeWidth={1.5} />
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-[0.05em]">
+        <Timer className={`w-4 h-4 ${finished ? "text-success" : "text-primary"}`} strokeWidth={2} />
+        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em]">
           {finished ? t("common:rest_label") + " ✓" : t("common:rest_label")}
         </span>
       </div>
@@ -124,8 +124,8 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
         <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
           <defs>
             <linearGradient id="timer-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="hsl(var(--info))" />
-              <stop offset="100%" stopColor="hsl(var(--accent-foreground))" />
+              <stop offset="0%" stopColor="hsl(var(--primary))" />
+              <stop offset="100%" stopColor="hsl(var(--primary))" />
             </linearGradient>
           </defs>
           <circle
@@ -147,7 +147,7 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <motion.span
-            className={`text-3xl font-bold tabular-nums ${finished ? "text-success" : "text-foreground"}`}
+            className={`text-4xl font-black tabular-nums leading-none ${finished ? "text-success" : "text-primary"}`}
             key={seconds}
             initial={seconds <= 5 && seconds > 0 ? { scale: 1.15 } : {}}
             animate={{ scale: 1 }}
