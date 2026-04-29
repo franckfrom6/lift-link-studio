@@ -21,14 +21,19 @@ export default {
       },
       colors: {
         border: "hsl(var(--border))",
+        "border-strong": "hsl(var(--border-strong))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        "bg-tinted": "hsl(var(--bg-tinted))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
         },
+        "accent-tint": "hsl(var(--accent-tint))",
+        "accent-on-tint": "hsl(var(--accent-on-tint))",
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
@@ -40,6 +45,7 @@ export default {
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
+          subtle: "hsl(var(--muted-subtle))",
         },
         accent: {
           DEFAULT: "hsl(var(--accent))",
@@ -97,9 +103,11 @@ export default {
         },
       },
       borderRadius: {
+        xs: "var(--radius-xs)",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "var(--radius-xl)",
       },
       keyframes: {
         "accordion-down": {

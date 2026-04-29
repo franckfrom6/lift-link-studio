@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,152 +6,180 @@
 
 @layer base {
   :root {
-    /* Backgrounds */
-    --background: 0 0% 100%;
-    --foreground: 220 39% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 220 39% 11%;
+    /* ──────────────────────────────────────────────────────────
+       From6Gym — Light theme · Bleu Klein signature
+       Sport-tech premium, geometric, restrained.
+       Accent reserved for: CTA, active set, target metric, rest timer.
+       ────────────────────────────────────────────────────────── */
+
+    /* Backgrounds (zinc neutrals) */
+    --background: 0 0% 98%;             /* #FAFAFA */
+    --foreground: 0 0% 4%;              /* #0A0A0A */
+    --card: 0 0% 100%;                  /* #FFFFFF — bg-elev */
+    --card-foreground: 0 0% 4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 39% 11%;
+    --popover-foreground: 0 0% 4%;
 
-    /* Primary — bleu nuit foncé */
-    --primary: 240 25% 14%;
+    /* Surface = bg-elev / Tinted = bg-tinted */
+    --surface: 0 0% 100%;
+    --surface-foreground: 0 0% 4%;
+    --bg-tinted: 240 5% 96%;            /* #F4F4F5 zinc-100 */
+
+    /* Primary — Bleu Klein, signature */
+    --primary: 230 100% 55%;            /* #1A3CFF */
     --primary-foreground: 0 0% 100%;
+    --primary-hover: 229 91% 44%;       /* #0A28D9 */
+    --accent-tint: 225 100% 96%;        /* #EAEEFF */
+    --accent-on-tint: 229 91% 44%;
 
-    /* Secondary */
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 39% 11%;
+    /* Secondary = bg-tinted */
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 0 0% 4%;
 
     /* Muted */
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;     /* #71717A zinc-500 */
+    --muted-subtle: 240 5% 65%;         /* #A1A1AA zinc-400 */
 
-    /* Accent — lavande pâle */
-    --accent: 245 60% 95%;
-    --accent-foreground: 252 56% 54%;
+    /* Accent — used as background tint of primary */
+    --accent: 225 100% 96%;
+    --accent-foreground: 229 91% 44%;
 
     /* Destructive */
-    --destructive: 0 72% 51%;
+    --destructive: 0 73% 51%;           /* #DC2626 */
     --destructive-foreground: 0 0% 100%;
 
     /* Borders */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 240 25% 14%;
-    --radius: 0.5rem;
+    --border: 240 5% 90%;               /* #E4E4E7 zinc-200 */
+    --border-strong: 240 5% 84%;        /* #D4D4D8 zinc-300 */
+    --input: 240 5% 84%;
+    --ring: 230 100% 55%;
 
-    /* Surface */
-    --surface: 210 20% 97%;
-    --surface-foreground: 220 39% 11%;
+    /* Radius — geometric scale (8px default for compatibility) */
+    --radius: 0.5rem;                   /* 8px — shadcn default */
+    --radius-xs: 0.125rem;              /* 2px */
+    --radius-sm: 0.25rem;               /* 4px */
+    --radius-md: 0.375rem;              /* 6px */
+    --radius-lg: 0.5rem;                /* 8px */
+    --radius-xl: 0.75rem;               /* 12px */
 
-    /* Sidebar */
-    --sidebar-background: 210 20% 98%;
-    --sidebar-foreground: 220 39% 11%;
-    --sidebar-primary: 240 25% 14%;
+    /* Sidebar (matches surface) */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 4%;
+    --sidebar-primary: 230 100% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 96%;
-    --sidebar-accent-foreground: 220 39% 11%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 240 25% 14%;
+    --sidebar-accent: 240 5% 96%;
+    --sidebar-accent-foreground: 0 0% 4%;
+    --sidebar-border: 240 5% 90%;
+    --sidebar-ring: 230 100% 55%;
 
-    /* Functional */
-    --success: 160 84% 39%;
+    /* Functional — used sparingly */
+    --success: 142 76% 36%;             /* #16A34A */
     --success-foreground: 0 0% 100%;
-    --success-bg: 152 81% 96%;
-    --warning: 38 92% 50%;
+    --success-bg: 138 76% 97%;          /* #F0FDF4 */
+    --warning: 42 96% 41%;              /* #CA8A04 */
     --warning-foreground: 0 0% 100%;
-    --warning-bg: 48 96% 89%;
-    --info: 217 91% 60%;
+    --warning-bg: 55 92% 95%;           /* #FEFCE8 */
+    --info: 230 100% 55%;               /* aligns with Klein */
     --info-foreground: 0 0% 100%;
-    --info-bg: 214 95% 93%;
-    --danger-bg: 0 86% 97%;
+    --info-bg: 225 100% 96%;
+    --danger-bg: 0 86% 97%;             /* #FEF2F2 */
 
-    /* Session-specific tags */
-    --tag-violet: 252 56% 54%;
-    --tag-violet-bg: 245 60% 95%;
-    --tag-blue: 217 91% 60%;
-    --tag-blue-bg: 214 95% 93%;
-    --tag-orange: 25 95% 53%;
-    --tag-orange-bg: 48 96% 89%;
-    --tag-red: 0 72% 51%;
+    /* Session/program tags — neutral by default, accent reserved */
+    --tag-violet: 230 100% 55%;
+    --tag-violet-bg: 225 100% 96%;
+    --tag-blue: 230 100% 55%;
+    --tag-blue-bg: 225 100% 96%;
+    --tag-orange: 19 100% 55%;
+    --tag-orange-bg: 19 95% 95%;
+    --tag-red: 0 73% 51%;
 
-    /* AI accent — subtle teal */
+    /* AI accent — subtle teal (kept distinct from primary) */
     --ai: 200 18% 46%;
     --ai-foreground: 0 0% 100%;
     --ai-bg: 200 20% 96%;
   }
 
   .dark {
-    /* Backgrounds */
-    --background: 240 15% 5%;
-    --foreground: 220 14% 96%;
-    --card: 240 14% 8%;
-    --card-foreground: 220 14% 96%;
-    --popover: 240 14% 8%;
-    --popover-foreground: 220 14% 96%;
+    /* ──────────────────────────────────────────────────────────
+       From6Gym — Dark theme · Orange signature
+       Warmth at night, electricity at day.
+       ────────────────────────────────────────────────────────── */
 
-    /* Primary — lavande claire */
-    --primary: 245 60% 95%;
-    --primary-foreground: 220 39% 11%;
+    /* Backgrounds (true neutrals) */
+    --background: 0 0% 4%;              /* #0A0A0A */
+    --foreground: 0 0% 98%;             /* #FAFAFA */
+    --card: 0 0% 9%;                    /* #171717 zinc-900 — bg-elev */
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 98%;
+
+    --surface: 0 0% 9%;
+    --surface-foreground: 0 0% 98%;
+    --bg-tinted: 0 0% 15%;              /* #262626 zinc-800 */
+
+    /* Primary — Orange signature in dark */
+    --primary: 19 100% 55%;             /* #FF6A1A */
+    --primary-foreground: 0 0% 4%;
+    --primary-hover: 20 100% 63%;       /* #FF8642 */
+    --accent-tint: 19 70% 10%;          /* #2A1408 */
+    --accent-on-tint: 20 100% 63%;
 
     /* Secondary */
-    --secondary: 240 17% 17%;
-    --secondary-foreground: 220 14% 96%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
 
     /* Muted */
-    --muted: 240 17% 17%;
-    --muted-foreground: 220 9% 64%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 240 5% 65%;     /* #A1A1AA zinc-400 */
+    --muted-subtle: 240 4% 46%;         /* #71717A zinc-500 */
 
-    /* Accent */
-    --accent: 240 17% 17%;
-    --accent-foreground: 263 70% 80%;
+    /* Accent = primary tint */
+    --accent: 19 70% 10%;
+    --accent-foreground: 20 100% 63%;
 
     /* Destructive */
-    --destructive: 0 63% 71%;
+    --destructive: 0 84% 60%;           /* #EF4444 */
     --destructive-foreground: 0 0% 100%;
 
     /* Borders */
-    --border: 240 15% 16%;
-    --input: 240 15% 16%;
-    --ring: 245 60% 95%;
-    --radius: 0.5rem;
-
-    /* Surface */
-    --surface: 240 14% 10%;
-    --surface-foreground: 220 14% 96%;
+    --border: 240 4% 16%;               /* #27272A zinc-800 */
+    --border-strong: 240 4% 26%;        /* #3F3F46 zinc-700 */
+    --input: 240 4% 26%;
+    --ring: 19 100% 55%;
 
     /* Sidebar */
-    --sidebar-background: 240 15% 5%;
-    --sidebar-foreground: 220 14% 96%;
-    --sidebar-primary: 245 60% 95%;
-    --sidebar-primary-foreground: 220 39% 11%;
-    --sidebar-accent: 240 17% 17%;
-    --sidebar-accent-foreground: 220 14% 96%;
-    --sidebar-border: 240 15% 16%;
-    --sidebar-ring: 245 60% 95%;
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 19 100% 55%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 19 100% 55%;
 
     /* Functional */
-    --success: 160 60% 67%;
+    --success: 142 71% 45%;             /* #22C55E */
     --success-foreground: 0 0% 100%;
-    --success-bg: 162 72% 14%;
-    --warning: 45 93% 47%;
+    --success-bg: 145 80% 10%;          /* #052E16 */
+    --warning: 48 96% 47%;              /* #EAB308 */
     --warning-foreground: 0 0% 100%;
-    --warning-bg: 28 73% 15%;
-    --info: 213 94% 68%;
-    --info-foreground: 0 0% 100%;
-    --info-bg: 215 50% 20%;
-    --danger-bg: 0 63% 24%;
+    --warning-bg: 45 100% 8%;           /* #2A1F00 */
+    --info: 19 100% 55%;
+    --info-foreground: 0 0% 4%;
+    --info-bg: 19 70% 10%;
+    --danger-bg: 0 50% 10%;             /* #2A0808 */
 
-    /* Session-specific tags */
-    --tag-violet: 263 70% 80%;
-    --tag-violet-bg: 240 17% 17%;
-    --tag-blue: 213 94% 68%;
-    --tag-blue-bg: 215 50% 20%;
-    --tag-orange: 45 93% 47%;
-    --tag-orange-bg: 28 73% 15%;
-    --tag-red: 0 63% 71%;
+    /* Tags — accent is orange in dark */
+    --tag-violet: 19 100% 55%;
+    --tag-violet-bg: 19 70% 10%;
+    --tag-blue: 19 100% 55%;
+    --tag-blue-bg: 19 70% 10%;
+    --tag-orange: 19 100% 55%;
+    --tag-orange-bg: 19 70% 10%;
+    --tag-red: 0 84% 60%;
 
-    /* AI accent dark — subtle teal */
+    /* AI accent dark */
     --ai: 200 25% 65%;
     --ai-foreground: 0 0% 100%;
     --ai-bg: 200 20% 14%;
@@ -165,10 +193,43 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     transition: background-color 200ms ease, color 200ms ease;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer utilities {
+  /* Tabular numerals — for all numeric displays (weight, reps, timer) */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* Typography scale — From6Gym sport-tech */
+  .t-display {
+    font-size: 3rem; /* 48px */
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+  .t-h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
+  .t-h2 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.005em; line-height: 1.2; }
+  .t-h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.3; }
+  .t-body-lg { font-size: 1.0625rem; font-weight: 400; line-height: 1.5; }
+  .t-body { font-size: 1rem; font-weight: 400; line-height: 1.5; }
+  .t-small { font-size: 0.875rem; font-weight: 400; line-height: 1.45; }
+  .t-caption {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Glass = soft elevated surface (kept for backwards compatibility) */
   .glass {
     @apply bg-card border border-border rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.04)];
     transition: box-shadow 150ms ease, border-color 150ms ease, transform 150ms ease;
@@ -176,6 +237,7 @@
   .glass:hover {
     @apply shadow-[0_2px_8px_rgba(0,0,0,0.08)] border-border;
   }
+
   .press-scale {
     @apply transition-transform duration-150 active:scale-[0.97];
   }
@@ -183,6 +245,28 @@
     padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* ──────────────────────────────────────────────────────────
+   Active set / live timer pulse — Klein blue (light) / Orange (dark)
+   Used on the active rail dot of the current exercise/set.
+   ────────────────────────────────────────────────────────── */
+@keyframes klein-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 60, 255, 0.0); }
+  50%      { box-shadow: 0 0 0 6px rgba(26, 60, 255, 0.14); }
+}
+@keyframes orange-pulse-dark {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 106, 26, 0.0); }
+  50%      { box-shadow: 0 0 0 6px rgba(255, 106, 26, 0.22); }
+}
+.pulse-accent { animation: klein-pulse 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+.dark .pulse-accent { animation-name: orange-pulse-dark; }
+
+/* PR toast slide-in (used on personal records during live session) */
+@keyframes pr-slide {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+.animate-pr-slide { animation: pr-slide 250ms cubic-bezier(0.4, 0, 0.2, 1); }
 
 /* Scroll reveal animations for landing page */
 .scroll-reveal {
