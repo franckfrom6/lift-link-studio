@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Calendar, BarChart3, User, BookOpen, HelpCircle, Apple } from "lucide-react";
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
@@ -15,6 +15,10 @@ const StudentLayout = () => {
   const { t } = useTranslation(['settings', 'common', 'session']);
   const [aiOpen, setAiOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  // Hide the mobile bottom nav on the dashboard "Today" view —
+  // the floating CTA there acts as the primary action.
+  const hideMobileNav = location.pathname === "/student";
 
   const navItems = [
     { to: "/student", icon: Calendar, label: t('settings:nav_week'), end: true },
@@ -77,8 +81,8 @@ const StudentLayout = () => {
           </div>
         </main>
 
-        {/* Mobile bottom nav */}
-        <MobileBottomNav items={navItems} />
+        {/* Mobile bottom nav — hidden on /student dashboard (floating CTA replaces it) */}
+        {!hideMobileNav && <MobileBottomNav items={navItems} />}
       </div>
 
       <AISidebarToggle onClick={() => setAiOpen(true)} />

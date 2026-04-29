@@ -20,9 +20,10 @@ import SelfGuidedDashboard from "@/components/student/SelfGuidedDashboard";
 import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
-import ActivityRing from "@/components/student/ActivityRing";
 import TodayFocusCard from "@/components/student/TodayFocusCard";
 import DayTimeline from "@/components/student/DayTimeline";
+import SignatureHeader from "@/components/student/SignatureHeader";
+import SignatureStartCTA from "@/components/student/SignatureStartCTA";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -459,8 +460,26 @@ const StudentWeek = () => {
 
   const activeDayIndex = selectedDayIndex ?? 0;
 
+  // Per-day state for the SignatureHeader dot row (Mon..Sun).
+  // "rest" = no programmed/free session, "today" = current day with a session,
+  // "done" = completed, "planned" = scheduled but not yet done.
+  const headerWeekDays = useMemo(() => {
+    return dates.map((d) => {
+      const session = effectiveSessions[d.dayIndex];
+      const dayFree = getFreeForDay(d.date);
+      const hasAny = !!session || dayFree.length > 0;
+      if (!hasAny) return { state: "rest" as const };
+      const completed =
+        (session && completedSessionIds.has(session.sessionId)) ||
+        (dayFree[0] && completedSessionIds.has(dayFree[0].id));
+      if (completed) return { state: "done" as const };
+      if (d.isToday) return { state: "today" as const };
+      return { state: "planned" as const };
+    });
+  }, [dates, effectiveSessions, completedSessionIds, getFreeForDay]);
+
   return (
-    <div className="space-y-4 animate-fade-in max-w-2xl mx-auto relative">
+    <div className="space-y-4 animate-fade-in max-w-2xl mx-auto relative pb-32 md:pb-0">
       {refreshing && (
         <div className="absolute top-0 right-0 z-10 flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full animate-pulse">
           <RefreshCw className="h-3 w-3 animate-spin" />
@@ -468,19 +487,19 @@ const StudentWeek = () => {
         </div>
       )}
 
-      {/* Header: greeting + activity ring */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t('calendar:hello', { name: userName })}</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {program.name} · {t('common:week')} {selectedWeekIndex + 1}
-          </p>
-        </div>
-        <ActivityRing completed={completedSessionCount} total={programmedCount} />
-      </div>
+      {/* Signature header — greeting + ambient program/week + dot row */}
+      <SignatureHeader
+        userName={userName}
+        programName={program.name}
+        weekIndex={selectedWeekIndex}
+        totalWeeks={totalWeeks}
+        weekDays={headerWeekDays}
+        completed={completedSessionCount}
+        total={programmedCount}
+      />
 
-      {/* Today's Focus hero card */}
-      {weekOffset === 0 && todayFocus && (
+      {/* Today's Focus hero card — kept on past/future weeks where the floating CTA isn't shown */}
+      {weekOffset !== 0 && todayFocus && (
         <TodayFocusCard
           sessionName={todayFocus.name}
           sessionId={todayFocus.sessionId}
@@ -776,6 +795,19 @@ const StudentWeek = () => {
           </motion.div>
         </AnimatePresence>
       </DndContext>
+
+      {/* Floating "Démarrer la séance" CTA — replaces the mobile bottom nav on /student */}
+      {weekOffset === 0 && todayFocus && (
+        <SignatureStartCTA
+          sessionId={todayFocus.sessionId}
+          sessionName={todayFocus.name}
+          exerciseCount={todayFocus.exerciseCount}
+          muscleGroups={todayFocus.muscleGroups}
+          weekIndex={selectedWeekIndex}
+          totalWeeks={totalWeeks}
+          isCompleted={todayFocus.isCompleted}
+        />
+      )}
 
       {/* Modals */}
       {swapSourceDay !== null && swapTargetDay !== null && (
