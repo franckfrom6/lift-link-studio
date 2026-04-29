@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Clock, Zap, Dumbbell, MoreVertical, Trash2, TrendingUp, Cloud, CloudOff, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Zap, Dumbbell, Trash2, TrendingUp, CloudOff, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -89,21 +89,21 @@ const WorkoutStatsBar = ({
   const inProgressProgress = totalExercises > 0 ? (inProgressExerciseCount / totalExercises) * 100 : 0;
 
   return (
-    <div className="sticky top-0 z-30 bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800">
-      {/* Top row: back + title + save status + timer */}
-      <div className="flex items-center justify-between px-3 py-2">
+    <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border">
+      {/* Top row: back + title + actions */}
+      <div className="flex items-center justify-between px-2 py-1.5">
         <Button
           variant="ghost"
           size="icon"
           onClick={onBack}
-          className="h-10 w-10 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+          className="h-11 w-11 text-muted-foreground hover:text-foreground"
           aria-label={t("session:quit")}
         >
           <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
         </Button>
 
         <div className="flex flex-col items-center mx-2 flex-1 min-w-0">
-          <p className="text-sm font-semibold text-zinc-100 truncate w-full text-center">
+          <p className="text-[11px] uppercase tracking-[0.12em] font-bold text-muted-foreground truncate w-full text-center">
             {sessionTitle}
           </p>
           <SaveStatusIndicator status={saveStatus} />
@@ -116,8 +116,8 @@ const WorkoutStatsBar = ({
               size="icon"
               onClick={onProgression}
               className={cn(
-                "h-10 w-10 hover:bg-zinc-800",
-                showProgression ? "text-primary" : "text-zinc-400"
+                "h-11 w-11",
+                showProgression ? "text-primary" : "text-muted-foreground"
               )}
             >
               <TrendingUp className="w-4 h-4" strokeWidth={1.5} />
@@ -128,7 +128,7 @@ const WorkoutStatsBar = ({
               variant="ghost"
               size="icon"
               onClick={onDelete}
-              className="h-10 w-10 text-zinc-400 hover:text-destructive hover:bg-zinc-800"
+              className="h-11 w-11 text-muted-foreground hover:text-destructive"
             >
               <Trash2 className="w-4 h-4" strokeWidth={1.5} />
             </Button>
@@ -136,44 +136,59 @@ const WorkoutStatsBar = ({
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="flex items-center justify-between px-4 pb-2">
-        <div className="flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5 text-zinc-500" strokeWidth={1.5} />
-          <span className="text-sm font-bold tabular-nums text-zinc-100">
-            {mins}:{secs.toString().padStart(2, "0")}
-          </span>
-        </div>
+      {/* Hero stats — Logger pattern: massive timer + supporting metrics */}
+      <div className="px-4 pb-3 pt-1">
+        <div className="flex items-end justify-between gap-4">
+          {/* Timer XL — the protagonist */}
+          <div className="flex flex-col leading-none">
+            <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-semibold mb-1">
+              {t("session:duration", "Durée")}
+            </span>
+            <span className="text-4xl font-black tabular-nums text-foreground leading-none">
+              {mins}:{secs.toString().padStart(2, "0")}
+            </span>
+          </div>
 
-        <div className="flex items-center gap-1.5">
-          <Dumbbell className="w-3.5 h-3.5 text-zinc-500" strokeWidth={1.5} />
-          <span className="text-xs font-semibold text-zinc-300">
-            {totalVolume > 0 ? `${(totalVolume / 1000).toFixed(1)}t` : "0kg"}
-          </span>
+          {/* Right cluster: volume · sets · progress */}
+          <div className="flex items-end gap-4 pb-0.5">
+            <div className="flex flex-col items-end leading-none">
+              <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-semibold mb-1 flex items-center gap-1">
+                <Dumbbell className="w-2.5 h-2.5" strokeWidth={2} />
+                {t("session:volume", "Volume")}
+              </span>
+              <span className="text-base font-bold tabular-nums text-foreground">
+                {totalVolume > 0 ? `${(totalVolume / 1000).toFixed(1)}t` : "—"}
+              </span>
+            </div>
+            <div className="flex flex-col items-end leading-none">
+              <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-semibold mb-1 flex items-center gap-1">
+                <Zap className="w-2.5 h-2.5" strokeWidth={2} />
+                Sets
+              </span>
+              <span className="text-base font-bold tabular-nums text-foreground">
+                {totalSetsDone}
+              </span>
+            </div>
+            <div className="flex flex-col items-end leading-none">
+              <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-semibold mb-1">
+                Ex.
+              </span>
+              <span className="text-base font-black tabular-nums text-primary">
+                {completedExerciseCount}<span className="text-muted-foreground font-bold">/{totalExercises}</span>
+              </span>
+            </div>
+          </div>
         </div>
-
-        <div className="flex items-center gap-1.5">
-          <Zap className="w-3.5 h-3.5 text-zinc-500" strokeWidth={1.5} />
-          <span className="text-xs font-semibold text-zinc-300 tabular-nums">
-            {totalSetsDone} sets
-          </span>
-        </div>
-
-        <span className="text-xs font-bold tabular-nums text-primary">
-          {completedExerciseCount}/{totalExercises}
-        </span>
       </div>
 
-      {/* Progress bar — layered: in-progress (amber) behind completed (green/primary) */}
-      <div className="h-1 bg-zinc-800 relative">
-        {/* In-progress segment (amber) — sits behind completed */}
+      {/* Progress bar — primary (bleu/orange selon thème) */}
+      <div className="h-1 bg-secondary relative overflow-hidden">
         <motion.div
-          className="h-full bg-amber-500/60 absolute top-0 left-0"
+          className="h-full bg-primary/35 absolute top-0 left-0"
           initial={{ width: 0 }}
           animate={{ width: `${completedProgress + inProgressProgress}%` }}
           transition={{ type: "spring", stiffness: 100, damping: 20 }}
         />
-        {/* Completed segment (primary/green) — on top */}
         <motion.div
           className="h-full bg-primary absolute top-0 left-0"
           initial={{ width: 0 }}
