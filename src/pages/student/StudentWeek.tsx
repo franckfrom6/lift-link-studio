@@ -447,6 +447,33 @@ const StudentWeek = () => {
     setSelectedDayIndex(null);
   };
 
+  // Jump to the Monday of any given date (used by the mini-calendar picker).
+  const handleJumpToDate = (date: Date) => {
+    const target = new Date(date);
+    const day = target.getDay();
+    const monday = new Date(target);
+    monday.setDate(target.getDate() - day + (day === 0 ? -6 : 1));
+    monday.setHours(0, 0, 0, 0);
+    const today = new Date();
+    const todayDay = today.getDay();
+    const todayMonday = new Date(today);
+    todayMonday.setDate(today.getDate() - todayDay + (todayDay === 0 ? -6 : 1));
+    todayMonday.setHours(0, 0, 0, 0);
+    const offset = Math.round((monday.getTime() - todayMonday.getTime()) / (7 * 24 * 60 * 60 * 1000));
+    setWeekOffset(offset);
+    setSelectedDayIndex(null);
+  };
+
+  const handleJumpToday = () => {
+    setWeekOffset(0);
+    setSelectedDayIndex(null);
+  };
+
+  const hasProgram = !!program;
+  // Athlete is in "compose" mode when no program is loaded.
+  // Banner collapses once a free session exists somewhere in the week.
+  const bannerCollapsedByDefault = freeSessions.length > 0;
+
   return (
     <div className="animate-fade-in max-w-2xl mx-auto relative pb-32 md:pb-0">
       {refreshing && (
@@ -460,20 +487,33 @@ const StudentWeek = () => {
       <header className="px-4 pt-4 pb-3 flex items-center justify-between gap-3 border-b border-border">
         <div className="min-w-0 flex-1">
           <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-subtle truncate">
-            {program.name}
+            {hasProgram ? program!.name : t('calendar:hello', { name: userName })}
           </p>
           <h1 className="text-lg font-bold tracking-tight text-foreground mt-0.5">
             {t('calendar:program_title', 'Programme')}
           </h1>
         </div>
-        <div className="flex items-center gap-1 px-2.5 py-1 bg-card border border-border rounded-sm flex-shrink-0">
-          <span className="text-xs font-bold tabular-nums text-foreground">S{selectedWeekIndex + 1}</span>
-          <span className="text-[11px] text-muted-subtle font-medium">/ {totalWeeks}</span>
-        </div>
+        {hasProgram && (
+          <div className="flex items-center gap-1 px-2.5 py-1 bg-card border border-border rounded-sm flex-shrink-0">
+            <span className="text-xs font-bold tabular-nums text-foreground">S{selectedWeekIndex + 1}</span>
+            <span className="text-[11px] text-muted-subtle font-medium">/ {totalWeeks}</span>
+          </div>
+        )}
       </header>
 
-      {/* Week strip */}
-      {programWeeks.length > 1 && (
+      {/* No-program onboarding banner */}
+      {!hasProgram && (
+        <NoProgramOnboardingBanner
+          collapsedByDefault={bannerCollapsedByDefault}
+          onStartAI={() => {
+            toast.info(t('calendar:ai_coming_soon', "La génération IA de programme arrive bientôt !"));
+          }}
+          onJoinCoach={handleJoinCoach}
+        />
+      )}
+
+      {/* Week strip — programmes structurés uniquement */}
+      {hasProgram && programWeeks.length > 1 && (
         <ProgWeekSelector
           weeks={programWeeks}
           current={selectedWeekIndex + 1}
@@ -481,12 +521,22 @@ const StudentWeek = () => {
         />
       )}
 
-      {/* Week summary */}
+      {/* Week summary with interactive mini-calendar */}
       <ProgWeekHeader
         label={weekLabel}
         range={weekRangeLabel}
         completedSessions={completedSessionCount}
         totalSessions={totalWeekSessions}
+        labelSlot={
+          <WeekRangePicker
+            weekStart={weekStart}
+            label={weekLabel}
+            range={weekRangeLabel}
+            onSelectDate={handleJumpToDate}
+            onJumpToday={handleJumpToday}
+            isCurrentWeek={weekOffset === 0}
+          />
+        }
       />
 
       {/* Check-in banner — only on current week */}
