@@ -816,6 +816,24 @@ const EnhancedExerciseCard = ({
                   )}
                 </div>
               )}
+
+              {/* Inactive expanded preview: show summary + activate CTA instead of an empty void */}
+              {!isActive && (
+                <div className="rounded-xl bg-secondary/50 p-3 space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {renderSimpleSummary()}
+                  </p>
+                  {onActivate && (
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={(e) => { e.stopPropagation(); onActivate(); }}
+                    >
+                      {t('activate_exercise', { defaultValue: 'Démarrer cet exercice' })}
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
