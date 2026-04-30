@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, Loader2 } from "lucide-react";
+import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Meta, SectionLabel, VideoThumb, StatBadge, ExerciseNumber } from "@/components/student/SageAtoms";
+import { ExerciseVideoEmbed } from "@/components/student/ExerciseVideoEmbed";
 
 /**
  * SessionPreview — Sage variant
@@ -64,7 +65,7 @@ const sumVolume = (sections: any[]): number => {
 };
 
 // ────────── building blocks ──────────
-const ExerciseCard = ({ ex, idx }: { ex: any; idx: number }) => {
+const ExerciseCard = ({ ex, idx, onPreviewVideo }: { ex: any; idx: number; onPreviewVideo: (ex: any) => void }) => {
   const exData = ex.exercise || {};
   const hasVideo = !!(ex.video_url || exData.video_url_male || exData.video_url_female);
   const time = isTimeTracking(ex);
@@ -75,7 +76,7 @@ const ExerciseCard = ({ ex, idx }: { ex: any; idx: number }) => {
     <div className="bg-card border border-border rounded-md p-3.5 flex flex-col gap-2.5">
       <div className="flex items-start gap-2.5">
         <ExerciseNumber idx={idx} />
-        <VideoThumb hasVideo={hasVideo} />
+        <VideoThumb hasVideo={hasVideo} onClick={() => onPreviewVideo(ex)} />
         <div className="flex-1 min-w-0">
           <div className="text-[15px] font-bold text-foreground tracking-tight leading-snug">
             {exData.name || "Exercice"}
@@ -137,12 +138,12 @@ const WarmupCard = ({ section }: { section: any }) => (
   </div>
 );
 
-const BlockSection = ({ section, startIdx }: { section: any; startIdx: number }) => (
+const BlockSection = ({ section, startIdx, onPreviewVideo }: { section: any; startIdx: number; onPreviewVideo: (ex: any) => void }) => (
   <div className="mb-5">
     <SectionLabel label={section.name} right={`${section.exercises.length} exos`} />
     <div className="px-4 flex flex-col gap-2">
       {section.exercises.map((ex: any, i: number) => (
-        <ExerciseCard key={ex.id} ex={ex} idx={startIdx + i + 1} />
+        <ExerciseCard key={ex.id} ex={ex} idx={startIdx + i + 1} onPreviewVideo={onPreviewVideo} />
       ))}
     </div>
   </div>
@@ -155,6 +156,7 @@ const SessionPreview = () => {
   const { program, loading: programLoading } = useStudentProgram();
   const [freeSession, setFreeSession] = useState<any>(null);
   const [freeLoading, setFreeLoading] = useState(false);
+  const [videoEx, setVideoEx] = useState<any | null>(null);
 
   // Resolve session: program-bound first, then fallback to free/standalone
   const programSession = useMemo(() => {
@@ -325,7 +327,7 @@ const SessionPreview = () => {
 
         {/* Blocks */}
         {blockSections.map((section: any) => {
-          const block = <BlockSection key={section.id} section={section} startIdx={runningIdx} />;
+          const block = <BlockSection key={section.id} section={section} startIdx={runningIdx} onPreviewVideo={setVideoEx} />;
           runningIdx += section.exercises?.length || 0;
           return block;
         })}
@@ -347,6 +349,39 @@ const SessionPreview = () => {
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Video preview modal */}
+      {videoEx && (
+        <div
+          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setVideoEx(null)}
+        >
+          <div
+            className="w-full max-w-2xl bg-card border border-border rounded-md p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-bold text-foreground tracking-tight truncate pr-2">
+                {videoEx.exercise?.name || "Exercice"}
+              </div>
+              <button
+                type="button"
+                onClick={() => setVideoEx(null)}
+                className="w-9 h-9 rounded-sm border border-border bg-bg-tinted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Fermer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <ExerciseVideoEmbed
+              exerciseName={videoEx.exercise?.name || "exercise"}
+              directVideoUrl={videoEx.video_url}
+              videoUrlFemale={videoEx.exercise?.video_url_female}
+              videoUrlMale={videoEx.exercise?.video_url_male}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
