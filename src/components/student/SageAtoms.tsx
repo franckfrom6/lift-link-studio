@@ -1,4 +1,4 @@
-import { VideoOff, Play } from "lucide-react";
+import { Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -59,19 +59,18 @@ export const VideoThumb = ({
   size?: number;
   onClick?: () => void;
 }) => {
-  const inner = !hasVideo ? (
+  // Always render a "playable" thumb. Even without a direct video URL,
+  // ExerciseVideoEmbed will fall back to a YouTube search by exercise name.
+  const inner = (
     <div
-      className="rounded-sm bg-bg-tinted border border-dashed border-border flex items-center justify-center flex-shrink-0"
+      className={cn(
+        "rounded-sm border flex items-center justify-center relative overflow-hidden flex-shrink-0",
+        hasVideo
+          ? "bg-gradient-to-br from-bg-tinted to-border border-border"
+          : "bg-bg-tinted border-border"
+      )}
       style={{ width: size, height: size }}
-      aria-label="Pas de vidéo"
-    >
-      <VideoOff className="w-3.5 h-3.5 text-muted-subtle" />
-    </div>
-  ) : (
-    <div
-      className="rounded-sm bg-gradient-to-br from-bg-tinted to-border border border-border flex items-center justify-center relative overflow-hidden flex-shrink-0"
-      style={{ width: size, height: size }}
-      aria-label="Démo disponible"
+      aria-label={hasVideo ? "Démo disponible" : "Voir la démo"}
     >
       <div className="relative z-10 w-[22px] h-[22px] rounded-full bg-foreground/95 flex items-center justify-center shadow-sm">
         <Play className="w-2.5 h-2.5 text-background ml-[1px]" fill="currentColor" />
