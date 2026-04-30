@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward, Camera, Star } from "lucide-react";
+import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward, Camera, Star, Play } from "lucide-react";
 import NumericInput from "./NumericInput";
 import DurationInput from "./DurationInput";
 import { Button } from "@/components/ui/button";
