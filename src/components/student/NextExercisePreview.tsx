@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -8,12 +9,13 @@ interface NextExercisePreviewProps {
   reps?: string;
 }
 
-const NextExercisePreview = ({ name, sets, reps }: NextExercisePreviewProps) => {
+const NextExercisePreview = forwardRef<HTMLDivElement, NextExercisePreviewProps>(({ name, sets, reps }, ref) => {
   if (!name) return null;
 
   return (
     <AnimatePresence>
       <motion.div
+        ref={ref}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
@@ -32,6 +34,8 @@ const NextExercisePreview = ({ name, sets, reps }: NextExercisePreviewProps) => 
       </motion.div>
     </AnimatePresence>
   );
-};
+});
+
+NextExercisePreview.displayName = "NextExercisePreview";
 
 export default NextExercisePreview;
