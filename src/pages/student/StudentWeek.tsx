@@ -12,7 +12,6 @@ import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import WeeklyCheckinForm from "@/components/student/WeeklyCheckinForm";
 import CheckinBadge from "@/components/student/CheckinBadge";
 import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
-import SelfGuidedDashboard from "@/components/student/SelfGuidedDashboard";
 import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
@@ -20,6 +19,8 @@ import SignatureStartCTA from "@/components/student/SignatureStartCTA";
 import ProgWeekSelector, { ProgWeekSelectorItem } from "@/components/student/ProgWeekSelector";
 import ProgWeekHeader from "@/components/student/ProgWeekHeader";
 import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
+import WeekRangePicker from "@/components/student/WeekRangePicker";
+import NoProgramOnboardingBanner from "@/components/student/NoProgramOnboardingBanner";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -357,63 +358,47 @@ const StudentWeek = () => {
     );
   }
 
-  // If no program, show self-guided dashboard
-  if (!program) {
-    return (
-      <div className="space-y-5 animate-fade-in max-w-2xl mx-auto relative">
-        <div>
-          <h1 className="text-2xl font-bold">{t('calendar:hello', { name: userName })}</h1>
-          <p className="text-muted-foreground text-sm mt-1">{t('calendar:your_program')}</p>
-        </div>
-        <SelfGuidedDashboard
-          onStartAI={() => {
-            toast.info(t('calendar:ai_coming_soon', "La génération IA de programme arrive bientôt !"));
-          }}
-          onJoinCoach={async (code) => {
-            if (!user) return;
-            const { data: tokenData } = await supabase
-              .from("coach_invite_tokens")
-              .select("id, coach_id, token, uses_count, max_uses, expires_at")
-              .eq("token", code.toUpperCase())
-              .eq("is_active", true)
-              .maybeSingle();
+  // No structured program → handler reused by the inline onboarding banner
+  const handleJoinCoach = async (code: string) => {
+    if (!user) return;
+    const upper = code.toUpperCase();
+    const { data: tokenData } = await supabase
+      .from("coach_invite_tokens")
+      .select("id, coach_id, token, uses_count, max_uses, expires_at")
+      .eq("token", upper)
+      .eq("is_active", true)
+      .maybeSingle();
 
-            if (!tokenData) { toast.error(t('auth:token_invalid', "Code invalide ou expiré")); return; }
-            if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) { toast.error(t('auth:token_invalid')); return; }
-            if (tokenData.max_uses !== null && tokenData.uses_count >= tokenData.max_uses) { toast.error(t('auth:token_invalid')); return; }
+    if (!tokenData) { toast.error(t('auth:token_invalid', "Code invalide ou expiré")); return; }
+    if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) { toast.error(t('auth:token_invalid')); return; }
+    if (tokenData.max_uses !== null && tokenData.uses_count >= tokenData.max_uses) { toast.error(t('auth:token_invalid')); return; }
 
-            const { data: existing } = await supabase
-              .from("coach_students")
-              .select("id")
-              .eq("coach_id", tokenData.coach_id)
-              .eq("student_id", user.id)
-              .eq("status", "active")
-              .maybeSingle();
+    const { data: existing } = await supabase
+      .from("coach_students")
+      .select("id")
+      .eq("coach_id", tokenData.coach_id)
+      .eq("student_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
 
-            if (existing) { toast.info(t('auth:token_join_already')); return; }
+    if (existing) { toast.info(t('auth:token_join_already')); return; }
 
-            const { error } = await supabase.from("coach_students").insert({
-              coach_id: tokenData.coach_id,
-              student_id: user.id,
-              status: "active",
-            });
+    const { error } = await supabase.from("coach_students").insert({
+      coach_id: tokenData.coach_id,
+      student_id: user.id,
+      status: "active",
+    });
 
-            if (error) { toast.error(t('auth:error_generic')); return; }
+    if (error) { toast.error(t('auth:error_generic')); return; }
 
-            await supabase
-              .from("coach_invite_tokens")
-              .update({ uses_count: tokenData.uses_count + 1 })
-              .eq("id", tokenData.id);
+    await supabase
+      .from("coach_invite_tokens")
+      .update({ uses_count: tokenData.uses_count + 1 })
+      .eq("id", tokenData.id);
 
-            toast.success(t('auth:token_join_success'));
-            window.location.reload();
-          }}
-        />
-        <FirstStepsChecklist />
-        <OnboardingTooltip stepKey="welcome_seen" title={t('common:onboarding_welcome_title')} description={t('common:onboarding_welcome_desc')} position="center" />
-      </div>
-    );
-  }
+    toast.success(t('auth:token_join_success'));
+    window.location.reload();
+  };
 
   // Sage Phase 4 — week selector strip data
   const programWeeks: ProgWeekSelectorItem[] = useMemo(() => {
@@ -462,6 +447,33 @@ const StudentWeek = () => {
     setSelectedDayIndex(null);
   };
 
+  // Jump to the Monday of any given date (used by the mini-calendar picker).
+  const handleJumpToDate = (date: Date) => {
+    const target = new Date(date);
+    const day = target.getDay();
+    const monday = new Date(target);
+    monday.setDate(target.getDate() - day + (day === 0 ? -6 : 1));
+    monday.setHours(0, 0, 0, 0);
+    const today = new Date();
+    const todayDay = today.getDay();
+    const todayMonday = new Date(today);
+    todayMonday.setDate(today.getDate() - todayDay + (todayDay === 0 ? -6 : 1));
+    todayMonday.setHours(0, 0, 0, 0);
+    const offset = Math.round((monday.getTime() - todayMonday.getTime()) / (7 * 24 * 60 * 60 * 1000));
+    setWeekOffset(offset);
+    setSelectedDayIndex(null);
+  };
+
+  const handleJumpToday = () => {
+    setWeekOffset(0);
+    setSelectedDayIndex(null);
+  };
+
+  const hasProgram = !!program;
+  // Athlete is in "compose" mode when no program is loaded.
+  // Banner collapses once a free session exists somewhere in the week.
+  const bannerCollapsedByDefault = freeSessions.length > 0;
+
   return (
     <div className="animate-fade-in max-w-2xl mx-auto relative pb-32 md:pb-0">
       {refreshing && (
@@ -475,20 +487,33 @@ const StudentWeek = () => {
       <header className="px-4 pt-4 pb-3 flex items-center justify-between gap-3 border-b border-border">
         <div className="min-w-0 flex-1">
           <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-subtle truncate">
-            {program.name}
+            {hasProgram ? program!.name : t('calendar:hello', { name: userName })}
           </p>
           <h1 className="text-lg font-bold tracking-tight text-foreground mt-0.5">
             {t('calendar:program_title', 'Programme')}
           </h1>
         </div>
-        <div className="flex items-center gap-1 px-2.5 py-1 bg-card border border-border rounded-sm flex-shrink-0">
-          <span className="text-xs font-bold tabular-nums text-foreground">S{selectedWeekIndex + 1}</span>
-          <span className="text-[11px] text-muted-subtle font-medium">/ {totalWeeks}</span>
-        </div>
+        {hasProgram && (
+          <div className="flex items-center gap-1 px-2.5 py-1 bg-card border border-border rounded-sm flex-shrink-0">
+            <span className="text-xs font-bold tabular-nums text-foreground">S{selectedWeekIndex + 1}</span>
+            <span className="text-[11px] text-muted-subtle font-medium">/ {totalWeeks}</span>
+          </div>
+        )}
       </header>
 
-      {/* Week strip */}
-      {programWeeks.length > 1 && (
+      {/* No-program onboarding banner */}
+      {!hasProgram && (
+        <NoProgramOnboardingBanner
+          collapsedByDefault={bannerCollapsedByDefault}
+          onStartAI={() => {
+            toast.info(t('calendar:ai_coming_soon', "La génération IA de programme arrive bientôt !"));
+          }}
+          onJoinCoach={handleJoinCoach}
+        />
+      )}
+
+      {/* Week strip — programmes structurés uniquement */}
+      {hasProgram && programWeeks.length > 1 && (
         <ProgWeekSelector
           weeks={programWeeks}
           current={selectedWeekIndex + 1}
@@ -496,12 +521,22 @@ const StudentWeek = () => {
         />
       )}
 
-      {/* Week summary */}
+      {/* Week summary with interactive mini-calendar */}
       <ProgWeekHeader
         label={weekLabel}
         range={weekRangeLabel}
         completedSessions={completedSessionCount}
         totalSessions={totalWeekSessions}
+        labelSlot={
+          <WeekRangePicker
+            weekStart={weekStart}
+            label={weekLabel}
+            range={weekRangeLabel}
+            onSelectDate={handleJumpToDate}
+            onJumpToday={handleJumpToday}
+            isCurrentWeek={weekOffset === 0}
+          />
+        }
       />
 
       {/* Check-in banner — only on current week */}
