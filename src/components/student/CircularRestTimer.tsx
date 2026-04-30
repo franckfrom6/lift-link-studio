@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Timer, Pause, Play, RotateCcw, Plus, Minus } from "lucide-react";
+import { Pause, Play, RotateCcw, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface CircularRestTimerProps {
   initialSeconds: number;
@@ -10,7 +11,8 @@ interface CircularRestTimerProps {
   autoStart?: boolean;
 }
 
-const RADIUS = 54;
+const RADIUS = 56;
+const STROKE = 4;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 function requestNotificationPermission() {
@@ -89,56 +91,47 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
+      exit={{ opacity: 0, scale: 0.96 }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      className={`rounded-2xl p-4 text-center space-y-3 transition-colors border ${
-        finished ? "bg-success-bg border-success/20" : "bg-accent border-primary/20"
-      }`}
+      className={cn(
+        "rounded-md border p-4 text-center space-y-3",
+        finished ? "bg-bg-tinted border-foreground/20" : "bg-bg-tinted border-border"
+      )}
       role="timer"
       aria-label={timerLabel}
     >
-      <div className="flex items-center justify-center gap-2">
-        <Timer className={`w-4 h-4 ${finished ? "text-success" : "text-primary"}`} strokeWidth={2} />
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em]">
-          {finished ? t("common:rest_label") + " ✓" : t("common:rest_label")}
-        </span>
+      <div className="text-[10px] font-semibold text-muted-subtle uppercase tracking-[0.12em]">
+        {finished ? t("common:rest_label") + " ✓" : t("common:rest_label")}
       </div>
 
-      {/* Circular progress with gradient stroke and pulsing glow */}
+      {/* Sober ring — thin stroke, no gradient */}
       <div className="relative w-32 h-32 mx-auto">
-        {/* Pulsing glow ring when finished */}
         <AnimatePresence>
           {finished && (
             <motion.div
               className="absolute inset-0 rounded-full"
-              style={{ boxShadow: "0 0 20px 4px hsl(var(--success) / 0.4)" }}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.95, 1.02, 0.95] }}
+              style={{ boxShadow: "0 0 16px 2px hsl(var(--foreground) / 0.15)" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.3, 0.6, 0.3] }}
               exit={{ opacity: 0 }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             />
           )}
         </AnimatePresence>
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
-          <defs>
-            <linearGradient id="timer-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="hsl(var(--primary))" />
-              <stop offset="100%" stopColor="hsl(var(--primary))" />
-            </linearGradient>
-          </defs>
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 128 128" aria-hidden="true">
           <circle
-            cx="60" cy="60" r={RADIUS}
+            cx="64" cy="64" r={RADIUS}
             fill="none"
             stroke="hsl(var(--border))"
-            strokeWidth="6"
+            strokeWidth={STROKE}
           />
           <motion.circle
-            cx="60" cy="60" r={RADIUS}
+            cx="64" cy="64" r={RADIUS}
             fill="none"
-            stroke={finished ? "hsl(var(--success))" : "url(#timer-gradient)"}
-            strokeWidth="6"
+            stroke={finished ? "hsl(var(--foreground))" : "hsl(var(--primary))"}
+            strokeWidth={STROKE}
             strokeLinecap="round"
             strokeDasharray={CIRCUMFERENCE}
             animate={{ strokeDashoffset: strokeOffset }}
@@ -147,9 +140,12 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <motion.span
-            className={`text-4xl font-black tabular-nums leading-none ${finished ? "text-success" : "text-primary"}`}
+            className={cn(
+              "text-[34px] font-bold tabular-nums leading-none tracking-tight",
+              finished ? "text-foreground" : "text-primary"
+            )}
             key={seconds}
-            initial={seconds <= 5 && seconds > 0 ? { scale: 1.15 } : {}}
+            initial={seconds <= 5 && seconds > 0 ? { scale: 1.1 } : {}}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 500, damping: 25 }}
           >
@@ -158,22 +154,42 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
         </div>
       </div>
 
-      {/* Adjust buttons */}
+      {/* Adjust buttons — sober outline */}
       <div className="flex items-center justify-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => adjust(-15)} className="h-11 min-w-[44px] px-2.5 text-xs" aria-label="-15s">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => adjust(-15)}
+          className="h-11 min-w-[44px] px-2.5 text-xs rounded-sm"
+          aria-label="-15s"
+        >
           <Minus className="w-4 h-4 mr-1" strokeWidth={1.5} />15s
         </Button>
-        <motion.div whileTap={{ scale: 0.9 }}>
-          <Button variant="outline" size="icon" onClick={toggle} className="h-11 w-11" aria-label={running ? "Pause" : "Play"}>
-            {running ? <Pause className="w-4 h-4" strokeWidth={1.5} /> : <Play className="w-4 h-4" strokeWidth={1.5} />}
-          </Button>
-        </motion.div>
-        <motion.div whileTap={{ scale: 0.9 }}>
-          <Button variant="outline" size="icon" onClick={reset} className="h-11 w-11" aria-label="Reset">
-            <RotateCcw className="w-4 h-4" strokeWidth={1.5} />
-          </Button>
-        </motion.div>
-        <Button variant="outline" size="sm" onClick={() => adjust(15)} className="h-11 min-w-[44px] px-2.5 text-xs" aria-label="+15s">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggle}
+          className="h-11 w-11 rounded-sm"
+          aria-label={running ? "Pause" : "Play"}
+        >
+          {running ? <Pause className="w-4 h-4" strokeWidth={1.5} /> : <Play className="w-4 h-4" strokeWidth={1.5} />}
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={reset}
+          className="h-11 w-11 rounded-sm"
+          aria-label="Reset"
+        >
+          <RotateCcw className="w-4 h-4" strokeWidth={1.5} />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => adjust(15)}
+          className="h-11 min-w-[44px] px-2.5 text-xs rounded-sm"
+          aria-label="+15s"
+        >
           <Plus className="w-4 h-4 mr-1" strokeWidth={1.5} />15s
         </Button>
       </div>

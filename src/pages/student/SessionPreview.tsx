@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, VideoOff, Play, Loader2 } from "lucide-react";
+import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { Meta, SectionLabel, VideoThumb, StatBadge, ExerciseNumber } from "@/components/student/SageAtoms";
 
 /**
  * SessionPreview — Sage variant
@@ -62,57 +63,6 @@ const sumVolume = (sections: any[]): number => {
   return kg;
 };
 
-// ────────── small UI atoms ──────────
-const Meta = ({ value, unit, label, border }: { value: React.ReactNode; unit?: string; label: string; border?: boolean }) => (
-  <div className={cn("text-center px-3", border && "border-x border-border")}>
-    <div className="text-xl font-bold tabular-nums tracking-tight text-foreground">
-      {value}
-      {unit && <span className="text-xs text-muted-subtle ml-0.5 font-medium">{unit}</span>}
-    </div>
-    <div className="text-[9px] uppercase tracking-[0.12em] font-semibold text-muted-subtle mt-1">{label}</div>
-  </div>
-);
-
-const SectionLabel = ({ label, right }: { label: string; right?: string }) => (
-  <div className="px-4 pb-2 flex items-center justify-between">
-    <span className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-foreground">{label}</span>
-    {right && <span className="text-[10px] tabular-nums font-medium text-muted-subtle">{right}</span>}
-  </div>
-);
-
-const VideoThumb = ({ hasVideo }: { hasVideo: boolean }) => {
-  if (!hasVideo) {
-    return (
-      <div className="w-14 h-14 rounded-sm bg-bg-tinted border border-dashed border-border flex items-center justify-center flex-shrink-0" aria-label="Pas de vidéo">
-        <VideoOff className="w-3.5 h-3.5 text-muted-subtle" />
-      </div>
-    );
-  }
-  return (
-    <div
-      className="w-14 h-14 rounded-sm bg-gradient-to-br from-bg-tinted to-border border border-border flex items-center justify-center relative overflow-hidden flex-shrink-0"
-      aria-label="Démo disponible"
-    >
-      <div className="relative z-10 w-[22px] h-[22px] rounded-full bg-white/95 flex items-center justify-center shadow-sm">
-        <Play className="w-2.5 h-2.5 text-zinc-900 ml-[1px]" fill="currentColor" />
-      </div>
-    </div>
-  );
-};
-
-const StatBadge = ({ children, accent }: { children: React.ReactNode; accent?: boolean }) => (
-  <span
-    className={cn(
-      "inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-medium tabular-nums",
-      accent
-        ? "bg-primary text-primary-foreground"
-        : "bg-bg-tinted text-foreground border border-border"
-    )}
-  >
-    {children}
-  </span>
-);
-
 // ────────── building blocks ──────────
 const ExerciseCard = ({ ex, idx }: { ex: any; idx: number }) => {
   const exData = ex.exercise || {};
@@ -124,9 +74,7 @@ const ExerciseCard = ({ ex, idx }: { ex: any; idx: number }) => {
   return (
     <div className="bg-card border border-border rounded-md p-3.5 flex flex-col gap-2.5">
       <div className="flex items-start gap-2.5">
-        <div className="w-6 h-6 rounded-xs bg-bg-tinted flex items-center justify-center text-[11px] font-bold text-muted-foreground flex-shrink-0 tabular-nums">
-          {idx}
-        </div>
+        <ExerciseNumber idx={idx} />
         <VideoThumb hasVideo={hasVideo} />
         <div className="flex-1 min-w-0">
           <div className="text-[15px] font-bold text-foreground tracking-tight leading-snug">
