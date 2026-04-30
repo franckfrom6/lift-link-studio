@@ -78,6 +78,32 @@ const LiveSession = () => {
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
   const [recoveryData, setRecoveryData] = useState<any>(null);
 
+  // Refs for the bottom-fixed elements so we can measure their combined
+  // height and reserve matching padding on the scroll container. This
+  // prevents the sticky "À SUIVRE" / Share button from covering the last
+  // exercise's sets/validate buttons.
+  const nextPreviewRef = useRef<HTMLDivElement | null>(null);
+  const shareBtnRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root) return;
+    const update = () => {
+      const previewH = nextPreviewRef.current?.offsetHeight ?? 0;
+      // Bottom nav (mobile) is 64px (h-16). Add 16px breathing room.
+      const navH = 64;
+      const total = previewH + navH + 16;
+      root.style.setProperty("--live-bottom-pad", `${total}px`);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    if (nextPreviewRef.current) ro.observe(nextPreviewRef.current);
+    if (shareBtnRef.current) ro.observe(shareBtnRef.current);
+    window.addEventListener("resize", update);
+    return () => { ro.disconnect(); window.removeEventListener("resize", update); };
+  }, [isAdvanced]);
+
   // Apply dark theme on mount for immersive workout
   useEffect(() => {
     document.documentElement.classList.add("dark");
@@ -835,8 +861,13 @@ const LiveSession = () => {
         saveStatus={saveStatus}
       />
 
-      {/* Content — pb clears WorkoutNav + ShareButton + NextExercisePreview + safe-area */}
-      <div className="max-w-2xl mx-auto px-3 py-4 space-y-3 pb-[calc(14rem+env(safe-area-inset-bottom))]">
+      {/* Content — pb clears WorkoutNav + ShareButton + NextExercisePreview + safe-area.
+          --live-bottom-pad is updated via ResizeObserver below. */}
+      <div
+        ref={scrollRef}
+        className="max-w-2xl mx-auto px-3 py-4 space-y-3"
+        style={{ paddingBottom: "calc(var(--live-bottom-pad, 14rem) + env(safe-area-inset-bottom))" }}
+      >
         {/* Substitution + skip notices (Advanced only) */}
         <AnimatePresence>
           {isAdvanced && substitutions.length > 0 && (
@@ -983,15 +1014,17 @@ const LiveSession = () => {
 
       {/* Next exercise preview (Simple mode — always visible) */}
       {!isAdvanced && nextExerciseInfo && (
-        <NextExercisePreview
-          name={nextExerciseInfo.name}
-          sets={nextExerciseInfo.sets}
-          reps={nextExerciseInfo.reps}
-        />
+        <div ref={nextPreviewRef}>
+          <NextExercisePreview
+            name={nextExerciseInfo.name}
+            sets={nextExerciseInfo.sets}
+            reps={nextExerciseInfo.reps}
+          />
+        </div>
       )}
 
       {/* Share button */}
-      <div className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] md:bottom-20 right-4 z-20">
+      <div ref={shareBtnRef} className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] md:bottom-20 right-4 z-20">
         <ShareSessionButton
           sessionId={selectedSession?.id || ""}
           completedSessionId={completedSessionId || undefined}
