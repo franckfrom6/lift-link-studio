@@ -266,23 +266,6 @@ const StudentWeek = () => {
     }));
   }, [dates, effectiveSessions, completedSessionIds, getFreeForDay]);
 
-  const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 8 } });
-  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } });
-  const sensors = useSensors(pointerSensor, touchSensor);
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-    const sourceDayIndex = active.data.current?.dayIndex as number;
-    const targetDayIndex = over.data.current?.dayIndex as number;
-    if (sourceDayIndex === undefined || targetDayIndex === undefined) return;
-    if (sourceDayIndex === targetDayIndex) return;
-    if (!effectiveSessions[sourceDayIndex]) return;
-    setSwapSourceDay(sourceDayIndex);
-    setSwapTargetDay(targetDayIndex);
-    setSwapModalOpen(true);
-  }, [effectiveSessions]);
-
   const handleDayClickInSwapMode = (dayIndex: number) => {
     if (swapSourceDay === null) return;
     if (dayIndex === swapSourceDay) {
