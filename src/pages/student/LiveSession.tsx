@@ -104,15 +104,7 @@ const LiveSession = () => {
     return () => { ro.disconnect(); window.removeEventListener("resize", update); };
   }, [isAdvanced]);
 
-  // Apply dark theme on mount for immersive workout
-  useEffect(() => {
-    document.documentElement.classList.add("dark");
-    document.body.style.backgroundColor = "#09090b";
-    return () => {
-      // Restore theme on unmount — ThemeContext will handle it
-      document.body.style.backgroundColor = "";
-    };
-  }, []);
+  // Respect user's theme — no forced dark mode. ThemeContext handles light/dark.
 
   // Check for orphaned localStorage backup on mount
   useEffect(() => {
