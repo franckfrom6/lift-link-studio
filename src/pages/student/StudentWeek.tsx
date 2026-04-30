@@ -581,6 +581,10 @@ const StudentWeek = () => {
               navigate(`/student/session/${sessionInfo.sessionId}/preview`);
             } else if (dayFreeSessions.length > 0) {
               navigate(`/student/session/${dayFreeSessions[0].id}/preview`);
+            } else if (!day.isPast) {
+              // Rest day on current/future date → open builder directly
+              setBuilderDate(day.date);
+              setBuilderOpen(true);
             }
           };
 
@@ -680,6 +684,14 @@ const StudentWeek = () => {
             </>
           );
 
+          // On rest days, expose the same action ("add a session") through both
+          // the row click and the menu so creating a session on a week without
+          // a program is intuitive.
+          const restDayClickable = state === "rest" && !day.isPast && !swapMode;
+          const rowOnClick = state === "rest"
+            ? (restDayClickable ? handleClick : undefined)
+            : handleClick;
+
           return (
             <ProgDayRow
               key={day.name}
@@ -690,7 +702,7 @@ const StudentWeek = () => {
               sessionName={sessionName}
               sessionMeta={sessionMeta}
               isAI={isAI}
-              onClick={state === "rest" ? undefined : handleClick}
+              onClick={rowOnClick}
               actionMenu={actionMenu}
             >
               {(dayExternals.length > 0 || (isSessionDay && dayFreeSessions.length > 0)) ? extras : null}
