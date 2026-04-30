@@ -617,13 +617,13 @@ const StudentWeek = () => {
                       tabIndex={swapMode || (isSessionDay && sessionInfo) ? 0 : undefined}
                       onClick={() => {
                         if (swapMode) handleDayClickInSwapMode(day.dayIndex);
-                        else if (isSessionDay && sessionInfo) navigate(`/student/session/${sessionInfo.sessionId}`);
+                        else if (isSessionDay && sessionInfo) navigate(`/student/session/${sessionInfo.sessionId}/preview`);
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
                           if (swapMode) handleDayClickInSwapMode(day.dayIndex);
-                          else if (isSessionDay && sessionInfo) navigate(`/student/session/${sessionInfo.sessionId}`);
+                          else if (isSessionDay && sessionInfo) navigate(`/student/session/${sessionInfo.sessionId}/preview`);
                         }
                       }}
                     >
@@ -665,8 +665,8 @@ const StudentWeek = () => {
                                   return (
                                     <div key={fs.id} className="group/free-session relative space-y-0.5 cursor-pointer pr-8"
                                       role="button" tabIndex={0}
-                                      onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
-                                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
+                                      onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}/preview`); }}
+                                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}/preview`); } }}
                                     >
                                       {!freeCompleted && (
                                         <Button variant="ghost" size="icon"
@@ -696,8 +696,8 @@ const StudentWeek = () => {
                               <div className="mt-1.5 pt-1.5 border-t border-border space-y-1">
                                 {dayFreeSessions.map(fs => (
                                   <div key={fs.id} className="cursor-pointer" role="button" tabIndex={0}
-                                    onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}`); }}
-                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}`); } }}
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}/preview`); }}
+                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}/preview`); } }}
                                   >
                                     <div className="flex items-center gap-1.5 min-w-0">
                                       <p className="text-xs font-semibold text-foreground truncate">{fs.name}</p>
@@ -755,8 +755,8 @@ const StudentWeek = () => {
                               className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (isSessionDay && sessionInfo) navigate(`/student/session/${sessionInfo.sessionId}`);
-                                else if (dayFreeSessions.length > 0) navigate(`/student/session/${dayFreeSessions[0].id}`);
+                                if (isSessionDay && sessionInfo) navigate(`/student/session/${sessionInfo.sessionId}/preview`);
+                                else if (dayFreeSessions.length > 0) navigate(`/student/session/${dayFreeSessions[0].id}/preview`);
                               }}
                             >
                               <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
