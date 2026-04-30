@@ -117,6 +117,13 @@ export function ExerciseVideoEmbed({
 
     // Otherwise, search YouTube by exercise name
     let cancelled = false;
+    // Hard timeout: never let the skeleton spin more than 5s.
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      cancelled = true;
+      setError(true);
+      setLoading(false);
+    }, 5000);
 
     async function fetchVideo() {
       const cached = getCached(exerciseName);
@@ -155,7 +162,10 @@ export function ExerciseVideoEmbed({
     setError(false);
     setVideoId(null);
     fetchVideo();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
   }, [exerciseName, resolvedUrl]);
 
   // Skeleton while loading
