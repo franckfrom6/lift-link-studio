@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { forwardRef, useState, useEffect, useMemo } from "react";
 import { Search, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
@@ -60,13 +60,13 @@ function extractYouTubeId(url: string): string | null {
   return match ? match[1] : null;
 }
 
-export function ExerciseVideoEmbed({
+export const ExerciseVideoEmbed = forwardRef<HTMLDivElement, ExerciseVideoEmbedProps>(function ExerciseVideoEmbed({
   exerciseName,
   directVideoUrl,
   videoUrlFemale,
   videoUrlMale,
   exerciseVideoUrl,
-}: ExerciseVideoEmbedProps) {
+}, ref) {
   const [videoId, setVideoId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -175,7 +175,7 @@ export function ExerciseVideoEmbed({
   // Skeleton while loading
   if (loading) {
     return (
-      <div className="w-full sm:max-w-2xl sm:mx-auto">
+      <div ref={ref} className="w-full sm:max-w-2xl sm:mx-auto">
         <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-muted animate-pulse">
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-16 h-16 rounded-full bg-muted-foreground/10" />
@@ -194,7 +194,7 @@ export function ExerciseVideoEmbed({
       `${exerciseName} exercise tutorial`
     )}`;
     return (
-      <div className="w-full sm:max-w-2xl sm:mx-auto">
+      <div ref={ref} className="w-full sm:max-w-2xl sm:mx-auto">
         <a
           href={searchUrl}
           target="_blank"
@@ -210,7 +210,7 @@ export function ExerciseVideoEmbed({
 
   // Embedded video
   return (
-    <div className="w-full sm:max-w-2xl sm:mx-auto">
+    <div ref={ref} className="w-full sm:max-w-2xl sm:mx-auto">
       <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-md">
         {iframeMounted ? (
           <iframe
@@ -248,4 +248,4 @@ export function ExerciseVideoEmbed({
       </p>
     </div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward, Camera, Star, Play } from "lucide-react";
 import NumericInput from "./NumericInput";
 import DurationInput from "./DurationInput";
@@ -88,21 +88,26 @@ const EnhancedExerciseCard = ({
   const [prDetected, setPrDetected] = useState<number | null>(null);
   const [showVideo, setShowVideo] = useState(false);
 
-  if (completedSets.length === 0 && isActive) {
-    const initial: EnhancedCompletedSet[] = Array.from({ length: targetSets }, (_, i) => ({
+  const initialCompletedSets = useMemo<EnhancedCompletedSet[]>(() => (
+    Array.from({ length: targetSets }, (_, i) => ({
       setNumber: i + 1,
       weight: trackingType === "weight_reps" ? (suggestedWeight || 0) : 0,
       reps: 0,
       isFailure: false,
       rpeActual: null,
       durationSeconds: 0,
-    }));
-    onCompletedSetsChange(initial);
-    return null;
-  }
+    }))
+  ), [suggestedWeight, targetSets, trackingType]);
+
+  const visibleCompletedSets = completedSets.length > 0 ? completedSets : initialCompletedSets;
+
+  useEffect(() => {
+    if (!isActive || completedSets.length > 0 || initialCompletedSets.length === 0) return;
+    onCompletedSetsChange(initialCompletedSets);
+  }, [completedSets.length, initialCompletedSets, isActive, onCompletedSetsChange]);
 
   const updateSet = (idx: number, field: keyof EnhancedCompletedSet, value: any) => {
-    const updated = [...completedSets];
+    const updated = [...visibleCompletedSets];
     updated[idx] = { ...updated[idx], [field]: value };
     onCompletedSetsChange(updated);
   };
@@ -119,7 +124,7 @@ const EnhancedExerciseCard = ({
 
     // PR detection in Advanced mode
     if (isAdvanced && previousSets && previousSets[idx] && trackingType === "weight_reps") {
-      const current = completedSets[idx];
+      const current = visibleCompletedSets[idx];
       if (current.weight > previousSets[idx].weight) {
         setPrDetected(idx);
         setTimeout(() => setPrDetected(null), 1500);
@@ -127,9 +132,9 @@ const EnhancedExerciseCard = ({
       }
     }
 
-    if (idx < completedSets.length - 1) {
+    if (idx < visibleCompletedSets.length - 1) {
       setCurrentSetIdx(idx + 1);
-      const updated = [...completedSets];
+      const updated = [...visibleCompletedSets];
       if (trackingType === "weight_reps" && updated[idx + 1] && updated[idx + 1].weight === 0) {
         updated[idx + 1] = { ...updated[idx + 1], weight: updated[idx].weight };
         onCompletedSetsChange(updated);
@@ -143,21 +148,21 @@ const EnhancedExerciseCard = ({
   };
 
   const addSet = () => {
-    const lastWeight = completedSets[completedSets.length - 1]?.weight || 0;
+    const lastWeight = visibleCompletedSets[visibleCompletedSets.length - 1]?.weight || 0;
     onCompletedSetsChange([
-      ...completedSets,
-      { setNumber: completedSets.length + 1, weight: lastWeight, reps: 0, isFailure: false, rpeActual: null, durationSeconds: 0 }
+      ...visibleCompletedSets,
+      { setNumber: visibleCompletedSets.length + 1, weight: lastWeight, reps: 0, isFailure: false, rpeActual: null, durationSeconds: 0 }
     ]);
     if (allDone) {
       setAllDone(false);
-      setCurrentSetIdx(completedSets.length);
+      setCurrentSetIdx(visibleCompletedSets.length);
     }
   };
 
   const getPrevComparison = (idx: number, field: "weight" | "reps") => {
     if (!isAdvanced) return null;
     if (!previousSets || !previousSets[idx]) return null;
-    const current = completedSets[idx]?.[field] || 0;
+    const current = visibleCompletedSets[idx]?.[field] || 0;
     const prev = previousSets[idx][field];
     if (current === 0 || prev === 0) return null;
     if (current > prev) return "up";
@@ -730,7 +735,6 @@ const EnhancedExerciseCard = ({
 
   return (
     <motion.div
-      layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={cn(
         "rounded-2xl border transition-all overflow-hidden",
@@ -742,17 +746,17 @@ const EnhancedExerciseCard = ({
       {/* Header: Simple vs Advanced */}
       {isAdvanced ? renderAdvancedHeader() : renderSimpleHeader()}
 
-      {/* Expanded details with spring animation */}
+      {/* Expanded details: CSS grid animation avoids expensive layout projection on mobile */}
       <AnimatePresence initial={false}>
         {expanded && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="overflow-hidden"
+            initial={{ gridTemplateRows: "0fr", opacity: 0 }}
+            animate={{ gridTemplateRows: "1fr", opacity: 1 }}
+            exit={{ gridTemplateRows: "0fr", opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="grid overflow-hidden"
           >
-            <div className="px-3 pb-3 space-y-4 border-t border-border pt-3">
+            <div className="min-h-0 px-3 pb-3 space-y-4 border-t border-border pt-3">
               {/* Coach hints — small text block, kept above sets */}
               {(suggestedWeight || (isAdvanced && coachNotes)) && (
                 <div className="space-y-2">
@@ -787,11 +791,11 @@ const EnhancedExerciseCard = ({
                 )}
               </AnimatePresence>
 
-              {isActive && completedSets.length > 0 && (
+              {isActive && visibleCompletedSets.length > 0 && (
                 <div className="space-y-2">
                   <div className="overflow-x-auto -mx-3 px-3">
                     {renderSetHeader()}
-                    {completedSets.map((set, i) => renderSetRow(set, i))}
+                    {visibleCompletedSets.map((set, i) => renderSetRow(set, i))}
                     {!allDone && (
                       <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={addSet}>
                         <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
