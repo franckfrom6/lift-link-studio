@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface ProgWeekSelectorItem {
@@ -14,13 +14,17 @@ interface ProgWeekSelectorProps {
   current: number;       // 1-based
   onSelect: (num: number) => void;
   className?: string;
+  /** When provided, renders a trailing "+" tile to append a new week. */
+  onAddWeek?: () => void;
+  /** Optional disabled state for the add button (e.g. saving). */
+  addDisabled?: boolean;
 }
 
 /**
  * Sage Phase 4 — horizontal week strip.
  * Pure tokens. Current week uses --primary tint, past = check, future = dimmed.
  */
-const ProgWeekSelector = ({ weeks, current, onSelect, className }: ProgWeekSelectorProps) => {
+const ProgWeekSelector = ({ weeks, current, onSelect, className, onAddWeek, addDisabled }: ProgWeekSelectorProps) => {
   return (
     <div
       className={cn(
@@ -83,6 +87,26 @@ const ProgWeekSelector = ({ weeks, current, onSelect, className }: ProgWeekSelec
           </button>
         );
       })}
+      {onAddWeek && (
+        <button
+          type="button"
+          onClick={onAddWeek}
+          disabled={addDisabled}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 flex-shrink-0 min-w-[60px] px-2.5 py-2 rounded-sm transition-colors",
+            "border border-dashed border-border bg-card/50 hover:bg-bg-tinted hover:border-foreground/40",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+            "disabled:opacity-50 disabled:cursor-not-allowed"
+          )}
+          aria-label="Ajouter une semaine"
+          title="Ajouter une semaine"
+        >
+          <Plus className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2} />
+          <span className="text-[9px] font-bold uppercase tracking-[0.06em] text-muted-subtle">
+            Semaine
+          </span>
+        </button>
+      )}
     </div>
   );
 };

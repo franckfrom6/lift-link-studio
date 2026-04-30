@@ -65,6 +65,8 @@ export interface DBProgram {
   name: string;
   status: string;
   created_at: string;
+  coach_id: string | null;
+  student_id: string;
   weeks: DBWeek[];
   progression: Array<{
     id: string;
@@ -173,6 +175,8 @@ async function fetchProgramTree(studentId: string): Promise<DBProgram | null> {
     name: prog.name,
     status: prog.status,
     created_at: prog.created_at,
+    coach_id: prog.coach_id,
+    student_id: prog.student_id,
     weeks: assembledWeeks,
     progression,
   };
