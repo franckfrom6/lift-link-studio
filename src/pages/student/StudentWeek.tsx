@@ -1,16 +1,12 @@
-import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy, Trash2, MoreVertical } from "lucide-react";
+import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Bot, Copy, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
 import FirstStepsChecklist from "@/components/onboarding/FirstStepsChecklist";
-import DateBadge, { DateBadgeVariant } from "@/components/student/DateBadge";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import SessionSwapModal from "@/components/student/SessionSwapModal";
-import SwapBadge from "@/components/student/SwapBadge";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import WeeklyCheckinForm from "@/components/student/WeeklyCheckinForm";
@@ -20,17 +16,17 @@ import SelfGuidedDashboard from "@/components/student/SelfGuidedDashboard";
 import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
-import TodayFocusCard from "@/components/student/TodayFocusCard";
-import DayTimeline from "@/components/student/DayTimeline";
-import SignatureHeader from "@/components/student/SignatureHeader";
 import SignatureStartCTA from "@/components/student/SignatureStartCTA";
+import ProgWeekSelector, { ProgWeekSelectorItem } from "@/components/student/ProgWeekSelector";
+import ProgWeekHeader from "@/components/student/ProgWeekHeader";
+import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+  DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
@@ -38,8 +34,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSessionSwaps } from "@/hooks/useSessionSwaps";
-import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { DraggableDayCard } from "@/components/student/DraggableDayCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useWeekData } from "@/hooks/useWeekData";
 import { AnimatePresence, motion } from "framer-motion";
