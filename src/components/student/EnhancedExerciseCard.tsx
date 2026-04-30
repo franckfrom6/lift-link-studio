@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward, Camera, Star, Play } from "lucide-react";
+import { ChevronDown, X, Check, Plus, ArrowLeftRight, Timer, SkipForward, Star, Play } from "lucide-react";
 import NumericInput from "./NumericInput";
 import DurationInput from "./DurationInput";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import ExercisePhoto from "./ExercisePhoto";
 import { AnimatePresence, motion } from "framer-motion";
+import { StatBadge, VideoThumb } from "./SageAtoms";
 
 export type TrackingType = "weight_reps" | "reps_only" | "duration" | "distance";
 
