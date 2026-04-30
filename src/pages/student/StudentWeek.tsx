@@ -12,7 +12,6 @@ import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import WeeklyCheckinForm from "@/components/student/WeeklyCheckinForm";
 import CheckinBadge from "@/components/student/CheckinBadge";
 import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
-import SelfGuidedDashboard from "@/components/student/SelfGuidedDashboard";
 import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
@@ -20,6 +19,8 @@ import SignatureStartCTA from "@/components/student/SignatureStartCTA";
 import ProgWeekSelector, { ProgWeekSelectorItem } from "@/components/student/ProgWeekSelector";
 import ProgWeekHeader from "@/components/student/ProgWeekHeader";
 import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
+import WeekRangePicker from "@/components/student/WeekRangePicker";
+import NoProgramOnboardingBanner from "@/components/student/NoProgramOnboardingBanner";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
