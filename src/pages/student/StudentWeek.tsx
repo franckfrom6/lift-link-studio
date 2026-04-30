@@ -447,6 +447,32 @@ const StudentWeek = () => {
     setSelectedDayIndex(null);
   };
 
+  // Self-guided athletes can append a new week to their program.
+  // The new week becomes the next chronological week in the calendar.
+  const isSelfGuided = !!program && program.coach_id === null;
+  const [addingWeek, setAddingWeek] = useState(false);
+  const handleAddWeek = async () => {
+    if (!program || addingWeek) return;
+    setAddingWeek(true);
+    const nextNumber = (program.weeks?.length || 0) + 1;
+    const { error } = await supabase
+      .from("program_weeks")
+      .insert({ program_id: program.id, week_number: nextNumber });
+    if (error) {
+      toast.error(t("common:error"));
+      setAddingWeek(false);
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["student-program", studentId] });
+    // Jump the calendar to the newly added week
+    const newWeekIdx = nextNumber - 1;
+    const delta = newWeekIdx - selectedWeekIndex;
+    setWeekOffset(weekOffset + delta);
+    setSelectedDayIndex(null);
+    toast.success(`Semaine ${nextNumber} ajoutée`);
+    setAddingWeek(false);
+  };
+
   // Jump to the Monday of any given date (used by the mini-calendar picker).
   const handleJumpToDate = (date: Date) => {
     const target = new Date(date);
