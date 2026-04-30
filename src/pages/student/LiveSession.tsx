@@ -835,8 +835,8 @@ const LiveSession = () => {
         saveStatus={saveStatus}
       />
 
-      {/* Content */}
-      <div className="max-w-2xl mx-auto px-3 py-4 space-y-3 pb-32">
+      {/* Content — pb clears WorkoutNav + ShareButton + NextExercisePreview + safe-area */}
+      <div className="max-w-2xl mx-auto px-3 py-4 space-y-3 pb-[calc(14rem+env(safe-area-inset-bottom))]">
         {/* Substitution + skip notices (Advanced only) */}
         <AnimatePresence>
           {isAdvanced && substitutions.length > 0 && (
@@ -945,6 +945,7 @@ const LiveSession = () => {
                         trackingType={(trackingTypeMap[key] as any) || "weight_reps"}
                         sessionExerciseId={sessionExerciseIdMap[key]}
                         completedSessionId={completedSessionId || undefined}
+                        onActivate={() => setActiveExerciseKey(key)}
                       />
                     </motion.div>
                   );
