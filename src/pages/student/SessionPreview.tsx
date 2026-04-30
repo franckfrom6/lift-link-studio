@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, VideoOff, Play, Flame, Loader2 } from "lucide-react";
+import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, VideoOff, Play, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { supabase } from "@/integrations/supabase/client";
