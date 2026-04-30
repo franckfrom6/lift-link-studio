@@ -1012,13 +1012,12 @@ const LiveSession = () => {
 
       {/* Next exercise preview (Simple mode — always visible) */}
       {!isAdvanced && nextExerciseInfo && (
-        <div ref={nextPreviewRef}>
-          <NextExercisePreview
-            name={nextExerciseInfo.name}
-            sets={nextExerciseInfo.sets}
-            reps={nextExerciseInfo.reps}
-          />
-        </div>
+        <NextExercisePreview
+          ref={nextPreviewRef}
+          name={nextExerciseInfo.name}
+          sets={nextExerciseInfo.sets}
+          reps={nextExerciseInfo.reps}
+        />
       )}
 
       {/* Share button */}
