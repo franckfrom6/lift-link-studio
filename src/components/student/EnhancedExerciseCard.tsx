@@ -53,6 +53,7 @@ interface EnhancedExerciseCardProps {
   trackingType?: TrackingType;
   sessionExerciseId?: string;
   completedSessionId?: string;
+  onActivate?: () => void;
 }
 
 const EnhancedExerciseCard = ({
@@ -66,6 +67,7 @@ const EnhancedExerciseCard = ({
   trackingType = "weight_reps",
   sessionExerciseId,
   completedSessionId,
+  onActivate,
 }: EnhancedExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const { t } = useTranslation('exercises');
