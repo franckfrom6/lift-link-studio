@@ -1,4 +1,4 @@
-import { Check, ChevronRight, MessageCircle, MoreVertical, Bot } from "lucide-react";
+import { Check, ChevronRight, MessageCircle, MoreVertical, Bot, Plus } from "lucide-react";
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -98,13 +98,57 @@ const ProgDayRow = ({
     return (
       <div
         className={cn(
-          "flex items-center gap-3.5 px-4 py-2.5 min-h-[44px]",
+          "relative",
           !isLast && "border-b border-border"
         )}
       >
-        <ProgDayLabel dayShort={dayShort} dayNum={dayNum} state="rest" />
-        <div className="flex-1 text-[13px] font-medium text-muted-subtle">Repos</div>
-        {children}
+        <div className="flex items-stretch gap-3.5 px-4 py-2 min-h-[44px]">
+          <ProgDayLabel dayShort={dayShort} dayNum={dayNum} state="rest" />
+
+          <button
+            type="button"
+            onClick={onClick}
+            disabled={!onClick}
+            className={cn(
+              "flex-1 min-w-0 flex items-center text-left rounded-sm",
+              onClick
+                ? "cursor-pointer text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary group"
+                : "text-muted-subtle"
+            )}
+          >
+            {onClick ? (
+              <span className="inline-flex items-center gap-1.5 text-[13px] font-medium">
+                <Plus className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
+                Ajouter une séance
+              </span>
+            ) : (
+              <span className="text-[13px] font-medium">Repos</span>
+            )}
+          </button>
+
+          {actionMenu && (
+            <div className="flex items-center flex-shrink-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-subtle hover:text-foreground"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label="Plus d'actions"
+                  >
+                    <MoreVertical className="w-4 h-4" strokeWidth={1.5} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  {actionMenu}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </div>
+
+        {children && <div className="px-4 pb-2 -mt-0.5 pl-[60px]">{children}</div>}
       </div>
     );
   }
