@@ -11,54 +11,63 @@ interface SessionSectionProps {
   children: React.ReactNode;
 }
 
-const getSectionBorderColor = (name: string) => {
-  const lower = name.toLowerCase();
-  if (lower.includes("warm") || lower.includes("échauffement")) return "border-l-tag-orange";
-  if (lower.includes("cool") || lower.includes("retour")) return "border-l-tag-blue";
-  return "border-l-tag-violet";
-};
-
-const SessionSection = ({ name, icon, durationEstimate, notes, isActive, children }: SessionSectionProps) => {
+/**
+ * Sage variant — sober collapsible section.
+ * Sits visually between SessionPreview's SectionLabel and the exercise cards inside.
+ */
+const SessionSection = ({
+  name,
+  icon,
+  durationEstimate,
+  notes,
+  isActive,
+  children,
+}: SessionSectionProps) => {
   const [expanded, setExpanded] = useState(true);
-  const borderColor = getSectionBorderColor(name);
 
   return (
-    <div className={cn(
-      "rounded-xl border transition-colors overflow-hidden",
-      isActive ? "border-border bg-card" : "border-border/50 bg-card"
-    )}>
-      {/* Section header */}
+    <div className="space-y-2">
+      {/* Section label — matches SectionLabel atom */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 p-3 text-left bg-secondary/50 border-b border-border/50"
+        className="w-full px-1 flex items-center justify-between text-left group"
+        aria-expanded={expanded}
       >
-        {icon && <span className="text-lg">{icon}</span>}
-        <div className="flex-1 min-w-0">
-          <h3 className={cn(
-            "font-semibold text-sm uppercase tracking-[0.05em]",
-            isActive ? "text-foreground" : "text-muted-foreground"
-          )}>
+        <span className="flex items-center gap-2">
+          {icon && <span className="text-sm leading-none">{icon}</span>}
+          <span
+            className={cn(
+              "text-[10px] uppercase tracking-[0.12em] font-semibold transition-colors",
+              isActive ? "text-foreground" : "text-muted-foreground",
+              "group-hover:text-foreground"
+            )}
+          >
             {name}
-          </h3>
+          </span>
+        </span>
+        <span className="flex items-center gap-2">
           {durationEstimate && (
-            <div className="flex items-center gap-1 mt-0.5">
-              <Clock className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
-              <span className="text-[11px] text-muted-foreground">{durationEstimate}</span>
-            </div>
+            <span className="inline-flex items-center gap-1 text-[10px] tabular-nums font-medium text-muted-subtle">
+              <Clock className="w-2.5 h-2.5" strokeWidth={1.5} />
+              {durationEstimate}
+            </span>
           )}
-        </div>
-        <ChevronDown className={cn(
-          "w-4 h-4 text-muted-foreground transition-transform duration-200",
-          expanded && "rotate-180"
-        )} strokeWidth={1.5} />
+          <ChevronDown
+            className={cn(
+              "w-3.5 h-3.5 text-muted-subtle transition-transform duration-200",
+              expanded && "rotate-180"
+            )}
+            strokeWidth={1.5}
+          />
+        </span>
       </button>
 
       {expanded && (
-        <div className={cn("px-3 pb-3 pt-2 space-y-2 border-l-2", borderColor)}>
+        <div className="space-y-2">
           {notes && (
-            <p className="text-xs text-muted-foreground italic leading-relaxed px-1">
-              {notes}
-            </p>
+            <div className="px-3 py-2 rounded-md bg-bg-tinted border border-border border-l-[3px] border-l-foreground/40">
+              <p className="text-[12px] text-muted-foreground leading-relaxed">{notes}</p>
+            </div>
           )}
           {children}
         </div>
