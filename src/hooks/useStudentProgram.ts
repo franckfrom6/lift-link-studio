@@ -65,6 +65,8 @@ export interface DBProgram {
   name: string;
   status: string;
   created_at: string;
+  coach_id: string | null;
+  student_id: string;
   weeks: DBWeek[];
   progression: Array<{
     id: string;
