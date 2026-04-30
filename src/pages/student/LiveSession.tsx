@@ -742,8 +742,8 @@ const LiveSession = () => {
   // Loading — wait for both program and free session fetch to complete
   if (programLoading || freeSessionLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="flex items-center gap-2 text-zinc-400">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
           <Clock className="w-4 h-4 animate-spin" />
           <span className="text-sm">{t('common:loading')}</span>
         </div>
@@ -754,10 +754,10 @@ const LiveSession = () => {
   // Session not found — past session or deleted
   if (!selectedSession && selectedSessionId) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <Clock className="w-8 h-8 text-zinc-500" />
-        <p className="text-zinc-300 font-semibold">{t('session:session_not_found', 'Séance introuvable')}</p>
-        <p className="text-zinc-500 text-sm max-w-xs">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <Clock className="w-8 h-8 text-muted-foreground" />
+        <p className="text-foreground font-semibold">{t('session:session_not_found', 'Séance introuvable')}</p>
+        <p className="text-muted-foreground text-sm max-w-xs">
           {t('session:session_not_found_desc', 'Cette séance a peut-être été supprimée ou appartient à un programme précédent.')}
         </p>
         <Button variant="outline" onClick={() => navigate("/student")} className="mt-2">
@@ -770,10 +770,10 @@ const LiveSession = () => {
   // Finish failed — show retry
   if (finishError && !sessionDone) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 px-6 text-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
         <CloudOff className="w-10 h-10 text-destructive" />
-        <p className="text-zinc-100 font-semibold text-lg">{t("session:finish_failed")}</p>
-        <p className="text-zinc-400 text-sm max-w-xs">
+        <p className="text-foreground font-semibold text-lg">{t("session:finish_failed")}</p>
+        <p className="text-muted-foreground text-sm max-w-xs">
           {t("session:save_failed_final")}
         </p>
         <Button
@@ -790,7 +790,7 @@ const LiveSession = () => {
         >
           {isSaving ? t("session:saving") : t("session:retry")}
         </Button>
-        <Button variant="ghost" onClick={() => navigate("/student")} className="text-zinc-500">
+        <Button variant="ghost" onClick={() => navigate("/student")} className="text-muted-foreground">
           {t("common:back")}
         </Button>
       </div>
@@ -823,7 +823,7 @@ const LiveSession = () => {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 -m-4 md:-m-8">
+    <div className="min-h-screen bg-background text-foreground -m-4 md:-m-8">
       {/* Recovery prompt for orphaned localStorage backup */}
       {showRecoveryPrompt && (
         <AlertDialog open={showRecoveryPrompt} onOpenChange={setShowRecoveryPrompt}>
@@ -883,7 +883,7 @@ const LiveSession = () => {
         </AnimatePresence>
 
         {skippedCount > 0 && (
-          <p className="text-xs text-zinc-500 font-medium px-1">
+          <p className="text-xs text-muted-foreground font-medium px-1">
             ⏭ {t('session:exercises_skipped', { count: skippedCount })}
           </p>
         )}
@@ -895,9 +895,9 @@ const LiveSession = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl p-4"
+              className="bg-card border border-border rounded-xl p-4"
             >
-              <h3 className="font-bold text-sm mb-3 text-zinc-200">{t('session:progression_plan')}</h3>
+              <h3 className="font-bold text-sm mb-3 text-foreground">{t('session:progression_plan')}</h3>
               <ProgressionTimeline phases={progressionPhases} currentWeek={1} />
             </motion.div>
           )}
