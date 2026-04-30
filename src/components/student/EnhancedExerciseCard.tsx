@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward, Camera, Star } from "lucide-react";
+import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward, Camera, Star, Play } from "lucide-react";
 import NumericInput from "./NumericInput";
 import DurationInput from "./DurationInput";
 import { Button } from "@/components/ui/button";
@@ -86,6 +86,7 @@ const EnhancedExerciseCard = ({
   const [exercisePhotos, setExercisePhotos] = useState<string[]>([]);
   const [justCompletedSet, setJustCompletedSet] = useState<number | null>(null);
   const [prDetected, setPrDetected] = useState<number | null>(null);
+  const [showVideo, setShowVideo] = useState(false);
 
   if (completedSets.length === 0 && isActive) {
     const initial: EnhancedCompletedSet[] = Array.from({ length: targetSets }, (_, i) => ({
@@ -752,13 +753,27 @@ const EnhancedExerciseCard = ({
             className="overflow-hidden"
           >
             <div className="px-3 pb-3 space-y-4 border-t border-border pt-3">
-              <ExerciseVideoEmbed
-                exerciseName={name}
-                directVideoUrl={videoUrl}
-                videoUrlFemale={videoUrlFemale}
-                videoUrlMale={videoUrlMale}
-                exerciseVideoUrl={exerciseVideoUrl}
-              />
+              {/* Video: lazy — only mount if active OR user explicitly opens it.
+                  Avoids the giant aspect-video skeleton that caused the
+                  layout-shift "freeze/compression" on every expand. */}
+              {(isActive || showVideo) ? (
+                <ExerciseVideoEmbed
+                  exerciseName={name}
+                  directVideoUrl={videoUrl}
+                  videoUrlFemale={videoUrlFemale}
+                  videoUrlMale={videoUrlMale}
+                  exerciseVideoUrl={exerciseVideoUrl}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowVideo(true); }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <Play className="w-3 h-3" strokeWidth={2} />
+                  {t('show_demo', { defaultValue: 'Voir la démo' })}
+                </button>
+              )}
 
               {(suggestedWeight || (isAdvanced && coachNotes)) && (
                 <div className="space-y-2">
