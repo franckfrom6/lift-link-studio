@@ -539,11 +539,13 @@ const StudentWeek = () => {
       )}
 
       {/* Week strip — programmes structurés uniquement */}
-      {hasProgram && programWeeks.length > 1 && (
+      {hasProgram && (programWeeks.length > 1 || isSelfGuided) && (
         <ProgWeekSelector
           weeks={programWeeks}
           current={selectedWeekIndex + 1}
           onSelect={handleSelectStripWeek}
+          onAddWeek={isSelfGuided ? handleAddWeek : undefined}
+          addDisabled={addingWeek}
         />
       )}
 
