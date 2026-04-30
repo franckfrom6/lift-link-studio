@@ -86,6 +86,7 @@ const EnhancedExerciseCard = ({
   const [exercisePhotos, setExercisePhotos] = useState<string[]>([]);
   const [justCompletedSet, setJustCompletedSet] = useState<number | null>(null);
   const [prDetected, setPrDetected] = useState<number | null>(null);
+  const [showVideo, setShowVideo] = useState(false);
 
   if (completedSets.length === 0 && isActive) {
     const initial: EnhancedCompletedSet[] = Array.from({ length: targetSets }, (_, i) => ({
