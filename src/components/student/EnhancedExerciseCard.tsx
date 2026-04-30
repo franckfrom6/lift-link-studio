@@ -719,10 +719,10 @@ const EnhancedExerciseCard = ({
     <motion.div
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={cn(
-        "rounded-2xl border transition-all overflow-hidden",
+        "rounded-md border bg-card transition-colors overflow-hidden",
         isActive
-          ? "bg-card border-primary/30 shadow-[0_4px_24px_-8px_hsl(var(--primary)/0.25)] ring-1 ring-primary/10"
-          : "bg-card/50 border-border/50",
+          ? "border-foreground/30 shadow-sm"
+          : "border-border",
       )}
     >
       {/* Header: Simple vs Advanced */}
