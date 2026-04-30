@@ -1,16 +1,12 @@
-import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Play, CheckCircle, Clock, Target, ArrowLeftRight, X, Plus, Utensils, RefreshCw, Bot, Copy, Trash2, MoreVertical } from "lucide-react";
+import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Bot, Copy, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
 import FirstStepsChecklist from "@/components/onboarding/FirstStepsChecklist";
-import DateBadge, { DateBadgeVariant } from "@/components/student/DateBadge";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import SessionSwapModal from "@/components/student/SessionSwapModal";
-import SwapBadge from "@/components/student/SwapBadge";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import ExternalSessionCard from "@/components/student/ExternalSessionCard";
 import WeeklyCheckinForm from "@/components/student/WeeklyCheckinForm";
@@ -20,17 +16,17 @@ import SelfGuidedDashboard from "@/components/student/SelfGuidedDashboard";
 import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
-import TodayFocusCard from "@/components/student/TodayFocusCard";
-import DayTimeline from "@/components/student/DayTimeline";
-import SignatureHeader from "@/components/student/SignatureHeader";
 import SignatureStartCTA from "@/components/student/SignatureStartCTA";
+import ProgWeekSelector, { ProgWeekSelectorItem } from "@/components/student/ProgWeekSelector";
+import ProgWeekHeader from "@/components/student/ProgWeekHeader";
+import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+  DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
@@ -38,8 +34,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSessionSwaps } from "@/hooks/useSessionSwaps";
-import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { DraggableDayCard } from "@/components/student/DraggableDayCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useWeekData } from "@/hooks/useWeekData";
 import { AnimatePresence, motion } from "framer-motion";
@@ -191,14 +185,6 @@ const StudentWeek = () => {
 
   const isSessionCompleted = useCallback((sessionId: string) => completedSessionIds.has(sessionId), [completedSessionIds]);
 
-  const swappedDays = useMemo(() => {
-    const map: Record<number, { originalDay: number; reason: string | null }> = {};
-    for (const swap of mappedSwaps) {
-      map[swap.newDay] = { originalDay: swap.originalDay + 1, reason: swap.reason };
-    }
-    return map;
-  }, [mappedSwaps]);
-
   const programmedCount = Object.keys(effectiveSessions).length;
   const totalExercises = weekSessions.reduce(
     (a, s) => a + s.sections.reduce((b, sec) => b + sec.exercises.length, 0), 0
@@ -259,35 +245,6 @@ const StudentWeek = () => {
     }
     return null;
   }, [dates, effectiveSessions, completedSessionIds, getFreeForDay]);
-
-  // Day timeline data
-  const dayTimelineData = useMemo(() => {
-    return dates.map(d => ({
-      dayName: d.name,
-      dayNumber: d.date.getDate(),
-      sessionName: effectiveSessions[d.dayIndex]?.name || null,
-      isToday: d.isToday,
-      isCompleted: effectiveSessions[d.dayIndex] ? completedSessionIds.has(effectiveSessions[d.dayIndex].sessionId) : false,
-      hasSession: d.hasSession || getFreeForDay(d.date).length > 0,
-    }));
-  }, [dates, effectiveSessions, completedSessionIds, getFreeForDay]);
-
-  const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 8 } });
-  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } });
-  const sensors = useSensors(pointerSensor, touchSensor);
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-    const sourceDayIndex = active.data.current?.dayIndex as number;
-    const targetDayIndex = over.data.current?.dayIndex as number;
-    if (sourceDayIndex === undefined || targetDayIndex === undefined) return;
-    if (sourceDayIndex === targetDayIndex) return;
-    if (!effectiveSessions[sourceDayIndex]) return;
-    setSwapSourceDay(sourceDayIndex);
-    setSwapTargetDay(targetDayIndex);
-    setSwapModalOpen(true);
-  }, [effectiveSessions]);
 
   const handleDayClickInSwapMode = (dayIndex: number) => {
     if (swapSourceDay === null) return;
@@ -390,26 +347,6 @@ const StudentWeek = () => {
   const sourceDayHasSession = swapSourceDay !== null && !!effectiveSessions[swapSourceDay];
   const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "";
 
-  // Per-day state for the SignatureHeader dot row (Mon..Sun).
-  // MUST be declared before any early return — otherwise the hook count
-  // changes between renders (program loading → loaded) and React crashes
-  // with "Rendered more hooks than during the previous render", which
-  // forces a remount and produces the visible compression flash.
-  const headerWeekDays = useMemo(() => {
-    return dates.map((d) => {
-      const session = effectiveSessions[d.dayIndex];
-      const dayFree = getFreeForDay(d.date);
-      const hasAny = !!session || dayFree.length > 0;
-      if (!hasAny) return { state: "rest" as const };
-      const completed =
-        (session && completedSessionIds.has(session.sessionId)) ||
-        (dayFree[0] && completedSessionIds.has(dayFree[0].id));
-      if (completed) return { state: "done" as const };
-      if (d.isToday) return { state: "today" as const };
-      return { state: "planned" as const };
-    });
-  }, [dates, effectiveSessions, completedSessionIds, getFreeForDay]);
-
   if (programLoading) {
     return (
       <div className="space-y-5 animate-fade-in max-w-2xl mx-auto">
@@ -478,48 +415,106 @@ const StudentWeek = () => {
     );
   }
 
-  const activeDayIndex = selectedDayIndex ?? 0;
+  // Sage Phase 4 — week selector strip data
+  const programWeeks: ProgWeekSelectorItem[] = useMemo(() => {
+    if (!program) return [];
+    return (program.weeks || []).map((w, idx) => {
+      const total = w.sessions?.length || 0;
+      const isCurrent = idx === selectedWeekIndex;
+      const isPast = idx < selectedWeekIndex;
+      const isFuture = idx > selectedWeekIndex;
+      // For the current week we know the actual count; for past weeks we
+      // assume the program was followed (best-effort visual). Future weeks = 0.
+      const completed = isCurrent ? completedSessionCount : isPast ? total : 0;
+      return {
+        num: idx + 1,
+        completed,
+        total,
+        state: isCurrent ? "current" : isPast ? "past" : "future",
+      };
+    });
+  }, [program, selectedWeekIndex, completedSessionCount]);
+
+  // Week range label, e.g. "lun. 13 — dim. 19 janv."
+  const weekRangeLabel = useMemo(() => {
+    const end = new Date(weekStart);
+    end.setDate(end.getDate() + 6);
+    const fmt = new Intl.DateTimeFormat(i18n.language || "fr", { weekday: "short", day: "numeric" });
+    const fmtMonth = new Intl.DateTimeFormat(i18n.language || "fr", { month: "short" });
+    return `${fmt.format(weekStart)} — ${fmt.format(end)} ${fmtMonth.format(end)}`;
+  }, [weekStart, i18n.language]);
+
+  const weekLabel =
+    weekOffset === 0 ? t('calendar:this_week')
+      : weekOffset === -1 ? t('calendar:last_week')
+      : weekOffset === 1 ? t('calendar:next_week')
+      : t('calendar:week_offset', { offset: weekOffset });
+
+  // Total sessions in the displayed week (including free sessions)
+  const totalWeekSessions = programmedCount + freeSessions.length;
+
+  // Map week-strip selection (1-based S{n}) to weekOffset
+  const handleSelectStripWeek = (num: number) => {
+    const newWeekIdx = num - 1;
+    const delta = newWeekIdx - selectedWeekIndex;
+    if (delta === 0) return;
+    setWeekOffset(weekOffset + delta);
+    setSelectedDayIndex(null);
+  };
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-2xl mx-auto relative pb-32 md:pb-0">
+    <div className="animate-fade-in max-w-2xl mx-auto relative pb-32 md:pb-0">
       {refreshing && (
-        <div className="absolute top-0 right-0 z-10 flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full animate-pulse">
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full animate-pulse">
           <RefreshCw className="h-3 w-3 animate-spin" />
           {t('common:refreshing', 'Mise à jour…')}
         </div>
       )}
 
-      {/* Signature header — greeting + ambient program/week + dot row */}
-      <SignatureHeader
-        userName={userName}
-        programName={program.name}
-        weekIndex={selectedWeekIndex}
-        totalWeeks={totalWeeks}
-        weekDays={headerWeekDays}
-        completed={completedSessionCount}
-        total={programmedCount}
+      {/* Sage Phase 4 — Header (program/meso + week badge) */}
+      <header className="px-4 pt-4 pb-3 flex items-center justify-between gap-3 border-b border-border">
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-subtle truncate">
+            {program.name}
+          </p>
+          <h1 className="text-lg font-bold tracking-tight text-foreground mt-0.5">
+            {t('calendar:program_title', 'Programme')}
+          </h1>
+        </div>
+        <div className="flex items-center gap-1 px-2.5 py-1 bg-card border border-border rounded-sm flex-shrink-0">
+          <span className="text-xs font-bold tabular-nums text-foreground">S{selectedWeekIndex + 1}</span>
+          <span className="text-[11px] text-muted-subtle font-medium">/ {totalWeeks}</span>
+        </div>
+      </header>
+
+      {/* Week strip */}
+      {programWeeks.length > 1 && (
+        <ProgWeekSelector
+          weeks={programWeeks}
+          current={selectedWeekIndex + 1}
+          onSelect={handleSelectStripWeek}
+        />
+      )}
+
+      {/* Week summary */}
+      <ProgWeekHeader
+        label={weekLabel}
+        range={weekRangeLabel}
+        completedSessions={completedSessionCount}
+        totalSessions={totalWeekSessions}
       />
 
-      {/* Today's Focus hero card — kept on past/future weeks where the floating CTA isn't shown */}
-      {weekOffset !== 0 && todayFocus && (
-        <TodayFocusCard
-          sessionName={todayFocus.name}
-          sessionId={todayFocus.sessionId}
-          exerciseCount={todayFocus.exerciseCount}
-          muscleGroups={todayFocus.muscleGroups}
-          isCompleted={todayFocus.isCompleted}
-        />
-      )}
-
-      {/* Check-in banner */}
+      {/* Check-in banner — only on current week */}
       {weekOffset === 0 && (
-        <CheckinBadge
-          checkin={currentCheckin}
-          onClick={() => setCheckinFormOpen(true)}
-        />
+        <div className="px-4 pb-2">
+          <CheckinBadge
+            checkin={currentCheckin}
+            onClick={() => setCheckinFormOpen(true)}
+          />
+        </div>
       )}
 
-      {/* Weekly load (Advanced) */}
+      {/* Weekly load (Pro mode) */}
       <AnimatePresence mode="wait">
         {isAdvanced && (programmedCount > 0 || weekExternals.length > 0) && (
           <motion.div
@@ -527,6 +522,7 @@ const StudentWeek = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
+            className="px-4 pb-2"
           >
             <WeeklyLoadBar
               programmedSessions={programmedCount}
@@ -536,30 +532,9 @@ const StudentWeek = () => {
         )}
       </AnimatePresence>
 
-      {/* Week navigation + Day Timeline */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={() => { setWeekOffset(weekOffset - 1); setSelectedDayIndex(null); }} aria-label={t('calendar:previous_week')}>
-            <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
-          </Button>
-          <span className="text-sm font-medium">
-            {weekOffset === 0 ? t('calendar:this_week') : weekOffset === -1 ? t('calendar:last_week') : weekOffset === 1 ? t('calendar:next_week') : t('calendar:week_offset', { offset: weekOffset })}
-          </span>
-          <Button variant="ghost" size="icon" onClick={() => { setWeekOffset(weekOffset + 1); setSelectedDayIndex(null); }} aria-label={t('calendar:next_week')}>
-            <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
-          </Button>
-        </div>
-
-        <DayTimeline
-          days={dayTimelineData}
-          selectedIndex={activeDayIndex}
-          onSelect={setSelectedDayIndex}
-        />
-      </div>
-
       {/* Swap mode banner */}
       {swapMode && (
-        <div className="flex items-center justify-between bg-warning-bg text-warning rounded-lg px-4 py-2.5 text-sm font-medium animate-fade-in">
+        <div className="mx-4 mb-2 flex items-center justify-between bg-warning-bg text-warning rounded-sm px-4 py-2.5 text-sm font-medium animate-fade-in border border-warning/30">
           <div className="flex items-center gap-2">
             <ArrowLeftRight className="w-4 h-4" strokeWidth={1.5} />
             {t('calendar:choose_target_day')}
@@ -575,228 +550,154 @@ const StudentWeek = () => {
         </div>
       )}
 
-      {/* Day cards — filtered to selected day or all days */}
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeDayIndex}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-2"
-          >
-            {dates.filter((_, i) => i === activeDayIndex).map((day) => {
-              const isSessionDay = day.hasSession;
-              const sessionInfo = effectiveSessions[day.dayIndex];
-              const sessionCompleted = isSessionDay && !!sessionInfo && isSessionCompleted(sessionInfo.sessionId);
-              const swapInfo = swappedDays[day.dayIndex];
-              const isSwapSource = swapMode && day.dayIndex === swapSourceDay;
-              const isDropTarget = swapMode && day.dayIndex !== swapSourceDay;
-              const dayExternals = getExternalForDay(day.date);
-              const dayFreeSessions = getFreeForDay(day.date);
+      {/* Chronological day list */}
+      <div className="border-y border-border">
+        {dates.map((day, i) => {
+          const isSessionDay = day.hasSession;
+          const sessionInfo = effectiveSessions[day.dayIndex];
+          const sessionCompleted = isSessionDay && !!sessionInfo && isSessionCompleted(sessionInfo.sessionId);
+          const dayExternals = getExternalForDay(day.date);
+          const dayFreeSessions = getFreeForDay(day.date);
+          const isLast = i === dates.length - 1;
 
-              return (
-                <div key={day.name} className="space-y-2">
-                  {/* Main session card */}
-                  <DraggableDayCard
-                    dayIndex={day.dayIndex}
-                    hasSession={isSessionDay}
-                    className={cn(
-                      "group/day w-full glass p-4 transition-all text-left touch-manipulation",
-                      day.isToday && "ring-1 ring-primary/40",
-                      isSessionDay && !swapMode && "hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] cursor-pointer",
-                      !isSessionDay && dayExternals.length === 0 && dayFreeSessions.length === 0 && !swapMode && "opacity-60",
-                      isSwapSource && "ring-2 ring-warning bg-warning-bg",
-                      isDropTarget && "ring-1 ring-dashed ring-warning/50 cursor-pointer hover:ring-warning hover:bg-warning-bg/50",
-                    )}
-                  >
-                    <div
-                      className="relative"
-                      role={swapMode || (isSessionDay && sessionInfo) ? "button" : undefined}
-                      tabIndex={swapMode || (isSessionDay && sessionInfo) ? 0 : undefined}
-                      onClick={() => {
-                        if (swapMode) handleDayClickInSwapMode(day.dayIndex);
-                        else if (isSessionDay && sessionInfo) navigate(`/student/session/${sessionInfo.sessionId}/preview`);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          if (swapMode) handleDayClickInSwapMode(day.dayIndex);
-                          else if (isSessionDay && sessionInfo) navigate(`/student/session/${sessionInfo.sessionId}/preview`);
-                        }
-                      }}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                          <DateBadge
-                            day={day.date.getDate()}
-                            dayName={day.name}
-                            variant={
-                              sessionCompleted ? "completed"
-                                : day.isToday ? "today"
-                                : (isSessionDay || dayFreeSessions.length > 0) ? "active"
-                                : "rest" as DateBadgeVariant
-                            }
-                          />
-                          <div className="pt-0.5 flex-1 min-w-0">
-                            {swapInfo && (
-                              <div className="mb-0.5">
-                                <SwapBadge originalDay={swapInfo.originalDay} newDay={day.dayIndex + 1} reason={swapInfo.reason} />
-                              </div>
-                            )}
-                            {isSessionDay && sessionInfo ? (
-                              <div className="space-y-0.5">
-                                <p className="text-sm font-bold text-foreground truncate">{sessionInfo.name}</p>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] text-muted-foreground">{sessionInfo.exerciseCount} ex.</span>
-                                  {sessionInfo.muscleGroups.length > 0 && (
-                                    <>
-                                      <span className="text-[10px] text-muted-foreground">·</span>
-                                      <span className="text-[10px] text-muted-foreground">{sessionInfo.muscleGroups.slice(0, 3).join(", ")}</span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            ) : dayFreeSessions.length > 0 ? (
-                              <div className="space-y-1">
-                                {dayFreeSessions.map(fs => {
-                                  const freeCompleted = isSessionCompleted(fs.id);
-                                  return (
-                                    <div key={fs.id} className="group/free-session relative space-y-0.5 cursor-pointer pr-8"
-                                      role="button" tabIndex={0}
-                                      onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}/preview`); }}
-                                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}/preview`); } }}
-                                    >
-                                      {!freeCompleted && (
-                                        <Button variant="ghost" size="icon"
-                                          className="absolute right-0 top-0 h-6 w-6 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 sm:opacity-30 sm:group-hover/day:opacity-100"
-                                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteTarget({ id: fs.id, name: fs.name, isFreeSession: true }); setDeleteDialogOpen(true); }}
-                                          aria-label={t('session:delete_session')}
-                                        >
-                                          <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                                        </Button>
-                                      )}
-                                      <div className="flex items-center gap-1.5">
-                                        <p className="text-sm font-bold text-foreground truncate">{fs.name}</p>
-                                        <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[9px] font-semibold px-1.5 py-0.5 rounded-md border border-ai/15 shrink-0">
-                                          <Bot className="w-2.5 h-2.5" strokeWidth={1.5} />IA
-                                        </span>
-                                      </div>
-                                      <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <p className="text-xs text-muted-foreground">{t('common:rest')}</p>
-                            )}
+          // Determine state
+          let state: DayState = "rest";
+          if (isSessionDay || dayFreeSessions.length > 0) {
+            if (sessionCompleted || (dayFreeSessions[0] && isSessionCompleted(dayFreeSessions[0].id))) {
+              state = "done";
+            } else if (day.isToday) {
+              state = "today";
+            } else if (day.isPast) {
+              state = "past";
+            } else {
+              state = "planned";
+            }
+          }
 
-                            {isSessionDay && dayFreeSessions.length > 0 && (
-                              <div className="mt-1.5 pt-1.5 border-t border-border space-y-1">
-                                {dayFreeSessions.map(fs => (
-                                  <div key={fs.id} className="cursor-pointer" role="button" tabIndex={0}
-                                    onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}/preview`); }}
-                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); navigate(`/student/session/${fs.id}/preview`); } }}
-                                  >
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                      <p className="text-xs font-semibold text-foreground truncate">{fs.name}</p>
-                                      <span className="inline-flex items-center gap-0.5 bg-ai-bg text-ai text-[8px] font-semibold px-1 py-0.5 rounded shrink-0">
-                                        <Bot className="w-2 h-2" strokeWidth={1.5} />IA
-                                      </span>
-                                    </div>
-                                    <span className="text-[10px] text-muted-foreground">{fs.exerciseCount} ex.</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
+          // Build the click handler
+          const handleClick = () => {
+            if (swapMode) { handleDayClickInSwapMode(day.dayIndex); return; }
+            if (isSessionDay && sessionInfo) {
+              navigate(`/student/session/${sessionInfo.sessionId}/preview`);
+            } else if (dayFreeSessions.length > 0) {
+              navigate(`/student/session/${dayFreeSessions[0].id}/preview`);
+            }
+          };
 
-                        {/* Actions */}
-                        <div className="flex items-center gap-1 shrink-0">
-                          {!swapMode && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                                  <MoreVertical className="w-4 h-4" strokeWidth={1.5} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                <DropdownMenuItem onClick={() => { setBuilderDate(day.date); setBuilderOpen(true); }}>
-                                  <Dumbbell className="w-4 h-4 mr-2" />{t('session:builder_title')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
-                                  <Plus className="w-4 h-4 mr-2" />{t('calendar:log_activity')}
-                                </DropdownMenuItem>
-                                {isSessionDay && sessionInfo && (
-                                  <>
-                                    <DropdownMenuItem onClick={() => { setDuplicateSession({ id: sessionInfo.sessionId, name: sessionInfo.name }); setDuplicateOpen(true); }}>
-                                      <Copy className="w-4 h-4 mr-2" />{t('session:duplicate_title')}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => { setSwapMode(true); setSwapSourceDay(day.dayIndex); }}>
-                                      <ArrowLeftRight className="w-4 h-4 mr-2" />{t('calendar:swap_session')}
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                                {isSessionDay && sessionInfo && !sessionCompleted && (
-                                  <DropdownMenuItem
-                                    className="text-destructive focus:text-destructive"
-                                    onClick={() => { setDeleteTarget({ id: sessionInfo.sessionId, name: sessionInfo.name, isFreeSession: false }); setDeleteDialogOpen(true); }}
-                                  >
-                                    <Trash2 className="w-4 h-4 mr-2" />{t('session:delete_session')}
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
-                          {(isSessionDay || dayFreeSessions.length > 0) && !day.isPast && !swapMode ? (
-                            <button
-                              className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (isSessionDay && sessionInfo) navigate(`/student/session/${sessionInfo.sessionId}/preview`);
-                                else if (dayFreeSessions.length > 0) navigate(`/student/session/${dayFreeSessions[0].id}/preview`);
-                              }}
-                            >
-                              <Play className="w-3.5 h-3.5" strokeWidth={1.5} />
-                              <span className="text-xs font-semibold">Go</span>
-                            </button>
-                          ) : isSessionDay && sessionCompleted ? (
-                            <CheckCircle className="w-5 h-5 text-success" strokeWidth={1.5} />
-                          ) : null}
-                        </div>
-                      </div>
+          // Pick what to show as session name/meta
+          let sessionName: string | null = null;
+          let sessionMeta: string | null = null;
+          let isAI = false;
+          if (isSessionDay && sessionInfo) {
+            sessionName = sessionInfo.name;
+            const parts: string[] = [`${sessionInfo.exerciseCount} ex.`];
+            if (sessionInfo.muscleGroups.length > 0) {
+              parts.push(sessionInfo.muscleGroups.slice(0, 3).join(", "));
+            }
+            sessionMeta = parts.join(" · ");
+          } else if (dayFreeSessions.length > 0) {
+            const fs = dayFreeSessions[0];
+            sessionName = fs.name;
+            sessionMeta = `${fs.exerciseCount} ex.`;
+            isAI = true;
+          }
 
-                      {isSessionDay && dayExternals.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-border space-y-1">
-                          {dayExternals.map(ext => (
-                            <ExternalSessionCard key={ext.id} session={ext} compact />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </DraggableDayCard>
+          // Action menu (kept feature parity with previous version)
+          const hasMenu = !swapMode && (isSessionDay || !day.isPast);
+          const actionMenu = hasMenu ? (
+            <>
+              <DropdownMenuItem onClick={() => { setBuilderDate(day.date); setBuilderOpen(true); }}>
+                <Dumbbell className="w-4 h-4 mr-2" />{t('session:builder_title')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
+                <Plus className="w-4 h-4 mr-2" />{t('calendar:log_activity')}
+              </DropdownMenuItem>
+              {isSessionDay && sessionInfo && (
+                <>
+                  <DropdownMenuItem onClick={() => { setDuplicateSession({ id: sessionInfo.sessionId, name: sessionInfo.name }); setDuplicateOpen(true); }}>
+                    <Copy className="w-4 h-4 mr-2" />{t('session:duplicate_title')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { setSwapMode(true); setSwapSourceDay(day.dayIndex); }}>
+                    <ArrowLeftRight className="w-4 h-4 mr-2" />{t('calendar:swap_session')}
+                  </DropdownMenuItem>
+                </>
+              )}
+              {isSessionDay && sessionInfo && !sessionCompleted && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => { setDeleteTarget({ id: sessionInfo.sessionId, name: sessionInfo.name, isFreeSession: false }); setDeleteDialogOpen(true); }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />{t('session:delete_session')}
+                </DropdownMenuItem>
+              )}
+              {dayFreeSessions[0] && !isSessionCompleted(dayFreeSessions[0].id) && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => { setDeleteTarget({ id: dayFreeSessions[0].id, name: dayFreeSessions[0].name, isFreeSession: true }); setDeleteDialogOpen(true); }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />{t('session:delete_session')}
+                </DropdownMenuItem>
+              )}
+            </>
+          ) : null;
 
-                  {/* External sessions for rest days */}
-                  {!isSessionDay && dayExternals.length > 0 && (
-                    <div className="space-y-1">
-                      {dayExternals.map(ext => (
-                        <ExternalSessionCard
-                          key={ext.id}
-                          session={ext}
-                          onEdit={() => { setEditingExternal(ext); setExternalFormOpen(true); }}
-                          onDelete={() => handleDeleteExternal(ext.id!)}
-                        />
-                      ))}
-                    </div>
-                  )}
+          // Extra content below the row: external activities + secondary free sessions
+          const extras = (
+            <>
+              {dayExternals.length > 0 && (
+                <div className="space-y-1 mt-1">
+                  {dayExternals.map(ext => (
+                    <ExternalSessionCard
+                      key={ext.id}
+                      session={ext}
+                      compact
+                      onEdit={!isSessionDay ? () => { setEditingExternal(ext); setExternalFormOpen(true); } : undefined}
+                      onDelete={!isSessionDay ? () => handleDeleteExternal(ext.id!) : undefined}
+                    />
+                  ))}
                 </div>
-              );
-            })}
-          </motion.div>
-        </AnimatePresence>
-      </DndContext>
+              )}
+              {isSessionDay && dayFreeSessions.length > 0 && (
+                <div className="space-y-1 mt-1 pt-1 border-t border-border">
+                  {dayFreeSessions.map(fs => (
+                    <button
+                      key={fs.id}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}/preview`); }}
+                      className="flex items-center justify-between w-full text-left py-1"
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-xs font-semibold text-foreground truncate">{fs.name}</span>
+                        <span className="inline-flex items-center gap-0.5 bg-bg-tinted text-muted-foreground text-[8px] font-bold uppercase px-1 py-[1px] rounded-xs">
+                          <Bot className="w-2 h-2" strokeWidth={2} />IA
+                        </span>
+                      </div>
+                      <span className="text-[10px] tabular-nums text-muted-subtle ml-2">{fs.exerciseCount} ex.</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          );
+
+          return (
+            <ProgDayRow
+              key={day.name}
+              dayIndex={day.dayIndex}
+              date={day.date}
+              state={state}
+              isLast={isLast}
+              sessionName={sessionName}
+              sessionMeta={sessionMeta}
+              isAI={isAI}
+              onClick={state === "rest" ? undefined : handleClick}
+              actionMenu={actionMenu}
+            >
+              {(dayExternals.length > 0 || (isSessionDay && dayFreeSessions.length > 0)) ? extras : null}
+            </ProgDayRow>
+          );
+        })}
+      </div>
 
       {/* Floating "Démarrer la séance" CTA — replaces the mobile bottom nav on /student */}
       {weekOffset === 0 && todayFocus && (
