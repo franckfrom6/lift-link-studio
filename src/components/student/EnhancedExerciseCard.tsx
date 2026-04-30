@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Dumbbell, X, Check, Plus, ArrowLeftRight, Timer, Route, SkipForward, Camera, Star, Play } from "lucide-react";
 import NumericInput from "./NumericInput";
 import DurationInput from "./DurationInput";
@@ -88,21 +88,26 @@ const EnhancedExerciseCard = ({
   const [prDetected, setPrDetected] = useState<number | null>(null);
   const [showVideo, setShowVideo] = useState(false);
 
-  if (completedSets.length === 0 && isActive) {
-    const initial: EnhancedCompletedSet[] = Array.from({ length: targetSets }, (_, i) => ({
+  const initialCompletedSets = useMemo<EnhancedCompletedSet[]>(() => (
+    Array.from({ length: targetSets }, (_, i) => ({
       setNumber: i + 1,
       weight: trackingType === "weight_reps" ? (suggestedWeight || 0) : 0,
       reps: 0,
       isFailure: false,
       rpeActual: null,
       durationSeconds: 0,
-    }));
-    onCompletedSetsChange(initial);
-    return null;
-  }
+    }))
+  ), [suggestedWeight, targetSets, trackingType]);
+
+  const visibleCompletedSets = completedSets.length > 0 ? completedSets : initialCompletedSets;
+
+  useEffect(() => {
+    if (!isActive || completedSets.length > 0 || initialCompletedSets.length === 0) return;
+    onCompletedSetsChange(initialCompletedSets);
+  }, [completedSets.length, initialCompletedSets, isActive, onCompletedSetsChange]);
 
   const updateSet = (idx: number, field: keyof EnhancedCompletedSet, value: any) => {
-    const updated = [...completedSets];
+    const updated = [...visibleCompletedSets];
     updated[idx] = { ...updated[idx], [field]: value };
     onCompletedSetsChange(updated);
   };
