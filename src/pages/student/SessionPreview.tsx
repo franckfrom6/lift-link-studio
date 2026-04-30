@@ -116,7 +116,7 @@ const StatBadge = ({ children, accent }: { children: React.ReactNode; accent?: b
 // ────────── building blocks ──────────
 const ExerciseCard = ({ ex, idx }: { ex: any; idx: number }) => {
   const exData = ex.exercise || {};
-  const hasVideo = !!(ex.video_url || exData.video_url || exData.video_url_male || exData.video_url_female);
+  const hasVideo = !!(ex.video_url || exData.video_url_male || exData.video_url_female);
   const time = isTimeTracking(ex);
   const sets = ex.sets ?? 0;
   const w = Number(ex.suggested_weight) || 0;
@@ -227,7 +227,7 @@ const SessionPreview = () => {
             id, sort_order, sets, reps_min, reps_max, rest_seconds, tempo,
             rpe_target, suggested_weight, coach_notes, video_url, video_search_query,
             section_id,
-            exercise:exercises(id, name, name_en, muscle_group, equipment, type, tracking_type, video_url, video_url_female, video_url_male)
+            exercise:exercises(id, name, name_en, muscle_group, equipment, type, tracking_type, video_url_female, video_url_male)
           )
         `)
         .eq("id", sessionId)
