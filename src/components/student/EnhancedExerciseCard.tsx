@@ -735,7 +735,6 @@ const EnhancedExerciseCard = ({
 
   return (
     <motion.div
-      layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={cn(
         "rounded-2xl border transition-all overflow-hidden",
@@ -747,17 +746,17 @@ const EnhancedExerciseCard = ({
       {/* Header: Simple vs Advanced */}
       {isAdvanced ? renderAdvancedHeader() : renderSimpleHeader()}
 
-      {/* Expanded details with spring animation */}
+      {/* Expanded details: CSS grid animation avoids expensive layout projection on mobile */}
       <AnimatePresence initial={false}>
         {expanded && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="overflow-hidden"
+            initial={{ gridTemplateRows: "0fr", opacity: 0 }}
+            animate={{ gridTemplateRows: "1fr", opacity: 1 }}
+            exit={{ gridTemplateRows: "0fr", opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="grid overflow-hidden"
           >
-            <div className="px-3 pb-3 space-y-4 border-t border-border pt-3">
+            <div className="min-h-0 px-3 pb-3 space-y-4 border-t border-border pt-3">
               {/* Coach hints — small text block, kept above sets */}
               {(suggestedWeight || (isAdvanced && coachNotes)) && (
                 <div className="space-y-2">
@@ -792,11 +791,11 @@ const EnhancedExerciseCard = ({
                 )}
               </AnimatePresence>
 
-              {isActive && completedSets.length > 0 && (
+              {isActive && visibleCompletedSets.length > 0 && (
                 <div className="space-y-2">
                   <div className="overflow-x-auto -mx-3 px-3">
                     {renderSetHeader()}
-                    {completedSets.map((set, i) => renderSetRow(set, i))}
+                    {visibleCompletedSets.map((set, i) => renderSetRow(set, i))}
                     {!allDone && (
                       <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={addSet}>
                         <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
