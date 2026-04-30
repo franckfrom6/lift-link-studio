@@ -175,6 +175,8 @@ async function fetchProgramTree(studentId: string): Promise<DBProgram | null> {
     name: prog.name,
     status: prog.status,
     created_at: prog.created_at,
+    coach_id: prog.coach_id,
+    student_id: prog.student_id,
     weeks: assembledWeeks,
     progression,
   };
