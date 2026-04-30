@@ -635,97 +635,84 @@ const EnhancedExerciseCard = ({
     </div>
   );
 
-  // ── ADVANCED MODE: original header with icon + badges ──
+  // ── ADVANCED MODE: Sage header (mirrors SessionPreview ExerciseCard) ──
+  const hasAnyVideo = !!(videoUrl || videoUrlMale || videoUrlFemale || exerciseVideoUrl);
   const renderAdvancedHeader = () => (
-    <motion.div
-      className={cn("flex items-center gap-3 p-3", isActive && "p-4")}
-      whileTap={{ scale: 0.97 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-    >
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-3 flex-1 min-w-0 text-left"
-      >
-        <div className={cn(
-          "rounded-lg flex items-center justify-center shrink-0 transition-all",
-          isActive ? "w-10 h-10 bg-primary/10" : "w-8 h-8 bg-secondary"
-        )}>
-          {trackingType === "duration" ? (
-            <Timer className={cn("w-4 h-4", isActive ? "text-primary" : "text-muted-foreground")} strokeWidth={2} />
-          ) : trackingType === "distance" ? (
-            <Route className={cn("w-4 h-4", isActive ? "text-primary" : "text-muted-foreground")} strokeWidth={2} />
-          ) : (
-            <Dumbbell className={cn("w-4 h-4", isActive ? "text-primary" : "text-muted-foreground")} strokeWidth={2} />
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
+    <div className={cn("p-3.5 flex flex-col gap-2.5", isActive && "p-4")}>
+      <div className="flex items-start gap-2.5">
+        <VideoThumb hasVideo={hasAnyVideo} size={48} onClick={() => setShowVideo(true)} />
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex-1 min-w-0 text-left"
+        >
           <div className="flex items-start gap-1.5 flex-wrap">
-            <p className={cn(
-              "font-bold leading-tight break-words",
-              isActive ? "text-lg" : "text-sm font-semibold"
-            )}>{name}</p>
+            <p
+              className={cn(
+                "font-bold leading-snug tracking-tight break-words",
+                isActive ? "text-[15px]" : "text-sm"
+              )}
+            >
+              {name}
+            </p>
             {isSubstituted && (
-              <span className="bg-warning/10 text-warning px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0">
+              <span className="bg-bg-tinted text-foreground border border-border px-1.5 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider shrink-0">
                 {t('modified')}
               </span>
             )}
           </div>
-          <div className="flex flex-wrap gap-1.5 mt-1">
-            {renderTags()}
-            {tempo && (
-              <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-                {tempo}
-              </span>
-            )}
-            {restSeconds > 0 && (
-              <span className="bg-tag-blue-bg text-tag-blue px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-                {formatRest()}
-              </span>
-            )}
-            {rpeTarget && (
-              <span className="bg-tag-orange-bg text-tag-orange px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-                RPE {rpeTarget}
-              </span>
-            )}
-          </div>
+        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          {onSkipExercise && !allDone && isActive && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSkipExercise?.(); }}
+              className="h-8 w-8 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-bg-tinted transition-colors"
+              title={t('skip_btn', 'Passer') as string}
+            >
+              <SkipForward className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </button>
+          )}
+          {onSwapExercise && !allDone && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}
+              className="h-8 w-8 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-bg-tinted transition-colors"
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </button>
+          )}
+          {allDone && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 500, damping: 20 }}
+            >
+              <Check className="w-4 h-4 text-foreground shrink-0" strokeWidth={2} />
+            </motion.div>
+          )}
+          <motion.button
+            onClick={() => setExpanded(!expanded)}
+            animate={{ rotate: expanded ? 180 : 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="h-8 w-8 flex items-center justify-center"
+          >
+            <ChevronDown className="w-4 h-4 text-muted-subtle shrink-0" strokeWidth={1.5} />
+          </motion.button>
         </div>
-      </button>
-      <div className="flex items-center gap-1 shrink-0">
-        {onSkipExercise && !allDone && isActive && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onSkipExercise?.(); }}
-            className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-warning hover:bg-warning/10 transition-colors"
-            title={t('skip_btn', 'Passer')}
-          >
-            <SkipForward className="w-3.5 h-3.5" strokeWidth={1.5} />
-          </button>
-        )}
-        {onSwapExercise && !allDone && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}
-            className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-          >
-            <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
-          </button>
-        )}
-        {allDone && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 500, damping: 20 }}
-          >
-            <Check className="w-5 h-5 text-success shrink-0" strokeWidth={1.5} />
-          </motion.div>
-        )}
-        <motion.button
-          onClick={() => setExpanded(!expanded)}
-          animate={{ rotate: expanded ? 180 : 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        >
-          <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
-        </motion.button>
       </div>
-    </motion.div>
+      <div className="flex flex-wrap gap-1.5">
+        {renderTags()}
+        {suggestedWeight && trackingType === "weight_reps" && (
+          <StatBadge accent>{suggestedWeight} kg</StatBadge>
+        )}
+        {tempo && <StatBadge>tempo {tempo}</StatBadge>}
+        {rpeTarget && <StatBadge>RPE {rpeTarget}</StatBadge>}
+        {restSeconds > 0 && (
+          <StatBadge>
+            <Timer className="w-2.5 h-2.5" />
+            {formatRest()}
+          </StatBadge>
+        )}
+      </div>
+    </div>
   );
 
   return (
