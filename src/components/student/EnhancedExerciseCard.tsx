@@ -124,7 +124,7 @@ const EnhancedExerciseCard = ({
 
     // PR detection in Advanced mode
     if (isAdvanced && previousSets && previousSets[idx] && trackingType === "weight_reps") {
-      const current = completedSets[idx];
+      const current = visibleCompletedSets[idx];
       if (current.weight > previousSets[idx].weight) {
         setPrDetected(idx);
         setTimeout(() => setPrDetected(null), 1500);
@@ -132,9 +132,9 @@ const EnhancedExerciseCard = ({
       }
     }
 
-    if (idx < completedSets.length - 1) {
+    if (idx < visibleCompletedSets.length - 1) {
       setCurrentSetIdx(idx + 1);
-      const updated = [...completedSets];
+      const updated = [...visibleCompletedSets];
       if (trackingType === "weight_reps" && updated[idx + 1] && updated[idx + 1].weight === 0) {
         updated[idx + 1] = { ...updated[idx + 1], weight: updated[idx].weight };
         onCompletedSetsChange(updated);
@@ -148,21 +148,21 @@ const EnhancedExerciseCard = ({
   };
 
   const addSet = () => {
-    const lastWeight = completedSets[completedSets.length - 1]?.weight || 0;
+    const lastWeight = visibleCompletedSets[visibleCompletedSets.length - 1]?.weight || 0;
     onCompletedSetsChange([
-      ...completedSets,
-      { setNumber: completedSets.length + 1, weight: lastWeight, reps: 0, isFailure: false, rpeActual: null, durationSeconds: 0 }
+      ...visibleCompletedSets,
+      { setNumber: visibleCompletedSets.length + 1, weight: lastWeight, reps: 0, isFailure: false, rpeActual: null, durationSeconds: 0 }
     ]);
     if (allDone) {
       setAllDone(false);
-      setCurrentSetIdx(completedSets.length);
+      setCurrentSetIdx(visibleCompletedSets.length);
     }
   };
 
   const getPrevComparison = (idx: number, field: "weight" | "reps") => {
     if (!isAdvanced) return null;
     if (!previousSets || !previousSets[idx]) return null;
-    const current = completedSets[idx]?.[field] || 0;
+    const current = visibleCompletedSets[idx]?.[field] || 0;
     const prev = previousSets[idx][field];
     if (current === 0 || prev === 0) return null;
     if (current > prev) return "up";
