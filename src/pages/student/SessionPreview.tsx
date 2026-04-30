@@ -2,11 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, VideoOff, Play, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "react-i18next";
 
 /**
  * SessionPreview — Sage variant
@@ -206,11 +204,9 @@ const BlockSection = ({ section, startIdx }: { section: any; startIdx: number })
 const SessionPreview = () => {
   const navigate = useNavigate();
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { user } = useAuth();
   const { program, loading: programLoading } = useStudentProgram();
   const [freeSession, setFreeSession] = useState<any>(null);
   const [freeLoading, setFreeLoading] = useState(false);
-  const { t } = useTranslation(["session", "common"]);
 
   // Resolve session: program-bound first, then fallback to free/standalone
   const programSession = useMemo(() => {
