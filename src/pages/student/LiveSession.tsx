@@ -940,10 +940,8 @@ const LiveSession = () => {
                   const isSkipped = skippedExercises.has(key);
 
                   return (
-                    <motion.div
+                    <div
                       key={key}
-                      layout
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
                       role={!isActive && !isSkipped ? "button" : undefined}
                       tabIndex={!isActive && !isSkipped ? 0 : undefined}
                       onClick={() => !isActive && !isSkipped && setActiveExerciseKey(key)}
@@ -978,7 +976,7 @@ const LiveSession = () => {
                         completedSessionId={completedSessionId || undefined}
                         onActivate={() => setActiveExerciseKey(key)}
                       />
-                    </motion.div>
+                    </div>
                   );
                 })}
               </SessionSection>
