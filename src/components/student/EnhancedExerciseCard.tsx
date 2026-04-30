@@ -177,42 +177,36 @@ const EnhancedExerciseCard = ({
       case "duration":
         return (
           <>
-            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-              {targetSets}s
-            </span>
-            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium flex items-center gap-0.5">
+            <StatBadge>{targetSets} séries</StatBadge>
+            <StatBadge>
               <Timer className="w-2.5 h-2.5" />
               {repsMin >= 60 ? `${Math.floor(repsMin / 60)}min` : `${repsMin}s`}
-            </span>
+            </StatBadge>
           </>
         );
       case "reps_only":
         return (
-          <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+          <StatBadge>
             {targetSets}×{repsMin === repsMax ? repsMin : `${repsMin}-${repsMax}`}
-          </span>
+          </StatBadge>
         );
       case "distance":
         return (
           <>
-            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium flex items-center gap-0.5">
+            <StatBadge>
               <Route className="w-2.5 h-2.5" />
               {repsMin}m
-            </span>
-            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-              {targetSets}s
-            </span>
+            </StatBadge>
+            <StatBadge>{targetSets} séries</StatBadge>
           </>
         );
       default:
         return (
           <>
-            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
-              {targetSets}s
-            </span>
-            <span className="bg-tag-violet-bg text-tag-violet px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+            <StatBadge>{targetSets} séries</StatBadge>
+            <StatBadge>
               {repsMin === repsMax ? repsMin : `${repsMin}-${repsMax}`} reps
-            </span>
+            </StatBadge>
           </>
         );
     }
