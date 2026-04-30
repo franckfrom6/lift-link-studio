@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Pause, Play, RotateCcw, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 
 interface LinearRestTimerProps {
   initialSeconds: number;
@@ -65,23 +66,31 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      className={`rounded-xl p-3 space-y-2.5 transition-colors ${
-        finished ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-zinc-800/50 border border-zinc-700/50"
-      }`}
+      className={cn(
+        "rounded-md border p-3 space-y-2.5 transition-colors",
+        finished
+          ? "bg-bg-tinted border-foreground/20"
+          : "bg-bg-tinted border-border"
+      )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+        <span className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-subtle">
           {finished ? "✓ " + t("common:rest_label") : t("common:rest_label")}
         </span>
-        <span className={`text-2xl font-bold tabular-nums ${finished ? "text-emerald-400" : "text-zinc-100"}`}>
+        <span
+          className={cn(
+            "text-2xl font-bold tabular-nums tracking-tight",
+            finished ? "text-foreground" : "text-primary"
+          )}
+        >
           {mins}:{secs.toString().padStart(2, "0")}
         </span>
       </div>
 
       {/* Linear progress bar */}
-      <div className="w-full h-2 bg-zinc-700 rounded-full overflow-hidden">
+      <div className="w-full h-[2px] bg-border rounded-full overflow-hidden">
         <motion.div
-          className={`h-full rounded-full ${finished ? "bg-emerald-400" : "bg-primary"}`}
+          className={cn("h-full rounded-full", finished ? "bg-foreground" : "bg-primary")}
           initial={{ width: 0 }}
           animate={{ width: `${progress * 100}%` }}
           transition={{ duration: 1, ease: "linear" }}
@@ -90,16 +99,36 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
 
       {/* Controls */}
       <div className="flex items-center justify-center gap-2">
-        <Button variant="ghost" size="sm" onClick={() => adjust(-15)} className="h-9 px-2 text-xs text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => adjust(-15)}
+          className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-card"
+        >
           <Minus className="w-3.5 h-3.5 mr-0.5" />15s
         </Button>
-        <Button variant="ghost" size="icon" onClick={toggle} className="h-10 w-10 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggle}
+          className="h-10 w-10 text-foreground hover:bg-card"
+        >
           {running ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
         </Button>
-        <Button variant="ghost" size="icon" onClick={reset} className="h-10 w-10 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={reset}
+          className="h-10 w-10 text-foreground hover:bg-card"
+        >
           <RotateCcw className="w-4 h-4" />
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => adjust(15)} className="h-9 px-2 text-xs text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => adjust(15)}
+          className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-card"
+        >
           <Plus className="w-3.5 h-3.5 mr-0.5" />15s
         </Button>
       </div>
