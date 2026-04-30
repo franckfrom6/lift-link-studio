@@ -308,11 +308,11 @@ const EnhancedExerciseCard = ({
     const isDone = i < currentSetIdx || allDone;
     const isJustCompleted = justCompletedSet === i;
     const rowClass = cn(
-      "gap-2 items-center p-1.5 rounded-xl transition-colors",
-      isCurrent && "bg-accent/80 ring-1 ring-primary/30",
+      "gap-2 items-center p-1.5 rounded-sm transition-colors",
+      isCurrent && "bg-bg-tinted border border-foreground/20",
       isDone && "opacity-50"
     );
-    const inputClass = "h-12 text-center bg-background text-base font-bold rounded-lg";
+    const inputClass = "h-12 text-center bg-background text-base font-bold tabular-nums rounded-sm";
     const stableKey = `set-${i}`;
 
     const checkButton = isCurrent ? (
