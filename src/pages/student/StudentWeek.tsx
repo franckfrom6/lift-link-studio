@@ -390,6 +390,26 @@ const StudentWeek = () => {
   const sourceDayHasSession = swapSourceDay !== null && !!effectiveSessions[swapSourceDay];
   const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "";
 
+  // Per-day state for the SignatureHeader dot row (Mon..Sun).
+  // MUST be declared before any early return — otherwise the hook count
+  // changes between renders (program loading → loaded) and React crashes
+  // with "Rendered more hooks than during the previous render", which
+  // forces a remount and produces the visible compression flash.
+  const headerWeekDays = useMemo(() => {
+    return dates.map((d) => {
+      const session = effectiveSessions[d.dayIndex];
+      const dayFree = getFreeForDay(d.date);
+      const hasAny = !!session || dayFree.length > 0;
+      if (!hasAny) return { state: "rest" as const };
+      const completed =
+        (session && completedSessionIds.has(session.sessionId)) ||
+        (dayFree[0] && completedSessionIds.has(dayFree[0].id));
+      if (completed) return { state: "done" as const };
+      if (d.isToday) return { state: "today" as const };
+      return { state: "planned" as const };
+    });
+  }, [dates, effectiveSessions, completedSessionIds, getFreeForDay]);
+
   if (programLoading) {
     return (
       <div className="space-y-5 animate-fade-in max-w-2xl mx-auto">
@@ -459,24 +479,6 @@ const StudentWeek = () => {
   }
 
   const activeDayIndex = selectedDayIndex ?? 0;
-
-  // Per-day state for the SignatureHeader dot row (Mon..Sun).
-  // "rest" = no programmed/free session, "today" = current day with a session,
-  // "done" = completed, "planned" = scheduled but not yet done.
-  const headerWeekDays = useMemo(() => {
-    return dates.map((d) => {
-      const session = effectiveSessions[d.dayIndex];
-      const dayFree = getFreeForDay(d.date);
-      const hasAny = !!session || dayFree.length > 0;
-      if (!hasAny) return { state: "rest" as const };
-      const completed =
-        (session && completedSessionIds.has(session.sessionId)) ||
-        (dayFree[0] && completedSessionIds.has(dayFree[0].id));
-      if (completed) return { state: "done" as const };
-      if (d.isToday) return { state: "today" as const };
-      return { state: "planned" as const };
-    });
-  }, [dates, effectiveSessions, completedSessionIds, getFreeForDay]);
 
   return (
     <div className="space-y-4 animate-fade-in max-w-2xl mx-auto relative pb-32 md:pb-0">
