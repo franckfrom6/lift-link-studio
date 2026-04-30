@@ -358,63 +358,47 @@ const StudentWeek = () => {
     );
   }
 
-  // If no program, show self-guided dashboard
-  if (!program) {
-    return (
-      <div className="space-y-5 animate-fade-in max-w-2xl mx-auto relative">
-        <div>
-          <h1 className="text-2xl font-bold">{t('calendar:hello', { name: userName })}</h1>
-          <p className="text-muted-foreground text-sm mt-1">{t('calendar:your_program')}</p>
-        </div>
-        <SelfGuidedDashboard
-          onStartAI={() => {
-            toast.info(t('calendar:ai_coming_soon', "La génération IA de programme arrive bientôt !"));
-          }}
-          onJoinCoach={async (code) => {
-            if (!user) return;
-            const { data: tokenData } = await supabase
-              .from("coach_invite_tokens")
-              .select("id, coach_id, token, uses_count, max_uses, expires_at")
-              .eq("token", code.toUpperCase())
-              .eq("is_active", true)
-              .maybeSingle();
+  // No structured program → handler reused by the inline onboarding banner
+  const handleJoinCoach = async (code: string) => {
+    if (!user) return;
+    const upper = code.toUpperCase();
+    const { data: tokenData } = await supabase
+      .from("coach_invite_tokens")
+      .select("id, coach_id, token, uses_count, max_uses, expires_at")
+      .eq("token", upper)
+      .eq("is_active", true)
+      .maybeSingle();
 
-            if (!tokenData) { toast.error(t('auth:token_invalid', "Code invalide ou expiré")); return; }
-            if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) { toast.error(t('auth:token_invalid')); return; }
-            if (tokenData.max_uses !== null && tokenData.uses_count >= tokenData.max_uses) { toast.error(t('auth:token_invalid')); return; }
+    if (!tokenData) { toast.error(t('auth:token_invalid', "Code invalide ou expiré")); return; }
+    if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) { toast.error(t('auth:token_invalid')); return; }
+    if (tokenData.max_uses !== null && tokenData.uses_count >= tokenData.max_uses) { toast.error(t('auth:token_invalid')); return; }
 
-            const { data: existing } = await supabase
-              .from("coach_students")
-              .select("id")
-              .eq("coach_id", tokenData.coach_id)
-              .eq("student_id", user.id)
-              .eq("status", "active")
-              .maybeSingle();
+    const { data: existing } = await supabase
+      .from("coach_students")
+      .select("id")
+      .eq("coach_id", tokenData.coach_id)
+      .eq("student_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
 
-            if (existing) { toast.info(t('auth:token_join_already')); return; }
+    if (existing) { toast.info(t('auth:token_join_already')); return; }
 
-            const { error } = await supabase.from("coach_students").insert({
-              coach_id: tokenData.coach_id,
-              student_id: user.id,
-              status: "active",
-            });
+    const { error } = await supabase.from("coach_students").insert({
+      coach_id: tokenData.coach_id,
+      student_id: user.id,
+      status: "active",
+    });
 
-            if (error) { toast.error(t('auth:error_generic')); return; }
+    if (error) { toast.error(t('auth:error_generic')); return; }
 
-            await supabase
-              .from("coach_invite_tokens")
-              .update({ uses_count: tokenData.uses_count + 1 })
-              .eq("id", tokenData.id);
+    await supabase
+      .from("coach_invite_tokens")
+      .update({ uses_count: tokenData.uses_count + 1 })
+      .eq("id", tokenData.id);
 
-            toast.success(t('auth:token_join_success'));
-            window.location.reload();
-          }}
-        />
-        <FirstStepsChecklist />
-        <OnboardingTooltip stepKey="welcome_seen" title={t('common:onboarding_welcome_title')} description={t('common:onboarding_welcome_desc')} position="center" />
-      </div>
-    );
-  }
+    toast.success(t('auth:token_join_success'));
+    window.location.reload();
+  };
 
   // Sage Phase 4 — week selector strip data
   const programWeeks: ProgWeekSelectorItem[] = useMemo(() => {
