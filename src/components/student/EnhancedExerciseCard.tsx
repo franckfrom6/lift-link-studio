@@ -753,13 +753,27 @@ const EnhancedExerciseCard = ({
             className="overflow-hidden"
           >
             <div className="px-3 pb-3 space-y-4 border-t border-border pt-3">
-              <ExerciseVideoEmbed
-                exerciseName={name}
-                directVideoUrl={videoUrl}
-                videoUrlFemale={videoUrlFemale}
-                videoUrlMale={videoUrlMale}
-                exerciseVideoUrl={exerciseVideoUrl}
-              />
+              {/* Video: lazy — only mount if active OR user explicitly opens it.
+                  Avoids the giant aspect-video skeleton that caused the
+                  layout-shift "freeze/compression" on every expand. */}
+              {(isActive || showVideo) ? (
+                <ExerciseVideoEmbed
+                  exerciseName={name}
+                  directVideoUrl={videoUrl}
+                  videoUrlFemale={videoUrlFemale}
+                  videoUrlMale={videoUrlMale}
+                  exerciseVideoUrl={exerciseVideoUrl}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowVideo(true); }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <Play className="w-3 h-3" strokeWidth={2} />
+                  {t('show_demo', { defaultValue: 'Voir la démo' })}
+                </button>
+              )}
 
               {(suggestedWeight || (isAdvanced && coachNotes)) && (
                 <div className="space-y-2">
