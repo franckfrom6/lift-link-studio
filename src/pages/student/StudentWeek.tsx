@@ -185,14 +185,6 @@ const StudentWeek = () => {
 
   const isSessionCompleted = useCallback((sessionId: string) => completedSessionIds.has(sessionId), [completedSessionIds]);
 
-  const swappedDays = useMemo(() => {
-    const map: Record<number, { originalDay: number; reason: string | null }> = {};
-    for (const swap of mappedSwaps) {
-      map[swap.newDay] = { originalDay: swap.originalDay + 1, reason: swap.reason };
-    }
-    return map;
-  }, [mappedSwaps]);
-
   const programmedCount = Object.keys(effectiveSessions).length;
   const totalExercises = weekSessions.reduce(
     (a, s) => a + s.sections.reduce((b, sec) => b + sec.exercises.length, 0), 0
@@ -252,18 +244,6 @@ const StudentWeek = () => {
       };
     }
     return null;
-  }, [dates, effectiveSessions, completedSessionIds, getFreeForDay]);
-
-  // Day timeline data
-  const dayTimelineData = useMemo(() => {
-    return dates.map(d => ({
-      dayName: d.name,
-      dayNumber: d.date.getDate(),
-      sessionName: effectiveSessions[d.dayIndex]?.name || null,
-      isToday: d.isToday,
-      isCompleted: effectiveSessions[d.dayIndex] ? completedSessionIds.has(effectiveSessions[d.dayIndex].sessionId) : false,
-      hasSession: d.hasSession || getFreeForDay(d.date).length > 0,
-    }));
   }, [dates, effectiveSessions, completedSessionIds, getFreeForDay]);
 
   const handleDayClickInSwapMode = (dayIndex: number) => {
@@ -367,26 +347,6 @@ const StudentWeek = () => {
   const sourceDayHasSession = swapSourceDay !== null && !!effectiveSessions[swapSourceDay];
   const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "";
 
-  // Per-day state for the SignatureHeader dot row (Mon..Sun).
-  // MUST be declared before any early return — otherwise the hook count
-  // changes between renders (program loading → loaded) and React crashes
-  // with "Rendered more hooks than during the previous render", which
-  // forces a remount and produces the visible compression flash.
-  const headerWeekDays = useMemo(() => {
-    return dates.map((d) => {
-      const session = effectiveSessions[d.dayIndex];
-      const dayFree = getFreeForDay(d.date);
-      const hasAny = !!session || dayFree.length > 0;
-      if (!hasAny) return { state: "rest" as const };
-      const completed =
-        (session && completedSessionIds.has(session.sessionId)) ||
-        (dayFree[0] && completedSessionIds.has(dayFree[0].id));
-      if (completed) return { state: "done" as const };
-      if (d.isToday) return { state: "today" as const };
-      return { state: "planned" as const };
-    });
-  }, [dates, effectiveSessions, completedSessionIds, getFreeForDay]);
-
   if (programLoading) {
     return (
       <div className="space-y-5 animate-fade-in max-w-2xl mx-auto">
@@ -454,8 +414,6 @@ const StudentWeek = () => {
       </div>
     );
   }
-
-  const activeDayIndex = selectedDayIndex ?? 0;
 
   // Sage Phase 4 — week selector strip data
   const programWeeks: ProgWeekSelectorItem[] = useMemo(() => {
