@@ -21,15 +21,15 @@ const NextExercisePreview = forwardRef<HTMLDivElement, NextExercisePreviewProps>
         exit={{ opacity: 0, y: 20 }}
         className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-4 left-4 right-4 z-20 max-w-2xl mx-auto"
       >
-        <div className="bg-zinc-800/90 backdrop-blur-lg border border-zinc-700/50 rounded-xl px-4 py-3 flex items-center gap-3">
+        <div className="bg-card/95 backdrop-blur-lg border border-border rounded-xl px-4 py-3 flex items-center gap-3 shadow-md">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">À suivre</p>
-            <p className="text-sm font-semibold text-zinc-200 truncate">{name}</p>
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">À suivre</p>
+            <p className="text-sm font-semibold text-foreground truncate">{name}</p>
             {sets && reps && (
-              <p className="text-xs text-zinc-400">{sets}×{reps}</p>
+              <p className="text-xs text-muted-foreground">{sets}×{reps}</p>
             )}
           </div>
-          <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
         </div>
       </motion.div>
     </AnimatePresence>
