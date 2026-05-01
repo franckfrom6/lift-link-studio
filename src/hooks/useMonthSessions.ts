@@ -14,6 +14,8 @@ export interface MonthDaySummary {
   external: number;
   /** Number of sessions actually completed that day */
   completed: number;
+  /** External activity types present that day (e.g. "running", "cycling") */
+  externalTypes?: Set<string>;
 }
 
 /**
@@ -55,7 +57,7 @@ export function useMonthSessions(studentId: string | null, monthAnchor: Date) {
           .lte("free_session_date", endKey),
         supabase
           .from("external_sessions")
-          .select("date")
+          .select("date, activity_type")
           .eq("student_id", studentId)
           .gte("date", startKey)
           .lte("date", endKey),
@@ -82,7 +84,14 @@ export function useMonthSessions(studentId: string | null, monthAnchor: Date) {
         if (r.free_session_date) get(r.free_session_date).free += 1;
       });
       (extRes.data || []).forEach((r: any) => {
-        if (r.date) get(r.date).external += 1;
+        if (r.date) {
+          const day = get(r.date);
+          day.external += 1;
+          if (r.activity_type) {
+            if (!day.externalTypes) day.externalTypes = new Set<string>();
+            day.externalTypes.add(String(r.activity_type));
+          }
+        }
       });
       (doneRes.data || []).forEach((r: any) => {
         if (!r.completed_at) return;
