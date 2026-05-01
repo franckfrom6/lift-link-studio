@@ -6,6 +6,7 @@ import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList,
   BreadcrumbPage, BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +14,7 @@ import {
   useCreatePlan, useMealPlan,
 } from "@/hooks/useMealPlan";
 import MealPlanEditor from "@/components/nutrition/MealPlanEditor";
+import ActivityFeed from "@/components/nutrition/ActivityFeed";
 
 /** Coach-side full-page editor of an athlete's meal plan. */
 const StudentNutritionPlan = () => {
@@ -96,7 +98,18 @@ const StudentNutritionPlan = () => {
           </Button>
         </div>
       ) : (
-        <MealPlanEditor studentId={studentId} asCoach />
+        <Tabs defaultValue="editor" className="w-full">
+          <TabsList className="grid grid-cols-2 w-full">
+            <TabsTrigger value="editor">Plan</TabsTrigger>
+            <TabsTrigger value="activity">Activité</TabsTrigger>
+          </TabsList>
+          <TabsContent value="editor" className="mt-3">
+            <MealPlanEditor studentId={studentId} asCoach />
+          </TabsContent>
+          <TabsContent value="activity" className="mt-3">
+            <ActivityFeed planId={plan.id} currentUserId={user?.id ?? null} />
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );

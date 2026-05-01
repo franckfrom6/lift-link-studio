@@ -24,11 +24,17 @@ interface MealCardProps {
   onEditFood?: (mealFoodId: string) => void;
   /** Long-press on a chip → request substitution */
   onSubstituteFood?: (mealFoodId: string) => void;
+  /**
+   * Optional render override for the chips area. When provided, the
+   * default chip list is replaced (used to inject a sortable context).
+   */
+  childrenOverride?: React.ReactNode;
 }
 
 const MealCard = ({
   meal, readOnly,
   onRename, onDelete, onDuplicate, onAddFood, onRemoveFood, onEditFood, onSubstituteFood,
+  childrenOverride,
 }: MealCardProps) => {
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -92,7 +98,13 @@ const MealCard = ({
       </div>
 
       {/* Chips */}
-      {meal.meal_foods.length > 0 ? (
+      {childrenOverride ? (
+        meal.meal_foods.length > 0 ? (
+          childrenOverride
+        ) : (
+          <p className="text-xs text-muted-subtle italic">Aucun aliment</p>
+        )
+      ) : meal.meal_foods.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {meal.meal_foods.map((mf) => (
             <FoodChip

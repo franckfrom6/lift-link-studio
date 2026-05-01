@@ -12,6 +12,7 @@ import AISidebarToggle from "@/components/ai/AISidebarToggle";
 import AISidebar from "@/components/ai/AISidebar";
 import MobileBottomNav from "@/components/navigation/MobileBottomNav";
 import { useCoachDashboard } from "@/hooks/useCoachDashboard";
+import { useChangeRequestsCount } from "@/hooks/useChangeRequestsCount";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,11 @@ const CoachLayout = () => {
   const [aiOpen, setAiOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const { students, kpis } = useCoachDashboard();
+  const { data: pendingChangeReqs = 0 } = useChangeRequestsCount();
+
+  // Combine existing alerts + pending nutrition change requests for the
+  // single notification dot on the "Athlètes" menu entry.
+  const studentsBadgeCount = (kpis.alertCount || 0) + pendingChangeReqs;
 
   // Pinned students from localStorage
   const [pinnedIds, setPinnedIds] = useState<string[]>(() => {
@@ -98,9 +104,9 @@ const CoachLayout = () => {
               <div className="relative">
                 <item.icon className="w-[18px] h-[18px]" strokeWidth={1.5} />
                 {/* Notification badge on students */}
-                {item.to === "/coach/students" && kpis.alertCount > 0 && (
+                {item.to === "/coach/students" && studentsBadgeCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
-                    {kpis.alertCount > 9 ? "9+" : kpis.alertCount}
+                    {studentsBadgeCount > 9 ? "9+" : studentsBadgeCount}
                   </span>
                 )}
               </div>

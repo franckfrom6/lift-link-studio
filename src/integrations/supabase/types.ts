@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action_type: string
+          actor_id: string
+          actor_role: string
+          after_value: Json | null
+          before_value: Json | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          plan_id: string
+        }
+        Insert: {
+          action_type: string
+          actor_id: string
+          actor_role: string
+          after_value?: Json | null
+          before_value?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          plan_id: string
+        }
+        Update: {
+          action_type?: string
+          actor_id?: string
+          actor_role?: string
+          after_value?: Json | null
+          before_value?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          plan_id?: string
+        }
+        Relationships: []
+      }
       adaptation_logs: {
         Row: {
           adaptations_applied: Json | null

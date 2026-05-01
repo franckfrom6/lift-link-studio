@@ -14,12 +14,26 @@ import {
   useDuplicateMeal, useAddMealFood, useUpdateMealFood, useDeleteMealFood,
   useMealPlanRealtime,
   type MealFoodRow,
+  type MealRow,
 } from "@/hooks/useMealPlan";
 import { computeEntryMacros, sumMacros } from "@/lib/nutrition-macros";
 import MealCard from "./MealCard";
+import SortableMealCard from "./SortableMealCard";
+import SortableFoodChip from "./SortableFoodChip";
 import FoodPickerSheet from "./FoodPickerSheet";
 import FoodEditSheet from "./FoodEditSheet";
 import SubstituteFoodSheet from "./SubstituteFoodSheet";
+import OfflineQueueBadge from "./OfflineQueueBadge";
+import { useReorderMeals, useReorderMealFoods } from "@/hooks/useReorderMeals";
+import { useActivityLogger } from "@/hooks/useActivityLog";
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
 
 interface MealPlanEditorProps {
   studentId: string;
@@ -48,6 +62,18 @@ const MealPlanEditor = ({ studentId, asCoach = true, asAthlete = false, readOnly
   const addMealFood = useAddMealFood(studentId);
   const updateMealFood = useUpdateMealFood(studentId);
   const deleteMealFood = useDeleteMealFood(studentId);
+  const reorderMeals = useReorderMeals(studentId);
+  const reorderMealFoods = useReorderMealFoods(studentId);
+
+  // Activity log: who did what on this plan.
+  const log = useActivityLogger(plan?.id ?? null, asAthlete ? "athlete" : "coach");
+
+  // DnD sensors: pointer for mouse, touch with 250ms delay (so taps & long-press still work).
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   // ----- Editable plan-level fields (debounced auto-save) -----
   const [planName, setPlanName] = useState<string>("");
@@ -127,17 +153,27 @@ const MealPlanEditor = ({ studentId, asCoach = true, asAthlete = false, readOnly
   const handleAddMeal = () => {
     const orderIndex = plan.meals.length;
     const defaults = ["Petit-déjeuner", "Déjeuner", "Collation", "Dîner", "Repas"];
-    addMeal.mutate({
-      planId: plan.id,
-      name: defaults[Math.min(orderIndex, defaults.length - 1)],
-      orderIndex,
-    });
+    const name = defaults[Math.min(orderIndex, defaults.length - 1)];
+    addMeal.mutate(
+      { planId: plan.id, name, orderIndex },
+      { onSuccess: () => log({ actionType: "create_meal", entityType: "meal", after: { name } }) }
+    );
   };
 
   /** Optimistic delete with 5-second undo toast. */
   const handleDeleteFood = (entry: MealFoodRow) => {
     const snapshot = entry;
-    deleteMealFood.mutate({ mealFoodId: entry.id });
+    deleteMealFood.mutate(
+      { mealFoodId: entry.id },
+      {
+        onSuccess: () => log({
+          actionType: "remove_food",
+          entityType: "meal_food",
+          entityId: entry.id,
+          before: { food_name: entry.food?.name_fr, quantity: entry.quantity, unit: entry.unit },
+        }),
+      }
+    );
     toast("Aliment supprimé", {
       description: snapshot.food
         ? `${snapshot.food.name_fr} retiré du repas`
@@ -163,7 +199,17 @@ const MealPlanEditor = ({ studentId, asCoach = true, asAthlete = false, readOnly
   const handleDeleteMeal = (mealId: string) => {
     const meal = plan.meals.find((m) => m.id === mealId);
     if (!meal) return;
-    deleteMeal.mutate({ mealId });
+    deleteMeal.mutate(
+      { mealId },
+      {
+        onSuccess: () => log({
+          actionType: "delete_meal",
+          entityType: "meal",
+          entityId: mealId,
+          before: { name: meal.name, food_count: meal.meal_foods.length },
+        }),
+      }
+    );
     toast("Repas supprimé", {
       description: `« ${meal.name} » et ses aliments ont été retirés.`,
       duration: 5000,
@@ -176,6 +222,38 @@ const MealPlanEditor = ({ studentId, asCoach = true, asAthlete = false, readOnly
             newName: meal.name,
           }),
       },
+    });
+  };
+
+  /** DnD: meals reorder. We compute the new order from arrayMove and persist. */
+  const handleMealDragEnd = (e: DragEndEvent) => {
+    if (!plan) return;
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = plan.meals.findIndex((m) => m.id === active.id);
+    const newIndex = plan.meals.findIndex((m) => m.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const reordered = arrayMove(plan.meals, oldIndex, newIndex);
+    const updates = reordered.map((m, i) => ({ id: m.id, order_index: i }));
+    reorderMeals.mutate(updates, {
+      onSuccess: () => log({ actionType: "reorder_meal", entityType: "plan", after: { count: updates.length } }),
+    });
+  };
+
+  /** DnD: chips reorder within a meal. */
+  const handleChipDragEnd = (meal: MealRow) => (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = meal.meal_foods.findIndex((mf) => mf.id === active.id);
+    const newIndex = meal.meal_foods.findIndex((mf) => mf.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const reordered = arrayMove(meal.meal_foods, oldIndex, newIndex);
+    const updates = reordered.map((mf, i) => ({ id: mf.id, order_index: i }));
+    reorderMealFoods.mutate(updates, {
+      onSuccess: () => log({
+        actionType: "reorder_food", entityType: "meal", entityId: meal.id,
+        after: { count: updates.length },
+      }),
     });
   };
 
@@ -251,6 +329,9 @@ const MealPlanEditor = ({ studentId, asCoach = true, asAthlete = false, readOnly
 
       {/* Sticky daily totals */}
       <div className="sticky top-0 z-10 -mx-3 px-3 py-2 bg-background/95 backdrop-blur border-b border-border">
+        <div className="flex items-center justify-end mb-1.5">
+          <OfflineQueueBadge />
+        </div>
         <DailyTotals totals={totals} targets={{
           kcal: numOrNull(targets.kcal),
           protein: numOrNull(targets.protein),
@@ -266,36 +347,68 @@ const MealPlanEditor = ({ studentId, asCoach = true, asAthlete = false, readOnly
           <p className="text-sm text-muted-foreground">Aucun repas. Commencez par en ajouter un.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {plan.meals.map((meal) => (
-            <MealCard
-              key={meal.id}
-              meal={meal}
-              readOnly={readOnly}
-              onRename={(name, time) =>
-                updateMeal.mutate({ mealId: meal.id, patch: { name, time_target: time } as any })
-              }
-              onDelete={() => handleDeleteMeal(meal.id)}
-              onDuplicate={() =>
-                duplicateMeal.mutate({ meal, newOrderIndex: plan.meals.length })
-              }
-              onAddFood={() =>
-                setPickerFor({ mealId: meal.id, orderIndex: meal.meal_foods.length })
-              }
-              onEditFood={(mealFoodId) =>
-                setEditEntry(meal.meal_foods.find((mf) => mf.id === mealFoodId) ?? null)
-              }
-              onRemoveFood={(mealFoodId) => {
-                const entry = meal.meal_foods.find((mf) => mf.id === mealFoodId);
-                if (entry) handleDeleteFood(entry);
-              }}
-              onSubstituteFood={(mealFoodId) => {
-                const entry = meal.meal_foods.find((mf) => mf.id === mealFoodId);
-                if (entry) setSubstituteEntry(entry);
-              }}
-            />
-          ))}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMealDragEnd}>
+          <SortableContext items={plan.meals.map((m) => m.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3">
+              {plan.meals.map((meal) => (
+                <SortableMealCard
+                  key={meal.id}
+                  meal={meal}
+                  readOnly={readOnly}
+                  onRename={(name, time) =>
+                    updateMeal.mutate(
+                      { mealId: meal.id, patch: { name, time_target: time } as any },
+                      { onSuccess: () => log({ actionType: "rename_meal", entityType: "meal", entityId: meal.id, before: { name: meal.name }, after: { name } }) }
+                    )
+                  }
+                  onDelete={() => handleDeleteMeal(meal.id)}
+                  onDuplicate={() =>
+                    duplicateMeal.mutate(
+                      { meal, newOrderIndex: plan.meals.length },
+                      { onSuccess: () => log({ actionType: "duplicate_meal", entityType: "meal", entityId: meal.id, after: { name: meal.name } }) }
+                    )
+                  }
+                  onAddFood={() =>
+                    setPickerFor({ mealId: meal.id, orderIndex: meal.meal_foods.length })
+                  }
+                  onEditFood={(mealFoodId) =>
+                    setEditEntry(meal.meal_foods.find((mf) => mf.id === mealFoodId) ?? null)
+                  }
+                  onRemoveFood={(mealFoodId) => {
+                    const entry = meal.meal_foods.find((mf) => mf.id === mealFoodId);
+                    if (entry) handleDeleteFood(entry);
+                  }}
+                  onSubstituteFood={(mealFoodId) => {
+                    const entry = meal.meal_foods.find((mf) => mf.id === mealFoodId);
+                    if (entry) setSubstituteEntry(entry);
+                  }}
+                  childrenOverride={
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleChipDragEnd(meal)}
+                    >
+                      <SortableContext items={meal.meal_foods.map((mf) => mf.id)} strategy={rectSortingStrategy}>
+                        <div className="flex flex-wrap gap-1.5">
+                          {meal.meal_foods.map((mf) => (
+                            <SortableFoodChip
+                              key={mf.id}
+                              entry={mf}
+                              readOnly={readOnly}
+                              onTap={() => setEditEntry(mf)}
+                              onRemove={() => handleDeleteFood(mf)}
+                              onLongPress={() => setSubstituteEntry(mf)}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  }
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {!readOnly && (
@@ -310,12 +423,15 @@ const MealPlanEditor = ({ studentId, asCoach = true, asAthlete = false, readOnly
         onClose={() => setPickerFor(null)}
         onPick={({ foodId, quantity, unit, notes }) => {
           if (!pickerFor) return;
-          addMealFood.mutate({
-            mealId: pickerFor.mealId,
-            foodId, quantity, unit,
-            orderIndex: pickerFor.orderIndex,
-            notes,
-          });
+          addMealFood.mutate(
+            {
+              mealId: pickerFor.mealId,
+              foodId, quantity, unit,
+              orderIndex: pickerFor.orderIndex,
+              notes,
+            },
+            { onSuccess: () => log({ actionType: "add_food", entityType: "meal_food", after: { quantity, unit } }) }
+          );
         }}
       />
 
@@ -325,7 +441,15 @@ const MealPlanEditor = ({ studentId, asCoach = true, asAthlete = false, readOnly
         onClose={() => setEditEntry(null)}
         onSave={(patch) => {
           if (!editEntry) return;
-          updateMealFood.mutate({ mealFoodId: editEntry.id, patch });
+          updateMealFood.mutate(
+            { mealFoodId: editEntry.id, patch },
+            { onSuccess: () => log({
+                actionType: "edit_food", entityType: "meal_food", entityId: editEntry.id,
+                before: { quantity: editEntry.quantity, unit: editEntry.unit },
+                after: patch,
+                ...(editEntry.food ? {} : {}),
+              }) }
+          );
         }}
         onDelete={() => editEntry && handleDeleteFood(editEntry)}
         onReplace={() => {
