@@ -4,7 +4,7 @@ import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
 import FirstStepsChecklist from "@/components/onboarding/FirstStepsChecklist";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import SessionSwapModal from "@/components/student/SessionSwapModal";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
@@ -704,7 +704,6 @@ const StudentWeek = () => {
         {(() => {
           const day = dates[selectedDayIndex];
           if (!day) return null;
-          const i = 0;
           const isSessionDay = day.hasSession;
           const sessionInfo = effectiveSessions[day.dayIndex];
           const sessionCompleted = isSessionDay && !!sessionInfo && isSessionCompleted(sessionInfo.sessionId);
