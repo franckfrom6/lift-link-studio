@@ -19,6 +19,11 @@ import SignatureStartCTA from "@/components/student/SignatureStartCTA";
 import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
 import MonthGrid, { MonthDayMarkers } from "@/components/student/MonthGrid";
 import MonthFilters, { ActivityFilter } from "@/components/student/MonthFilters";
+import {
+  CategoryKey,
+  computeFocusCategories,
+  activityTypeToSport,
+} from "@/lib/session-categories";
 import NoProgramOnboardingBanner from "@/components/student/NoProgramOnboardingBanner";
 import { toast } from "sonner";
 import {
@@ -65,7 +70,7 @@ const StudentWeek = () => {
   });
   // Calendar filters (scope + session type)
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<CategoryKey | null>(null);
   const navigate = useNavigate();
   const [swapMode, setSwapMode] = useState(false);
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
