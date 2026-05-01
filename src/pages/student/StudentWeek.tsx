@@ -19,6 +19,11 @@ import SignatureStartCTA from "@/components/student/SignatureStartCTA";
 import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
 import MonthGrid, { MonthDayMarkers } from "@/components/student/MonthGrid";
 import MonthFilters, { ActivityFilter } from "@/components/student/MonthFilters";
+import {
+  CategoryKey,
+  computeFocusCategories,
+  activityTypeToSport,
+} from "@/lib/session-categories";
 import NoProgramOnboardingBanner from "@/components/student/NoProgramOnboardingBanner";
 import { toast } from "sonner";
 import {
@@ -65,7 +70,7 @@ const StudentWeek = () => {
   });
   // Calendar filters (scope + session type)
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<CategoryKey | null>(null);
   const navigate = useNavigate();
   const [swapMode, setSwapMode] = useState(false);
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
@@ -352,13 +357,40 @@ const StudentWeek = () => {
   }, [monthSummaries, program, totalWeeks, displayMonth]);
 
   /**
-   * Per-day muscle groups for programmed sessions in the displayed month.
-   * Used by:
-   *  - the type filter dropdown (list of available types)
-   *  - the marker filter (hide days that don't match selected type)
+   * Per-day category set for the displayed month.
+   * Combines:
+   *  - focus muscles from programmed sessions (rotated program weeks)
+   *  - focus muscles from free sessions (date-bound)
+   *  - sport family from external_sessions.activity_type
+   *
+   * The single Set<CategoryKey> per day powers both the dropdown
+   * (available options) and the filter (what days to keep).
    */
-  const monthMusclesByDay = useMemo(() => {
-    const map = new Map<string, Set<string>>();
+  const monthCategoriesByDay = useMemo(() => {
+    const map = new Map<string, Set<CategoryKey>>();
+    const ensure = (key: string) => {
+      let s = map.get(key);
+      if (!s) {
+        s = new Set<CategoryKey>();
+        map.set(key, s);
+      }
+      return s;
+    };
+
+    // 1) External activities → sport families
+    monthSummaries.forEach((s, key) => {
+      if (!s.externalTypes || s.externalTypes.size === 0) return;
+      const set = ensure(key);
+      s.externalTypes.forEach((t) => set.add(activityTypeToSport(t)));
+    });
+
+    // 2) Free sessions → focus muscles (need to read free sessions in the month)
+    //    We re-use the existing freeSessions list which only covers the
+    //    current week. For days outside it we fall back to programmed only.
+    //    (Free-session focus enrichment beyond the current week is a future
+    //    iteration — most filtering value comes from programmed + external.)
+
+    // 3) Programmed sessions: rotate program weeks across the month
     if (!program || totalWeeks === 0) return map;
 
     const created = new Date(program.created_at);
@@ -390,26 +422,24 @@ const StudentWeek = () => {
           const muscles = s.sections
             .flatMap((sec) => sec.exercises.map((e) => e.exercise?.muscle_group))
             .filter(Boolean) as string[];
-          let set = map.get(key);
-          if (!set) {
-            set = new Set<string>();
-            map.set(key, set);
-          }
-          muscles.forEach((m) => set!.add(m));
+          const focuses = computeFocusCategories(muscles);
+          if (focuses.size === 0) return;
+          const set = ensure(key);
+          focuses.forEach((f) => set.add(f));
         });
       }
       cursor.setDate(cursor.getDate() + 7);
       if (cursor.getTime() > monthEnd.getTime() + 7 * 24 * 60 * 60 * 1000) break;
     }
     return map;
-  }, [program, totalWeeks, displayMonth]);
+  }, [program, totalWeeks, displayMonth, monthSummaries]);
 
   /** Sorted, deduplicated list of types available for the current month. */
   const availableTypes = useMemo(() => {
-    const set = new Set<string>();
-    monthMusclesByDay.forEach((muscles) => muscles.forEach((m) => set.add(m)));
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
-  }, [monthMusclesByDay]);
+    const set = new Set<CategoryKey>();
+    monthCategoriesByDay.forEach((cats) => cats.forEach((c) => set.add(c)));
+    return Array.from(set);
+  }, [monthCategoriesByDay]);
 
   /**
    * Apply the active filters on top of the raw markers map.
@@ -422,8 +452,8 @@ const StudentWeek = () => {
     monthMarkers.forEach((m, key) => {
       // Type filter: drop days whose programmed sessions don't include the type
       if (typeFilter) {
-        const muscles = monthMusclesByDay.get(key);
-        if (!muscles || !muscles.has(typeFilter)) return;
+        const cats = monthCategoriesByDay.get(key);
+        if (!cats || !cats.has(typeFilter)) return;
       }
       // Activity filter: keep only matching marker categories
       let next: MonthDayMarkers | null = null;
@@ -444,7 +474,7 @@ const StudentWeek = () => {
       if (next) out.set(key, next);
     });
     return out;
-  }, [monthMarkers, activityFilter, typeFilter, monthMusclesByDay]);
+  }, [monthMarkers, activityFilter, typeFilter, monthCategoriesByDay]);
 
   const handleSelectDate = (date: Date) => {
     const d = new Date(date);

@@ -9,6 +9,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  CategoryKey,
+  FOCUS_LABELS,
+  SPORT_LABELS,
+  categoryLabel,
+} from "@/lib/session-categories";
 
 export type ActivityFilter = "all" | "programmed" | "completed" | "external";
 
@@ -22,11 +28,11 @@ const ACTIVITY_LABELS: Record<ActivityFilter, string> = {
 interface MonthFiltersProps {
   activity: ActivityFilter;
   onActivityChange: (value: ActivityFilter) => void;
-  /** All available muscle groups present in the displayed month */
-  availableTypes: string[];
+  /** All available category keys present in the displayed month */
+  availableTypes: CategoryKey[];
   /** Active type filter (null = all types) */
-  selectedType: string | null;
-  onTypeChange: (value: string | null) => void;
+  selectedType: CategoryKey | null;
+  onTypeChange: (value: CategoryKey | null) => void;
 }
 
 /**
@@ -41,6 +47,14 @@ const MonthFilters = ({
   onTypeChange,
 }: MonthFiltersProps) => {
   const hasFilters = activity !== "all" || selectedType !== null;
+
+  // Split available types into focus vs sport for a structured menu.
+  const focusTypes = availableTypes.filter((k) => k.startsWith("focus:"));
+  const sportTypes = availableTypes.filter((k) => k.startsWith("sport:"));
+  const focusOrder = Object.keys(FOCUS_LABELS) as CategoryKey[];
+  const sportOrder = Object.keys(SPORT_LABELS) as CategoryKey[];
+  const sortedFocus = focusOrder.filter((k) => focusTypes.includes(k));
+  const sortedSport = sportOrder.filter((k) => sportTypes.includes(k));
 
   return (
     <div className="flex items-center gap-2 px-3 py-2 border-b border-border overflow-x-auto scrollbar-none">
@@ -103,29 +117,53 @@ const MonthFilters = ({
             )}
             aria-label="Filtrer par type de séance"
           >
-            {selectedType ?? "Type"}
+            {selectedType ? categoryLabel(selectedType) : "Type"}
             <ChevronDown className="w-3 h-3" strokeWidth={2.5} />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48 max-h-72 overflow-y-auto">
-          <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-subtle">
-            Type de séance
-          </DropdownMenuLabel>
+        <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
           <DropdownMenuItem onClick={() => onTypeChange(null)} className="text-xs">
             <span className="flex-1">Tous</span>
             {selectedType === null && <Check className="w-3.5 h-3.5 text-primary" />}
           </DropdownMenuItem>
-          {availableTypes.length > 0 && <DropdownMenuSeparator />}
-          {availableTypes.map((type) => (
-            <DropdownMenuItem
-              key={type}
-              onClick={() => onTypeChange(type)}
-              className="text-xs capitalize"
-            >
-              <span className="flex-1">{type}</span>
-              {selectedType === type && <Check className="w-3.5 h-3.5 text-primary" />}
-            </DropdownMenuItem>
-          ))}
+
+          {sortedFocus.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-subtle">
+                Focus musculaire
+              </DropdownMenuLabel>
+              {sortedFocus.map((type) => (
+                <DropdownMenuItem
+                  key={type}
+                  onClick={() => onTypeChange(type)}
+                  className="text-xs"
+                >
+                  <span className="flex-1">{categoryLabel(type)}</span>
+                  {selectedType === type && <Check className="w-3.5 h-3.5 text-primary" />}
+                </DropdownMenuItem>
+              ))}
+            </>
+          )}
+
+          {sortedSport.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-subtle">
+                Famille de sport
+              </DropdownMenuLabel>
+              {sortedSport.map((type) => (
+                <DropdownMenuItem
+                  key={type}
+                  onClick={() => onTypeChange(type)}
+                  className="text-xs"
+                >
+                  <span className="flex-1">{categoryLabel(type)}</span>
+                  {selectedType === type && <Check className="w-3.5 h-3.5 text-primary" />}
+                </DropdownMenuItem>
+              ))}
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
