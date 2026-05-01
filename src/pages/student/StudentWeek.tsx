@@ -668,7 +668,6 @@ const StudentWeek = () => {
   // Self-guided athletes can append a new week to their program.
   // The new week becomes the next chronological week in the calendar.
   const isSelfGuided = !!program && program.coach_id === null;
-  const [addingWeek, setAddingWeek] = useState(false);
   const handleAddWeek = async () => {
     if (!program || addingWeek) return;
     setAddingWeek(true);
