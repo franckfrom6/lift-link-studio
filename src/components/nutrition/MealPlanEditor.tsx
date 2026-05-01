@@ -49,6 +49,11 @@ const MealPlanEditor = ({ studentId, asCoach = true }: MealPlanEditorProps) => {
   const [athleteCanEdit, setAthleteCanEdit] = useState(false);
   const hydratedFor = useRef<string | null>(null);
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
+  /**
+   * Pending patch buffer. Accumulates field changes within the debounce
+   * window so multiple edits flush as a SINGLE update, not one per field.
+   */
+  const pendingPatch = useRef<Record<string, any>>({});
 
   useEffect(() => {
     if (!plan || hydratedFor.current === plan.id) return;
@@ -63,12 +68,20 @@ const MealPlanEditor = ({ studentId, asCoach = true }: MealPlanEditorProps) => {
     setAthleteCanEdit(plan.athlete_can_edit);
   }, [plan]);
 
-  /** Debounced 1s save for plan-level field changes. */
+  /**
+   * Debounced 1 s save: merges every queued patch into a single buffer,
+   * then flushes once when the user stops typing.
+   */
   const queuePlanSave = (patch: Record<string, any>) => {
     if (!plan) return;
+    pendingPatch.current = { ...pendingPatch.current, ...patch };
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      updatePlan.mutate({ planId: plan.id, patch: patch as any });
+      const flush = pendingPatch.current;
+      pendingPatch.current = {};
+      saveTimer.current = null;
+      if (Object.keys(flush).length === 0) return;
+      updatePlan.mutate({ planId: plan.id, patch: flush as any });
     }, 1000);
   };
 

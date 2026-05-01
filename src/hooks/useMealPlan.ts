@@ -134,7 +134,16 @@ export function useCreatePlan() {
         })
         .select("id")
         .single();
-      if (error) throw error;
+      if (error) {
+        // Unique violation = the athlete already has an active plan.
+        // Surface a friendly FR message so the UI can react.
+        if ((error as any).code === "23505") {
+          const e = new Error("Cet athlète a déjà un plan actif.");
+          (e as any).code = "PLAN_ALREADY_EXISTS";
+          throw e;
+        }
+        throw error;
+      }
       return data;
     },
     onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: PLAN_QK(vars.studentId) }),
