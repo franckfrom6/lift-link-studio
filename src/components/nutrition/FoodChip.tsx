@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -15,6 +16,8 @@ interface FoodChipProps {
   onTap?: () => void;
   /** Tap on the cross → soft delete with undo */
   onRemove?: () => void;
+  /** Long-press (≥500ms) → opens substitute sheet */
+  onLongPress?: () => void;
   /** Read-only mode hides the cross and disables the tap */
   readOnly?: boolean;
 }
@@ -23,10 +26,22 @@ interface FoodChipProps {
  * One food entry rendered as a chip.
  * Color = category, label = food name (localized), kcal shown small.
  */
-const FoodChip = ({ entry, onTap, onRemove, readOnly }: FoodChipProps) => {
+const FoodChip = ({ entry, onTap, onRemove, onLongPress, readOnly }: FoodChipProps) => {
   const { i18n } = useTranslation();
   const food = entry.food;
   if (!food) return null;
+
+  // Long-press detection (500ms). Cancelled on move/up/leave.
+  const pressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longFired = useRef(false);
+  const startPress = () => {
+    if (readOnly || !onLongPress) return;
+    longFired.current = false;
+    pressTimer.current = setTimeout(() => { longFired.current = true; onLongPress(); }, 500);
+  };
+  const cancelPress = () => {
+    if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; }
+  };
 
   const isFr = (i18n.language || "fr").startsWith("fr");
   const name = isFr ? food.name_fr : food.name_en;
@@ -44,7 +59,12 @@ const FoodChip = ({ entry, onTap, onRemove, readOnly }: FoodChipProps) => {
     >
       <button
         type="button"
-        onClick={readOnly ? undefined : onTap}
+        onClick={readOnly ? undefined : () => { if (!longFired.current) onTap?.(); }}
+        onPointerDown={startPress}
+        onPointerUp={cancelPress}
+        onPointerLeave={cancelPress}
+        onPointerCancel={cancelPress}
+        onContextMenu={(e) => { if (onLongPress) { e.preventDefault(); onLongPress(); } }}
         disabled={readOnly}
         className="flex items-center gap-1.5 min-w-0 focus-visible:outline-none"
       >
