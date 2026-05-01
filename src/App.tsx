@@ -39,6 +39,7 @@ import CoachPrograms from "./pages/coach/CoachPrograms";
 import CoachExercises from "./pages/coach/CoachExercises";
 import StudentDetail from "./pages/coach/StudentDetail";
 import StudentNutritionPlan from "./pages/coach/StudentNutritionPlan";
+import AthleteNutritionPlan from "./pages/student/StudentNutritionPlan";
 import ProgramEditor from "./pages/coach/ProgramEditor";
 import StudentBilan from "./pages/coach/StudentBilan";
 import CoachRecommendations from "./pages/coach/CoachRecommendations";
@@ -129,6 +130,7 @@ const App = () => (
                   <Route path="progress" element={<StudentProgress />} />
                   <Route path="profile" element={<StudentProfile />} />
                   <Route path="nutrition" element={<StudentNutrition />} />
+                  <Route path="nutrition-plan" element={<AthleteNutritionPlan />} />
                   <Route path="recommendations" element={<StudentRecommendations />} />
                 </Route>
 
