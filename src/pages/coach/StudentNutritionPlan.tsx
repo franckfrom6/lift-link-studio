@@ -42,6 +42,11 @@ const StudentNutritionPlan = () => {
       });
       toast.success("Plan créé");
     } catch (e: any) {
+      if (e?.code === "PLAN_ALREADY_EXISTS") {
+        toast.info("Cet athlète a déjà un plan actif. Affichage du plan existant.");
+        // Refetch to render it instead of crashing.
+        return;
+      }
       toast.error(e?.message || "Impossible de créer le plan");
     }
   };
