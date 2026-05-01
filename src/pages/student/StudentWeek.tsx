@@ -84,6 +84,10 @@ const StudentWeek = () => {
   const [duplicateSession, setDuplicateSession] = useState<{ id: string; name: string } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; isFreeSession: boolean } | null>(null);
+  // Self-guided "add a week" affordance state — declared early so all hooks
+  // run on every render (the early `programLoading` return below would
+  // otherwise skip these on the first render and trigger React error #310).
+  const [addingWeek, setAddingWeek] = useState(false);
 
   const totalWeeks = program?.weeks?.length || 0;
 
@@ -150,6 +154,16 @@ const StudentWeek = () => {
 
   const weekStart = selectedMonday;
   const { swaps: dbSwaps, createSwap } = useSessionSwaps(weekStart);
+
+  // Week range label (e.g. "lun. 13 — dim. 19 janv.") — declared early so
+  // hook order is stable across the `programLoading` early return below.
+  const weekRangeLabel = useMemo(() => {
+    const end = new Date(weekStart);
+    end.setDate(end.getDate() + 6);
+    const fmt = new Intl.DateTimeFormat(i18n.language || "fr", { weekday: "short", day: "numeric" });
+    const fmtMonth = new Intl.DateTimeFormat(i18n.language || "fr", { month: "short" });
+    return `${fmt.format(weekStart)} — ${fmt.format(end)} ${fmtMonth.format(end)}`;
+  }, [weekStart, i18n.language]);
 
   const { effectiveStudentId } = useImpersonation();
   const studentId = user ? effectiveStudentId(user.id) : null;
@@ -643,15 +657,6 @@ const StudentWeek = () => {
     window.location.reload();
   };
 
-  // Week range label, e.g. "lun. 13 — dim. 19 janv."
-  const weekRangeLabel = useMemo(() => {
-    const end = new Date(weekStart);
-    end.setDate(end.getDate() + 6);
-    const fmt = new Intl.DateTimeFormat(i18n.language || "fr", { weekday: "short", day: "numeric" });
-    const fmtMonth = new Intl.DateTimeFormat(i18n.language || "fr", { month: "short" });
-    return `${fmt.format(weekStart)} — ${fmt.format(end)} ${fmtMonth.format(end)}`;
-  }, [weekStart, i18n.language]);
-
   const weekLabel =
     weekOffset === 0 ? t('calendar:this_week')
       : weekOffset === -1 ? t('calendar:last_week')
@@ -664,7 +669,6 @@ const StudentWeek = () => {
   // Self-guided athletes can append a new week to their program.
   // The new week becomes the next chronological week in the calendar.
   const isSelfGuided = !!program && program.coach_id === null;
-  const [addingWeek, setAddingWeek] = useState(false);
   const handleAddWeek = async () => {
     if (!program || addingWeek) return;
     setAddingWeek(true);
