@@ -657,15 +657,6 @@ const StudentWeek = () => {
     window.location.reload();
   };
 
-  // Week range label, e.g. "lun. 13 — dim. 19 janv."
-  const weekRangeLabel = useMemo(() => {
-    const end = new Date(weekStart);
-    end.setDate(end.getDate() + 6);
-    const fmt = new Intl.DateTimeFormat(i18n.language || "fr", { weekday: "short", day: "numeric" });
-    const fmtMonth = new Intl.DateTimeFormat(i18n.language || "fr", { month: "short" });
-    return `${fmt.format(weekStart)} — ${fmt.format(end)} ${fmtMonth.format(end)}`;
-  }, [weekStart, i18n.language]);
-
   const weekLabel =
     weekOffset === 0 ? t('calendar:this_week')
       : weekOffset === -1 ? t('calendar:last_week')
