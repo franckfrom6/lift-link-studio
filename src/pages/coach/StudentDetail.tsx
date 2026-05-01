@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye, MessageSquare, Pencil, Zap } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye, MessageSquare, Pencil, Zap, UtensilsCrossed } from "lucide-react";
 import AIAdaptationView from "@/components/coach/AIAdaptationView";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import SwapBadge from "@/components/student/SwapBadge";
@@ -461,6 +461,28 @@ const StudentDetail = () => {
             </Button>
           </div>
         )}
+      </div>
+
+      {/* Nutrition plan shortcut */}
+      <div className="space-y-3">
+        <h2 className="font-bold flex items-center gap-2">
+          <UtensilsCrossed className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+          Nutrition
+        </h2>
+        <button
+          onClick={() => navigate(`/coach/students/${studentId}/nutrition-plan`)}
+          className="w-full glass p-4 text-left hover:bg-secondary/50 transition-colors rounded-xl"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Plan nutritionnel</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Créer ou modifier le plan · {t("common:view")} →
+              </p>
+            </div>
+            <Pencil className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+          </div>
+        </button>
       </div>
 
       {/* Coach add external session form */}
