@@ -18,6 +18,7 @@ import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
 import SignatureStartCTA from "@/components/student/SignatureStartCTA";
 import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
 import MonthGrid, { MonthDayMarkers } from "@/components/student/MonthGrid";
+import MonthFilters, { ActivityFilter } from "@/components/student/MonthFilters";
 import NoProgramOnboardingBanner from "@/components/student/NoProgramOnboardingBanner";
 import { toast } from "sonner";
 import {
@@ -62,6 +63,9 @@ const StudentWeek = () => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
+  // Calendar filters (scope + session type)
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const navigate = useNavigate();
   const [swapMode, setSwapMode] = useState(false);
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
@@ -347,6 +351,101 @@ const StudentWeek = () => {
     return map;
   }, [monthSummaries, program, totalWeeks, displayMonth]);
 
+  /**
+   * Per-day muscle groups for programmed sessions in the displayed month.
+   * Used by:
+   *  - the type filter dropdown (list of available types)
+   *  - the marker filter (hide days that don't match selected type)
+   */
+  const monthMusclesByDay = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    if (!program || totalWeeks === 0) return map;
+
+    const created = new Date(program.created_at);
+    const cDow = created.getDay();
+    const cMonday = new Date(created);
+    cMonday.setDate(cMonday.getDate() - cDow + (cDow === 0 ? -6 : 1));
+    cMonday.setHours(0, 0, 0, 0);
+
+    const monthStart = new Date(displayMonth.getFullYear(), displayMonth.getMonth(), 1);
+    const monthEnd = new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 0);
+    const firstDow = monthStart.getDay();
+    const monthGridStart = new Date(monthStart);
+    monthGridStart.setDate(monthStart.getDate() - ((firstDow + 6) % 7));
+    const cursor = new Date(monthGridStart);
+
+    while (cursor <= monthEnd || cursor.getMonth() === displayMonth.getMonth()) {
+      const diffWeeks = Math.round(
+        (cursor.getTime() - cMonday.getTime()) / (7 * 24 * 60 * 60 * 1000)
+      );
+      if (diffWeeks >= 0) {
+        const weekIdx = diffWeeks % totalWeeks;
+        const wk = program.weeks[weekIdx];
+        (wk?.sessions || []).forEach((s) => {
+          const dayIdx = s.day_of_week - 1;
+          const d = new Date(cursor);
+          d.setDate(cursor.getDate() + dayIdx);
+          if (d.getMonth() !== displayMonth.getMonth()) return;
+          const key = formatLocalDate(d);
+          const muscles = s.sections
+            .flatMap((sec) => sec.exercises.map((e) => e.exercise?.muscle_group))
+            .filter(Boolean) as string[];
+          let set = map.get(key);
+          if (!set) {
+            set = new Set<string>();
+            map.set(key, set);
+          }
+          muscles.forEach((m) => set!.add(m));
+        });
+      }
+      cursor.setDate(cursor.getDate() + 7);
+      if (cursor.getTime() > monthEnd.getTime() + 7 * 24 * 60 * 60 * 1000) break;
+    }
+    return map;
+  }, [program, totalWeeks, displayMonth]);
+
+  /** Sorted, deduplicated list of types available for the current month. */
+  const availableTypes = useMemo(() => {
+    const set = new Set<string>();
+    monthMusclesByDay.forEach((muscles) => muscles.forEach((m) => set.add(m)));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
+  }, [monthMusclesByDay]);
+
+  /**
+   * Apply the active filters on top of the raw markers map.
+   * - activityFilter narrows which kinds of activity are visible
+   * - typeFilter only keeps days whose programmed session matches the muscle group
+   */
+  const filteredMarkers = useMemo(() => {
+    if (activityFilter === "all" && !typeFilter) return monthMarkers;
+    const out = new Map<string, MonthDayMarkers>();
+    monthMarkers.forEach((m, key) => {
+      // Type filter: drop days whose programmed sessions don't include the type
+      if (typeFilter) {
+        const muscles = monthMusclesByDay.get(key);
+        if (!muscles || !muscles.has(typeFilter)) return;
+      }
+      // Activity filter: keep only matching marker categories
+      let next: MonthDayMarkers | null = null;
+      switch (activityFilter) {
+        case "all":
+          next = m;
+          break;
+        case "programmed":
+          if (m.hasSession && !m.isCompleted) next = { hasSession: true };
+          break;
+        case "completed":
+          if (m.isCompleted) next = { hasSession: true, isCompleted: true };
+          break;
+        case "external":
+          if (m.hasExternal) next = { hasExternal: true };
+          break;
+      }
+      if (next) out.set(key, next);
+    });
+    return out;
+  }, [monthMarkers, activityFilter, typeFilter, monthMusclesByDay]);
+
   const handleSelectDate = (date: Date) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
@@ -615,10 +714,17 @@ const StudentWeek = () => {
       )}
 
       {/* Monthly grid — free navigation across days/months */}
+      <MonthFilters
+        activity={activityFilter}
+        onActivityChange={setActivityFilter}
+        availableTypes={availableTypes}
+        selectedType={typeFilter}
+        onTypeChange={setTypeFilter}
+      />
       <MonthGrid
         monthAnchor={displayMonth}
         selectedDate={selectedDate}
-        markers={monthMarkers}
+        markers={filteredMarkers}
         onSelectDate={handleSelectDate}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
