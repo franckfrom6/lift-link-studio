@@ -765,6 +765,57 @@ export type Database = {
         }
         Relationships: []
       }
+      foods: {
+        Row: {
+          carbs_per_100g: number
+          category: string
+          created_at: string
+          created_by: string | null
+          default_unit: string
+          fat_per_100g: number
+          fiber_per_100g: number | null
+          id: string
+          is_system: boolean
+          kcal_per_100g: number
+          name_en: string
+          name_fr: string
+          protein_per_100g: number
+          updated_at: string
+        }
+        Insert: {
+          carbs_per_100g?: number
+          category: string
+          created_at?: string
+          created_by?: string | null
+          default_unit?: string
+          fat_per_100g?: number
+          fiber_per_100g?: number | null
+          id?: string
+          is_system?: boolean
+          kcal_per_100g?: number
+          name_en: string
+          name_fr: string
+          protein_per_100g?: number
+          updated_at?: string
+        }
+        Update: {
+          carbs_per_100g?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          default_unit?: string
+          fat_per_100g?: number
+          fiber_per_100g?: number | null
+          id?: string
+          is_system?: boolean
+          kcal_per_100g?: number
+          name_en?: string
+          name_fr?: string
+          protein_per_100g?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kb_articles: {
         Row: {
           category: string
@@ -815,6 +866,143 @@ export type Database = {
           view_count?: number
         }
         Relationships: []
+      }
+      meal_foods: {
+        Row: {
+          created_at: string
+          food_id: string
+          id: string
+          meal_id: string
+          notes: string | null
+          order_index: number
+          quantity: number
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          food_id: string
+          id?: string
+          meal_id: string
+          notes?: string | null
+          order_index?: number
+          quantity?: number
+          unit?: string
+        }
+        Update: {
+          created_at?: string
+          food_id?: string
+          id?: string
+          meal_id?: string
+          notes?: string | null
+          order_index?: number
+          quantity?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_foods_food_id_fkey"
+            columns: ["food_id"]
+            isOneToOne: false
+            referencedRelation: "foods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_foods_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_plans: {
+        Row: {
+          athlete_can_edit: boolean
+          coach_id: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          status: string
+          student_id: string
+          target_carbs_g: number | null
+          target_fat_g: number | null
+          target_kcal: number | null
+          target_protein_g: number | null
+          updated_at: string
+        }
+        Insert: {
+          athlete_can_edit?: boolean
+          coach_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          status?: string
+          student_id: string
+          target_carbs_g?: number | null
+          target_fat_g?: number | null
+          target_kcal?: number | null
+          target_protein_g?: number | null
+          updated_at?: string
+        }
+        Update: {
+          athlete_can_edit?: boolean
+          coach_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          status?: string
+          student_id?: string
+          target_carbs_g?: number | null
+          target_fat_g?: number | null
+          target_kcal?: number | null
+          target_protein_g?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      meals: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          order_index: number
+          plan_id: string
+          time_target: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          order_index?: number
+          plan_id: string
+          time_target?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          order_index?: number
+          plan_id?: string
+          time_target?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meals_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "meal_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nutrition_profiles: {
         Row: {
