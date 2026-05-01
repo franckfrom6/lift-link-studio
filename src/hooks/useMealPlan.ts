@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { FoodCategory, FoodUnit } from "@/lib/nutrition-macros";
@@ -110,6 +111,43 @@ export function useInvalidateMealPlan() {
   const qc = useQueryClient();
   return (studentId: string) =>
     qc.invalidateQueries({ queryKey: PLAN_QK(studentId) });
+}
+
+/**
+ * Subscribe to realtime changes on meal_plans / meals / meal_foods that
+ * concern this student. Any change triggers a single React Query
+ * invalidation so the editor refetches and re-renders.
+ *
+ * - meal_plans: filter by student_id directly.
+ * - meals + meal_foods: we cannot filter server-side by student_id
+ *   (no FK column on those rows), so we accept all events on those
+ *   tables and let RLS already restrict what we'd receive in practice.
+ *   Cheap to invalidate; the query is cached.
+ */
+export function useMealPlanRealtime(studentId: string | null, onRemoteChange?: () => void) {
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!studentId) return;
+    const channel = supabase
+      .channel(`meal-plan-${studentId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "meal_plans", filter: `student_id=eq.${studentId}` },
+        () => { qc.invalidateQueries({ queryKey: PLAN_QK(studentId) }); onRemoteChange?.(); }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "meals" },
+        () => { qc.invalidateQueries({ queryKey: PLAN_QK(studentId) }); onRemoteChange?.(); }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "meal_foods" },
+        () => { qc.invalidateQueries({ queryKey: PLAN_QK(studentId) }); onRemoteChange?.(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [studentId, qc, onRemoteChange]);
 }
 
 // ---------------------------------------------------------------------

@@ -177,6 +177,9 @@ const StudentNutrition = () => {
             <button onClick={() => goToDay(1)} className="text-xs text-muted-foreground hover:text-foreground">→</button>
           </div>
         </div>
+        <Button variant="outline" size="sm" onClick={() => navigate("/student/nutrition-plan")} className="shrink-0">
+          Mon plan
+        </Button>
       </div>
 
       <DailyNutritionLog

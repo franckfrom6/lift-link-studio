@@ -12,17 +12,23 @@ import { cn } from "@/lib/utils";
 import {
   useMealPlan, useUpdatePlan, useAddMeal, useUpdateMeal, useDeleteMeal,
   useDuplicateMeal, useAddMealFood, useUpdateMealFood, useDeleteMealFood,
+  useMealPlanRealtime,
   type MealFoodRow,
 } from "@/hooks/useMealPlan";
 import { computeEntryMacros, sumMacros } from "@/lib/nutrition-macros";
 import MealCard from "./MealCard";
 import FoodPickerSheet from "./FoodPickerSheet";
 import FoodEditSheet from "./FoodEditSheet";
+import SubstituteFoodSheet from "./SubstituteFoodSheet";
 
 interface MealPlanEditorProps {
   studentId: string;
   /** True for the coach view (shows athlete_can_edit toggle). */
   asCoach?: boolean;
+  /** True for the athlete view: hides athlete_can_edit toggle and locks daily targets. */
+  asAthlete?: boolean;
+  /** When true, hide all edit affordances (chips, +meal, etc.). */
+  readOnly?: boolean;
 }
 
 /**
@@ -30,8 +36,10 @@ interface MealPlanEditorProps {
  * sticky daily totals, list of MealCards, add/duplicate/delete meals,
  * picker + editor sheets, undoable chip removal.
  */
-const MealPlanEditor = ({ studentId, asCoach = true }: MealPlanEditorProps) => {
+const MealPlanEditor = ({ studentId, asCoach = true, asAthlete = false, readOnly = false }: MealPlanEditorProps) => {
   const { data: plan, isLoading } = useMealPlan(studentId);
+  // Live multi-tab updates: any remote change triggers a discreet toast + refetch.
+  useMealPlanRealtime(studentId, () => toast("Plan mis à jour", { duration: 2000 }));
   const updatePlan = useUpdatePlan(studentId);
   const addMeal = useAddMeal(studentId);
   const updateMeal = useUpdateMeal(studentId);
@@ -88,6 +96,7 @@ const MealPlanEditor = ({ studentId, asCoach = true }: MealPlanEditorProps) => {
   // ----- Sheets state -----
   const [pickerFor, setPickerFor] = useState<{ mealId: string; orderIndex: number } | null>(null);
   const [editEntry, setEditEntry] = useState<MealFoodRow | null>(null);
+  const [substituteEntry, setSubstituteEntry] = useState<MealFoodRow | null>(null);
   const [editTargetsOpen, setEditTargetsOpen] = useState(false);
 
   // ----- Daily totals -----
@@ -177,10 +186,12 @@ const MealPlanEditor = ({ studentId, asCoach = true }: MealPlanEditorProps) => {
         <div className="flex items-start gap-2">
           <Input
             value={planName}
-            onChange={(e) => { setPlanName(e.target.value); queuePlanSave({ name: e.target.value }); }}
+            onChange={(e) => { setPlanName(e.target.value); if (!asAthlete) queuePlanSave({ name: e.target.value }); }}
+            disabled={asAthlete || readOnly}
             className="h-9 font-bold text-base flex-1"
             placeholder="Nom du plan"
           />
+          {!asAthlete && !readOnly && (
           <Dialog open={editTargetsOpen} onOpenChange={setEditTargetsOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 shrink-0">
@@ -218,9 +229,10 @@ const MealPlanEditor = ({ studentId, asCoach = true }: MealPlanEditorProps) => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
-        {asCoach && (
+        {asCoach && !asAthlete && (
           <div className="flex items-center justify-between gap-3">
             <Label htmlFor="athlete-edit" className="text-xs">
               Plan modifiable par l'athlète
@@ -259,6 +271,7 @@ const MealPlanEditor = ({ studentId, asCoach = true }: MealPlanEditorProps) => {
             <MealCard
               key={meal.id}
               meal={meal}
+              readOnly={readOnly}
               onRename={(name, time) =>
                 updateMeal.mutate({ mealId: meal.id, patch: { name, time_target: time } as any })
               }
@@ -276,14 +289,20 @@ const MealPlanEditor = ({ studentId, asCoach = true }: MealPlanEditorProps) => {
                 const entry = meal.meal_foods.find((mf) => mf.id === mealFoodId);
                 if (entry) handleDeleteFood(entry);
               }}
+              onSubstituteFood={(mealFoodId) => {
+                const entry = meal.meal_foods.find((mf) => mf.id === mealFoodId);
+                if (entry) setSubstituteEntry(entry);
+              }}
             />
           ))}
         </div>
       )}
 
-      <Button onClick={handleAddMeal} variant="outline" className="w-full">
-        <Plus className="w-4 h-4 mr-2" /> Ajouter un repas
-      </Button>
+      {!readOnly && (
+        <Button onClick={handleAddMeal} variant="outline" className="w-full">
+          <Plus className="w-4 h-4 mr-2" /> Ajouter un repas
+        </Button>
+      )}
 
       {/* Sheets */}
       <FoodPickerSheet
@@ -311,10 +330,38 @@ const MealPlanEditor = ({ studentId, asCoach = true }: MealPlanEditorProps) => {
         onDelete={() => editEntry && handleDeleteFood(editEntry)}
         onReplace={() => {
           if (!editEntry) return;
-          // Open picker on same meal at the entry's index, then remove the
-          // existing chip with undo so it's a true replace from the user's POV.
-          setPickerFor({ mealId: editEntry.meal_id, orderIndex: editEntry.order_index });
-          handleDeleteFood(editEntry);
+          // Open the substitute sheet (smart suggestions) instead of generic picker.
+          setSubstituteEntry(editEntry);
+        }}
+      />
+
+      <SubstituteFoodSheet
+        open={!!substituteEntry}
+        entry={substituteEntry}
+        onClose={() => setSubstituteEntry(null)}
+        onSubstitute={(food) => {
+          if (!substituteEntry) return;
+          // Same quantity; if unit changed in the new food's default, keep current unit unless mismatched.
+          updateMealFood.mutate({
+            mealFoodId: substituteEntry.id,
+            patch: { } as any, // no-op, we replace via insert+delete below
+          });
+          // True swap: delete old chip, insert new with same qty/unit/order.
+          deleteMealFood.mutate({ mealFoodId: substituteEntry.id });
+          addMealFood.mutate({
+            mealId: substituteEntry.meal_id,
+            foodId: food.id,
+            quantity: substituteEntry.quantity,
+            unit: substituteEntry.unit,
+            orderIndex: substituteEntry.order_index,
+            notes: substituteEntry.notes,
+          });
+          toast.success("Aliment remplacé");
+        }}
+        onOpenManualPicker={() => {
+          if (!substituteEntry) return;
+          setPickerFor({ mealId: substituteEntry.meal_id, orderIndex: substituteEntry.order_index });
+          deleteMealFood.mutate({ mealFoodId: substituteEntry.id });
         }}
       />
     </div>

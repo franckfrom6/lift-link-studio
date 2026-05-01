@@ -915,6 +915,39 @@ export type Database = {
           },
         ]
       }
+      meal_plan_change_requests: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          message: string
+          plan_id: string
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          message?: string
+          plan_id: string
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          plan_id?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       meal_plans: {
         Row: {
           athlete_can_edit: boolean
