@@ -84,6 +84,10 @@ const StudentWeek = () => {
   const [duplicateSession, setDuplicateSession] = useState<{ id: string; name: string } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; isFreeSession: boolean } | null>(null);
+  // Self-guided "add a week" affordance state — declared early so all hooks
+  // run on every render (the early `programLoading` return below would
+  // otherwise skip these on the first render and trigger React error #310).
+  const [addingWeek, setAddingWeek] = useState(false);
 
   const totalWeeks = program?.weeks?.length || 0;
 
