@@ -45,7 +45,7 @@ export function useFoodSearch(opts: {
 
       const { data, error } = await q;
       if (error) throw error;
-      return (data || []) as FoodRow[];
+      return (data || []) as unknown as FoodRow[];
     },
   });
 }
@@ -87,7 +87,7 @@ export function useEquivalentFoods(opts: {
         .gte("fat_per_100g", f.lo).lte("fat_per_100g", f.hi)
         .limit(20);
       if (error) throw error;
-      return (data || []) as FoodRow[];
+      return (data || []) as unknown as FoodRow[];
     },
   });
 }
