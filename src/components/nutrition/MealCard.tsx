@@ -22,11 +22,13 @@ interface MealCardProps {
   onAddFood?: () => void;
   onRemoveFood?: (mealFoodId: string) => void;
   onEditFood?: (mealFoodId: string) => void;
+  /** Long-press on a chip → request substitution */
+  onSubstituteFood?: (mealFoodId: string) => void;
 }
 
 const MealCard = ({
   meal, readOnly,
-  onRename, onDelete, onDuplicate, onAddFood, onRemoveFood, onEditFood,
+  onRename, onDelete, onDuplicate, onAddFood, onRemoveFood, onEditFood, onSubstituteFood,
 }: MealCardProps) => {
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -99,6 +101,7 @@ const MealCard = ({
               readOnly={readOnly}
               onTap={() => onEditFood?.(mf.id)}
               onRemove={() => onRemoveFood?.(mf.id)}
+              onLongPress={onSubstituteFood ? () => onSubstituteFood(mf.id) : undefined}
             />
           ))}
         </div>
