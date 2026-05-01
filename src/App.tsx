@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, MutationCache } from "@tanstack/react-query";
+import { bumpPendingCount } from "@/lib/offline-queue";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -63,13 +64,43 @@ import KBLayout from "./pages/support/KBLayout";
 import KBHome from "./pages/support/KBHome";
 import KBArticle from "./pages/support/KBArticle";
 
+/**
+ * MutationCache instrumentation (PR3 nutrition offline queue).
+ *
+ * - When a mutation is queued while offline, `onMutate` increments the
+ *   "pending" counter exposed by the OfflineQueueBadge.
+ * - On `onSettled`, we decrement. Errors keep the counter intact (the
+ *   user retries). This is intentionally simple: TanStack Query already
+ *   handles pause/resume of mutations across reconnects.
+ */
+const mutationCache = new MutationCache({
+  onMutate: () => {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      void bumpPendingCount(1);
+    }
+  },
+  onSettled: (_data, error) => {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      // Will be replayed on reconnect; counter stays.
+      return;
+    }
+    if (!error) void bumpPendingCount(-1);
+  },
+});
+
 const queryClient = new QueryClient({
+  mutationCache,
   defaultOptions: {
     queries: {
       staleTime: 30 * 1000,
       gcTime: 5 * 60 * 1000,
       retry: 2,
       refetchOnWindowFocus: false,
+      networkMode: "offlineFirst",
+    },
+    mutations: {
+      networkMode: "offlineFirst",
+      retry: 1,
     },
   },
 });
