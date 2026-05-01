@@ -155,6 +155,16 @@ const StudentWeek = () => {
   const weekStart = selectedMonday;
   const { swaps: dbSwaps, createSwap } = useSessionSwaps(weekStart);
 
+  // Week range label (e.g. "lun. 13 — dim. 19 janv.") — declared early so
+  // hook order is stable across the `programLoading` early return below.
+  const weekRangeLabel = useMemo(() => {
+    const end = new Date(weekStart);
+    end.setDate(end.getDate() + 6);
+    const fmt = new Intl.DateTimeFormat(i18n.language || "fr", { weekday: "short", day: "numeric" });
+    const fmtMonth = new Intl.DateTimeFormat(i18n.language || "fr", { month: "short" });
+    return `${fmt.format(weekStart)} — ${fmt.format(end)} ${fmtMonth.format(end)}`;
+  }, [weekStart, i18n.language]);
+
   const { effectiveStudentId } = useImpersonation();
   const studentId = user ? effectiveStudentId(user.id) : null;
 
