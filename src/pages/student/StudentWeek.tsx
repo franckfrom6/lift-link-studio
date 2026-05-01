@@ -16,10 +16,8 @@ import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
 import SignatureStartCTA from "@/components/student/SignatureStartCTA";
-import ProgWeekSelector, { ProgWeekSelectorItem } from "@/components/student/ProgWeekSelector";
-import ProgWeekHeader from "@/components/student/ProgWeekHeader";
 import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
-import WeekRangePicker from "@/components/student/WeekRangePicker";
+import MonthGrid, { MonthDayMarkers } from "@/components/student/MonthGrid";
 import NoProgramOnboardingBanner from "@/components/student/NoProgramOnboardingBanner";
 import { toast } from "sonner";
 import {
@@ -37,6 +35,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSessionSwaps } from "@/hooks/useSessionSwaps";
 import { supabase } from "@/integrations/supabase/client";
 import { useWeekData } from "@/hooks/useWeekData";
+import { useMonthSessions } from "@/hooks/useMonthSessions";
+import { formatLocalDate } from "@/lib/date-utils";
 import { AnimatePresence, motion } from "framer-motion";
 
 const StudentWeek = () => {
@@ -49,8 +49,19 @@ const StudentWeek = () => {
     t("common:days.mon"), t("common:days.tue"), t("common:days.wed"),
     t("common:days.thu"), t("common:days.fri"), t("common:days.sat"), t("common:days.sun"),
   ];
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
+  // Free-navigation calendar state.
+  // selectedDate = the day the user is focused on (detail row below grid).
+  // displayMonth = which month the grid currently shows (can differ from
+  // selectedDate when the user is browsing without picking a day yet).
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+  const [displayMonth, setDisplayMonth] = useState<Date>(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
   const navigate = useNavigate();
   const [swapMode, setSwapMode] = useState(false);
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
@@ -67,6 +78,34 @@ const StudentWeek = () => {
 
   const totalWeeks = program?.weeks?.length || 0;
 
+  // Today + Monday-of(selectedDate) helpers.
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const selectedMonday = useMemo(() => {
+    const d = new Date(selectedDate);
+    const dow = d.getDay();
+    d.setDate(d.getDate() - dow + (dow === 0 ? -6 : 1));
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [selectedDate]);
+
+  const todayMonday = useMemo(() => {
+    const d = new Date(today);
+    const dow = d.getDay();
+    d.setDate(d.getDate() - dow + (dow === 0 ? -6 : 1));
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [today]);
+
+  const weekOffset = useMemo(
+    () => Math.round((selectedMonday.getTime() - todayMonday.getTime()) / (7 * 24 * 60 * 60 * 1000)),
+    [selectedMonday, todayMonday]
+  );
+
   const selectedWeekIndex = useMemo(() => {
     if (!program || totalWeeks === 0) return 0;
     const created = new Date(program.created_at);
@@ -74,15 +113,10 @@ const StudentWeek = () => {
     const cMonday = new Date(created);
     cMonday.setDate(cMonday.getDate() - cDay + (cDay === 0 ? -6 : 1));
     cMonday.setHours(0, 0, 0, 0);
-    const now = new Date();
-    const nDay = now.getDay();
-    const displayMonday = new Date(now);
-    displayMonday.setDate(displayMonday.getDate() - nDay + (nDay === 0 ? -6 : 1) + weekOffset * 7);
-    displayMonday.setHours(0, 0, 0, 0);
-    const diffWeeks = Math.round((displayMonday.getTime() - cMonday.getTime()) / (7 * 24 * 60 * 60 * 1000));
+    const diffWeeks = Math.round((selectedMonday.getTime() - cMonday.getTime()) / (7 * 24 * 60 * 60 * 1000));
     if (diffWeeks < 0) return 0;
     return diffWeeks % totalWeeks;
-  }, [program, totalWeeks, weekOffset]);
+  }, [program, totalWeeks, selectedMonday]);
 
   const currentWeek = program?.weeks?.[selectedWeekIndex];
   const weekSessions = currentWeek?.sessions || [];
@@ -105,17 +139,7 @@ const StudentWeek = () => {
     return map;
   }, [weekSessions]);
 
-  const getWeekStart = () => {
-    const now = new Date();
-    const start = new Date(now);
-    const day = start.getDay();
-    const diff = start.getDate() - day + (day === 0 ? -6 : 1) + weekOffset * 7;
-    start.setDate(diff);
-    start.setHours(0, 0, 0, 0);
-    return start;
-  };
-
-  const weekStart = useMemo(getWeekStart, [weekOffset]);
+  const weekStart = selectedMonday;
   const { swaps: dbSwaps, createSwap } = useSessionSwaps(weekStart);
 
   const { effectiveStudentId } = useImpersonation();
@@ -204,12 +228,11 @@ const StudentWeek = () => {
 
   const dates = getWeekDates();
 
-  // Auto-select today's index
-  useEffect(() => {
-    if (selectedDayIndex !== null) return;
-    const todayIdx = dates.findIndex(d => d.isToday);
-    setSelectedDayIndex(todayIdx >= 0 ? todayIdx : 0);
-  }, [dates, selectedDayIndex]);
+  // Index (0..6) within the selected week of the currently-focused day.
+  const selectedDayIndex = useMemo(() => {
+    const dow = selectedDate.getDay();
+    return (dow + 6) % 7;
+  }, [selectedDate]);
 
   // Completed sessions count for ring
   const completedSessionCount = useMemo(() => {
@@ -246,6 +269,108 @@ const StudentWeek = () => {
     }
     return null;
   }, [dates, effectiveSessions, completedSessionIds, getFreeForDay]);
+
+  // ----- Monthly grid data -----
+  const { summaries: monthSummaries } = useMonthSessions(studentId, displayMonth);
+
+  /**
+   * Build the per-day marker map shown in the grid.
+   * Combines:
+   *  - programmed sessions (from active program rotated over weeks)
+   *  - free sessions (date-bound)
+   *  - external activities
+   *  - completion state (today + past)
+   */
+  const monthMarkers = useMemo(() => {
+    const map = new Map<string, MonthDayMarkers>();
+    const ensure = (key: string): MonthDayMarkers => {
+      let v = map.get(key);
+      if (!v) {
+        v = {};
+        map.set(key, v);
+      }
+      return v;
+    };
+
+    // 1) Date-bound items (free sessions / externals / completed)
+    monthSummaries.forEach((s, key) => {
+      const m = ensure(key);
+      if (s.free > 0) m.hasSession = true;
+      if (s.external > 0) m.hasExternal = true;
+      if (s.completed > 0) {
+        m.hasSession = true;
+        m.isCompleted = true;
+      }
+    });
+
+    // 2) Programmed sessions: rotate the program weeks across the displayed month.
+    if (program && totalWeeks > 0) {
+      const created = new Date(program.created_at);
+      const cDow = created.getDay();
+      const cMonday = new Date(created);
+      cMonday.setDate(cMonday.getDate() - cDow + (cDow === 0 ? -6 : 1));
+      cMonday.setHours(0, 0, 0, 0);
+
+      const monthStart = new Date(displayMonth.getFullYear(), displayMonth.getMonth(), 1);
+      const monthEnd = new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 0);
+      // Walk Mondays that intersect the month.
+      const firstDow = monthStart.getDay();
+      const monthGridStart = new Date(monthStart);
+      monthGridStart.setDate(monthStart.getDate() - ((firstDow + 6) % 7));
+      const cursor = new Date(monthGridStart);
+
+      while (cursor <= monthEnd || cursor.getMonth() === displayMonth.getMonth()) {
+        const diffWeeks = Math.round(
+          (cursor.getTime() - cMonday.getTime()) / (7 * 24 * 60 * 60 * 1000)
+        );
+        if (diffWeeks >= 0) {
+          const weekIdx = diffWeeks % totalWeeks;
+          const wk = program.weeks[weekIdx];
+          const sessionsByDay = new Set<number>(
+            (wk?.sessions || []).map((s) => s.day_of_week - 1)
+          );
+          for (let i = 0; i < 7; i++) {
+            if (!sessionsByDay.has(i)) continue;
+            const d = new Date(cursor);
+            d.setDate(cursor.getDate() + i);
+            if (d.getMonth() !== displayMonth.getMonth()) continue;
+            const key = formatLocalDate(d);
+            const m = ensure(key);
+            m.hasSession = true;
+          }
+        }
+        cursor.setDate(cursor.getDate() + 7);
+        if (cursor.getTime() > monthEnd.getTime() + 7 * 24 * 60 * 60 * 1000) break;
+      }
+    }
+
+    return map;
+  }, [monthSummaries, program, totalWeeks, displayMonth]);
+
+  // Keep displayMonth in sync when the user picks a date in another month.
+  useEffect(() => {
+    if (
+      displayMonth.getFullYear() !== selectedDate.getFullYear() ||
+      displayMonth.getMonth() !== selectedDate.getMonth()
+    ) {
+      // Don't auto-jump — user may be browsing months separately. We only
+      // align display when selecting via grid (handled inline).
+    }
+  }, [displayMonth, selectedDate]);
+
+  const handleSelectDate = (date: Date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    setSelectedDate(d);
+    setDisplayMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+  };
+
+  const handlePrevMonth = () => {
+    setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1));
+  };
+  const handleNextMonth = () => {
+    setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1));
+  };
 
   const handleDayClickInSwapMode = (dayIndex: number) => {
     if (swapSourceDay === null) return;
@@ -400,26 +525,6 @@ const StudentWeek = () => {
     window.location.reload();
   };
 
-  // Sage Phase 4 — week selector strip data
-  const programWeeks: ProgWeekSelectorItem[] = useMemo(() => {
-    if (!program) return [];
-    return (program.weeks || []).map((w, idx) => {
-      const total = w.sessions?.length || 0;
-      const isCurrent = idx === selectedWeekIndex;
-      const isPast = idx < selectedWeekIndex;
-      const isFuture = idx > selectedWeekIndex;
-      // For the current week we know the actual count; for past weeks we
-      // assume the program was followed (best-effort visual). Future weeks = 0.
-      const completed = isCurrent ? completedSessionCount : isPast ? total : 0;
-      return {
-        num: idx + 1,
-        completed,
-        total,
-        state: isCurrent ? "current" : isPast ? "past" : "future",
-      };
-    });
-  }, [program, selectedWeekIndex, completedSessionCount]);
-
   // Week range label, e.g. "lun. 13 — dim. 19 janv."
   const weekRangeLabel = useMemo(() => {
     const end = new Date(weekStart);
@@ -438,15 +543,6 @@ const StudentWeek = () => {
   // Total sessions in the displayed week (including free sessions)
   const totalWeekSessions = programmedCount + freeSessions.length;
 
-  // Map week-strip selection (1-based S{n}) to weekOffset
-  const handleSelectStripWeek = (num: number) => {
-    const newWeekIdx = num - 1;
-    const delta = newWeekIdx - selectedWeekIndex;
-    if (delta === 0) return;
-    setWeekOffset(weekOffset + delta);
-    setSelectedDayIndex(null);
-  };
-
   // Self-guided athletes can append a new week to their program.
   // The new week becomes the next chronological week in the calendar.
   const isSelfGuided = !!program && program.coach_id === null;
@@ -464,35 +560,12 @@ const StudentWeek = () => {
       return;
     }
     await queryClient.invalidateQueries({ queryKey: ["student-program", studentId] });
-    // Jump the calendar to the newly added week
-    const newWeekIdx = nextNumber - 1;
-    const delta = newWeekIdx - selectedWeekIndex;
-    setWeekOffset(weekOffset + delta);
-    setSelectedDayIndex(null);
     toast.success(`Semaine ${nextNumber} ajoutée`);
     setAddingWeek(false);
   };
 
-  // Jump to the Monday of any given date (used by the mini-calendar picker).
-  const handleJumpToDate = (date: Date) => {
-    const target = new Date(date);
-    const day = target.getDay();
-    const monday = new Date(target);
-    monday.setDate(target.getDate() - day + (day === 0 ? -6 : 1));
-    monday.setHours(0, 0, 0, 0);
-    const today = new Date();
-    const todayDay = today.getDay();
-    const todayMonday = new Date(today);
-    todayMonday.setDate(today.getDate() - todayDay + (todayDay === 0 ? -6 : 1));
-    todayMonday.setHours(0, 0, 0, 0);
-    const offset = Math.round((monday.getTime() - todayMonday.getTime()) / (7 * 24 * 60 * 60 * 1000));
-    setWeekOffset(offset);
-    setSelectedDayIndex(null);
-  };
-
   const handleJumpToday = () => {
-    setWeekOffset(0);
-    setSelectedDayIndex(null);
+    handleSelectDate(today);
   };
 
   const hasProgram = !!program;
@@ -509,21 +582,35 @@ const StudentWeek = () => {
         </div>
       )}
 
-      {/* Sage Phase 4 — Header (program/meso + week badge) */}
+      {/* Sage — Header. Passive program indicator (S3/6) replaces the old carousel. */}
       <header className="px-4 pt-4 pb-3 flex items-center justify-between gap-3 border-b border-border">
         <div className="min-w-0 flex-1">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-subtle truncate">
-            {hasProgram ? program!.name : t('calendar:hello', { name: userName })}
-          </p>
+          {hasProgram ? (
+            <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-subtle truncate">
+              <span>{program!.name}</span>
+              <span className="mx-1.5 text-muted-subtle/60">·</span>
+              <span className="tabular-nums">S{selectedWeekIndex + 1}/{totalWeeks}</span>
+            </p>
+          ) : (
+            <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-subtle truncate">
+              {t('calendar:hello', { name: userName })}
+            </p>
+          )}
           <h1 className="text-lg font-bold tracking-tight text-foreground mt-0.5">
-            {t('calendar:program_title', 'Programme')}
+            {t('calendar:program_title', 'Calendrier')}
           </h1>
         </div>
-        {hasProgram && (
-          <div className="flex items-center gap-1 px-2.5 py-1 bg-card border border-border rounded-sm flex-shrink-0">
-            <span className="text-xs font-bold tabular-nums text-foreground">S{selectedWeekIndex + 1}</span>
-            <span className="text-[11px] text-muted-subtle font-medium">/ {totalWeeks}</span>
-          </div>
+        {isSelfGuided && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleAddWeek}
+            disabled={addingWeek}
+            className="h-8 px-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={2} />
+            Semaine
+          </Button>
         )}
       </header>
 
@@ -538,34 +625,33 @@ const StudentWeek = () => {
         />
       )}
 
-      {/* Week strip — programmes structurés uniquement */}
-      {hasProgram && (programWeeks.length > 1 || isSelfGuided) && (
-        <ProgWeekSelector
-          weeks={programWeeks}
-          current={selectedWeekIndex + 1}
-          onSelect={handleSelectStripWeek}
-          onAddWeek={isSelfGuided ? handleAddWeek : undefined}
-          addDisabled={addingWeek}
-        />
-      )}
-
-      {/* Week summary with interactive mini-calendar */}
-      <ProgWeekHeader
-        label={weekLabel}
-        range={weekRangeLabel}
-        completedSessions={completedSessionCount}
-        totalSessions={totalWeekSessions}
-        labelSlot={
-          <WeekRangePicker
-            weekStart={weekStart}
-            label={weekLabel}
-            range={weekRangeLabel}
-            onSelectDate={handleJumpToDate}
-            onJumpToday={handleJumpToday}
-            isCurrentWeek={weekOffset === 0}
-          />
-        }
+      {/* Monthly grid — free navigation across days/months */}
+      <MonthGrid
+        monthAnchor={displayMonth}
+        selectedDate={selectedDate}
+        markers={monthMarkers}
+        onSelectDate={handleSelectDate}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        onJumpToday={handleJumpToday}
       />
+
+      {/* Selected day summary line */}
+      <div className="px-4 pt-3 pb-2 flex items-baseline justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">
+            {weekLabel} · {weekRangeLabel}
+          </p>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="text-[22px] font-bold tabular-nums tracking-tight text-foreground leading-none">
+              {completedSessionCount}
+            </span>
+            <span className="text-xs font-medium text-muted-subtle">
+              / {totalWeekSessions} séances
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Check-in banner — only on current week */}
       {weekOffset === 0 && (
@@ -613,15 +699,18 @@ const StudentWeek = () => {
         </div>
       )}
 
-      {/* Chronological day list */}
+      {/* Selected day detail (single ProgDayRow, kept for visual parity) */}
       <div className="border-y border-border">
-        {dates.map((day, i) => {
+        {(() => {
+          const day = dates[selectedDayIndex];
+          if (!day) return null;
+          const i = 0;
           const isSessionDay = day.hasSession;
           const sessionInfo = effectiveSessions[day.dayIndex];
           const sessionCompleted = isSessionDay && !!sessionInfo && isSessionCompleted(sessionInfo.sessionId);
           const dayExternals = getExternalForDay(day.date);
           const dayFreeSessions = getFreeForDay(day.date);
-          const isLast = i === dates.length - 1;
+          const isLast = true;
 
           // Determine state
           let state: DayState = "rest";
@@ -771,7 +860,7 @@ const StudentWeek = () => {
               {(dayExternals.length > 0 || (isSessionDay && dayFreeSessions.length > 0)) ? extras : null}
             </ProgDayRow>
           );
-        })}
+        })()}
       </div>
 
       {/* Floating "Démarrer la séance" CTA — replaces the mobile bottom nav on /student */}
