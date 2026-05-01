@@ -347,17 +347,6 @@ const StudentWeek = () => {
     return map;
   }, [monthSummaries, program, totalWeeks, displayMonth]);
 
-  // Keep displayMonth in sync when the user picks a date in another month.
-  useEffect(() => {
-    if (
-      displayMonth.getFullYear() !== selectedDate.getFullYear() ||
-      displayMonth.getMonth() !== selectedDate.getMonth()
-    ) {
-      // Don't auto-jump — user may be browsing months separately. We only
-      // align display when selecting via grid (handled inline).
-    }
-  }, [displayMonth, selectedDate]);
-
   const handleSelectDate = (date: Date) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
