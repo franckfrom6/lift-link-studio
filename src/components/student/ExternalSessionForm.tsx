@@ -13,6 +13,10 @@ import {
   DEFAULT_PROVIDERS, getIntensityColor, getActivityDiscipline,
 } from "@/data/activity-types";
 import { useTranslation } from "react-i18next";
+import {
+  EnduranceMetrics, ExternalSessionSource,
+  computePaceSPerKm, formatPace,
+} from "@/types/endurance";
 
 export interface ExternalSessionData {
   id?: string;
@@ -28,6 +32,16 @@ export interface ExternalSessionData {
   notes: string;
   date: string;
   added_by?: "student" | "coach";
+  // Endurance fields (all optional)
+  distance_meters?: number | null;
+  elevation_gain_m?: number | null;
+  avg_heart_rate?: number | null;
+  max_heart_rate?: number | null;
+  calories?: number | null;
+  avg_pace_s_per_km?: number | null;
+  metrics?: EnduranceMetrics | null;
+  source?: ExternalSessionSource | null;
+  external_id?: string | null;
 }
 
 interface ExternalSessionFormProps {
@@ -54,6 +68,12 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
   const [muscleGroups, setMuscleGroups] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [showProviderSuggestions, setShowProviderSuggestions] = useState(false);
+  // Endurance fields
+  const [distanceKm, setDistanceKm] = useState<string>("");
+  const [elevationGain, setElevationGain] = useState<string>("");
+  const [avgHr, setAvgHr] = useState<string>("");
+  const [maxHr, setMaxHr] = useState<string>("");
+  const [calories, setCalories] = useState<string>("");
 
   useEffect(() => {
     if (initialData) {
@@ -67,6 +87,11 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
       setIntensity(initialData.intensity_perceived);
       setMuscleGroups(initialData.muscle_groups_involved);
       setNotes(initialData.notes);
+      setDistanceKm(initialData.distance_meters != null ? String(initialData.distance_meters / 1000) : "");
+      setElevationGain(initialData.elevation_gain_m != null ? String(initialData.elevation_gain_m) : "");
+      setAvgHr(initialData.avg_heart_rate != null ? String(initialData.avg_heart_rate) : "");
+      setMaxHr(initialData.max_heart_rate != null ? String(initialData.max_heart_rate) : "");
+      setCalories(initialData.calories != null ? String(initialData.calories) : "");
     } else {
       setActivityType("pilates");
       setLabel("");
@@ -78,6 +103,11 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
       setIntensity(5);
       setMuscleGroups(ACTIVITY_TYPES[0].defaultMuscleGroups);
       setNotes("");
+      setDistanceKm("");
+      setElevationGain("");
+      setAvgHr("");
+      setMaxHr("");
+      setCalories("");
     }
   }, [initialData, open]);
 
@@ -109,6 +139,8 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
   }, [timeStart, timeEnd]);
 
   const handleSubmit = () => {
+    const distance_meters = distanceKm ? Math.round(parseFloat(distanceKm) * 1000) : null;
+    const isEndurance = discipline === "endurance";
     onSubmit({
       id: initialData?.id,
       activity_type: activityType,
@@ -123,6 +155,12 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
       notes,
       date: formatLocalDate(date),
       added_by: initialData?.added_by || addedBy,
+      distance_meters: isEndurance ? distance_meters : null,
+      elevation_gain_m: isEndurance && elevationGain ? Math.round(parseFloat(elevationGain)) : null,
+      avg_heart_rate: isEndurance && avgHr ? Math.round(parseFloat(avgHr)) : null,
+      max_heart_rate: isEndurance && maxHr ? Math.round(parseFloat(maxHr)) : null,
+      calories: isEndurance && calories ? Math.round(parseFloat(calories)) : null,
+      avg_pace_s_per_km: isEndurance ? computePaceSPerKm(duration, distance_meters) : null,
     });
     onClose();
   };
@@ -130,6 +168,10 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
   const intensityLabel = intensity <= 3 ? t('calendar:intensity_light') : intensity <= 6 ? t('calendar:intensity_moderate') : intensity <= 8 ? t('calendar:intensity_intense') : t('calendar:intensity_max');
   const discipline = getActivityDiscipline(activityType);
   const showMuscleSelector = discipline !== "endurance";
+  const showEnduranceMetrics = discipline === "endurance";
+  const livePace = showEnduranceMetrics
+    ? formatPace(computePaceSPerKm(duration, distanceKm ? parseFloat(distanceKm) * 1000 : null))
+    : "—";
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -213,6 +255,72 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
               <span>{t('calendar:intensity_max')}</span>
             </div>
           </div>
+
+          {showEnduranceMetrics && (
+            <div className="space-y-3 p-3 rounded-lg border border-dashed border-border bg-secondary/30">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('calendar:endurance_metrics', 'Métriques de la séance')}
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">{t('calendar:distance_km', 'Distance (km)')}</Label>
+                  <Input
+                    inputMode="decimal"
+                    value={distanceKm}
+                    onChange={(e) => setDistanceKm(e.target.value.replace(',', '.'))}
+                    placeholder="ex: 8.5"
+                    className="h-10 tabular-nums"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">{t('calendar:elevation_m', 'D+ (m)')}</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={elevationGain}
+                    onChange={(e) => setElevationGain(e.target.value)}
+                    placeholder="ex: 120"
+                    className="h-10 tabular-nums"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">{t('calendar:avg_hr', 'FC moy (bpm)')}</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={avgHr}
+                    onChange={(e) => setAvgHr(e.target.value)}
+                    placeholder="ex: 148"
+                    className="h-10 tabular-nums"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">{t('calendar:max_hr', 'FC max (bpm)')}</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={maxHr}
+                    onChange={(e) => setMaxHr(e.target.value)}
+                    placeholder="ex: 178"
+                    className="h-10 tabular-nums"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">{t('calendar:calories_kcal', 'Calories (kcal)')}</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={calories}
+                    onChange={(e) => setCalories(e.target.value)}
+                    placeholder="auto"
+                    className="h-10 tabular-nums"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">{t('calendar:avg_pace', 'Allure moy.')}</Label>
+                  <div className="h-10 flex items-center px-3 rounded-md border border-border bg-muted/40 text-sm tabular-nums text-foreground/80">
+                    {livePace}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {showMuscleSelector && (
             <div className="space-y-2">
