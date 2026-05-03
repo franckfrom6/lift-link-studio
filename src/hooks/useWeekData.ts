@@ -79,6 +79,15 @@ export function useWeekData(studentId: string | null, weekStart: Date) {
         muscle_groups_involved: e.muscle_groups_involved || undefined,
         notes: e.notes || undefined,
         date: e.date,
+        distance_meters: e.distance_meters,
+        elevation_gain_m: e.elevation_gain_m,
+        avg_heart_rate: e.avg_heart_rate,
+        max_heart_rate: e.max_heart_rate,
+        calories: e.calories,
+        avg_pace_s_per_km: e.avg_pace_s_per_km,
+        metrics: e.metrics,
+        source: e.source,
+        external_id: e.external_id,
       })) as ExternalSessionData[];
     },
     enabled: !!studentId,
@@ -123,6 +132,13 @@ export function useWeekData(studentId: string | null, weekStart: Date) {
         muscle_groups_involved: data.muscle_groups_involved || null,
         notes: data.notes || null,
         date: data.date,
+        distance_meters: data.distance_meters ?? null,
+        elevation_gain_m: data.elevation_gain_m ?? null,
+        avg_heart_rate: data.avg_heart_rate ?? null,
+        max_heart_rate: data.max_heart_rate ?? null,
+        calories: data.calories ?? null,
+        avg_pace_s_per_km: data.avg_pace_s_per_km ?? null,
+        metrics: (data.metrics as any) ?? null,
       }).eq("id", data.id);
       if (error) {
         console.error("Error updating external session:", error);
@@ -144,6 +160,14 @@ export function useWeekData(studentId: string | null, weekStart: Date) {
         muscle_groups_involved: data.muscle_groups_involved || null,
         notes: data.notes || null,
         date: data.date,
+        distance_meters: data.distance_meters ?? null,
+        elevation_gain_m: data.elevation_gain_m ?? null,
+        avg_heart_rate: data.avg_heart_rate ?? null,
+        max_heart_rate: data.max_heart_rate ?? null,
+        calories: data.calories ?? null,
+        avg_pace_s_per_km: data.avg_pace_s_per_km ?? null,
+        metrics: (data.metrics as any) ?? null,
+        source: data.source ?? "manual",
       });
       if (error) {
         console.error("Error inserting external session:", error);
