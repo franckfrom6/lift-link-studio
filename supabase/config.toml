@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.strava-sync-activities]
 verify_jwt = false
+
+[functions.import-fit-file]
+verify_jwt = false
