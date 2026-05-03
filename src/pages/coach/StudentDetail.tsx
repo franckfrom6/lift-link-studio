@@ -146,6 +146,15 @@ const StudentDetail = () => {
         notes: e.notes || undefined,
         date: e.date,
         added_by: "student" as const,
+        distance_meters: e.distance_meters,
+        elevation_gain_m: e.elevation_gain_m,
+        avg_heart_rate: e.avg_heart_rate,
+        max_heart_rate: e.max_heart_rate,
+        calories: e.calories,
+        avg_pace_s_per_km: (e as any).avg_pace_s_per_km,
+        metrics: (e as any).metrics,
+        source: (e as any).source,
+        external_id: (e as any).external_id,
       })));
     }
 
@@ -504,6 +513,14 @@ const StudentDetail = () => {
             muscle_groups_involved: data.muscle_groups_involved || null,
             notes: data.notes || null,
             date: data.date,
+            distance_meters: data.distance_meters ?? null,
+            elevation_gain_m: data.elevation_gain_m ?? null,
+            avg_heart_rate: data.avg_heart_rate ?? null,
+            max_heart_rate: data.max_heart_rate ?? null,
+            calories: data.calories ?? null,
+            avg_pace_s_per_km: data.avg_pace_s_per_km ?? null,
+            metrics: (data.metrics as any) ?? null,
+            source: data.source ?? "manual",
           }).select("id").single();
           if (error) {
             console.error("Error adding external session:", error);

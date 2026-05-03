@@ -704,19 +704,23 @@ export type Database = {
           activity_label: string | null
           activity_type: string
           avg_heart_rate: number | null
+          avg_pace_s_per_km: number | null
           calories: number | null
           created_at: string
           date: string
           distance_meters: number | null
           duration_minutes: number | null
           elevation_gain_m: number | null
+          external_id: string | null
           id: string
           intensity_perceived: number | null
           location: string | null
           max_heart_rate: number | null
+          metrics: Json | null
           muscle_groups_involved: string[] | null
           notes: string | null
           provider: string | null
+          source: string
           strava_activity_id: number | null
           strava_raw: Json | null
           student_id: string
@@ -727,19 +731,23 @@ export type Database = {
           activity_label?: string | null
           activity_type?: string
           avg_heart_rate?: number | null
+          avg_pace_s_per_km?: number | null
           calories?: number | null
           created_at?: string
           date: string
           distance_meters?: number | null
           duration_minutes?: number | null
           elevation_gain_m?: number | null
+          external_id?: string | null
           id?: string
           intensity_perceived?: number | null
           location?: string | null
           max_heart_rate?: number | null
+          metrics?: Json | null
           muscle_groups_involved?: string[] | null
           notes?: string | null
           provider?: string | null
+          source?: string
           strava_activity_id?: number | null
           strava_raw?: Json | null
           student_id: string
@@ -750,19 +758,23 @@ export type Database = {
           activity_label?: string | null
           activity_type?: string
           avg_heart_rate?: number | null
+          avg_pace_s_per_km?: number | null
           calories?: number | null
           created_at?: string
           date?: string
           distance_meters?: number | null
           duration_minutes?: number | null
           elevation_gain_m?: number | null
+          external_id?: string | null
           id?: string
           intensity_perceived?: number | null
           location?: string | null
           max_heart_rate?: number | null
+          metrics?: Json | null
           muscle_groups_involved?: string[] | null
           notes?: string | null
           provider?: string | null
+          source?: string
           strava_activity_id?: number | null
           strava_raw?: Json | null
           student_id?: string
