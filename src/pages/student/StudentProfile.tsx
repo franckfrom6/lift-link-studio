@@ -5,6 +5,7 @@ import NutritionProfileForm, { NutritionProfileData } from "@/components/nutriti
 import MacroDonut from "@/components/nutrition/MacroDonut";
 import NotificationSettings from "@/components/student/NotificationSettings";
 import StravaConnectionCard from "@/components/student/StravaConnectionCard";
+import HealthFileImportCard from "@/components/student/HealthFileImportCard";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
@@ -167,6 +168,9 @@ const StudentProfile = () => {
               Intégrations
             </p>
             <StravaConnectionCard />
+            <div className="mt-3">
+              <HealthFileImportCard />
+            </div>
           </div>
         </TabsContent>
 
