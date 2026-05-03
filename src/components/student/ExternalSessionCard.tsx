@@ -1,6 +1,6 @@
 import { Trash2, Pencil, MapPin, Clock, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ACTIVITY_TYPES, getIntensityColor, MUSCLE_GROUP_LABELS } from "@/data/activity-types";
+import { ACTIVITY_TYPES, getIntensityColor, MUSCLE_GROUP_LABELS, isEnduranceActivity } from "@/data/activity-types";
 import { ExternalSessionData } from "./ExternalSessionForm";
 
 interface ExternalSessionCardProps {
@@ -13,6 +13,11 @@ interface ExternalSessionCardProps {
 const ExternalSessionCard = ({ session, onEdit, onDelete, compact }: ExternalSessionCardProps) => {
   const type = ACTIVITY_TYPES.find(t => t.id === session.activity_type);
   const emoji = type?.emoji || "➕";
+  // Endurance activities (running, cycling, swimming) should never display
+  // muscle-group chips — even on legacy rows that still have them in DB.
+  const showMuscles = !isEnduranceActivity(session.activity_type)
+    && session.muscle_groups_involved
+    && session.muscle_groups_involved.length > 0;
 
   if (compact) {
     return (
@@ -76,7 +81,7 @@ const ExternalSessionCard = ({ session, onEdit, onDelete, compact }: ExternalSes
             </>
           )}
         </div>
-        {(session.location || (session.muscle_groups_involved && session.muscle_groups_involved.length > 0)) && (
+        {(session.location || showMuscles) && (
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             {session.location && (
               <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
@@ -84,7 +89,7 @@ const ExternalSessionCard = ({ session, onEdit, onDelete, compact }: ExternalSes
                 {session.location}
               </span>
             )}
-            {session.muscle_groups_involved && session.muscle_groups_involved.length > 0 && (
+            {showMuscles && (
               <div className="flex flex-wrap gap-1">
                 {session.muscle_groups_involved.slice(0, 4).map(g => (
                   <span key={g} className="bg-secondary text-muted-foreground px-1.5 py-0.5 rounded text-[9px]">
