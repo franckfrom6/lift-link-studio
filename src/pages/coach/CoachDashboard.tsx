@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import AIUsageDashboard from "@/components/ai/AIUsageDashboard";
+import StravaConnectionCard from "@/components/student/StravaConnectionCard";
 import { Users, TrendingUp, Activity, AlertTriangle, ChevronRight, Filter, ArrowUpDown, Search, Clock, Zap, Target, Pin, PinOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -128,6 +129,14 @@ const CoachDashboard = () => {
       </div>
 
       <AIUsageDashboard />
+
+      {/* Coach personal integrations */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+          Intégrations
+        </p>
+        <StravaConnectionCard />
+      </div>
 
       {/* Student Overview */}
       <div className="space-y-3">
