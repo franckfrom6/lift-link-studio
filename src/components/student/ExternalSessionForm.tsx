@@ -10,7 +10,7 @@ import { formatLocalDate } from "@/lib/date-utils";
 import ActivityTypeSelector from "./ActivityTypeSelector";
 import {
   ACTIVITY_TYPES, ActivityType, MUSCLE_GROUP_OPTIONS,
-  DEFAULT_PROVIDERS, getIntensityColor,
+  DEFAULT_PROVIDERS, getIntensityColor, getActivityDiscipline,
 } from "@/data/activity-types";
 import { useTranslation } from "react-i18next";
 
@@ -84,7 +84,12 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
   const handleTypeChange = (type: ActivityType) => {
     setActivityType(type.id);
     setDuration(type.defaultDuration);
-    setMuscleGroups(type.defaultMuscleGroups);
+    // Endurance disciplines never carry muscle tags. Flexibility starts empty (optional).
+    setMuscleGroups(
+      type.discipline === "endurance" || type.discipline === "flexibility"
+        ? []
+        : type.defaultMuscleGroups
+    );
     if (!label) setLabel(type.label);
   };
 
@@ -123,6 +128,8 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
   };
 
   const intensityLabel = intensity <= 3 ? t('calendar:intensity_light') : intensity <= 6 ? t('calendar:intensity_moderate') : intensity <= 8 ? t('calendar:intensity_intense') : t('calendar:intensity_max');
+  const discipline = getActivityDiscipline(activityType);
+  const showMuscleSelector = discipline !== "endurance";
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -207,16 +214,23 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('calendar:muscles_involved')}</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {MUSCLE_GROUP_OPTIONS.map((group) => (
-                <button key={group} type="button" onClick={() => toggleMuscleGroup(group)} className={cn("px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all", muscleGroups.includes(group) ? "border-primary bg-accent text-foreground" : "border-border text-muted-foreground hover:border-primary/30")}>
-                  {t(`calendar:muscle_groups.${group}`, group)}
-                </button>
-              ))}
+          {showMuscleSelector && (
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('calendar:muscles_involved')}
+                {discipline === "flexibility" && (
+                  <span className="ml-1 text-[10px] text-muted-foreground/70 normal-case font-normal">({t('common:optional', 'optionnel')})</span>
+                )}
+              </Label>
+              <div className="flex flex-wrap gap-1.5">
+                {MUSCLE_GROUP_OPTIONS.map((group) => (
+                  <button key={group} type="button" onClick={() => toggleMuscleGroup(group)} className={cn("px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all", muscleGroups.includes(group) ? "border-primary bg-accent text-foreground" : "border-border text-muted-foreground hover:border-primary/30")}>
+                    {t(`calendar:muscle_groups.${group}`, group)}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('calendar:notes_optional')}</Label>
