@@ -138,6 +138,14 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
     }
   }, [timeStart, timeEnd]);
 
+  const discipline = getActivityDiscipline(activityType);
+  const intensityLabel = intensity <= 3 ? t('calendar:intensity_light') : intensity <= 6 ? t('calendar:intensity_moderate') : intensity <= 8 ? t('calendar:intensity_intense') : t('calendar:intensity_max');
+  const showMuscleSelector = discipline !== "endurance";
+  const showEnduranceMetrics = discipline === "endurance";
+  const livePace = showEnduranceMetrics
+    ? formatPace(computePaceSPerKm(duration, distanceKm ? parseFloat(distanceKm) * 1000 : null))
+    : "—";
+
   const handleSubmit = () => {
     const distance_meters = distanceKm ? Math.round(parseFloat(distanceKm) * 1000) : null;
     const isEndurance = discipline === "endurance";
@@ -164,14 +172,6 @@ const ExternalSessionForm = ({ open, onClose, onSubmit, date, initialData, added
     });
     onClose();
   };
-
-  const intensityLabel = intensity <= 3 ? t('calendar:intensity_light') : intensity <= 6 ? t('calendar:intensity_moderate') : intensity <= 8 ? t('calendar:intensity_intense') : t('calendar:intensity_max');
-  const discipline = getActivityDiscipline(activityType);
-  const showMuscleSelector = discipline !== "endurance";
-  const showEnduranceMetrics = discipline === "endurance";
-  const livePace = showEnduranceMetrics
-    ? formatPace(computePaceSPerKm(duration, distanceKm ? parseFloat(distanceKm) * 1000 : null))
-    : "—";
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
