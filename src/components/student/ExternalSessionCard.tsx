@@ -1,7 +1,8 @@
-import { Trash2, Pencil, MapPin, Clock, User } from "lucide-react";
+import { Trash2, Pencil, MapPin, Clock, User, Route, Mountain, Heart, Flame, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ACTIVITY_TYPES, getIntensityColor, MUSCLE_GROUP_LABELS, isEnduranceActivity } from "@/data/activity-types";
 import { ExternalSessionData } from "./ExternalSessionForm";
+import { formatPace } from "@/types/endurance";
 
 interface ExternalSessionCardProps {
   session: ExternalSessionData;
@@ -18,6 +19,10 @@ const ExternalSessionCard = ({ session, onEdit, onDelete, compact }: ExternalSes
   const showMuscles = !isEnduranceActivity(session.activity_type)
     && session.muscle_groups_involved
     && session.muscle_groups_involved.length > 0;
+  const isEndurance = isEnduranceActivity(session.activity_type);
+  const distanceKm = session.distance_meters ? (session.distance_meters / 1000) : null;
+  const splits = (session.metrics as any)?.splits as Array<{ km: number; pace_s: number; hr_avg?: number }> | undefined;
+  const hasPolyline = !!(session.metrics as any)?.route_polyline;
 
   if (compact) {
     return (
@@ -98,6 +103,41 @@ const ExternalSessionCard = ({ session, onEdit, onDelete, compact }: ExternalSes
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {isEndurance && (distanceKm || session.avg_heart_rate || session.elevation_gain_m || session.calories || session.avg_pace_s_per_km) && (
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap text-[10px] text-muted-foreground tabular-nums">
+            {distanceKm != null && (
+              <span className="flex items-center gap-0.5"><Route className="w-2.5 h-2.5" strokeWidth={1.5} />{distanceKm.toFixed(distanceKm < 10 ? 2 : 1)} km</span>
+            )}
+            {session.avg_pace_s_per_km != null && (
+              <span className="flex items-center gap-0.5"><Gauge className="w-2.5 h-2.5" strokeWidth={1.5} />{formatPace(session.avg_pace_s_per_km)}</span>
+            )}
+            {session.avg_heart_rate != null && (
+              <span className="flex items-center gap-0.5"><Heart className="w-2.5 h-2.5" strokeWidth={1.5} />{session.avg_heart_rate} bpm</span>
+            )}
+            {session.elevation_gain_m != null && session.elevation_gain_m > 0 && (
+              <span className="flex items-center gap-0.5"><Mountain className="w-2.5 h-2.5" strokeWidth={1.5} />D+ {session.elevation_gain_m} m</span>
+            )}
+            {session.calories != null && session.calories > 0 && (
+              <span className="flex items-center gap-0.5"><Flame className="w-2.5 h-2.5" strokeWidth={1.5} />{session.calories} kcal</span>
+            )}
+          </div>
+        )}
+        {isEndurance && splits && splits.length > 0 && (
+          <div className="mt-1.5 grid grid-cols-5 gap-0.5 text-[9px] text-muted-foreground tabular-nums">
+            {splits.slice(0, 10).map((s) => (
+              <div key={s.km} className="px-1 py-0.5 rounded bg-secondary/60 text-center">
+                <div className="font-semibold text-foreground/80">K{s.km}</div>
+                <div>{formatPace(s.pace_s)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* TODO: render polyline (Mapbox / Google Static) when metrics.route_polyline is present */}
+        {hasPolyline && (
+          <div className="mt-1.5 h-12 rounded-md bg-secondary/40 border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground">
+            🗺️ Tracé GPS disponible
           </div>
         )}
         {session.notes && (
