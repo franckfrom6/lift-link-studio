@@ -43,11 +43,22 @@ interface StravaActivity {
   type?: string;
   start_date: string;
   elapsed_time: number;
+  moving_time?: number;
   distance?: number;
   total_elevation_gain?: number;
   average_heartrate?: number;
   max_heartrate?: number;
   calories?: number;
+  average_cadence?: number;
+  splits_metric?: Array<{
+    distance: number;
+    elapsed_time: number;
+    moving_time: number;
+    average_heartrate?: number;
+    elevation_difference?: number;
+    split: number;
+  }>;
+  map?: { summary_polyline?: string };
 }
 
 async function refreshAccessToken(refreshToken: string) {
@@ -202,16 +213,45 @@ Deno.serve(async (req) => {
       const startDate = a.start_date;
       const datePart = startDate.split("T")[0];
       const timePart = startDate.split("T")[1]?.slice(0, 8) ?? null;
+      const activityType = mapActivityType(a.sport_type, a.type);
+      const movingSec = a.moving_time ?? a.elapsed_time ?? 0;
+      const distM = a.distance != null ? Math.round(a.distance) : null;
+      const pace = (activityType === "running" && distM && distM > 0 && movingSec > 0)
+        ? Math.round(movingSec / (distM / 1000))
+        : null;
+
+      // Build discipline-specific metrics JSONB
+      const metrics: Record<string, unknown> = {};
+      if (a.splits_metric?.length) {
+        metrics.splits = a.splits_metric.map((s) => ({
+          km: s.split,
+          pace_s: s.moving_time && s.distance
+            ? Math.round(s.moving_time / (s.distance / 1000))
+            : 0,
+          hr_avg: s.average_heartrate,
+          elevation: s.elevation_difference,
+        }));
+      }
+      if (a.map?.summary_polyline) {
+        metrics.route_polyline = a.map.summary_polyline;
+      }
+      if (a.average_cadence != null) {
+        metrics.avg_cadence_spm = Math.round(a.average_cadence * 2);
+      }
+
       const row = {
         student_id: userId,
         strava_activity_id: a.id,
+        source: "strava",
+        external_id: String(a.id),
         provider: "strava",
         date: datePart,
         time_start: timePart,
         activity_label: a.name,
-        activity_type: mapActivityType(a.sport_type, a.type),
-        duration_minutes: Math.round((a.elapsed_time ?? 0) / 60),
-        distance_meters: a.distance != null ? Math.round(a.distance) : null,
+        activity_type: activityType,
+        duration_minutes: Math.round(movingSec / 60),
+        distance_meters: distM,
+        avg_pace_s_per_km: pace,
         elevation_gain_m: a.total_elevation_gain != null
           ? Math.round(a.total_elevation_gain)
           : null,
@@ -222,26 +262,40 @@ Deno.serve(async (req) => {
           ? Math.round(a.max_heartrate)
           : null,
         calories: a.calories != null ? Math.round(a.calories) : null,
+        metrics: Object.keys(metrics).length ? metrics : null,
         strava_raw: a,
       };
 
-      // Detect insert vs update by checking existence first
+      // Check existing row to preserve user-edited fields (notes, RPE, label override)
       const { data: existing } = await admin
         .from("external_sessions")
-        .select("id")
-        .eq("strava_activity_id", a.id)
+        .select("id, notes, intensity_perceived, activity_label")
+        .eq("source", "strava")
+        .eq("external_id", String(a.id))
         .maybeSingle();
 
-      const { error: upErr } = await admin
-        .from("external_sessions")
-        .upsert(row, { onConflict: "strava_activity_id" });
-
-      if (upErr) {
-        console.error("upsert failed for activity", a.id, upErr);
-        continue;
+      if (existing) {
+        // UPDATE: only objective metrics, keep user-edited fields untouched
+        const { notes: _n, intensity_perceived: _i, activity_label: _l, ...metricFields } = row;
+        const { error: upErr } = await admin
+          .from("external_sessions")
+          .update(metricFields)
+          .eq("id", existing.id);
+        if (upErr) {
+          console.error("update failed for activity", a.id, upErr);
+          continue;
+        }
+        updated_count++;
+      } else {
+        const { error: insErr } = await admin
+          .from("external_sessions")
+          .insert(row);
+        if (insErr) {
+          console.error("insert failed for activity", a.id, insErr);
+          continue;
+        }
+        new_count++;
       }
-      if (existing) updated_count++;
-      else new_count++;
     }
 
     // 6. Update last_sync_at
