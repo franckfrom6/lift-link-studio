@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
@@ -78,9 +78,19 @@ const ExerciseCard = ({ ex, idx, onPreviewVideo }: { ex: any; idx: number; onPre
         <ExerciseNumber idx={idx} />
         <VideoThumb hasVideo={hasVideo} onClick={() => onPreviewVideo(ex)} />
         <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-bold text-foreground tracking-tight leading-snug">
-            {exData.name || "Exercice"}
-          </div>
+          {exData.id ? (
+            <Link
+              to={`/student/exercise/${exData.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="block text-[15px] font-bold text-foreground tracking-tight leading-snug hover:text-primary transition-colors"
+            >
+              {exData.name || "Exercice"}
+            </Link>
+          ) : (
+            <div className="text-[15px] font-bold text-foreground tracking-tight leading-snug">
+              {exData.name || "Exercice"}
+            </div>
+          )}
           {ex.coach_notes && (
             <div className="text-xs text-muted-foreground mt-1 leading-snug">{ex.coach_notes}</div>
           )}
@@ -123,9 +133,18 @@ const WarmupCard = ({ section }: { section: any }) => (
               {i + 1}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-foreground tracking-tight">
-                {ex.exercise?.name || "Mouvement"}
-              </div>
+              {ex.exercise?.id ? (
+                <Link
+                  to={`/student/exercise/${ex.exercise.id}`}
+                  className="block text-sm font-semibold text-foreground tracking-tight hover:text-primary transition-colors"
+                >
+                  {ex.exercise?.name || "Mouvement"}
+                </Link>
+              ) : (
+                <div className="text-sm font-semibold text-foreground tracking-tight">
+                  {ex.exercise?.name || "Mouvement"}
+                </div>
+              )}
               <div className="text-xs text-muted-foreground mt-0.5">
                 {ex.sets} × {repsLabel(ex)} {isTimeTracking(ex) ? "sec" : "reps"}
                 {ex.coach_notes ? ` · ${ex.coach_notes}` : ""}
