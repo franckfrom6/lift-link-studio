@@ -66,11 +66,6 @@ export function useExerciseDetail(exerciseId: string | undefined, studentId: str
       if (!exercise) throw new Error("Exercice introuvable");
 
       // 2. Find all session_exercises matching this exercise
-      const { data: sxs, error: sxErr } = await supabase
-        .from("session_exercises")
-        .select("id");
-      // We don't filter by exercise_id here directly because completed_sets cross-join needs ids
-      // Re-do properly:
       const { data: sxsFiltered, error: sxsFilteredErr } = await supabase
         .from("session_exercises")
         .select("id")
