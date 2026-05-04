@@ -49,6 +49,13 @@ export const ImpersonationProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
+      // Server-side audit trail
+      await supabase.from("impersonation_audit").insert({
+        coach_id: user.id,
+        student_id: student.id,
+        event: "start",
+      });
+
       setImpersonating(student);
     } catch {
       toast.error(t("error_occurred"));
@@ -56,8 +63,20 @@ export const ImpersonationProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [t]);
 
   const stopImpersonation = useCallback(() => {
+    const target = impersonating;
+    if (target) {
+      void supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+          void supabase.from("impersonation_audit").insert({
+            coach_id: user.id,
+            student_id: target.id,
+            event: "stop",
+          });
+        }
+      });
+    }
     setImpersonating(null);
-  }, []);
+  }, [impersonating]);
 
   const effectiveStudentId = useCallback(
     (realUserId: string) => impersonating?.id ?? realUserId,
