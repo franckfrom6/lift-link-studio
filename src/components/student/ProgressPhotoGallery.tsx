@@ -8,6 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Plus, Camera, Loader2, ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 
+const SignedPhoto = ({ path, alt }: { path: string; alt: string }) => {
+  const [url, setUrl] = useState<string>("");
+  useEffect(() => {
+    let active = true;
+    getSignedPhotoUrl(path).then((u) => { if (active) setUrl(u); });
+    return () => { active = false; };
+  }, [path]);
+  if (!url) return <div className="w-full h-full bg-secondary animate-pulse" />;
+  return <img src={url} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
+};
+
 const ProgressPhotoGallery = () => {
   const { t } = useTranslation("dashboard");
   const { photos, loading, uploadPhoto } = useProgressPhotos();
