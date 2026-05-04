@@ -1060,20 +1060,34 @@ serve(async (req) => {
               try {
                 // Resolve exercise IDs from names
                 async function resolveExercise(ex: any) {
-                  const { data: found } = await serviceClient
+                  const cleanName = (ex.name || "").trim().replace(/\s+/g, " ");
+                  if (!cleanName) return null;
+
+                  // 1. Exact match in default library (case-insensitive)
+                  const { data: defaultMatch } = await serviceClient
                     .from("exercises")
-                    .select("id, name")
-                    .or(`name.ilike.%${ex.name}%,name_en.ilike.%${ex.name}%`)
+                    .select("id")
                     .eq("is_default", true)
+                    .ilike("name", cleanName)
                     .limit(1)
                     .maybeSingle();
-                  
-                  if (found) return found.id;
-                  
+                  if (defaultMatch) return defaultMatch.id;
+
+                  // 2. Exact match among this user's custom exercises
+                  const { data: ownMatch } = await serviceClient
+                    .from("exercises")
+                    .select("id")
+                    .eq("created_by", userId)
+                    .ilike("name", cleanName)
+                    .limit(1)
+                    .maybeSingle();
+                  if (ownMatch) return ownMatch.id;
+
+                  // 3. Create — unique index protects against races
                   const { data: created, error: createErr } = await serviceClient
                     .from("exercises")
                     .insert({
-                      name: ex.name,
+                      name: cleanName,
                       muscle_group: "Autre",
                       equipment: "Autre",
                       type: "compound",
@@ -1082,11 +1096,20 @@ serve(async (req) => {
                     })
                     .select("id")
                     .single();
-                  if (createErr || !created) {
-                    console.error("Error creating exercise:", createErr);
-                    return null;
-                  }
-                  return created.id;
+                  if (created) return created.id;
+
+                  // 4. Race fallback: refetch
+                  const { data: refetch } = await serviceClient
+                    .from("exercises")
+                    .select("id")
+                    .eq("created_by", userId)
+                    .ilike("name", cleanName)
+                    .limit(1)
+                    .maybeSingle();
+                  if (refetch) return refetch.id;
+
+                  console.error("Error creating exercise:", createErr);
+                  return null;
                 }
 
                 // Create the session
