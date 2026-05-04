@@ -161,30 +161,59 @@ const AIAdaptationView = ({ studentId, programId, weekNumber, studentName }: AIA
           for (let eIdx = 0; eIdx < section.exercises.length; eIdx++) {
             const ex = section.exercises[eIdx];
 
-            // Try to find the exercise in the DB by name
-            const { data: dbExercise } = await supabase
-              .from("exercises")
-              .select("id")
-              .ilike("name", ex.name)
-              .limit(1)
-              .maybeSingle();
+            const cleanName = (ex.name || "").trim().replace(/\s+/g, " ");
+            let exerciseId: string | undefined;
 
-            let exerciseId = dbExercise?.id;
-
-            // If not found, create it
-            if (!exerciseId) {
-              const { data: created } = await supabase
+            if (cleanName) {
+              // 1. Default library
+              const { data: dflt } = await supabase
                 .from("exercises")
-                .insert({
-                  name: ex.name,
-                  muscle_group: "other",
-                  equipment: "bodyweight",
-                  type: "compound",
-                  created_by: user.id,
-                })
                 .select("id")
-                .single();
-              exerciseId = created?.id;
+                .eq("is_default", true)
+                .ilike("name", cleanName)
+                .limit(1)
+                .maybeSingle();
+              exerciseId = dflt?.id;
+
+              // 2. Coach's own custom
+              if (!exerciseId) {
+                const { data: own } = await supabase
+                  .from("exercises")
+                  .select("id")
+                  .eq("created_by", user.id)
+                  .ilike("name", cleanName)
+                  .limit(1)
+                  .maybeSingle();
+                exerciseId = own?.id;
+              }
+
+              // 3. Create (unique index prevents dupes)
+              if (!exerciseId) {
+                const { data: created } = await supabase
+                  .from("exercises")
+                  .insert({
+                    name: cleanName,
+                    muscle_group: "Autre",
+                    equipment: "Autre",
+                    type: "compound",
+                    created_by: user.id,
+                  })
+                  .select("id")
+                  .single();
+                exerciseId = created?.id;
+
+                // 4. Race fallback
+                if (!exerciseId) {
+                  const { data: refetch } = await supabase
+                    .from("exercises")
+                    .select("id")
+                    .eq("created_by", user.id)
+                    .ilike("name", cleanName)
+                    .limit(1)
+                    .maybeSingle();
+                  exerciseId = refetch?.id;
+                }
+              }
             }
 
             if (exerciseId) {
