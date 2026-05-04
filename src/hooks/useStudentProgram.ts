@@ -203,56 +203,60 @@ export const useStudentProgram = () => {
   useEffect(() => {
     if (!studentId || !programId) return;
 
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleInvalidate = () => {
+      if (timer) return;
+      timer = setTimeout(() => {
+        timer = null;
+        queryClient.invalidateQueries({ queryKey });
+      }, 250);
+    };
+
+    const isRelevantSession = (payload: any) => {
+      const data = queryClient.getQueryData<DBProgram>(queryKey);
+      const weekIds = data?.weeks?.map(w => w.id) || [];
+      const changedWeekId = payload.new?.week_id || payload.old?.week_id;
+      return !changedWeekId || weekIds.includes(changedWeekId);
+    };
+    const isRelevantSessionChild = (payload: any) => {
+      const data = queryClient.getQueryData<DBProgram>(queryKey);
+      const sessionIds = data?.weeks?.flatMap(w => w.sessions?.map(s => s.id) || []) || [];
+      const changedSessionId = payload.new?.session_id || payload.old?.session_id;
+      return !changedSessionId || sessionIds.includes(changedSessionId);
+    };
+
     const channel = supabase
       .channel(`student-program-sync-${studentId}`)
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'programs', filter: `student_id=eq.${studentId}` },
-        () => queryClient.invalidateQueries({ queryKey })
+        scheduleInvalidate
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'program_weeks', filter: `program_id=eq.${programId}` },
-        () => queryClient.invalidateQueries({ queryKey })
+        scheduleInvalidate
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'program_progression', filter: `program_id=eq.${programId}` },
-        () => queryClient.invalidateQueries({ queryKey })
+        scheduleInvalidate
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'sessions' },
-        (payload) => {
-          const weekIds = queryClient.getQueryData<DBProgram>(queryKey)
-            ?.weeks?.map(w => w.id) || [];
-          const changedWeekId = (payload.new as any)?.week_id || (payload.old as any)?.week_id;
-          if (!changedWeekId || weekIds.includes(changedWeekId)) {
-            queryClient.invalidateQueries({ queryKey });
-          }
-        }
+        (payload) => { if (isRelevantSession(payload)) scheduleInvalidate(); }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'session_sections' },
-        (payload) => {
-          const sessionIds = queryClient.getQueryData<DBProgram>(queryKey)
-            ?.weeks?.flatMap(w => w.sessions?.map(s => s.id) || []) || [];
-          const changedSessionId = (payload.new as any)?.session_id || (payload.old as any)?.session_id;
-          if (!changedSessionId || sessionIds.includes(changedSessionId)) {
-            queryClient.invalidateQueries({ queryKey });
-          }
-        }
+        (payload) => { if (isRelevantSessionChild(payload)) scheduleInvalidate(); }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'session_exercises' },
-        (payload) => {
-          const sessionIds = queryClient.getQueryData<DBProgram>(queryKey)
-            ?.weeks?.flatMap(w => w.sessions?.map(s => s.id) || []) || [];
-          const changedSessionId = (payload.new as any)?.session_id || (payload.old as any)?.session_id;
-          if (!changedSessionId || sessionIds.includes(changedSessionId)) {
-            queryClient.invalidateQueries({ queryKey });
-          }
-        }
+        (payload) => { if (isRelevantSessionChild(payload)) scheduleInvalidate(); }
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (timer) clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
   }, [studentId, programId, queryClient]);
 
   const seedDemo = useCallback(async () => {
