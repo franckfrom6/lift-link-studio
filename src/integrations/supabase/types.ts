@@ -642,6 +642,60 @@ export type Database = {
         }
         Relationships: []
       }
+      exercise_favorites: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
+      exercise_video_requests: {
+        Row: {
+          coach_id: string
+          created_at: string
+          exercise_id: string
+          id: string
+          message: string | null
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          exercise_id: string
+          id?: string
+          message?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          message?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       exercises: {
         Row: {
           created_at: string

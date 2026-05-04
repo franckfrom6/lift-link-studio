@@ -55,6 +55,7 @@ import SessionPreview from "./pages/student/SessionPreview";
 import AthleteProgramEditor from "./pages/student/AthleteProgramEditor";
 import StudentNutrition from "./pages/student/StudentNutrition";
 import StudentRecommendations from "./pages/student/StudentRecommendations";
+import ExerciseDetailPage from "./pages/ExerciseDetailPage";
 
 import SupportLayout from "./layouts/SupportLayout";
 import SupportPage from "./pages/support/SupportPage";
@@ -148,6 +149,7 @@ const App = () => (
                   <Route path="students/:studentId/program/:programId" element={<CoachProgramDetail />} />
                   <Route path="students/:studentId/bilan" element={<StudentBilan />} />
                   <Route path="students/:studentId/nutrition-plan" element={<StudentNutritionPlan />} />
+                  <Route path="students/:studentId/exercise/:exerciseId" element={<ExerciseDetailPage />} />
                   <Route path="programs" element={<CoachPrograms />} />
                   <Route path="exercises" element={<CoachExercises />} />
                   <Route path="recommendations" element={<CoachRecommendations />} />
@@ -163,6 +165,7 @@ const App = () => (
                   <Route path="nutrition" element={<StudentNutrition />} />
                   <Route path="nutrition-plan" element={<AthleteNutritionPlan />} />
                   <Route path="recommendations" element={<StudentRecommendations />} />
+                  <Route path="exercise/:exerciseId" element={<ExerciseDetailPage />} />
                 </Route>
 
                 <Route path="/support" element={<AuthGuard><SupportLayout /></AuthGuard>}>
