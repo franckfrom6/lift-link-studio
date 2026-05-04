@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { VideoPlayerSheet } from "./VideoPlayerSheet";
 
 interface ExerciseVideoEmbedProps {
   exerciseName: string;
@@ -15,6 +16,10 @@ interface ExerciseVideoEmbedProps {
   videoUrlMale?: string | null;
   /** Exercise-level generic video URL */
   exerciseVideoUrl?: string | null;
+  /** Meta for the bottom panel of the fullscreen player */
+  muscleGroup?: string | null;
+  category?: string | null;
+  coachName?: string | null;
 }
 
 interface CachedVideo {
@@ -66,14 +71,17 @@ export const ExerciseVideoEmbed = forwardRef<HTMLDivElement, ExerciseVideoEmbedP
   videoUrlFemale,
   videoUrlMale,
   exerciseVideoUrl,
+  muscleGroup,
+  category,
+  coachName,
 }, ref) {
   const [videoId, setVideoId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  // Iframe is only mounted after the user clicks the thumbnail. Until
-  // then we render a static YouTube poster so there is no "black rectangle"
-  // while the iframe boots.
-  const [iframeMounted, setIframeMounted] = useState(false);
+  // Tapping the thumbnail opens the fullscreen VideoPlayerSheet instead
+  // of mounting the iframe inline. This keeps the surface light and lets
+  // YouTube own transport / fullscreen / CC chrome.
+  const [playerOpen, setPlayerOpen] = useState(false);
   const { t } = useTranslation("exercises");
   const { user } = useAuth();
 
@@ -212,40 +220,38 @@ export const ExerciseVideoEmbed = forwardRef<HTMLDivElement, ExerciseVideoEmbedP
   return (
     <div ref={ref} className="w-full sm:max-w-2xl sm:mx-auto">
       <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-md">
-        {iframeMounted ? (
-          <iframe
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
-            title={`${exerciseName} tutorial`}
-            className="absolute inset-0 w-full h-full"
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setPlayerOpen(true); }}
+          className="absolute inset-0 w-full h-full group"
+          aria-label={t("play_demo", "Lire la démo")}
+        >
+          <img
+            src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
+            alt={`${exerciseName} thumbnail`}
+            className="absolute inset-0 w-full h-full object-cover"
             loading="lazy"
-            allowFullScreen
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            decoding="async"
           />
-        ) : (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setIframeMounted(true); }}
-            className="absolute inset-0 w-full h-full group"
-            aria-label={t("play_demo", "Lire la démo")}
-          >
-            <img
-              src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
-              alt={`${exerciseName} thumbnail`}
-              className="absolute inset-0 w-full h-full object-cover"
-              loading="lazy"
-              decoding="async"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-              <div className="w-14 h-14 rounded-full bg-black/70 flex items-center justify-center shadow-lg">
-                <Play className="w-6 h-6 text-white fill-white ml-0.5" strokeWidth={1.5} />
-              </div>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+            <div className="w-14 h-14 rounded-full bg-black/70 flex items-center justify-center shadow-lg">
+              <Play className="w-6 h-6 text-white fill-white ml-0.5" strokeWidth={1.5} />
             </div>
-          </button>
-        )}
+          </div>
+        </button>
       </div>
       <p className="text-sm text-muted-foreground mt-2">
         {t("demo_video", "Vidéo de démonstration")}
       </p>
+      <VideoPlayerSheet
+        open={playerOpen}
+        onClose={() => setPlayerOpen(false)}
+        videoId={videoId}
+        exerciseName={exerciseName}
+        muscle={muscleGroup}
+        category={category}
+        coachName={coachName}
+      />
     </div>
   );
 });
