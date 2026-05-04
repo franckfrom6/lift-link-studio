@@ -1,5 +1,23 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 
+// AES-GCM helpers — derive 256-bit key from STRAVA_TOKEN_KEY via SHA-256
+async function getKey(): Promise<CryptoKey> {
+  const secret = Deno.env.get("STRAVA_TOKEN_KEY");
+  if (!secret) throw new Error("STRAVA_TOKEN_KEY not configured");
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret));
+  return crypto.subtle.importKey("raw", hash, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+}
+async function encryptToken(plain: string): Promise<Uint8Array> {
+  const key = await getKey();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(plain)),
+  );
+  const out = new Uint8Array(iv.length + ct.length);
+  out.set(iv, 0); out.set(ct, iv.length);
+  return out;
+}
+
 function htmlResponse(message: string, returnUrl: string, ok: boolean) {
   const safeReturn = returnUrl || "/";
   const status = ok ? "success" : "error";
@@ -81,13 +99,17 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    const accessEnc = await encryptToken(access_token);
+    const refreshEnc = await encryptToken(refresh_token);
     const { error: upsertErr } = await admin
       .from("strava_connections")
       .upsert({
         user_id: userId,
         strava_athlete_id: athlete?.id ?? 0,
-        access_token,
-        refresh_token,
+        access_token: null,
+        refresh_token: null,
+        access_token_enc: accessEnc,
+        refresh_token_enc: refreshEnc,
         token_expires_at: new Date(expires_at * 1000).toISOString(),
         scope: scope ?? "read,activity:read_all",
         strava_profile: athlete ?? null,
