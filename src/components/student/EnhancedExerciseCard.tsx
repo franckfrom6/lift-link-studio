@@ -14,6 +14,7 @@ import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import ExercisePhoto from "./ExercisePhoto";
 import { AnimatePresence, motion } from "framer-motion";
 import { StatBadge, VideoThumb } from "./SageAtoms";
+import { Link } from "react-router-dom";
 
 export type TrackingType = "weight_reps" | "reps_only" | "duration" | "distance";
 
@@ -28,6 +29,7 @@ export interface EnhancedCompletedSet {
 
 interface EnhancedExerciseCardProps {
   name: string;
+  exerciseId?: string;
   sets: number;
   repsMin: number;
   repsMax: number;
@@ -58,7 +60,7 @@ interface EnhancedExerciseCardProps {
 }
 
 const EnhancedExerciseCard = ({
-  name, sets: targetSets, repsMin, repsMax, restSeconds,
+  name, exerciseId, sets: targetSets, repsMin, repsMax, restSeconds,
   tempo, rpeTarget, suggestedWeight, coachNotes,
   videoUrl, videoSearchQuery,
   videoUrlFemale, videoUrlMale, exerciseVideoUrl,
