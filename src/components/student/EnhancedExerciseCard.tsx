@@ -562,7 +562,11 @@ const EnhancedExerciseCard = ({
       <div className="rounded-xl border border-border/50 bg-card/30 opacity-50 p-2.5">
         <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0">
+          {exerciseId ? (
+            <Link to={`/student/exercise/${exerciseId}`} onClick={(e) => e.stopPropagation()} className="font-semibold text-sm truncate line-through hover:text-primary block">{name}</Link>
+          ) : (
             <p className="font-semibold text-sm truncate line-through">{name}</p>
+          )}
           </div>
           <span className="bg-warning/10 text-warning px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0">
             {t('skip_badge', 'Passé')}
@@ -581,7 +585,11 @@ const EnhancedExerciseCard = ({
       <div className="flex-1 min-w-0">
         {/* LINE 1: name + substituted badge */}
         <div className="flex items-center gap-1.5 min-w-0">
-          <p className={cn("font-bold truncate", isActive ? "text-base" : "text-sm font-semibold")}>{name}</p>
+          {exerciseId ? (
+            <Link to={`/student/exercise/${exerciseId}`} onClick={(e) => e.stopPropagation()} className={cn("font-bold truncate hover:text-primary transition-colors", isActive ? "text-base" : "text-sm font-semibold")}>{name}</Link>
+          ) : (
+            <p className={cn("font-bold truncate", isActive ? "text-base" : "text-sm font-semibold")}>{name}</p>
+          )}
           {isSubstituted && (
             <span className="bg-warning/10 text-warning px-1 py-0.5 rounded text-[9px] font-bold shrink-0">
               {t('modified')}
@@ -648,14 +656,27 @@ const EnhancedExerciseCard = ({
           className="flex-1 min-w-0 text-left"
         >
           <div className="flex items-start gap-1.5 flex-wrap">
-            <p
-              className={cn(
-                "font-bold leading-snug tracking-tight break-words",
-                isActive ? "text-[15px]" : "text-sm"
-              )}
-            >
-              {name}
-            </p>
+            {exerciseId ? (
+              <Link
+                to={`/student/exercise/${exerciseId}`}
+                onClick={(e) => e.stopPropagation()}
+                className={cn(
+                  "font-bold leading-snug tracking-tight break-words hover:text-primary transition-colors",
+                  isActive ? "text-[15px]" : "text-sm"
+                )}
+              >
+                {name}
+              </Link>
+            ) : (
+              <p
+                className={cn(
+                  "font-bold leading-snug tracking-tight break-words",
+                  isActive ? "text-[15px]" : "text-sm"
+                )}
+              >
+                {name}
+              </p>
+            )}
             {isSubstituted && (
               <span className="bg-bg-tinted text-foreground border border-border px-1.5 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider shrink-0">
                 {t('modified')}
