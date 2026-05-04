@@ -7,6 +7,7 @@ export interface ProgramSection {
 
 export interface ProgramExerciseDetail {
   name: string;
+  exerciseId?: string;
   sets: string;
   reps: string;
   tempo: string;
