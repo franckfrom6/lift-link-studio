@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import {
   Bell, ChevronRight, Ruler, Moon, Calendar, Volume2, Play,
   CreditCard, Receipt, Shield, Download, HelpCircle, Mail, FileText,
+  type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -68,7 +69,7 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
 function Row({
   icon: Icon, label, value, last, toggle, onToggle, onClick,
 }: {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: LucideIcon;
   label: string;
   value?: string | null;
   last?: boolean;
@@ -164,18 +165,10 @@ const StudentProfile = () => {
           .select("full_name")
           .eq("user_id", cs.coach_id)
           .maybeSingle();
-        const { data: nextSess } = await supabase
-          .from("sessions")
-          .select("date,time")
-          .eq("student_id", user.id)
-          .gte("date", new Date().toISOString().slice(0, 10))
-          .order("date", { ascending: true })
-          .limit(1)
-          .maybeSingle();
         if (!cancelled) {
           setCoach({
             name: cp?.full_name ?? "Coach",
-            nextSession: nextSess?.date ?? null,
+            nextSession: null,
           });
         }
       }
@@ -518,7 +511,7 @@ function NutritionProfileSheet({ onClose }: { onClose: () => void }) {
       initialData={initial}
       onSubmit={async (d) => {
         if (!user) return;
-        const { error } = await supabase.from("nutrition_profiles").upsert({
+        const { error } = await (supabase.from("nutrition_profiles") as any).upsert({
           student_id: user.id, ...d, updated_by: user.id,
         }, { onConflict: "student_id" });
         if (error) { toast.error("Erreur"); return; }
