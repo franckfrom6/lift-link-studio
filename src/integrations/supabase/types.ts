@@ -921,6 +921,30 @@ export type Database = {
         }
         Relationships: []
       }
+      impersonation_audit: {
+        Row: {
+          coach_id: string
+          created_at: string
+          event: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          event: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          event?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       kb_articles: {
         Row: {
           category: string

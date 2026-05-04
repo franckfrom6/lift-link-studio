@@ -6,6 +6,7 @@ import FirstStepsChecklist from "@/components/onboarding/FirstStepsChecklist";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { startOfISOWeek, differenceInCalendarISOWeeks } from "date-fns";
 import SessionSwapModal from "@/components/student/SessionSwapModal";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import ExternalSessionCard from "@/components/student/ExternalSessionCard";
@@ -99,34 +100,22 @@ const StudentWeek = () => {
   }, []);
 
   const selectedMonday = useMemo(() => {
-    const d = new Date(selectedDate);
-    const dow = d.getDay();
-    d.setDate(d.getDate() - dow + (dow === 0 ? -6 : 1));
-    d.setHours(0, 0, 0, 0);
-    return d;
+    return startOfISOWeek(new Date(selectedDate));
   }, [selectedDate]);
 
   const todayMonday = useMemo(() => {
-    const d = new Date(today);
-    const dow = d.getDay();
-    d.setDate(d.getDate() - dow + (dow === 0 ? -6 : 1));
-    d.setHours(0, 0, 0, 0);
-    return d;
+    return startOfISOWeek(today);
   }, [today]);
 
   const weekOffset = useMemo(
-    () => Math.round((selectedMonday.getTime() - todayMonday.getTime()) / (7 * 24 * 60 * 60 * 1000)),
+    () => differenceInCalendarISOWeeks(selectedMonday, todayMonday),
     [selectedMonday, todayMonday]
   );
 
   const selectedWeekIndex = useMemo(() => {
     if (!program || totalWeeks === 0) return 0;
-    const created = new Date(program.created_at);
-    const cDay = created.getDay();
-    const cMonday = new Date(created);
-    cMonday.setDate(cMonday.getDate() - cDay + (cDay === 0 ? -6 : 1));
-    cMonday.setHours(0, 0, 0, 0);
-    const diffWeeks = Math.round((selectedMonday.getTime() - cMonday.getTime()) / (7 * 24 * 60 * 60 * 1000));
+    const cMonday = startOfISOWeek(new Date(program.created_at));
+    const diffWeeks = differenceInCalendarISOWeeks(selectedMonday, cMonday);
     if (diffWeeks < 0) return 0;
     return diffWeeks % totalWeeks;
   }, [program, totalWeeks, selectedMonday]);

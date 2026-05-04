@@ -4,16 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 type UserRole = "coach" | "student" | null;
 
-interface Profile {
-  id: string;
-  user_id: string;
-  role: UserRole;
-  full_name: string;
-  is_admin: boolean;
-  onboarding_completed: boolean;
-  unit_preference?: "metric" | "imperial";
-  [key: string]: any;
-}
+import type { Database } from "@/integrations/supabase/types";
+export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 interface AuthContextType {
   user: User | null;
@@ -80,6 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let isMounted = true;
+    let initialFetchDone = false;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
@@ -95,15 +88,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
+        // Skip the first auth event — init() will fetch the profile to avoid
+        // a duplicate request on mount.
+        if (!initialFetchDone) return;
         setLoading(true);
-
-        // Avoid awaiting Supabase calls directly inside onAuthStateChange callback.
-        setTimeout(() => {
-          if (!isMounted) return;
-          void fetchProfile(session.user.id).finally(() => {
-            if (isMounted) setLoading(false);
-          });
-        }, 0);
+        void fetchProfile(session.user.id).finally(() => {
+          if (isMounted) setLoading(false);
+        });
       }
     );
 
@@ -121,7 +112,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setRole(null);
       }
 
-      if (isMounted) setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+        initialFetchDone = true;
+      }
     };
 
     void init();
