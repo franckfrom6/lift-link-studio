@@ -226,6 +226,7 @@ const LiveSession = () => {
       notes: section.notes || "",
       exercises: section.exercises.map((ex: any) => ({
         name: ex.exercise?.name || "Exercice",
+        exerciseId: ex.exercise?.id,
         sets: String(ex.sets ?? ""),
         reps: ex.reps_min === ex.reps_max ? String(ex.reps_min) : `${ex.reps_min}-${ex.reps_max}`,
         tempo: ex.tempo || "",
