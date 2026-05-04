@@ -943,6 +943,7 @@ const LiveSession = () => {
                     >
                       <EnhancedExerciseCard
                         name={displayName}
+                        exerciseId={ex.exerciseId}
                         sets={targetSets}
                         repsMin={repsMin}
                         repsMax={repsMax}
