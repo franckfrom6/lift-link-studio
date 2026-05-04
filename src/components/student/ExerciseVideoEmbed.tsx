@@ -137,11 +137,16 @@ export const ExerciseVideoEmbed = forwardRef<HTMLDivElement, ExerciseVideoEmbedP
       setLoading(false);
     }, 5000);
 
+    const finishLoading = () => {
+      window.clearTimeout(timeoutId);
+      setLoading(false);
+    };
+
     async function fetchVideo() {
       const cached = getCached(exerciseName);
       if (cached) {
         setVideoId(cached.videoId);
-        setLoading(false);
+        finishLoading();
         return;
       }
 
@@ -156,7 +161,7 @@ export const ExerciseVideoEmbed = forwardRef<HTMLDivElement, ExerciseVideoEmbedP
         if (fnError || !data) {
           console.error("youtube-search error:", fnError);
           setError(true);
-          setLoading(false);
+          finishLoading();
           return;
         }
 
@@ -166,7 +171,7 @@ export const ExerciseVideoEmbed = forwardRef<HTMLDivElement, ExerciseVideoEmbedP
         console.error("youtube-search fetch error:", e);
         if (!cancelled) setError(true);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) finishLoading();
       }
     }
 
