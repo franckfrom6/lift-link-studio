@@ -1,5 +1,42 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 
+// AES-GCM helpers — derive 256-bit key from STRAVA_TOKEN_KEY via SHA-256
+async function getKey(): Promise<CryptoKey> {
+  const secret = Deno.env.get("STRAVA_TOKEN_KEY");
+  if (!secret) throw new Error("STRAVA_TOKEN_KEY not configured");
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret));
+  return crypto.subtle.importKey("raw", hash, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+}
+async function encryptToken(plain: string): Promise<Uint8Array> {
+  const key = await getKey();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(plain)),
+  );
+  const out = new Uint8Array(iv.length + ct.length);
+  out.set(iv, 0); out.set(ct, iv.length);
+  return out;
+}
+async function decryptToken(buf: Uint8Array): Promise<string> {
+  const key = await getKey();
+  const iv = buf.slice(0, 12);
+  const ct = buf.slice(12);
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
+  return new TextDecoder().decode(pt);
+}
+function bytea(value: any): Uint8Array | null {
+  if (!value) return null;
+  if (value instanceof Uint8Array) return value;
+  if (typeof value === "string") {
+    // Postgres returns bytea as "\\x..." hex string via PostgREST
+    const hex = value.startsWith("\\x") ? value.slice(2) : value;
+    const out = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+    return out;
+  }
+  return null;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -139,11 +176,14 @@ Deno.serve(async (req) => {
     // 2. Refresh token if needed
     // TODO: add applicative lock if we ever run multiple syncs in parallel
     // (currently UI disables button during sync, so race is unlikely).
-    let accessToken: string = conn.access_token;
+    const encAccess = bytea(conn.access_token_enc);
+    const encRefresh = bytea(conn.refresh_token_enc);
+    let accessToken: string = encAccess ? await decryptToken(encAccess) : conn.access_token;
+    let refreshTokenPlain: string = encRefresh ? await decryptToken(encRefresh) : conn.refresh_token;
     const expiresAt = new Date(conn.token_expires_at).getTime();
     const fiveMinFromNow = Date.now() + 5 * 60 * 1000;
     if (expiresAt < fiveMinFromNow) {
-      const refreshed = await refreshAccessToken(conn.refresh_token);
+      const refreshed = await refreshAccessToken(refreshTokenPlain);
       if (!refreshed.ok) {
         if (refreshed.status === 400 || refreshed.status === 401) {
           return json({ error: "Reconnexion Strava nécessaire" }, 401);
@@ -152,17 +192,33 @@ Deno.serve(async (req) => {
         return json({ error: "Strava token refresh failed" }, 502);
       }
       accessToken = refreshed.data.access_token;
+      const newRefresh = refreshed.data.refresh_token ?? refreshTokenPlain;
+      const accessEnc = await encryptToken(accessToken);
+      const refreshEnc = await encryptToken(newRefresh);
       const { error: updErr } = await admin
         .from("strava_connections")
         .update({
-          access_token: refreshed.data.access_token,
-          refresh_token: refreshed.data.refresh_token ?? conn.refresh_token,
-          token_expires_at: new Date(refreshed.data.expires_at * 1000)
-            .toISOString(),
+          access_token: null,
+          refresh_token: null,
+          access_token_enc: accessEnc,
+          refresh_token_enc: refreshEnc,
+          token_expires_at: new Date(refreshed.data.expires_at * 1000).toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", userId);
       if (updErr) console.error("token persist error:", updErr);
+    } else if (!encAccess && conn.access_token) {
+      // Backfill encryption for legacy plaintext rows
+      try {
+        const accessEnc = await encryptToken(conn.access_token);
+        const refreshEnc = await encryptToken(conn.refresh_token);
+        await admin.from("strava_connections").update({
+          access_token: null,
+          refresh_token: null,
+          access_token_enc: accessEnc,
+          refresh_token_enc: refreshEnc,
+        }).eq("user_id", userId);
+      } catch (e) { console.error("backfill encrypt failed:", e); }
     }
 
     // 3. Sync window
