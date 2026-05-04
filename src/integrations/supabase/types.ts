@@ -1345,6 +1345,7 @@ export type Database = {
       profiles: {
         Row: {
           age: number | null
+          auto_start_timer: boolean
           avatar_url: string | null
           created_at: string
           display_mode: string | null
@@ -1365,16 +1366,19 @@ export type Database = {
           onboarding_completed: boolean
           onboarding_steps: Json | null
           push_subscription: string | null
+          rest_timer_sound: boolean
           role: Database["public"]["Enums"]["app_role"] | null
           specialty: string | null
           unit_preference: string | null
           updated_at: string
           user_id: string
           water_goal_ml: number | null
+          week_start: string
           weight: number | null
         }
         Insert: {
           age?: number | null
+          auto_start_timer?: boolean
           avatar_url?: string | null
           created_at?: string
           display_mode?: string | null
@@ -1395,16 +1399,19 @@ export type Database = {
           onboarding_completed?: boolean
           onboarding_steps?: Json | null
           push_subscription?: string | null
+          rest_timer_sound?: boolean
           role?: Database["public"]["Enums"]["app_role"] | null
           specialty?: string | null
           unit_preference?: string | null
           updated_at?: string
           user_id: string
           water_goal_ml?: number | null
+          week_start?: string
           weight?: number | null
         }
         Update: {
           age?: number | null
+          auto_start_timer?: boolean
           avatar_url?: string | null
           created_at?: string
           display_mode?: string | null
@@ -1425,12 +1432,14 @@ export type Database = {
           onboarding_completed?: boolean
           onboarding_steps?: Json | null
           push_subscription?: string | null
+          rest_timer_sound?: boolean
           role?: Database["public"]["Enums"]["app_role"] | null
           specialty?: string | null
           unit_preference?: string | null
           updated_at?: string
           user_id?: string
           water_goal_ml?: number | null
+          week_start?: string
           weight?: number | null
         }
         Relationships: []
