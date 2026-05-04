@@ -83,6 +83,11 @@ const StudentNutrition = () => {
 
   const handleAddMeal = async (data: MealLogData) => {
     if (!user) return;
+    // Block duplicates client-side for non-snack meals (DB also enforces this)
+    if (data.meal_type !== "snack" && meals.some(m => m.meal_type === data.meal_type)) {
+      toast.error(t('nutrition:duplicate_meal_type', { defaultValue: "Ce type de repas existe déjà pour cette journée" }));
+      return;
+    }
     const { data: inserted, error } = await supabase
       .from("daily_nutrition_logs")
       .insert({
@@ -100,7 +105,11 @@ const StudentNutrition = () => {
       .single();
     
     if (error) {
-      toast.error(t('common:error'));
+      if ((error as any).code === "23505") {
+        toast.error(t('nutrition:duplicate_meal_type', { defaultValue: "Ce type de repas existe déjà pour cette journée" }));
+      } else {
+        toast.error(t('common:error'));
+      }
       console.error(error);
     } else if (inserted) {
       setMeals(prev => [...prev, {
