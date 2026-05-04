@@ -106,23 +106,23 @@ const LiveSession = () => {
 
   // Respect user's theme — no forced dark mode. ThemeContext handles light/dark.
 
-  // Check for orphaned localStorage backup on mount
+  // Check for orphaned localStorage backup on mount.
+  // Backup is keyed by sessionId AND must be < 24h old, otherwise discarded.
   useEffect(() => {
-    const backup = localStorage.getItem("live_session_backup");
-    if (backup) {
-      try {
-        const parsed = JSON.parse(backup);
-        // Only show recovery if the backup matches the current session
-        if (parsed.sessionId === selectedSessionId) {
-          setRecoveryData(parsed);
-          setShowRecoveryPrompt(true);
-        } else {
-          // Stale backup for a different session — clean up
-          localStorage.removeItem("live_session_backup");
-        }
-      } catch {
-        localStorage.removeItem("live_session_backup");
+    try {
+      const backup = localStorage.getItem("live_session_backup");
+      if (!backup) return;
+      const parsed = JSON.parse(backup);
+      const ageMs = parsed?.date ? Date.now() - new Date(parsed.date).getTime() : Infinity;
+      const STALE_AFTER = 24 * 60 * 60 * 1000;
+      if (parsed.sessionId !== selectedSessionId || ageMs > STALE_AFTER || ageMs < 0) {
+        try { localStorage.removeItem("live_session_backup"); } catch { /* ignore */ }
+        return;
       }
+      setRecoveryData(parsed);
+      setShowRecoveryPrompt(true);
+    } catch {
+      try { localStorage.removeItem("live_session_backup"); } catch { /* ignore */ }
     }
   }, [selectedSessionId]);
 
@@ -570,22 +570,25 @@ const LiveSession = () => {
   };
 
   const handleClose = () => {
-    if (completedSessionId) {
-      // Session is persisted in DB — clean up any stale localStorage backup
-      localStorage.removeItem("live_session_backup");
-    } else {
-      // No DB record yet (offline / error) — save to localStorage as safety net
-      console.warn("[LiveSession] No DB session ID — saving backup to localStorage");
-      const backupData = {
-        sessionId: selectedSession?.id,
-        date: new Date().toISOString(),
-        duration: elapsed,
-        completedSets,
-        substitutions,
-        exerciseCount: allExercises.length,
-        completedCount,
-      };
-      localStorage.setItem("live_session_backup", JSON.stringify(backupData));
+    try {
+      if (completedSessionId) {
+        localStorage.removeItem("live_session_backup");
+      } else {
+        console.warn("[LiveSession] No DB session ID — saving backup to localStorage");
+        const backupData = {
+          sessionId: selectedSession?.id,
+          date: new Date().toISOString(),
+          duration: elapsed,
+          completedSets,
+          substitutions,
+          exerciseCount: allExercises.length,
+          completedCount,
+        };
+        localStorage.setItem("live_session_backup", JSON.stringify(backupData));
+      }
+    } catch (e) {
+      // QuotaExceededError or private browsing — non-fatal
+      console.warn("[LiveSession] localStorage backup failed:", e);
     }
     toast.success(t('session:session_saved'));
     navigate("/student");
