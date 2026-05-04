@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, Bookmark, Play, Trophy, TrendingUp, Dumbbell, Video, AlertCircle } from "lucide-react";
+import { ChevronLeft, Bookmark, Trophy, TrendingUp, Dumbbell, AlertCircle } from "lucide-react";
 import { useExerciseDetail, useToggleFavorite, useRequestVideo } from "@/hooks/useExerciseDetail";
 import { useAuth } from "@/contexts/AuthContext";
 import { ExerciseProgressionChart } from "@/components/exercise/ExerciseProgressionChart";
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ExerciseVideoEmbed } from "@/components/student/ExerciseVideoEmbed";
 
 function fmtDate(iso: string): string {
   const d = new Date(iso);
@@ -19,17 +19,6 @@ function fmtRelDays(iso: string): string {
   if (days <= 0) return "aujourd'hui";
   if (days === 1) return "il y a 1 jour";
   return `il y a ${days} jours`;
-}
-
-function youtubeEmbed(url: string): string {
-  const match = url.match(/(?:youtu\.be\/|v=|\/embed\/)([\w-]{11})/);
-  if (match) return `https://www.youtube.com/embed/${match[1]}`;
-  return url;
-}
-
-function youtubeThumb(url: string): string | null {
-  const match = url.match(/(?:youtu\.be\/|v=|\/embed\/)([\w-]{11})/);
-  return match ? `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg` : null;
 }
 
 interface ExerciseDetailPageProps {
@@ -50,15 +39,6 @@ export default function ExerciseDetailPage({ studentIdOverride }: ExerciseDetail
   const { data, isLoading, error } = useExerciseDetail(exerciseId, targetStudentId, viewerIsAthlete);
   const toggleFav = useToggleFavorite(exerciseId ?? "", targetStudentId ?? "");
   const reqVideo = useRequestVideo(exerciseId ?? "", targetStudentId ?? "", data?.coachId ?? null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  const videoUrl = useMemo(() => {
-    if (!data) return null;
-    return data.exercise.video_url_male || data.exercise.video_url_female || null;
-  }, [data]);
-
-  const embedUrl = videoUrl ? youtubeEmbed(videoUrl) : null;
-  const thumbUrl = videoUrl ? youtubeThumb(videoUrl) : null;
 
   if (isLoading) {
     return (
@@ -125,52 +105,29 @@ export default function ExerciseDetailPage({ studentIdOverride }: ExerciseDetail
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-4 space-y-4">
-        {/* ── Hero video ── */}
-        <section className="rounded-md overflow-hidden border border-border aspect-video relative bg-secondary">
-          {videoUrl ? (
-            isPlaying && embedUrl ? (
-              <iframe
-                src={`${embedUrl}?autoplay=1`}
-                title={exercise.name}
-                className="absolute inset-0 w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <button onClick={() => setIsPlaying(true)} className="group absolute inset-0" aria-label="Lire la vidéo">
-                {thumbUrl && (
-                  <img src={thumbUrl} alt={exercise.name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-                )}
-                <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
-                <div className="relative z-10 w-full h-full flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-primary/95 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                    <Play className="w-6 h-6 text-primary-foreground ml-0.5" fill="currentColor" />
-                  </div>
-                </div>
-              </button>
-            )
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
-              <div className="w-12 h-12 rounded-full border-2 border-dashed border-border flex items-center justify-center">
-                <Video className="w-5 h-5 text-muted-subtle" />
-              </div>
-              <p className="text-xs text-muted-foreground max-w-[200px]">Aucune vidéo de démonstration pour cet exercice.</p>
-              {viewerIsAthlete && data.coachId && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs"
-                  disabled={reqVideo.isPending || reqVideo.isSuccess}
-                  onClick={() => {
-                    reqVideo.mutate(undefined, {
-                      onSuccess: () => toast.success("Demande envoyée à ton coach"),
-                      onError: () => toast.error("Erreur — réessaie plus tard"),
-                    });
-                  }}
-                >
-                  {reqVideo.isSuccess ? "Demande envoyée ✓" : "Demander une vidéo au coach"}
-                </Button>
-              )}
+        {/* ── Hero video (with YouTube search fallback like in LiveSession) ── */}
+        <section>
+          <ExerciseVideoEmbed
+            exerciseName={exercise.name}
+            videoUrlMale={exercise.video_url_male}
+            videoUrlFemale={exercise.video_url_female}
+          />
+          {viewerIsAthlete && data.coachId && !exercise.video_url_male && !exercise.video_url_female && (
+            <div className="mt-2 flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                disabled={reqVideo.isPending || reqVideo.isSuccess}
+                onClick={() => {
+                  reqVideo.mutate(undefined, {
+                    onSuccess: () => toast.success("Demande envoyée à ton coach"),
+                    onError: () => toast.error("Erreur — réessaie plus tard"),
+                  });
+                }}
+              >
+                {reqVideo.isSuccess ? "Demande envoyée ✓" : "Demander une vidéo au coach"}
+              </Button>
             </div>
           )}
         </section>
