@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check, X, Plus, MessageSquare } from "lucide-react";
+import { Link } from "react-router-dom";
 import RestTimer from "./RestTimer";
 import CircularRestTimer from "./CircularRestTimer";
 import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
@@ -90,7 +91,17 @@ const ExerciseTracker = ({ exercise, index, total, onComplete, onPrev, onNext, i
           </span>
           <span>{index + 1} / {total}</span>
         </div>
-        <h2 className="text-xl font-display font-bold leading-tight">{exercise.name}</h2>
+        {exercise.exerciseId ? (
+          <Link
+            to={`/student/exercise/${exercise.exerciseId}`}
+            className="block text-xl font-display font-bold leading-tight hover:text-primary transition-colors"
+            aria-label={t("session:open_exercise_detail", { defaultValue: "Voir la fiche exercice" })}
+          >
+            {exercise.name}
+          </Link>
+        ) : (
+          <h2 className="text-xl font-display font-bold leading-tight">{exercise.name}</h2>
+        )}
 
         {/* Tags */}
         <div className="flex flex-wrap gap-1.5">
