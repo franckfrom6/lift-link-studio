@@ -13,6 +13,25 @@ export interface ProgressPhoto {
   notes: string | null;
 }
 
+// Bucket is private — convert stored path/url to a short-lived signed URL on demand
+const extractPath = (urlOrPath: string): string => {
+  const marker = "/object/public/progress-photos/";
+  const i = urlOrPath.indexOf(marker);
+  if (i >= 0) return urlOrPath.slice(i + marker.length);
+  const m2 = "/object/sign/progress-photos/";
+  const j = urlOrPath.indexOf(m2);
+  if (j >= 0) return urlOrPath.slice(j + m2.length).split("?")[0];
+  return urlOrPath;
+};
+
+export const getSignedPhotoUrl = async (photoUrl: string): Promise<string> => {
+  const path = extractPath(photoUrl);
+  const { data } = await supabase.storage
+    .from("progress-photos")
+    .createSignedUrl(path, 60 * 60);
+  return data?.signedUrl || photoUrl;
+};
+
 export const useProgressPhotos = () => {
   const { user } = useAuth();
   const { effectiveStudentId } = useImpersonation();
@@ -51,7 +70,7 @@ export const useProgressPhotos = () => {
     const { error } = await supabase.from("progress_photos").insert({
       student_id: targetId,
       date,
-      photo_url: urlData.publicUrl,
+      photo_url: path,
       category,
       notes: notes || null,
     });

@@ -1,12 +1,23 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useProgressPhotos } from "@/hooks/useProgressPhotos";
+import { useProgressPhotos, getSignedPhotoUrl } from "@/hooks/useProgressPhotos";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Plus, Camera, Loader2, ImageIcon } from "lucide-react";
 import { format } from "date-fns";
+
+const SignedPhoto = ({ path, alt }: { path: string; alt: string }) => {
+  const [url, setUrl] = useState<string>("");
+  useEffect(() => {
+    let active = true;
+    getSignedPhotoUrl(path).then((u) => { if (active) setUrl(u); });
+    return () => { active = false; };
+  }, [path]);
+  if (!url) return <div className="w-full h-full bg-secondary animate-pulse" />;
+  return <img src={url} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
+};
 
 const ProgressPhotoGallery = () => {
   const { t } = useTranslation("dashboard");
@@ -75,12 +86,7 @@ const ProgressPhotoGallery = () => {
         <div className="grid grid-cols-3 gap-2">
           {filteredPhotos.map((photo) => (
             <div key={photo.id} className="relative aspect-[3/4] rounded-lg overflow-hidden bg-secondary">
-              <img
-                src={photo.photo_url}
-                alt={`${photo.category} - ${photo.date}`}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
+              <SignedPhoto path={photo.photo_url} alt={`${photo.category} - ${photo.date}`} />
               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-2">
                 <p className="text-white text-[10px] font-medium">{new Date(photo.date).toLocaleDateString()}</p>
                 <p className="text-white/70 text-[9px]">{t(photo.category as any)}</p>
