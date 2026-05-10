@@ -1,0 +1,1 @@
+UPDATE public.programs SET status='completed' WHERE student_id='7d7d1331-f362-460f-8a03-9c7d840f7e35' AND status='active' AND id <> '78a4da6c-5d8c-48b4-b4f2-6251bf4c7ad8';
