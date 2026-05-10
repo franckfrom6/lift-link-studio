@@ -711,6 +711,34 @@ INTELLIGENCE NUTRITION (données temps réel) :
 `;
   }
 
+  // Coach intelligence context (only when caller is a coach with active athletes)
+  const coachCtx = payload._coachContext;
+  let coachIntelligence = "";
+  if (coachCtx?.isCoach) {
+    if (coachCtx.students && coachCtx.students.length > 0) {
+      const list = coachCtx.students
+        .map((s: any) => `- ${s.name || "(sans nom)"} → student_id: ${s.id}`)
+        .join("\n");
+      coachIntelligence = `
+CONTEXTE COACH :
+Tu parles avec un COACH. Il peut te demander de créer des programmes pour ses athlètes.
+Athlètes actifs (utilise EXACTEMENT ces student_id) :
+${list}
+
+CAPACITÉ COACH :
+- Tu PEUX créer un programme structuré (semaines → séances → sections → exercices) directement dans le compte d'un athlète via l'outil create_program_for_student.
+- Identifie l'athlète par son nom dans la conversation puis utilise son student_id exact ci-dessus.
+- Si le coach mentionne un athlète absent de la liste, dis-le clairement et n'invente PAS de student_id.
+- Si plusieurs athlètes correspondent (prénom ambigu), demande au coach de préciser.
+`;
+    } else {
+      coachIntelligence = `
+CONTEXTE COACH :
+L'utilisateur est un coach mais n'a aucun athlète actif. Tu ne peux pas créer de programme pour un athlète tant que la relation n'existe pas.
+`;
+    }
+  }
+
   const system = `Tu es VOLT ⚡, le coach IA de l'application.
 
 PERSONA :
@@ -742,6 +770,18 @@ CAPACITÉS IMPORTANTES :
 - La date doit être au format YYYY-MM-DD. Utilise l'année ${today.getFullYear()}.
 ${sessionIntelligence}
 ${nutritionIntelligence}
+${coachIntelligence}
+RÈGLES COACH (création de programme pour un athlète) :
+Quand un coach te demande de générer/créer un programme pour un athlète :
+1. Identifie l'athlète dans la liste CONTEXTE COACH et récupère son student_id EXACT
+2. Demande (si non précisé) : objectif, niveau, fréquence (jours/semaine), durée séance, équipement, contraintes/blessures
+3. Une fois ces infos en main, appelle create_program_for_student avec :
+   - student_id (UUID exact de la liste)
+   - name dynamique (ex: "Hypertrophie 4j Push/Pull/Legs - Yana")
+   - weeks : 1 à 4 semaines, chaque semaine contient sessions (day_of_week 1-7), chaque session contient sections (Échauffement, Compound, Isolation, Finisher), chaque section contient des exercices (sets, reps_min, reps_max, rest_seconds, RPE optionnel)
+4. Ne JAMAIS inventer de student_id. Si l'athlète n'est pas dans la liste, refuse poliment.
+5. Après création, donne un récap court : nom du programme, nombre de semaines/séances, points clés.
+
 RÈGLES DE CONSTRUCTION DE SÉANCE :
 Quand tu crées une séance avec create_free_session :
 1. NE RÉPÈTE PAS les muscle_group des 2 dernières séances de l'utilisateur (voir INTELLIGENCE SÉANCE)
@@ -904,9 +944,107 @@ ${l}${contextBlock}`;
         },
       },
     },
+    {
+      type: "function",
+      function: {
+        name: "create_program_for_student",
+        description: "Create a structured multi-week training program for one of the coach's active athletes. Only call this when the caller is a coach and the student_id matches an athlete from CONTEXTE COACH.",
+        parameters: {
+          type: "object",
+          properties: {
+            student_id: { type: "string", description: "EXACT athlete UUID from CONTEXTE COACH list. Never invent." },
+            name: { type: "string", description: "Dynamic program name including athlete first name and goal" },
+            objective: { type: "string", description: "Hypertrophy / strength / fat loss / endurance / general" },
+            weeks: {
+              type: "array",
+              description: "1 to 4 weeks. Each week contains sessions.",
+              items: {
+                type: "object",
+                properties: {
+                  week_number: { type: "number" },
+                  sessions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        day_of_week: { type: "number", description: "1=Mon..7=Sun" },
+                        notes: { type: "string" },
+                        sections: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              name: { type: "string" },
+                              exercises: {
+                                type: "array",
+                                items: {
+                                  type: "object",
+                                  properties: {
+                                    name: { type: "string" },
+                                    sets: { type: "number" },
+                                    reps_min: { type: "number" },
+                                    reps_max: { type: "number" },
+                                    rest_seconds: { type: "number" },
+                                    rpe_target: { type: "string" },
+                                    coach_notes: { type: "string" },
+                                  },
+                                  required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
+                                },
+                              },
+                            },
+                            required: ["name", "exercises"],
+                          },
+                        },
+                      },
+                      required: ["name", "day_of_week", "sections"],
+                    },
+                  },
+                },
+                required: ["week_number", "sessions"],
+              },
+            },
+          },
+          required: ["student_id", "name", "weeks"],
+        },
+      },
+    },
   ];
 
   return { system, user: lastUserMsg, messages: messages.slice(0, -1), tools };
+}
+
+// Fetch coach context: list of active athletes (id + display name) when caller is a coach
+async function fetchCoachContext(serviceClient: any, userId: string) {
+  try {
+    const { data: profile } = await serviceClient
+      .from("profiles")
+      .select("role")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!profile || profile.role !== "coach") {
+      return { isCoach: false, students: [] };
+    }
+    const { data: links } = await serviceClient
+      .from("coach_students")
+      .select("student_id")
+      .eq("coach_id", userId)
+      .eq("status", "active");
+    const ids = (links || []).map((l: any) => l.student_id);
+    if (ids.length === 0) return { isCoach: true, students: [] };
+    const { data: profs } = await serviceClient
+      .from("profiles")
+      .select("user_id, full_name, first_name, last_name")
+      .in("user_id", ids);
+    const students = (profs || []).map((p: any) => ({
+      id: p.user_id,
+      name: p.full_name || [p.first_name, p.last_name].filter(Boolean).join(" ") || "(sans nom)",
+    }));
+    return { isCoach: true, students };
+  } catch (e) {
+    console.error("Error fetching coach context:", e);
+    return { isCoach: false, students: [] };
+  }
 }
 
 // Router
@@ -1021,8 +1159,10 @@ serve(async (req) => {
     if (action === "chat") {
       const sessionCtx = await fetchSessionContext(serviceClient, userId);
       const nutritionCtx = await fetchNutritionContext(serviceClient, userId);
+      const coachCtx = await fetchCoachContext(serviceClient, userId);
       (payload || {})._sessionContext = sessionCtx;
       (payload || {})._nutritionContext = nutritionCtx;
+      (payload || {})._coachContext = coachCtx;
     }
     const built = ACTION_BUILDERS[action](payload || {}, lang || "fr");
     const model = MODEL_FOR_ACTION[action] || "google/gemini-2.5-flash-lite";
@@ -1268,6 +1408,152 @@ serve(async (req) => {
                 toolResults.push({ tool: "create_nutrition_plan", success: false, error: String(toolErr) });
               }
             }
+
+            // ── Tool: create_program_for_student ──
+            if (tc.function?.name === "create_program_for_student") {
+              const args = typeof tc.function.arguments === "string"
+                ? JSON.parse(tc.function.arguments)
+                : tc.function.arguments;
+
+              try {
+                // 1. Verify caller is a coach with active link to student_id
+                const { data: callerProfile } = await serviceClient
+                  .from("profiles")
+                  .select("role")
+                  .eq("user_id", userId)
+                  .maybeSingle();
+                if (!callerProfile || callerProfile.role !== "coach") {
+                  toolResults.push({ tool: "create_program_for_student", success: false, error: "not_a_coach" });
+                } else {
+                  const { data: link } = await serviceClient
+                    .from("coach_students")
+                    .select("id")
+                    .eq("coach_id", userId)
+                    .eq("student_id", args.student_id)
+                    .eq("status", "active")
+                    .maybeSingle();
+                  if (!link) {
+                    toolResults.push({ tool: "create_program_for_student", success: false, error: "no_active_link", student_id: args.student_id });
+                  } else {
+                    // Local exercise resolver (scoped to this coach so created customs belong to the coach)
+                    async function resolveExerciseForCoach(ex: any): Promise<string | null> {
+                      const cleanName = (ex.name || "").trim().replace(/\s+/g, " ");
+                      if (!cleanName) return null;
+                      const { data: dflt } = await serviceClient
+                        .from("exercises").select("id")
+                        .eq("is_default", true).ilike("name", cleanName)
+                        .limit(1).maybeSingle();
+                      if (dflt) return dflt.id;
+                      const { data: own } = await serviceClient
+                        .from("exercises").select("id")
+                        .eq("created_by", userId).ilike("name", cleanName)
+                        .limit(1).maybeSingle();
+                      if (own) return own.id;
+                      const { data: created } = await serviceClient
+                        .from("exercises").insert({
+                          name: cleanName, muscle_group: "Autre", equipment: "Autre",
+                          type: "compound", is_default: false, created_by: userId,
+                        }).select("id").single();
+                      if (created) return created.id;
+                      const { data: refetch } = await serviceClient
+                        .from("exercises").select("id")
+                        .eq("created_by", userId).ilike("name", cleanName)
+                        .limit(1).maybeSingle();
+                      return refetch?.id || null;
+                    }
+
+                    // 2. Create program
+                    const { data: program, error: progErr } = await serviceClient
+                      .from("programs")
+                      .insert({
+                        coach_id: userId,
+                        student_id: args.student_id,
+                        name: args.name,
+                        status: "active",
+                        is_ai_generated: true,
+                      })
+                      .select("id")
+                      .single();
+                    if (progErr || !program) throw progErr || new Error("program insert failed");
+
+                    let totalSessions = 0;
+                    let totalExercises = 0;
+                    const weeksCount = (args.weeks || []).length;
+
+                    for (const w of (args.weeks || [])) {
+                      const { data: weekRow, error: wErr } = await serviceClient
+                        .from("program_weeks")
+                        .insert({ program_id: program.id, week_number: w.week_number })
+                        .select("id").single();
+                      if (wErr || !weekRow) { console.error("week insert failed", wErr); continue; }
+
+                      for (const sess of (w.sessions || [])) {
+                        const { data: sessionRow, error: sErr } = await serviceClient
+                          .from("sessions")
+                          .insert({
+                            week_id: weekRow.id,
+                            name: sess.name,
+                            day_of_week: sess.day_of_week,
+                            notes: sess.notes || null,
+                          })
+                          .select("id").single();
+                        if (sErr || !sessionRow) { console.error("session insert failed", sErr); continue; }
+                        totalSessions++;
+
+                        for (let secIdx = 0; secIdx < (sess.sections || []).length; secIdx++) {
+                          const sec = sess.sections[secIdx];
+                          const { data: sectionRow, error: secErr } = await serviceClient
+                            .from("session_sections")
+                            .insert({
+                              session_id: sessionRow.id,
+                              name: sec.name,
+                              sort_order: secIdx,
+                            })
+                            .select("id").single();
+                          if (secErr || !sectionRow) { console.error("section insert failed", secErr); continue; }
+
+                          for (let exIdx = 0; exIdx < (sec.exercises || []).length; exIdx++) {
+                            const ex = sec.exercises[exIdx];
+                            const exerciseId = await resolveExerciseForCoach(ex);
+                            if (!exerciseId) continue;
+                            const { error: exErr } = await serviceClient
+                              .from("session_exercises")
+                              .insert({
+                                session_id: sessionRow.id,
+                                section_id: sectionRow.id,
+                                exercise_id: exerciseId,
+                                sort_order: exIdx,
+                                sets: ex.sets || 3,
+                                reps_min: ex.reps_min || 8,
+                                reps_max: ex.reps_max || 12,
+                                rest_seconds: ex.rest_seconds || 90,
+                                rpe_target: ex.rpe_target || null,
+                                coach_notes: ex.coach_notes || null,
+                              });
+                            if (exErr) console.error("exercise insert failed", exErr);
+                            else totalExercises++;
+                          }
+                        }
+                      }
+                    }
+
+                    toolResults.push({
+                      tool: "create_program_for_student",
+                      success: true,
+                      program_id: program.id,
+                      program_name: args.name,
+                      student_id: args.student_id,
+                      weeks_count: weeksCount,
+                      sessions_count: totalSessions,
+                      exercises_count: totalExercises,
+                    });
+                  }
+                }
+              } catch (toolErr) {
+                console.error("create_program_for_student error:", toolErr);
+                toolResults.push({ tool: "create_program_for_student", success: false, error: String(toolErr) });
+              }
+            }
           }
           if (!textContent && toolResults.length > 0) {
             const followUpMessages = [
@@ -1300,6 +1586,9 @@ serve(async (req) => {
               textContent = successOnes.map(r => {
                 if (r.tool === "create_nutrition_plan") {
                   return `✅ Plan nutrition créé ! ${r.meals_count} repas programmés sur ${r.days_count} jours. Va dans l'onglet Nutrition pour voir tes repas du jour. ⚡`;
+                }
+                if (r.tool === "create_program_for_student") {
+                  return `✅ Programme "${r.program_name}" créé pour l'athlète : ${r.weeks_count} semaine(s), ${r.sessions_count} séance(s), ${r.exercises_count} exercice(s). Ouvre sa fiche pour ajuster. ⚡`;
                 }
                 return `✅ Séance "${r.name}" créée pour le ${r.date} avec ${r.exercise_count} exercices${r.section_count ? ` en ${r.section_count} sections` : ""} ! Rafraîchis ton calendrier pour la voir. ⚡`;
               }).join("\n");
