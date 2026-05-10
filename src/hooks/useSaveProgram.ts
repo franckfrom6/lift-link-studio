@@ -28,6 +28,7 @@ function buildExerciseRow(
     rpe_target: ex.rpeTarget || null,
     video_url: ex.videoUrl || null,
     video_search_query: ex.videoSearchQuery || null,
+    is_archived: false,
   };
 }
 
