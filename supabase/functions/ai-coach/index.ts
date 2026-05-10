@@ -944,6 +944,71 @@ ${l}${contextBlock}`;
         },
       },
     },
+    {
+      type: "function",
+      function: {
+        name: "create_program_for_student",
+        description: "Create a structured multi-week training program for one of the coach's active athletes. Only call this when the caller is a coach and the student_id matches an athlete from CONTEXTE COACH.",
+        parameters: {
+          type: "object",
+          properties: {
+            student_id: { type: "string", description: "EXACT athlete UUID from CONTEXTE COACH list. Never invent." },
+            name: { type: "string", description: "Dynamic program name including athlete first name and goal" },
+            objective: { type: "string", description: "Hypertrophy / strength / fat loss / endurance / general" },
+            weeks: {
+              type: "array",
+              description: "1 to 4 weeks. Each week contains sessions.",
+              items: {
+                type: "object",
+                properties: {
+                  week_number: { type: "number" },
+                  sessions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        day_of_week: { type: "number", description: "1=Mon..7=Sun" },
+                        notes: { type: "string" },
+                        sections: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              name: { type: "string" },
+                              exercises: {
+                                type: "array",
+                                items: {
+                                  type: "object",
+                                  properties: {
+                                    name: { type: "string" },
+                                    sets: { type: "number" },
+                                    reps_min: { type: "number" },
+                                    reps_max: { type: "number" },
+                                    rest_seconds: { type: "number" },
+                                    rpe_target: { type: "string" },
+                                    coach_notes: { type: "string" },
+                                  },
+                                  required: ["name", "sets", "reps_min", "reps_max", "rest_seconds"],
+                                },
+                              },
+                            },
+                            required: ["name", "exercises"],
+                          },
+                        },
+                      },
+                      required: ["name", "day_of_week", "sections"],
+                    },
+                  },
+                },
+                required: ["week_number", "sessions"],
+              },
+            },
+          },
+          required: ["student_id", "name", "weeks"],
+        },
+      },
+    },
   ];
 
   return { system, user: lastUserMsg, messages: messages.slice(0, -1), tools };
