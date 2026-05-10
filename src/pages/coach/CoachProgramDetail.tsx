@@ -362,15 +362,42 @@ const CoachProgramDetail = () => {
   const handleDelete = async () => {
     const { type, id } = deleteDialog;
     if (type === "session") {
-      await supabase.from("session_exercises").delete().eq("session_id", id);
-      await supabase.from("session_sections").delete().eq("session_id", id);
-      await supabase.from("sessions").delete().eq("id", id);
+      // Soft-archive exercises that have completion history; hard-delete others
+      const { data: exs } = await supabase.from("session_exercises").select("id").eq("session_id", id);
+      const exIds = (exs || []).map((e: any) => e.id);
+      if (exIds.length > 0) {
+        const { data: used } = await supabase.from("completed_sets").select("session_exercise_id").in("session_exercise_id", exIds);
+        const usedSet = new Set((used || []).map((r: any) => r.session_exercise_id));
+        const toArchive = exIds.filter((x) => usedSet.has(x));
+        const toDelete = exIds.filter((x) => !usedSet.has(x));
+        if (toArchive.length > 0) await supabase.from("session_exercises").update({ is_archived: true }).in("id", toArchive);
+        if (toDelete.length > 0) await supabase.from("session_exercises").delete().in("id", toDelete);
+      }
+      // Check if session has completed_sessions
+      const { data: completed } = await supabase.from("completed_sessions").select("id").eq("session_id", id).limit(1);
+      if ((completed || []).length > 0) {
+        // Soft-delete session
+        await supabase.from("sessions").update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq("id", id);
+      } else {
+        await supabase.from("session_sections").delete().eq("session_id", id);
+        await supabase.from("sessions").delete().eq("id", id);
+      }
       setProgram(prev => prev ? {
         ...prev,
         weeks: prev.weeks.map(w => ({ ...w, sessions: w.sessions.filter(s => s.id !== id) })),
       } : prev);
     } else if (type === "section") {
-      await supabase.from("session_exercises").delete().eq("section_id", id);
+      // Archive exercises with history; section_id is set to NULL via FK on delete
+      const { data: exs } = await supabase.from("session_exercises").select("id").eq("section_id", id);
+      const exIds = (exs || []).map((e: any) => e.id);
+      if (exIds.length > 0) {
+        const { data: used } = await supabase.from("completed_sets").select("session_exercise_id").in("session_exercise_id", exIds);
+        const usedSet = new Set((used || []).map((r: any) => r.session_exercise_id));
+        const toArchive = exIds.filter((x) => usedSet.has(x));
+        const toDelete = exIds.filter((x) => !usedSet.has(x));
+        if (toArchive.length > 0) await supabase.from("session_exercises").update({ is_archived: true }).in("id", toArchive);
+        if (toDelete.length > 0) await supabase.from("session_exercises").delete().in("id", toDelete);
+      }
       await supabase.from("session_sections").delete().eq("id", id);
       setProgram(prev => prev ? {
         ...prev,
@@ -380,7 +407,12 @@ const CoachProgramDetail = () => {
         })),
       } : prev);
     } else if (type === "exercise") {
-      await supabase.from("session_exercises").delete().eq("id", id);
+      const { data: used } = await supabase.from("completed_sets").select("id").eq("session_exercise_id", id).limit(1);
+      if ((used || []).length > 0) {
+        await supabase.from("session_exercises").update({ is_archived: true }).eq("id", id);
+      } else {
+        await supabase.from("session_exercises").delete().eq("id", id);
+      }
       setProgram(prev => prev ? {
         ...prev,
         weeks: prev.weeks.map(w => ({
