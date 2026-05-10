@@ -121,7 +121,7 @@ async function fetchProgramTree(studentId: string): Promise<DBProgram | null> {
   if (sessionIds.length > 0) {
     const [secRes, seRes] = await Promise.all([
       supabase.from("session_sections").select("*").in("session_id", sessionIds).order("sort_order"),
-      supabase.from("session_exercises").select("*, exercise:exercises(*)").in("session_id", sessionIds).order("sort_order"),
+      supabase.from("session_exercises").select("*, exercise:exercises(*)").in("session_id", sessionIds).eq("is_archived", false).order("sort_order"),
     ]);
     sections = secRes.data || [];
     sessionExercises = seRes.data || [];
