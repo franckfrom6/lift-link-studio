@@ -202,7 +202,8 @@ export async function saveProgram(
     const { data: existingSessions } = await supabase
       .from("sessions")
       .select("id")
-      .in("week_id", weekIds.length > 0 ? weekIds : ["__none__"]);
+      .in("week_id", weekIds.length > 0 ? weekIds : ["__none__"])
+      .or("is_deleted.is.null,is_deleted.eq.false");
     const existingSessionIds = new Set((existingSessions || []).map((s) => s.id));
 
     const allNewSessionIds = new Set<string>();
@@ -298,7 +299,8 @@ export async function saveProgram(
     const { data: existingExercises } = await supabase
       .from("session_exercises")
       .select("id")
-      .in("session_id", sessionIds.length > 0 ? sessionIds : ["__none__"]);
+      .in("session_id", sessionIds.length > 0 ? sessionIds : ["__none__"])
+      .eq("is_archived", false);
     const existingExerciseIds = new Set((existingExercises || []).map((e) => e.id));
 
     const allExerciseRows: any[] = [];
