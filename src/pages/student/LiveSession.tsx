@@ -173,15 +173,16 @@ const LiveSession = () => {
         .eq("id", selectedSessionId)
         .maybeSingle();
       if (data) {
+        const activeExercises = (data.session_exercises || []).filter((e: any) => !e.is_archived);
         const sections = (data.session_sections || [])
           .sort((a: any, b: any) => a.sort_order - b.sort_order)
           .map((sec: any) => ({
             ...sec,
-            exercises: (data.session_exercises || [])
+            exercises: activeExercises
               .filter((e: any) => e.section_id === sec.id)
               .sort((a: any, b: any) => a.sort_order - b.sort_order),
           }));
-        const unsectioned = (data.session_exercises || [])
+        const unsectioned = activeExercises
           .filter((e: any) => !e.section_id)
           .sort((a: any, b: any) => a.sort_order - b.sort_order);
         if (unsectioned.length > 0) {
