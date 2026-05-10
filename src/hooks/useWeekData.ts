@@ -36,7 +36,7 @@ export function useWeekData(studentId: string | null, weekStart: Date) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sessions")
-        .select("id, name, free_session_date, session_exercises(id)")
+        .select("id, name, free_session_date, session_exercises(id, is_archived)")
         .eq("is_free_session", true)
         .eq("created_by", studentId!)
         .eq("is_deleted", false)
@@ -47,7 +47,7 @@ export function useWeekData(studentId: string | null, weekStart: Date) {
         id: s.id,
         name: s.name,
         date: s.free_session_date,
-        exerciseCount: s.session_exercises?.length || 0,
+        exerciseCount: (s.session_exercises || []).filter((e: any) => !e.is_archived).length,
       })) as FreeSession[];
     },
     enabled: !!studentId,
