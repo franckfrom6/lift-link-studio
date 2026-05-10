@@ -1025,12 +1025,11 @@ const CoachProgramDetail = () => {
                       .in("session_id", sessionIds);
                     const compIds = (compSess || []).map(c => c.id);
                     if (compIds.length > 0) {
+                      await supabase.from("shared_sessions").delete().in("completed_session_id", compIds);
+                      await supabase.from("skipped_exercises").delete().in("completed_session_id", compIds);
                       await supabase.from("completed_sets").delete().in("completed_session_id", compIds);
                       await supabase.from("completed_sessions").delete().in("id", compIds);
                     }
-                    // Other dependents
-                    await supabase.from("skipped_exercises").delete().in("session_id", sessionIds);
-                    await supabase.from("shared_sessions").delete().in("session_id", sessionIds);
                     await supabase.from("session_exercises").delete().in("session_id", sessionIds);
                     await supabase.from("session_sections").delete().in("session_id", sessionIds);
                     await supabase.from("sessions").delete().in("id", sessionIds);
