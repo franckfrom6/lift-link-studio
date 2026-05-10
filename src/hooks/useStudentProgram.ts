@@ -85,6 +85,7 @@ async function fetchProgramTree(studentId: string): Promise<DBProgram | null> {
     .select("*")
     .eq("student_id", studentId)
     .eq("status", "active")
+    .order("created_at", { ascending: false })
     .limit(1);
 
   if (pErr) throw pErr;
