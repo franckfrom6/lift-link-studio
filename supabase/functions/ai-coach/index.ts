@@ -1408,6 +1408,152 @@ serve(async (req) => {
                 toolResults.push({ tool: "create_nutrition_plan", success: false, error: String(toolErr) });
               }
             }
+
+            // ── Tool: create_program_for_student ──
+            if (tc.function?.name === "create_program_for_student") {
+              const args = typeof tc.function.arguments === "string"
+                ? JSON.parse(tc.function.arguments)
+                : tc.function.arguments;
+
+              try {
+                // 1. Verify caller is a coach with active link to student_id
+                const { data: callerProfile } = await serviceClient
+                  .from("profiles")
+                  .select("role")
+                  .eq("user_id", userId)
+                  .maybeSingle();
+                if (!callerProfile || callerProfile.role !== "coach") {
+                  toolResults.push({ tool: "create_program_for_student", success: false, error: "not_a_coach" });
+                } else {
+                  const { data: link } = await serviceClient
+                    .from("coach_students")
+                    .select("id")
+                    .eq("coach_id", userId)
+                    .eq("student_id", args.student_id)
+                    .eq("status", "active")
+                    .maybeSingle();
+                  if (!link) {
+                    toolResults.push({ tool: "create_program_for_student", success: false, error: "no_active_link", student_id: args.student_id });
+                  } else {
+                    // Local exercise resolver (scoped to this coach so created customs belong to the coach)
+                    async function resolveExerciseForCoach(ex: any): Promise<string | null> {
+                      const cleanName = (ex.name || "").trim().replace(/\s+/g, " ");
+                      if (!cleanName) return null;
+                      const { data: dflt } = await serviceClient
+                        .from("exercises").select("id")
+                        .eq("is_default", true).ilike("name", cleanName)
+                        .limit(1).maybeSingle();
+                      if (dflt) return dflt.id;
+                      const { data: own } = await serviceClient
+                        .from("exercises").select("id")
+                        .eq("created_by", userId).ilike("name", cleanName)
+                        .limit(1).maybeSingle();
+                      if (own) return own.id;
+                      const { data: created } = await serviceClient
+                        .from("exercises").insert({
+                          name: cleanName, muscle_group: "Autre", equipment: "Autre",
+                          type: "compound", is_default: false, created_by: userId,
+                        }).select("id").single();
+                      if (created) return created.id;
+                      const { data: refetch } = await serviceClient
+                        .from("exercises").select("id")
+                        .eq("created_by", userId).ilike("name", cleanName)
+                        .limit(1).maybeSingle();
+                      return refetch?.id || null;
+                    }
+
+                    // 2. Create program
+                    const { data: program, error: progErr } = await serviceClient
+                      .from("programs")
+                      .insert({
+                        coach_id: userId,
+                        student_id: args.student_id,
+                        name: args.name,
+                        status: "active",
+                        is_ai_generated: true,
+                      })
+                      .select("id")
+                      .single();
+                    if (progErr || !program) throw progErr || new Error("program insert failed");
+
+                    let totalSessions = 0;
+                    let totalExercises = 0;
+                    const weeksCount = (args.weeks || []).length;
+
+                    for (const w of (args.weeks || [])) {
+                      const { data: weekRow, error: wErr } = await serviceClient
+                        .from("program_weeks")
+                        .insert({ program_id: program.id, week_number: w.week_number })
+                        .select("id").single();
+                      if (wErr || !weekRow) { console.error("week insert failed", wErr); continue; }
+
+                      for (const sess of (w.sessions || [])) {
+                        const { data: sessionRow, error: sErr } = await serviceClient
+                          .from("sessions")
+                          .insert({
+                            week_id: weekRow.id,
+                            name: sess.name,
+                            day_of_week: sess.day_of_week,
+                            notes: sess.notes || null,
+                          })
+                          .select("id").single();
+                        if (sErr || !sessionRow) { console.error("session insert failed", sErr); continue; }
+                        totalSessions++;
+
+                        for (let secIdx = 0; secIdx < (sess.sections || []).length; secIdx++) {
+                          const sec = sess.sections[secIdx];
+                          const { data: sectionRow, error: secErr } = await serviceClient
+                            .from("session_sections")
+                            .insert({
+                              session_id: sessionRow.id,
+                              name: sec.name,
+                              sort_order: secIdx,
+                            })
+                            .select("id").single();
+                          if (secErr || !sectionRow) { console.error("section insert failed", secErr); continue; }
+
+                          for (let exIdx = 0; exIdx < (sec.exercises || []).length; exIdx++) {
+                            const ex = sec.exercises[exIdx];
+                            const exerciseId = await resolveExerciseForCoach(ex);
+                            if (!exerciseId) continue;
+                            const { error: exErr } = await serviceClient
+                              .from("session_exercises")
+                              .insert({
+                                session_id: sessionRow.id,
+                                section_id: sectionRow.id,
+                                exercise_id: exerciseId,
+                                sort_order: exIdx,
+                                sets: ex.sets || 3,
+                                reps_min: ex.reps_min || 8,
+                                reps_max: ex.reps_max || 12,
+                                rest_seconds: ex.rest_seconds || 90,
+                                rpe_target: ex.rpe_target || null,
+                                coach_notes: ex.coach_notes || null,
+                              });
+                            if (exErr) console.error("exercise insert failed", exErr);
+                            else totalExercises++;
+                          }
+                        }
+                      }
+                    }
+
+                    toolResults.push({
+                      tool: "create_program_for_student",
+                      success: true,
+                      program_id: program.id,
+                      program_name: args.name,
+                      student_id: args.student_id,
+                      weeks_count: weeksCount,
+                      sessions_count: totalSessions,
+                      exercises_count: totalExercises,
+                    });
+                  }
+                }
+              } catch (toolErr) {
+                console.error("create_program_for_student error:", toolErr);
+                toolResults.push({ tool: "create_program_for_student", success: false, error: String(toolErr) });
+              }
+            }
           }
           if (!textContent && toolResults.length > 0) {
             const followUpMessages = [
