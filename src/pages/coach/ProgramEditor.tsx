@@ -80,7 +80,7 @@ const ProgramEditor = () => {
         const sessionIds = (sessions || []).map((s) => s.id);
 
         const { data: sections } = await supabase.from("session_sections").select("*").in("session_id", sessionIds).order("sort_order");
-        const { data: exercises } = await supabase.from("session_exercises").select("*, exercise:exercises(*)").in("session_id", sessionIds).order("sort_order");
+        const { data: exercises } = await supabase.from("session_exercises").select("*, exercise:exercises(*)").in("session_id", sessionIds).eq("is_archived", false).order("sort_order");
 
         // Build section map
         const sectionMap = new Map<string, SessionSectionData>();

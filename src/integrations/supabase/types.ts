@@ -1691,6 +1691,7 @@ export type Database = {
           created_at: string
           exercise_id: string
           id: string
+          is_archived: boolean
           reps_max: number
           reps_min: number
           rest_seconds: number
@@ -1709,6 +1710,7 @@ export type Database = {
           created_at?: string
           exercise_id: string
           id?: string
+          is_archived?: boolean
           reps_max?: number
           reps_min?: number
           rest_seconds?: number
@@ -1727,6 +1729,7 @@ export type Database = {
           created_at?: string
           exercise_id?: string
           id?: string
+          is_archived?: boolean
           reps_max?: number
           reps_min?: number
           rest_seconds?: number

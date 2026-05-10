@@ -1,0 +1,2 @@
+ALTER TABLE public.session_exercises ADD COLUMN IF NOT EXISTS is_archived BOOLEAN NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_session_exercises_active ON public.session_exercises(session_id) WHERE is_archived = false;

@@ -28,6 +28,7 @@ function buildExerciseRow(
     rpe_target: ex.rpeTarget || null,
     video_url: ex.videoUrl || null,
     video_search_query: ex.videoSearchQuery || null,
+    is_archived: false,
   };
 }
 
@@ -202,7 +203,8 @@ export async function saveProgram(
     const { data: existingSessions } = await supabase
       .from("sessions")
       .select("id")
-      .in("week_id", weekIds.length > 0 ? weekIds : ["__none__"]);
+      .in("week_id", weekIds.length > 0 ? weekIds : ["__none__"])
+      .or("is_deleted.is.null,is_deleted.eq.false");
     const existingSessionIds = new Set((existingSessions || []).map((s) => s.id));
 
     const allNewSessionIds = new Set<string>();
@@ -222,8 +224,27 @@ export async function saveProgram(
 
     const sessionsToDelete = [...existingSessionIds].filter((id) => !allNewSessionIds.has(id));
     if (sessionsToDelete.length > 0) {
-      const { error } = await supabase.from("sessions").delete().in("id", sessionsToDelete);
-      if (error) throw error;
+      // Sessions referenced by completed_sessions cannot be hard-deleted (FK).
+      // Archive them instead so athlete history is preserved.
+      const { data: usedRows } = await supabase
+        .from("completed_sessions")
+        .select("session_id")
+        .in("session_id", sessionsToDelete);
+      const usedIds = new Set((usedRows || []).map((r: any) => r.session_id));
+      const toArchive = sessionsToDelete.filter((id) => usedIds.has(id));
+      const toHardDelete = sessionsToDelete.filter((id) => !usedIds.has(id));
+
+      if (toArchive.length > 0) {
+        const { error } = await supabase
+          .from("sessions")
+          .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+          .in("id", toArchive);
+        if (error) throw error;
+      }
+      if (toHardDelete.length > 0) {
+        const { error } = await supabase.from("sessions").delete().in("id", toHardDelete);
+        if (error) throw error;
+      }
     }
 
     if (allSessionRows.length > 0) {
@@ -279,7 +300,8 @@ export async function saveProgram(
     const { data: existingExercises } = await supabase
       .from("session_exercises")
       .select("id")
-      .in("session_id", sessionIds.length > 0 ? sessionIds : ["__none__"]);
+      .in("session_id", sessionIds.length > 0 ? sessionIds : ["__none__"])
+      .eq("is_archived", false);
     const existingExerciseIds = new Set((existingExercises || []).map((e) => e.id));
 
     const allExerciseRows: any[] = [];
@@ -304,8 +326,27 @@ export async function saveProgram(
 
     const exercisesToDelete = [...existingExerciseIds].filter((id) => !allNewExerciseIds.has(id));
     if (exercisesToDelete.length > 0) {
-      const { error } = await supabase.from("session_exercises").delete().in("id", exercisesToDelete);
-      if (error) throw error;
+      // Exercises referenced by completed_sets cannot be hard-deleted (FK).
+      // Archive them so the athlete's training history is preserved.
+      const { data: usedRows } = await supabase
+        .from("completed_sets")
+        .select("session_exercise_id")
+        .in("session_exercise_id", exercisesToDelete);
+      const usedIds = new Set((usedRows || []).map((r: any) => r.session_exercise_id));
+      const toArchive = exercisesToDelete.filter((id) => usedIds.has(id));
+      const toHardDelete = exercisesToDelete.filter((id) => !usedIds.has(id));
+
+      if (toArchive.length > 0) {
+        const { error } = await supabase
+          .from("session_exercises")
+          .update({ is_archived: true })
+          .in("id", toArchive);
+        if (error) throw error;
+      }
+      if (toHardDelete.length > 0) {
+        const { error } = await supabase.from("session_exercises").delete().in("id", toHardDelete);
+        if (error) throw error;
+      }
     }
 
     if (allExerciseRows.length > 0) {
