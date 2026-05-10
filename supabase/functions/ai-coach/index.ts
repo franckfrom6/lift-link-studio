@@ -1587,6 +1587,9 @@ serve(async (req) => {
                 if (r.tool === "create_nutrition_plan") {
                   return `✅ Plan nutrition créé ! ${r.meals_count} repas programmés sur ${r.days_count} jours. Va dans l'onglet Nutrition pour voir tes repas du jour. ⚡`;
                 }
+                if (r.tool === "create_program_for_student") {
+                  return `✅ Programme "${r.program_name}" créé pour l'athlète : ${r.weeks_count} semaine(s), ${r.sessions_count} séance(s), ${r.exercises_count} exercice(s). Ouvre sa fiche pour ajuster. ⚡`;
+                }
                 return `✅ Séance "${r.name}" créée pour le ${r.date} avec ${r.exercise_count} exercices${r.section_count ? ` en ${r.section_count} sections` : ""} ! Rafraîchis ton calendrier pour la voir. ⚡`;
               }).join("\n");
             } else {
