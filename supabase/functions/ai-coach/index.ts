@@ -1014,6 +1014,39 @@ ${l}${contextBlock}`;
   return { system, user: lastUserMsg, messages: messages.slice(0, -1), tools };
 }
 
+// Fetch coach context: list of active athletes (id + display name) when caller is a coach
+async function fetchCoachContext(serviceClient: any, userId: string) {
+  try {
+    const { data: profile } = await serviceClient
+      .from("profiles")
+      .select("role")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!profile || profile.role !== "coach") {
+      return { isCoach: false, students: [] };
+    }
+    const { data: links } = await serviceClient
+      .from("coach_students")
+      .select("student_id")
+      .eq("coach_id", userId)
+      .eq("status", "active");
+    const ids = (links || []).map((l: any) => l.student_id);
+    if (ids.length === 0) return { isCoach: true, students: [] };
+    const { data: profs } = await serviceClient
+      .from("profiles")
+      .select("user_id, full_name, first_name, last_name")
+      .in("user_id", ids);
+    const students = (profs || []).map((p: any) => ({
+      id: p.user_id,
+      name: p.full_name || [p.first_name, p.last_name].filter(Boolean).join(" ") || "(sans nom)",
+    }));
+    return { isCoach: true, students };
+  } catch (e) {
+    console.error("Error fetching coach context:", e);
+    return { isCoach: false, students: [] };
+  }
+}
+
 // Router
 const ACTION_BUILDERS: Record<string, (payload: any, lang: string) => any> = {
   generate_program: buildGenerateProgram,
