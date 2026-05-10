@@ -195,22 +195,23 @@ const SessionPreview = () => {
           session_exercises(
             id, sort_order, sets, reps_min, reps_max, rest_seconds, tempo,
             rpe_target, suggested_weight, coach_notes, video_url, video_search_query,
-            section_id,
+            section_id, is_archived,
             exercise:exercises(id, name, name_en, muscle_group, equipment, type, tracking_type, video_url_female, video_url_male)
           )
         `)
         .eq("id", sessionId)
         .maybeSingle();
       if (data) {
+        const activeExercises = (data.session_exercises || []).filter((e: any) => !e.is_archived);
         const sections = (data.session_sections || [])
           .sort((a: any, b: any) => a.sort_order - b.sort_order)
           .map((sec: any) => ({
             ...sec,
-            exercises: (data.session_exercises || [])
+            exercises: activeExercises
               .filter((e: any) => e.section_id === sec.id)
               .sort((a: any, b: any) => a.sort_order - b.sort_order),
           }));
-        const unsectioned = (data.session_exercises || [])
+        const unsectioned = activeExercises
           .filter((e: any) => !e.section_id)
           .sort((a: any, b: any) => a.sort_order - b.sort_order);
         if (unsectioned.length > 0) {
