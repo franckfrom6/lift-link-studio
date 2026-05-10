@@ -160,6 +160,8 @@ const CoachProgramDetail = () => {
 
   // Delete confirmations
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; type: string; id: string; name: string }>({ open: false, type: "", id: "", name: "" });
+  const [deleteProgramOpen, setDeleteProgramOpen] = useState(false);
+  const [deletingProgram, setDeletingProgram] = useState(false);
 
   useEffect(() => {
     if (!programId || !user) return;
@@ -597,6 +599,16 @@ const CoachProgramDetail = () => {
             {t("program:publish", "Publier")}
           </Button>
         )}
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+          onClick={() => setDeleteProgramOpen(true)}
+          title={t("program:delete_program", "Supprimer le programme")}
+        >
+          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+          <span className="hidden sm:inline">{t("program:delete_program", "Supprimer")}</span>
+        </Button>
       </div>
 
       {/* Weeks tabs */}
@@ -975,6 +987,57 @@ const CoachProgramDetail = () => {
             <AlertDialogCancel>{t("common:cancel", "Annuler")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {t("common:delete", "Supprimer")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Program Confirmation */}
+      <AlertDialog open={deleteProgramOpen} onOpenChange={(o) => !deletingProgram && setDeleteProgramOpen(o)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("program:delete_program_title", "Supprimer ce programme ?")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("program:delete_program_msg", "Toutes les semaines, séances et exercices de « {{name}} » seront définitivement supprimés. Cette action est irréversible.").replace("{{name}}", program.name)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingProgram}>{t("common:cancel", "Annuler")}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingProgram}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!programId) return;
+                setDeletingProgram(true);
+                try {
+                  const { data: weeks } = await supabase.from("program_weeks").select("id").eq("program_id", programId);
+                  const weekIds = (weeks || []).map(w => w.id);
+                  let sessionIds: string[] = [];
+                  if (weekIds.length > 0) {
+                    const { data: sess } = await supabase.from("sessions").select("id").in("week_id", weekIds);
+                    sessionIds = (sess || []).map(s => s.id);
+                  }
+                  if (sessionIds.length > 0) {
+                    await supabase.from("session_exercises").delete().in("session_id", sessionIds);
+                    await supabase.from("session_sections").delete().in("session_id", sessionIds);
+                    await supabase.from("sessions").delete().in("id", sessionIds);
+                  }
+                  if (weekIds.length > 0) {
+                    await supabase.from("program_weeks").delete().in("id", weekIds);
+                  }
+                  const { error } = await supabase.from("programs").delete().eq("id", programId);
+                  if (error) throw error;
+                  toast.success(t("program:program_deleted", "Programme supprimé"));
+                  navigate(studentId ? `/coach/students/${studentId}` : "/coach/programs");
+                } catch (err: any) {
+                  toast.error(err?.message || t("common:error", "Erreur"));
+                  setDeletingProgram(false);
+                  setDeleteProgramOpen(false);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingProgram ? <Loader2 className="w-4 h-4 animate-spin" /> : t("common:delete", "Supprimer")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
