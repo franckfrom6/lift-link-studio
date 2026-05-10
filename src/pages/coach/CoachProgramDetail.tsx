@@ -521,6 +521,13 @@ const CoachProgramDetail = () => {
 
   const activateProgram = async () => {
     if (!program) return;
+    // Archive any other active programs for this student (only one active at a time)
+    await supabase
+      .from("programs")
+      .update({ status: "completed" })
+      .eq("student_id", program.student_id)
+      .eq("status", "active")
+      .neq("id", program.id);
     await supabase.from("programs").update({ status: "active" }).eq("id", program.id);
     setProgram(prev => prev ? { ...prev, status: "active" } : prev);
     toast.success(t("program:program_activated"));
