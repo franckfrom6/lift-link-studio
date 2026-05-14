@@ -70,6 +70,7 @@ const StudentWeek = () => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
+  const [calendarMode, setCalendarMode] = useState<"week" | "month">("week");
   // Calendar filters (scope + session type)
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
   const [typeFilter, setTypeFilter] = useState<CategoryKey | null>(null);
@@ -492,6 +493,17 @@ const StudentWeek = () => {
   };
   const handleNextMonth = () => {
     setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1));
+  };
+
+  const handlePrevWeek = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 7);
+    handleSelectDate(d);
+  };
+  const handleNextWeek = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 7);
+    handleSelectDate(d);
   };
 
   const handleDayClickInSwapMode = (dayIndex: number) => {
