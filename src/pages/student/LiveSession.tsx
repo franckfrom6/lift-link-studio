@@ -7,6 +7,7 @@ import ExercisePicker from "@/components/coach/ExercisePicker";
 import { Exercise } from "@/types/exercise";
 import { EnhancedCompletedSet } from "@/components/student/EnhancedExerciseCard";
 import EnhancedExerciseCard from "@/components/student/EnhancedExerciseCard";
+import LinearRestTimer from "@/components/student/LinearRestTimer";
 import SkipExerciseModal from "@/components/student/SkipExerciseModal";
 import ExerciseAlternativesSheet from "@/components/student/ExerciseAlternativesSheet";
 import SessionSection from "@/components/student/SessionSection";
@@ -58,6 +59,7 @@ const LiveSession = () => {
   const [startTime] = useState(Date.now());
   const [elapsed, setElapsed] = useState(0);
   const [activeExerciseKey, setActiveExerciseKey] = useState<string>("0-0");
+  const [globalRestSeconds, setGlobalRestSeconds] = useState<number | null>(null);
   const [showProgression, setShowProgression] = useState(false);
   const [completedSessionId, setCompletedSessionId] = useState<string | null>(null);
   const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
@@ -505,6 +507,10 @@ const LiveSession = () => {
     const nextKey = getNextExerciseKey(key);
     if (nextKey) {
       setActiveExerciseKey(nextKey);
+      setTimeout(() => {
+        document.querySelector(`[data-exercise-key="${nextKey}"]`)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     } else {
       setIsSaving(true);
       try {
@@ -944,6 +950,7 @@ const LiveSession = () => {
                   return (
                     <div
                       key={key}
+                      data-exercise-key={key}
                       role={!isActive && !isSkipped ? "button" : undefined}
                       tabIndex={!isActive && !isSkipped ? 0 : undefined}
                       onClick={() => !isActive && !isSkipped && setActiveExerciseKey(key)}
@@ -970,6 +977,7 @@ const LiveSession = () => {
                         completedSets={sets}
                         onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
                         onAllSetsComplete={() => handleExerciseComplete(key)}
+                        onSetValidated={(rest) => setGlobalRestSeconds(rest)}
                         onSwapExercise={() => handleOpenSwap(key)}
                         onSkipExercise={() => handleOpenSkip(key)}
                         isSubstituted={isSubstituted}
@@ -1066,6 +1074,17 @@ const LiveSession = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {globalRestSeconds !== null && globalRestSeconds > 0 && (
+        <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2 pointer-events-none">
+          <div className="max-w-xl mx-auto pointer-events-auto shadow-lg">
+            <LinearRestTimer
+              key={`global-${globalRestSeconds}-${activeExerciseKey}`}
+              initialSeconds={globalRestSeconds}
+              onComplete={() => setGlobalRestSeconds(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
