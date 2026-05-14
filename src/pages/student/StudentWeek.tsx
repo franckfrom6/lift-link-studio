@@ -19,6 +19,7 @@ import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
 import SignatureStartCTA from "@/components/student/SignatureStartCTA";
 import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
 import MonthGrid, { MonthDayMarkers } from "@/components/student/MonthGrid";
+import WeekStrip from "@/components/student/WeekStrip";
 import MonthFilters, { ActivityFilter } from "@/components/student/MonthFilters";
 import {
   CategoryKey,
@@ -69,6 +70,7 @@ const StudentWeek = () => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
+  const [calendarMode, setCalendarMode] = useState<"week" | "month">("week");
   // Calendar filters (scope + session type)
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
   const [typeFilter, setTypeFilter] = useState<CategoryKey | null>(null);
@@ -493,6 +495,17 @@ const StudentWeek = () => {
     setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1));
   };
 
+  const handlePrevWeek = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 7);
+    handleSelectDate(d);
+  };
+  const handleNextWeek = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 7);
+    handleSelectDate(d);
+  };
+
   const handleDayClickInSwapMode = (dayIndex: number) => {
     if (swapSourceDay === null) return;
     if (dayIndex === swapSourceDay) {
@@ -744,15 +757,36 @@ const StudentWeek = () => {
         selectedType={typeFilter}
         onTypeChange={setTypeFilter}
       />
-      <MonthGrid
-        monthAnchor={displayMonth}
-        selectedDate={selectedDate}
-        markers={filteredMarkers}
-        onSelectDate={handleSelectDate}
-        onPrevMonth={handlePrevMonth}
-        onNextMonth={handleNextMonth}
-        onJumpToday={handleJumpToday}
-      />
+      <div className="flex justify-end px-3 pt-1">
+        <button
+          type="button"
+          onClick={() => setCalendarMode((m) => (m === "week" ? "month" : "week"))}
+          className="text-[11px] text-muted-foreground underline hover:text-foreground transition-colors"
+        >
+          {calendarMode === "week" ? "Vue mois" : "Vue semaine"}
+        </button>
+      </div>
+      {calendarMode === "week" ? (
+        <WeekStrip
+          monthAnchor={displayMonth}
+          selectedDate={selectedDate}
+          markers={filteredMarkers}
+          onSelectDate={handleSelectDate}
+          onPrevMonth={handlePrevWeek}
+          onNextMonth={handleNextWeek}
+          onJumpToday={handleJumpToday}
+        />
+      ) : (
+        <MonthGrid
+          monthAnchor={displayMonth}
+          selectedDate={selectedDate}
+          markers={filteredMarkers}
+          onSelectDate={handleSelectDate}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          onJumpToday={handleJumpToday}
+        />
+      )}
 
       {/* Selected day summary line */}
       <div className="px-4 pt-3 pb-2 flex items-baseline justify-between gap-3">
