@@ -597,8 +597,8 @@ const EnhancedExerciseCard = ({
             <p className={cn("font-bold truncate", isActive ? "text-base" : "text-sm font-semibold")}>{name}</p>
           )}
           {isSubstituted && (
-            <span className="bg-warning/10 text-warning px-1 py-0.5 rounded text-[9px] font-bold shrink-0">
-              {t('modified')}
+            <span className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md text-[11px] font-bold shrink-0">
+              Modifié ↔
             </span>
           )}
         </div>
@@ -684,8 +684,8 @@ const EnhancedExerciseCard = ({
               </p>
             )}
             {isSubstituted && (
-              <span className="bg-bg-tinted text-foreground border border-border px-1.5 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider shrink-0">
-                {t('modified')}
+              <span className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md text-[11px] font-bold shrink-0">
+                Modifié ↔
               </span>
             )}
           </div>
