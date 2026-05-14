@@ -18,6 +18,7 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
   const [running, setRunning] = useState(autoStart);
   const [finished, setFinished] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const endTimeRef = useRef<number | null>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
@@ -26,35 +27,75 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
       if (intervalRef.current) clearInterval(intervalRef.current);
       return;
     }
+    if (endTimeRef.current === null) {
+      endTimeRef.current = Date.now() + seconds * 1000;
+    }
+    const triggerComplete = () => {
+      try {
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 880; gain.gain.value = 0.3;
+        osc.start(); osc.stop(ctx.currentTime + 0.3);
+      } catch {}
+      try { navigator.vibrate?.([200, 100, 200]); } catch {}
+      onCompleteRef.current?.();
+    };
     intervalRef.current = setInterval(() => {
-      setSeconds((s) => {
-        if (s <= 1) {
+      const remaining = endTimeRef.current
+        ? Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000))
+        : 0;
+      setSeconds(remaining);
+      if (remaining <= 0) {
+        setRunning(false);
+        setFinished(true);
+        endTimeRef.current = null;
+        triggerComplete();
+      }
+    }, 1000);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && endTimeRef.current && running) {
+        const remaining = Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000));
+        setSeconds(remaining);
+        if (remaining <= 0) {
           setRunning(false);
           setFinished(true);
-          try {
-            const ctx = new AudioContext();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.frequency.value = 880; gain.gain.value = 0.3;
-            osc.start(); osc.stop(ctx.currentTime + 0.3);
-          } catch {}
-          try { navigator.vibrate?.([200, 100, 200]); } catch {}
-          onCompleteRef.current?.();
-          return 0;
+          endTimeRef.current = null;
+          triggerComplete();
         }
-        return s - 1;
-      });
-    }, 1000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [running, seconds]);
 
-  const reset = () => { setSeconds(totalSeconds); setRunning(true); setFinished(false); };
-  const toggle = () => setRunning(!running);
+  const reset = () => {
+    setSeconds(totalSeconds);
+    endTimeRef.current = Date.now() + totalSeconds * 1000;
+    setRunning(true);
+    setFinished(false);
+  };
+  const toggle = () => {
+    if (running) {
+      endTimeRef.current = null;
+      setRunning(false);
+    } else {
+      endTimeRef.current = Date.now() + seconds * 1000;
+      setRunning(true);
+    }
+  };
   const adjust = (delta: number) => {
     const newTotal = Math.max(10, totalSeconds + delta);
     setTotalSeconds(newTotal);
-    setSeconds((s) => Math.max(0, s + delta));
+    setSeconds((s) => {
+      const next = Math.max(0, s + delta);
+      if (running) endTimeRef.current = Date.now() + next * 1000;
+      return next;
+    });
   };
 
   const progress = totalSeconds > 0 ? (totalSeconds - seconds) / totalSeconds : 1;
