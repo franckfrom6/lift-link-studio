@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 const getPasswordStrength = (pw: string): "weak" | "medium" | "strong" => {
   if (pw.length < 8) return "weak";
@@ -47,6 +48,9 @@ const AuthPage = () => {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Store invite token for use during onboarding
   useEffect(() => {
@@ -54,6 +58,13 @@ const AuthPage = () => {
       localStorage.setItem("f6gym-invite", inviteToken);
     }
   }, [inviteToken]);
+
+  // Resend cooldown countdown
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const id = setInterval(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [resendCooldown]);
 
   const strength = useMemo(() => getPasswordStrength(password), [password]);
   const isSignupValid = email && password.length >= 8 && password === passwordConfirm;
@@ -85,10 +96,25 @@ const AuthPage = () => {
       if (error) {
         toast.error(translateError(error.message, t));
       } else {
-        toast.success(t("signup_success"));
+        if (firstName.trim()) {
+          localStorage.setItem("f6gym-firstname", firstName.trim());
+        }
+        setEmailSent(true);
+        setResendCooldown(60);
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (resendCooldown > 0) return;
+    try {
+      await supabase.auth.resend({ type: "signup", email });
+      toast.success(t("signup_success"));
+      setResendCooldown(60);
+    } catch {
+      toast.error(t("error_generic"));
     }
   };
 
@@ -130,10 +156,68 @@ const AuthPage = () => {
             <Logo variant="full" />
           </div>
 
+          {emailSent ? (
+            <div className="text-center space-y-5 py-8">
+              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                <Mail className="w-12 h-12 text-primary" strokeWidth={1.5} />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold">Vérifiez vos emails</h2>
+                <p className="text-sm text-muted-foreground">
+                  Nous avons envoyé un lien à <span className="font-medium text-foreground">{email}</span>
+                </p>
+              </div>
+              <div className="space-y-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleResend}
+                  disabled={resendCooldown > 0}
+                >
+                  {resendCooldown > 0 ? `Renvoyer (${resendCooldown}s)` : "Renvoyer l'email"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => { setEmailSent(false); setResendCooldown(0); }}
+                  className="text-sm text-primary font-medium hover:underline"
+                >
+                  Modifier l'adresse
+                </button>
+              </div>
+            </div>
+          ) : (
+          <>
           {/* Invite banner for student signup */}
           {isInviteFlow && mode === "signup" && (
             <div className="rounded-lg bg-primary/10 border border-primary/20 p-4 text-center">
               <p className="text-sm font-medium text-primary">{t("invite_signup_banner")}</p>
+            </div>
+          )}
+
+          {/* Tab toggle */}
+          {mode !== "forgot" && !isInviteFlow && (
+            <div className="grid grid-cols-2 p-1 rounded-lg bg-muted">
+              <button
+                type="button"
+                onClick={() => setMode("login")}
+                className={cn(
+                  "py-2 text-sm font-semibold rounded-md transition-colors",
+                  mode === "login" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+                )}
+              >
+                Se connecter
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("signup")}
+                className={cn(
+                  "py-2 text-sm font-semibold rounded-md transition-colors",
+                  mode === "signup" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+                )}
+              >
+                Créer un compte
+              </button>
             </div>
           )}
 
@@ -171,6 +255,19 @@ const AuthPage = () => {
               </div>
 
               <form onSubmit={mode === "login" ? handleLogin : handleSignup} className="space-y-4">
+                {mode === "signup" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="firstname">Prénom</Label>
+                    <Input
+                      id="firstname"
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="Alex"
+                      required
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="email">{t("email")}</Label>
                   <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nom@exemple.com" required />
@@ -260,6 +357,8 @@ const AuthPage = () => {
                 )}
               </div>
             </>
+          )}
+          </>
           )}
         </div>
       </div>
