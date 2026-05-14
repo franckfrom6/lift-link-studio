@@ -63,6 +63,7 @@ const LiveSession = () => {
   const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
   const [swapTargetKey, setSwapTargetKey] = useState<string | null>(null);
+  const [swapSelectedName, setSwapSelectedName] = useState<string | null>(null);
   const [dynamicAlternatives, setDynamicAlternatives] = useState<AlternativeGroup | null>(null);
   const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
   const [skipModalOpen, setSkipModalOpen] = useState(false);
@@ -651,10 +652,14 @@ const LiveSession = () => {
     const originalName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || "Exercice";
     setSubstitutions(prev => [...prev.filter(s => s.key !== swapTargetKey), { key: swapTargetKey, originalName, newName: alternative.name, newEquipment: alternative.equipment }]);
     setCompletedSets(prev => { const u = { ...prev }; delete u[swapTargetKey]; return u; });
-    
-    toast.success(`${originalName} → ${alternative.name}`);
-    setSwapSheetOpen(false);
-    setSwapTargetKey(null);
+
+    setSwapSelectedName(alternative.name);
+    toast.success(`✓ ${alternative.name} sélectionné`);
+    setTimeout(() => {
+      setSwapSheetOpen(false);
+      setSwapTargetKey(null);
+      setSwapSelectedName(null);
+    }, 500);
   };
 
   const handleAddExercise = async (exercise: Exercise) => {
@@ -1035,10 +1040,11 @@ const LiveSession = () => {
       />
       <ExerciseAlternativesSheet
         open={swapSheetOpen}
-        onClose={() => { setSwapSheetOpen(false); setSwapTargetKey(null); }}
+        onClose={() => { setSwapSheetOpen(false); setSwapTargetKey(null); setSwapSelectedName(null); }}
         exerciseName={swapExerciseOriginalName}
         group={EXERCISE_ALTERNATIVES[swapExerciseOriginalName] || dynamicAlternatives}
         onSelect={handleSwapSelect}
+        selectedName={swapSelectedName}
       />
       <SkipExerciseModal
         open={skipModalOpen}
