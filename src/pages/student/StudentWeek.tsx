@@ -19,6 +19,7 @@ import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
 import SignatureStartCTA from "@/components/student/SignatureStartCTA";
 import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
 import MonthGrid, { MonthDayMarkers } from "@/components/student/MonthGrid";
+import WeekStrip from "@/components/student/WeekStrip";
 import MonthFilters, { ActivityFilter } from "@/components/student/MonthFilters";
 import {
   CategoryKey,
