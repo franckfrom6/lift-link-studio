@@ -1074,6 +1074,17 @@ const LiveSession = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {globalRestSeconds !== null && globalRestSeconds > 0 && (
+        <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2 pointer-events-none">
+          <div className="max-w-xl mx-auto pointer-events-auto shadow-lg">
+            <LinearRestTimer
+              key={`global-${globalRestSeconds}-${activeExerciseKey}`}
+              initialSeconds={globalRestSeconds}
+              onComplete={() => setGlobalRestSeconds(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
