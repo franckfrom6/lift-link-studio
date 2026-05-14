@@ -57,6 +57,7 @@ interface EnhancedExerciseCardProps {
   sessionExerciseId?: string;
   completedSessionId?: string;
   onActivate?: () => void;
+  onSetValidated?: (restSeconds: number) => void;
 }
 
 const EnhancedExerciseCard = ({
@@ -71,6 +72,7 @@ const EnhancedExerciseCard = ({
   sessionExerciseId,
   completedSessionId,
   onActivate,
+  onSetValidated,
 }: EnhancedExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const { t } = useTranslation('exercises');
@@ -149,10 +151,12 @@ const EnhancedExerciseCard = ({
         onCompletedSetsChange(updated);
       }
       setShowTimer(true);
+      if (restSeconds > 0) onSetValidated?.(restSeconds);
     } else {
       setAllDone(true);
       setCurrentSetIdx(-1);
-      onAllSetsComplete();
+      if (restSeconds > 0) onSetValidated?.(restSeconds);
+      setTimeout(() => onAllSetsComplete(), 700);
     }
   };
 
