@@ -757,15 +757,36 @@ const StudentWeek = () => {
         selectedType={typeFilter}
         onTypeChange={setTypeFilter}
       />
-      <MonthGrid
-        monthAnchor={displayMonth}
-        selectedDate={selectedDate}
-        markers={filteredMarkers}
-        onSelectDate={handleSelectDate}
-        onPrevMonth={handlePrevMonth}
-        onNextMonth={handleNextMonth}
-        onJumpToday={handleJumpToday}
-      />
+      <div className="flex justify-end px-3 pt-1">
+        <button
+          type="button"
+          onClick={() => setCalendarMode((m) => (m === "week" ? "month" : "week"))}
+          className="text-[11px] text-muted-foreground underline hover:text-foreground transition-colors"
+        >
+          {calendarMode === "week" ? "Vue mois" : "Vue semaine"}
+        </button>
+      </div>
+      {calendarMode === "week" ? (
+        <WeekStrip
+          monthAnchor={displayMonth}
+          selectedDate={selectedDate}
+          markers={filteredMarkers}
+          onSelectDate={handleSelectDate}
+          onPrevMonth={handlePrevWeek}
+          onNextMonth={handleNextWeek}
+          onJumpToday={handleJumpToday}
+        />
+      ) : (
+        <MonthGrid
+          monthAnchor={displayMonth}
+          selectedDate={selectedDate}
+          markers={filteredMarkers}
+          onSelectDate={handleSelectDate}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          onJumpToday={handleJumpToday}
+        />
+      )}
 
       {/* Selected day summary line */}
       <div className="px-4 pt-3 pb-2 flex items-baseline justify-between gap-3">
