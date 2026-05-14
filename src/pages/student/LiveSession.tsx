@@ -950,6 +950,7 @@ const LiveSession = () => {
                   return (
                     <div
                       key={key}
+                      data-exercise-key={key}
                       role={!isActive && !isSkipped ? "button" : undefined}
                       tabIndex={!isActive && !isSkipped ? 0 : undefined}
                       onClick={() => !isActive && !isSkipped && setActiveExerciseKey(key)}
@@ -976,6 +977,7 @@ const LiveSession = () => {
                         completedSets={sets}
                         onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
                         onAllSetsComplete={() => handleExerciseComplete(key)}
+                        onSetValidated={(rest) => setGlobalRestSeconds(rest)}
                         onSwapExercise={() => handleOpenSwap(key)}
                         onSkipExercise={() => handleOpenSkip(key)}
                         isSubstituted={isSubstituted}
