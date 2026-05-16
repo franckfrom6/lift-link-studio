@@ -998,6 +998,7 @@ const LiveSession = () => {
                         onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
                         onAllSetsComplete={() => handleExerciseComplete(key)}
                         onSetValidated={(rest) => setGlobalRestSeconds(rest)}
+                        onRestStart={(secs) => setGlobalRestSeconds(secs)}
                         onSwapExercise={() => handleOpenSwap(key)}
                         onSkipExercise={() => handleOpenSkip(key)}
                         isSubstituted={isSubstituted}
