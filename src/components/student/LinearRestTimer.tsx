@@ -11,6 +11,14 @@ interface LinearRestTimerProps {
   autoStart?: boolean;
 }
 
+function sendTimerNotification(title: string) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    try {
+      new Notification(title, { icon: "/favicon.svg", tag: "rest-timer", requireInteraction: false });
+    } catch {}
+  }
+}
+
 const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: LinearRestTimerProps) => {
   const { t } = useTranslation(["common", "session"]);
   const [totalSeconds, setTotalSeconds] = useState(initialSeconds);
