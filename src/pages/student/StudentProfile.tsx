@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
-  Bell, ChevronRight, Ruler, Moon, Calendar, Volume2, Play,
+  Bell, ChevronLeft, ChevronRight, Ruler, Moon, Calendar, Volume2, Play,
   CreditCard, Receipt, Shield, Download, HelpCircle, Mail, FileText,
   type LucideIcon,
 } from "lucide-react";
@@ -277,7 +277,18 @@ const StudentProfile = () => {
         className="sticky top-0 z-20 bg-background border-b border-border flex items-center justify-between"
         style={{ padding: "14px 20px" }}
       >
-        <div className="text-[18px] font-bold tracking-[-0.02em]">Profil</div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            aria-label="Retour"
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors h-11 w-11 -ml-3 justify-center"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+          >
+            <ChevronLeft className="w-5 h-5" strokeWidth={2} />
+          </button>
+          <div className="text-[18px] font-bold tracking-[-0.02em]">Profil</div>
+        </div>
         <button
           aria-label="Notifications"
           onClick={() => setOpenSheet("notifications")}
