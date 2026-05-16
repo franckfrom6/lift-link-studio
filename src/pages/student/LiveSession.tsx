@@ -1032,7 +1032,11 @@ const LiveSession = () => {
       )}
 
       {/* Share button */}
-      <div ref={shareBtnRef} className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] md:bottom-20 right-4 z-20">
+      <div
+        ref={shareBtnRef}
+        className="fixed md:bottom-20 md:right-4 z-20"
+        style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom, 34px))', right: '1rem' }}
+      >
         <ShareSessionButton
           sessionId={selectedSession?.id || ""}
           completedSessionId={completedSessionId || undefined}
