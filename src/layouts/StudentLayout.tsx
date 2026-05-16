@@ -67,7 +67,10 @@ const StudentLayout = () => {
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-h-[100dvh] min-w-0">
         {/* Mobile header */}
-        <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background">
+        <header
+          className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background"
+          style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+        >
           <Logo variant="mobile" />
           <div className="flex items-center gap-2">
             <DisplayModeToggle />
