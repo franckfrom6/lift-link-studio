@@ -53,6 +53,25 @@ serve(async (req) => {
 
     if (profileError) throw profileError;
 
+    // Send welcome email with credentials (non-blocking — log on failure)
+    try {
+      await adminClient.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "pilot-welcome",
+          recipientEmail: email,
+          idempotencyKey: `pilot-welcome-${newUser.user.id}`,
+          templateData: {
+            firstName: full_name?.split(" ")[0] || "",
+            email,
+            tempPassword: password,
+            role,
+          },
+        },
+      });
+    } catch (emailErr) {
+      console.error("Failed to send welcome email", emailErr);
+    }
+
     return new Response(JSON.stringify({ user_id: newUser.user.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
