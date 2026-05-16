@@ -40,6 +40,23 @@ interface Substitution {
   newEquipment: string;
 }
 
+function readSessionBackup(sessionId: string | undefined) {
+  if (!sessionId) return null;
+  try {
+    const raw = localStorage.getItem('live_session_backup');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const age = Date.now() - new Date(parsed.date ?? 0).getTime();
+    if (parsed.sessionId !== sessionId || age > 4 * 60 * 60 * 1000) {
+      localStorage.removeItem('live_session_backup');
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 const LiveSession = () => {
   const navigate = useNavigate();
   const { sessionId: selectedSessionId } = useParams<{ sessionId: string }>();
@@ -51,23 +68,38 @@ const LiveSession = () => {
   const { effectiveStudentId } = useImpersonation();
   const studentId = user ? effectiveStudentId(user.id) : null;
 
-  const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>({});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const _backup = useMemo(() => readSessionBackup(selectedSessionId), []);
+
+  const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>(
+    () => _backup?.completedSets ?? {}
+  );
   const [sessionDone, setSessionDone] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [finishError, setFinishError] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [startTime] = useState(() => _backup?.startTime ?? Date.now());
   const [elapsed, setElapsed] = useState(0);
-  const [activeExerciseKey, setActiveExerciseKey] = useState<string>("0-0");
-  const [globalRestSeconds, setGlobalRestSeconds] = useState<number | null>(null);
+  const [activeExerciseKey, setActiveExerciseKey] = useState<string>(
+    () => _backup?.activeExerciseKey ?? "0-0"
+  );
+  const [globalRestSeconds, setGlobalRestSeconds] = useState<number | null>(() => {
+    if (!_backup?.restEndTime) return null;
+    const remaining = Math.ceil((_backup.restEndTime - Date.now()) / 1000);
+    return remaining > 0 ? remaining : null;
+  });
   const [showProgression, setShowProgression] = useState(false);
   const [completedSessionId, setCompletedSessionId] = useState<string | null>(null);
-  const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
+  const [substitutions, setSubstitutions] = useState<Substitution[]>(
+    () => _backup?.substitutions ?? []
+  );
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
   const [swapTargetKey, setSwapTargetKey] = useState<string | null>(null);
   const [swapSelectedName, setSwapSelectedName] = useState<string | null>(null);
   const [dynamicAlternatives, setDynamicAlternatives] = useState<AlternativeGroup | null>(null);
-  const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
+  const [skippedExercises, setSkippedExercises] = useState<Set<string>>(
+    () => new Set(_backup?.skippedExercises ?? [])
+  );
   const [skipModalOpen, setSkipModalOpen] = useState(false);
   const [skipTargetKey, setSkipTargetKey] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -124,50 +156,32 @@ const LiveSession = () => {
 
   // Respect user's theme — no forced dark mode. ThemeContext handles light/dark.
 
-  // Silent restore from localStorage backup on mount (no prompt).
-  // Only restores if sessionId matches and backup is < 4h old.
-  useEffect(() => {
-    try {
-      const backup = localStorage.getItem("live_session_backup");
-      if (!backup) return;
-      const parsed = JSON.parse(backup);
-      const ageMs = parsed?.date ? Date.now() - new Date(parsed.date).getTime() : Infinity;
-      if (parsed.sessionId !== selectedSessionId || ageMs > 4 * 60 * 60 * 1000 || ageMs < 0) {
-        try { localStorage.removeItem("live_session_backup"); } catch { /* ignore */ }
-        return;
-      }
-      if (parsed.completedSets) setCompletedSets(parsed.completedSets);
-      if (parsed.substitutions) setSubstitutions(parsed.substitutions);
-      if (parsed.skippedExercises) setSkippedExercises(new Set(parsed.skippedExercises));
-      if (parsed.activeExerciseKey) setActiveExerciseKey(parsed.activeExerciseKey);
-      if (parsed.restEndTime) {
-        const remaining = Math.ceil((parsed.restEndTime - Date.now()) / 1000);
-        if (remaining > 0) setGlobalRestSeconds(remaining);
-      }
-    } catch {
-      try { localStorage.removeItem("live_session_backup"); } catch { /* ignore */ }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSessionId]);
-
-  // Aggressive backup: write to localStorage on every meaningful state change.
+  // Aggressive backup: write to localStorage on every meaningful state change
+  // AND right before the page is hidden/unloaded (iOS suspends JS quickly).
   useEffect(() => {
     if (!selectedSessionId || sessionDone) return;
-    try {
-      localStorage.setItem('live_session_backup', JSON.stringify({
-        sessionId: selectedSessionId,
-        completedSets,
-        substitutions,
-        skippedExercises: Array.from(skippedExercises),
-        activeExerciseKey,
-        elapsed,
-        startTime,
-        globalRestSeconds,
-        restEndTime: globalRestSeconds ? Date.now() + globalRestSeconds * 1000 : null,
-        date: new Date().toISOString(),
-      }));
-    } catch { /* ignore quota errors */ }
-  }, [completedSets, substitutions, skippedExercises, activeExerciseKey, elapsed, globalRestSeconds, sessionDone, selectedSessionId, startTime]);
+    const save = () => {
+      try {
+        localStorage.setItem('live_session_backup', JSON.stringify({
+          sessionId: selectedSessionId,
+          completedSets,
+          substitutions,
+          skippedExercises: Array.from(skippedExercises),
+          activeExerciseKey,
+          startTime,
+          restEndTime: globalRestSeconds ? Date.now() + globalRestSeconds * 1000 : null,
+          date: new Date().toISOString(),
+        }));
+      } catch { /* ignore quota errors */ }
+    };
+    save();
+    window.addEventListener('beforeunload', save);
+    document.addEventListener('visibilitychange', save);
+    return () => {
+      window.removeEventListener('beforeunload', save);
+      document.removeEventListener('visibilitychange', save);
+    };
+  }, [completedSets, substitutions, skippedExercises, activeExerciseKey, startTime, globalRestSeconds, sessionDone, selectedSessionId]);
 
   // Re-sync elapsed time when the user returns to the tab (iOS suspends timers).
   useEffect(() => {
@@ -577,6 +591,7 @@ const LiveSession = () => {
 
       // Success — show celebration
       setSessionDone(true);
+      try { localStorage.removeItem('live_session_backup'); } catch {}
       try {
         confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"] });
         setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.5 } }), 300);
