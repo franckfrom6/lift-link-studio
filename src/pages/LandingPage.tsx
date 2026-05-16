@@ -48,7 +48,10 @@ const LandingPage = () => {
 const Nav = () => {
   const { t } = useTranslation("landing");
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+    <nav
+      className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       <div className="max-w-5xl mx-auto flex items-center justify-between px-6 h-14">
         <Logo variant="compact" />
         <div className="flex items-center gap-3">
