@@ -20,6 +20,14 @@
     user-select: none;
   }
 
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body {
+    overscroll-behavior: none;
+  }
+
   :root {
 
     /* ──────────────────────────────────────────────────────────
