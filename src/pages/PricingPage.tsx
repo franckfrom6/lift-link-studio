@@ -45,7 +45,7 @@ const PricingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background">
       <div className="max-w-5xl mx-auto px-4 py-12 space-y-8">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">{t("pricing_title")}</h1>

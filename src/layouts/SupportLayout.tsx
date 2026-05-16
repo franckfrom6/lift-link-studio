@@ -37,7 +37,7 @@ const SupportLayout = () => {
   const navItems = role === "coach" ? coachNav : studentNav;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-[100dvh] bg-background flex flex-col">
       {/* Sticky top bar with back button */}
       <header className="sticky top-0 z-40 flex items-center gap-3 px-4 h-14 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
         <button

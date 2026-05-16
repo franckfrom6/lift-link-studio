@@ -25,7 +25,7 @@ export class ErrorBoundary extends React.Component<
       const t = i18next.t.bind(i18next);
       return (
         this.props.fallback ?? (
-          <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-8 text-center">
+          <div className="flex flex-col items-center justify-center min-h-[100dvh] gap-4 p-8 text-center">
             <h1 className="text-xl font-bold text-foreground">
               {t("common:error_occurred")}
             </h1>

@@ -25,7 +25,7 @@ const LandingPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -34,7 +34,7 @@ const LandingPage = () => {
   if (user && role) return null;
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 selection:text-foreground">
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans selection:bg-primary/20 selection:text-foreground">
       <Nav />
       <Hero />
       <Features />

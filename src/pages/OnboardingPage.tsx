@@ -110,7 +110,7 @@ const OnboardingPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6 relative">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background p-6 relative">
       <div className="absolute top-4 right-4 flex items-center gap-1">
         <LanguageSwitcher />
         <ThemeToggle />
