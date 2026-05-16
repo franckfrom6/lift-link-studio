@@ -49,9 +49,7 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
       if (intervalRef.current) clearInterval(intervalRef.current);
       return;
     }
-    if (endTimeRef.current === null) {
-      endTimeRef.current = Date.now() + seconds * 1000;
-    }
+    endTimeRef.current = Date.now() + seconds * 1000;
     const triggerComplete = () => {
       try {
         const ctx = new AudioContext();
@@ -65,36 +63,31 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
       sendTimerNotification(t("common:rest_label") + " — " + t("session:session_done", "Done!"));
       onCompleteRef.current?.();
     };
-    intervalRef.current = setInterval(() => {
-      const remaining = endTimeRef.current
-        ? Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000))
-        : 0;
-      setSeconds(remaining);
-      if (remaining <= 0) {
-        setRunning(false);
-        setFinished(true);
-        endTimeRef.current = null;
-        triggerComplete();
-      }
-    }, 1000);
     const handleVisibility = () => {
-      if (document.visibilityState === "visible" && endTimeRef.current && running) {
+      if (document.visibilityState === 'visible' && endTimeRef.current) {
         const remaining = Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000));
         setSeconds(remaining);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    intervalRef.current = setInterval(() => {
+      setSeconds(() => {
+        const remaining = Math.max(0, Math.ceil((endTimeRef.current! - Date.now()) / 1000));
         if (remaining <= 0) {
           setRunning(false);
           setFinished(true);
           endTimeRef.current = null;
           triggerComplete();
+          return 0;
         }
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
+        return remaining;
+      });
+    }, 1000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      document.removeEventListener("visibilitychange", handleVisibility);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [running, seconds, t]);
+  }, [running]);
 
   const reset = () => {
     setSeconds(totalSeconds);
