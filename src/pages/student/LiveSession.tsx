@@ -78,8 +78,6 @@ const LiveSession = () => {
   const [freeSessionLoading, setFreeSessionLoading] = useState(false);
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
   const [addToSectionIdx, setAddToSectionIdx] = useState<number>(0);
-  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
-  const [recoveryData, setRecoveryData] = useState<any>(null);
 
   // Refs for the bottom-fixed elements so we can measure their combined
   // height and reserve matching padding on the scroll container. This
@@ -126,44 +124,61 @@ const LiveSession = () => {
 
   // Respect user's theme — no forced dark mode. ThemeContext handles light/dark.
 
-  // Check for orphaned localStorage backup on mount.
-  // Backup is keyed by sessionId AND must be < 24h old, otherwise discarded.
+  // Silent restore from localStorage backup on mount (no prompt).
+  // Only restores if sessionId matches and backup is < 4h old.
   useEffect(() => {
     try {
       const backup = localStorage.getItem("live_session_backup");
       if (!backup) return;
       const parsed = JSON.parse(backup);
       const ageMs = parsed?.date ? Date.now() - new Date(parsed.date).getTime() : Infinity;
-      const STALE_AFTER = 24 * 60 * 60 * 1000;
-      if (parsed.sessionId !== selectedSessionId || ageMs > STALE_AFTER || ageMs < 0) {
+      if (parsed.sessionId !== selectedSessionId || ageMs > 4 * 60 * 60 * 1000 || ageMs < 0) {
         try { localStorage.removeItem("live_session_backup"); } catch { /* ignore */ }
         return;
       }
-      setRecoveryData(parsed);
-      setShowRecoveryPrompt(true);
+      if (parsed.completedSets) setCompletedSets(parsed.completedSets);
+      if (parsed.substitutions) setSubstitutions(parsed.substitutions);
+      if (parsed.skippedExercises) setSkippedExercises(new Set(parsed.skippedExercises));
+      if (parsed.activeExerciseKey) setActiveExerciseKey(parsed.activeExerciseKey);
+      if (parsed.restEndTime) {
+        const remaining = Math.ceil((parsed.restEndTime - Date.now()) / 1000);
+        if (remaining > 0) setGlobalRestSeconds(remaining);
+      }
     } catch {
       try { localStorage.removeItem("live_session_backup"); } catch { /* ignore */ }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSessionId]);
 
-  const handleRestoreBackup = () => {
-    if (recoveryData?.completedSets) {
-      setCompletedSets(recoveryData.completedSets);
-    }
-    if (recoveryData?.substitutions) {
-      setSubstitutions(recoveryData.substitutions);
-    }
-    localStorage.removeItem("live_session_backup");
-    setShowRecoveryPrompt(false);
-    setRecoveryData(null);
-    toast.success(t('session:session_restored', 'Session restaurée'));
-  };
+  // Aggressive backup: write to localStorage on every meaningful state change.
+  useEffect(() => {
+    if (!selectedSessionId || sessionDone) return;
+    try {
+      localStorage.setItem('live_session_backup', JSON.stringify({
+        sessionId: selectedSessionId,
+        completedSets,
+        substitutions,
+        skippedExercises: Array.from(skippedExercises),
+        activeExerciseKey,
+        elapsed,
+        startTime,
+        globalRestSeconds,
+        restEndTime: globalRestSeconds ? Date.now() + globalRestSeconds * 1000 : null,
+        date: new Date().toISOString(),
+      }));
+    } catch { /* ignore quota errors */ }
+  }, [completedSets, substitutions, skippedExercises, activeExerciseKey, elapsed, globalRestSeconds, sessionDone, selectedSessionId, startTime]);
 
-  const handleDismissBackup = () => {
-    localStorage.removeItem("live_session_backup");
-    setShowRecoveryPrompt(false);
-    setRecoveryData(null);
-  };
+  // Re-sync elapsed time when the user returns to the tab (iOS suspends timers).
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && !sessionDone) {
+        setElapsed(Math.floor((Date.now() - startTime) / 1000));
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [startTime, sessionDone]);
 
   const programSession = useMemo(() => {
     const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
@@ -849,27 +864,6 @@ const LiveSession = () => {
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground -m-4 md:-m-8">
-      {/* Recovery prompt for orphaned localStorage backup */}
-      {showRecoveryPrompt && (
-        <AlertDialog open={showRecoveryPrompt} onOpenChange={setShowRecoveryPrompt}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('session:unsaved_session_found', 'Session non sauvegardée trouvée')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('session:unsaved_session_description', 'Une session précédente n\'a pas pu être sauvegardée. Voulez-vous restaurer vos données ?')}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={handleDismissBackup}>
-                {t('common:ignore', 'Ignorer')}
-              </AlertDialogCancel>
-              <AlertDialogAction onClick={handleRestoreBackup}>
-                {t('common:restore', 'Restaurer')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
       {/* Immersive stats bar */}
       <WorkoutStatsBar
         elapsed={elapsed}
