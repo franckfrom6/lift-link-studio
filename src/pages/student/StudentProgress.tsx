@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Trophy, History, Share2, ImageIcon } from "lucide-react";
+import { Trophy, History, Share2, ImageIcon, ChevronLeft } from "lucide-react";
 import { useStudentDashboard } from "@/hooks/useStudentDashboard";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { useWeeklyVolumeSeries, ProgPeriod } from "@/hooks/useWeeklyVolumeSeries";
@@ -24,6 +25,7 @@ const PERIODS: { id: ProgPeriod; label: string }[] = [
 
 const StudentProgress = () => {
   const { t } = useTranslation("dashboard");
+  const navigate = useNavigate();
   const isAdvanced = useIsAdvanced();
   const { summary, loading: summaryLoading } = useStudentDashboard();
   const { program } = useStudentProgram();
@@ -112,13 +114,24 @@ const StudentProgress = () => {
     <div className="max-w-2xl mx-auto pb-32 md:pb-6 animate-fade-in">
       {/* Sage header — eyebrow + title + share */}
       <header className="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
-        <div className="min-w-0">
+        <div className="flex items-center gap-1 min-w-0">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            aria-label="Retour"
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors h-11 w-11 -ml-2 justify-center"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+          >
+            <ChevronLeft className="w-5 h-5" strokeWidth={2} />
+          </button>
+          <div className="min-w-0">
           <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-subtle mb-0.5 truncate">
             {headerCaption}
           </p>
           <h1 className="text-lg font-bold tracking-tight text-foreground m-0">
             {t("stats")}
           </h1>
+          </div>
         </div>
         <button
           type="button"
