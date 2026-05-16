@@ -44,7 +44,10 @@ const ExerciseAlternativesSheet = ({
           )}
         </SheetHeader>
 
-        <div className="space-y-2 mt-4 overflow-y-auto max-h-[55dvh] pb-4">
+       <div
+         className="space-y-2 mt-4 overflow-y-auto max-h-[55dvh] pb-4"
+         style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+       >
           {isEmpty ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
               {t('session:no_alternatives', 'Aucune alternative disponible pour cet exercice.')}
