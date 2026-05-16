@@ -4,8 +4,6 @@ import NumericInput from "./NumericInput";
 import DurationInput from "./DurationInput";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import CircularRestTimer from "./CircularRestTimer";
-import LinearRestTimer from "./LinearRestTimer";
 import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
 import RPESelector from "./RPESelector";
 import CoachInstructionsButton from "./CoachInstructionsButton";
@@ -58,6 +56,7 @@ interface EnhancedExerciseCardProps {
   completedSessionId?: string;
   onActivate?: () => void;
   onSetValidated?: (restSeconds: number) => void;
+  onRestStart?: (seconds: number) => void;
 }
 
 const EnhancedExerciseCard = ({
@@ -73,6 +72,7 @@ const EnhancedExerciseCard = ({
   completedSessionId,
   onActivate,
   onSetValidated,
+  onRestStart,
 }: EnhancedExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const { t } = useTranslation('exercises');
@@ -82,7 +82,6 @@ const EnhancedExerciseCard = ({
       ? completedSets.findIndex(s => s.reps === 0 && (s.durationSeconds || 0) === 0)
       : completedSets.length < targetSets ? completedSets.length : -1
   );
-  const [showTimer, setShowTimer] = useState(false);
   const [allDone, setAllDone] = useState(
     completedSets.length >= targetSets && completedSets.every(s => 
       trackingType === "duration" ? (s.durationSeconds || 0) > 0 : s.reps > 0
@@ -150,12 +149,17 @@ const EnhancedExerciseCard = ({
         updated[idx + 1] = { ...updated[idx + 1], weight: updated[idx].weight };
         onCompletedSetsChange(updated);
       }
-      setShowTimer(true);
-      if (restSeconds > 0) onSetValidated?.(restSeconds);
+      if (restSeconds > 0) {
+        onSetValidated?.(restSeconds);
+        onRestStart?.(restSeconds);
+      }
     } else {
       setAllDone(true);
       setCurrentSetIdx(-1);
-      if (restSeconds > 0) onSetValidated?.(restSeconds);
+      if (restSeconds > 0) {
+        onSetValidated?.(restSeconds);
+        onRestStart?.(restSeconds);
+      }
       setTimeout(() => onAllSetsComplete(), 700);
     }
   };
@@ -787,24 +791,6 @@ const EnhancedExerciseCard = ({
                   )}
                 </div>
               )}
-
-              <AnimatePresence>
-                {showTimer && isActive && (
-                  isAdvanced ? (
-                    <CircularRestTimer
-                      key={currentSetIdx}
-                      initialSeconds={restSeconds}
-                      onComplete={() => setShowTimer(false)}
-                    />
-                  ) : (
-                    <LinearRestTimer
-                      key={currentSetIdx}
-                      initialSeconds={restSeconds}
-                      onComplete={() => setShowTimer(false)}
-                    />
-                  )
-                )}
-              </AnimatePresence>
 
               {isActive && visibleCompletedSets.length > 0 && (
                 <div className="space-y-2">
