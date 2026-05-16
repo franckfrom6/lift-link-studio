@@ -22,6 +22,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PricingPage from "./pages/PricingPage";
 import JoinRedirect from "./pages/JoinRedirect";
+import UnsubscribePage from "./pages/UnsubscribePage";
 
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -128,6 +129,7 @@ const App = () => (
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/join/:code" element={<JoinRedirect />} />
                 <Route path="/onboarding" element={<OnboardingPage />} />
+                <Route path="/unsubscribe" element={<UnsubscribePage />} />
 
                 <Route path="/admin" element={<AuthGuard requireAdmin><AdminLayout /></AuthGuard>}>
                   <Route index element={<AdminDashboard />} />
