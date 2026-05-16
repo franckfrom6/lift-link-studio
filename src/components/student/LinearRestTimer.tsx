@@ -27,39 +27,44 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
       if (intervalRef.current) clearInterval(intervalRef.current);
       return;
     }
-    endTimeRef.current = Date.now() + seconds * 1000;
-    const triggerComplete = () => {
-      try {
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.value = 880; gain.gain.value = 0.3;
-        osc.start(); osc.stop(ctx.currentTime + 0.3);
-      } catch {}
-      try { navigator.vibrate?.([200, 100, 200]); } catch {}
-      onCompleteRef.current?.();
-    };
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible' && endTimeRef.current) {
-        const remaining = Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000));
-        setSeconds(remaining);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
+    if (running) {
+      endTimeRef.current = Date.now() + seconds * 1000;
+    }
     intervalRef.current = setInterval(() => {
       setSeconds(() => {
-        const remaining = Math.max(0, Math.ceil((endTimeRef.current! - Date.now()) / 1000));
+        if (!endTimeRef.current) return 0;
+        const remaining = Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000));
         if (remaining <= 0) {
           setRunning(false);
           setFinished(true);
-          endTimeRef.current = null;
-          triggerComplete();
+          try {
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 880; gain.gain.value = 0.3;
+            osc.start(); osc.stop(ctx.currentTime + 0.3);
+          } catch {}
+          try { navigator.vibrate?.([200, 100, 200, 100, 200]); } catch {}
+          sendTimerNotification(t("common:rest_label") + " — Done!");
+          onCompleteRef.current?.();
           return 0;
         }
         return remaining;
       });
     }, 1000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && endTimeRef.current && running) {
+        const remaining = Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000));
+        setSeconds(remaining);
+        if (remaining <= 0) {
+          setRunning(false);
+          setFinished(true);
+          onCompleteRef.current?.();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       document.removeEventListener('visibilitychange', handleVisibility);
@@ -73,13 +78,12 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
     setFinished(false);
   };
   const toggle = () => {
-    if (running) {
-      endTimeRef.current = null;
-      setRunning(false);
-    } else {
+    if (!running) {
       endTimeRef.current = Date.now() + seconds * 1000;
-      setRunning(true);
+    } else {
+      endTimeRef.current = null;
     }
+    setRunning(!running);
   };
   const adjust = (delta: number) => {
     const newTotal = Math.max(10, totalSeconds + delta);
