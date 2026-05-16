@@ -6,6 +6,9 @@
 
 @layer base {
   :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+
     /* ──────────────────────────────────────────────────────────
        From6Gym — Light theme · Bleu Klein signature
        Sport-tech premium, geometric, restrained.
