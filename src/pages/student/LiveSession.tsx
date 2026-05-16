@@ -1101,16 +1101,14 @@ const LiveSession = () => {
       </AlertDialog>
       {globalRestSeconds !== null && globalRestSeconds > 0 && (
         <div
-          className="fixed left-0 right-0 z-40 px-4 pb-2 pointer-events-none"
-          style={{ bottom: 'calc(env(safe-area-inset-bottom, 34px) + var(--keyboard-offset, 0px))' }}
+          className="fixed left-3 right-3 z-40 rounded-2xl shadow-lg overflow-hidden"
+          style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom, 34px) + var(--keyboard-offset, 0px))' }}
         >
-          <div className="max-w-xl mx-auto pointer-events-auto shadow-lg">
-            <LinearRestTimer
-              key={`global-${globalRestSeconds}-${activeExerciseKey}`}
-              initialSeconds={globalRestSeconds}
-              onComplete={() => setGlobalRestSeconds(null)}
-            />
-          </div>
+          <LinearRestTimer
+            key={`global-${globalRestSeconds}-${activeExerciseKey}`}
+            initialSeconds={globalRestSeconds}
+            onComplete={() => setGlobalRestSeconds(null)}
+          />
         </div>
       )}
     </div>

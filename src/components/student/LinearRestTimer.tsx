@@ -113,30 +113,29 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       className={cn(
-        "rounded-md border p-3 space-y-2.5 transition-colors",
+        "rounded-2xl border-2 p-4 space-y-3 transition-colors",
         finished
-          ? "bg-bg-tinted border-foreground/20"
-          : "bg-bg-tinted border-border"
+          ? "bg-card border-foreground/20"
+          : "bg-card border-primary/30"
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-subtle">
-          {finished ? "✓ " + t("common:rest_label") : t("common:rest_label")}
+        <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          REPOS
         </span>
-        <span
-          className={cn(
-            "text-2xl font-bold tabular-nums tracking-tight",
-            finished ? "text-foreground" : "text-primary"
-          )}
-        >
-          {mins}:{secs.toString().padStart(2, "0")}
-        </span>
+        {finished ? (
+          <span className="text-success font-bold text-base">C'est parti ! 💪</span>
+        ) : (
+          <span className="text-4xl font-black tabular-nums tracking-tight text-primary">
+            {mins}:{secs.toString().padStart(2, "0")}
+          </span>
+        )}
       </div>
 
       {/* Linear progress bar */}
-      <div className="w-full h-[2px] bg-border rounded-full overflow-hidden">
+      <div className="w-full h-2 bg-border rounded-full overflow-hidden">
         <motion.div
-          className={cn("h-full rounded-full", finished ? "bg-foreground" : "bg-primary")}
+          className={cn("h-full rounded-full", finished ? "bg-success" : "bg-primary")}
           initial={{ width: 0 }}
           animate={{ width: `${progress * 100}%` }}
           transition={{ duration: 1, ease: "linear" }}
