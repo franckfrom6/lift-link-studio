@@ -620,7 +620,7 @@ const EnhancedExerciseCard = ({
             {onSkipExercise && (
               <button
                 onClick={(e) => { e.stopPropagation(); onSkipExercise?.(); }}
-                className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-warning hover:bg-warning/10 transition-colors"
+                className="h-11 w-11 rounded-lg flex items-center justify-center text-muted-foreground hover:text-warning hover:bg-warning/10 transition-colors"
               >
                 <SkipForward className="w-3.5 h-3.5" strokeWidth={1.5} />
               </button>
@@ -628,7 +628,7 @@ const EnhancedExerciseCard = ({
             {onSwapExercise && (
               <button
                 onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}
-                className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                className="h-11 w-11 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
               >
                 <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
               </button>
@@ -698,7 +698,7 @@ const EnhancedExerciseCard = ({
           {onSkipExercise && !allDone && isActive && (
             <button
               onClick={(e) => { e.stopPropagation(); onSkipExercise?.(); }}
-              className="h-8 w-8 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-bg-tinted transition-colors"
+              className="h-11 w-11 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-bg-tinted transition-colors"
               title={t('skip_btn', 'Passer') as string}
             >
               <SkipForward className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -707,7 +707,7 @@ const EnhancedExerciseCard = ({
           {onSwapExercise && !allDone && (
             <button
               onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}
-              className="h-8 w-8 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-bg-tinted transition-colors"
+              className="h-11 w-11 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-bg-tinted transition-colors"
             >
               <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
             </button>
@@ -725,7 +725,7 @@ const EnhancedExerciseCard = ({
             onClick={() => setExpanded(!expanded)}
             animate={{ rotate: expanded ? 180 : 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="h-8 w-8 flex items-center justify-center"
+            className="h-11 w-11 flex items-center justify-center"
           >
             <ChevronDown className="w-4 h-4 text-muted-subtle shrink-0" strokeWidth={1.5} />
           </motion.button>
