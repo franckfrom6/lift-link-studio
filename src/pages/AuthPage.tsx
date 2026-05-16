@@ -133,7 +133,7 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-[100dvh] flex bg-background">
       {/* Left branding panel */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center bg-secondary">
         <div className="relative z-10 px-12 text-center">

@@ -20,6 +20,7 @@ const NextExercisePreview = forwardRef<HTMLDivElement, NextExercisePreviewProps>
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
         className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-4 left-4 right-4 z-20 max-w-2xl mx-auto"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 34px)' }}
       >
         <div className="bg-card/95 backdrop-blur-lg border border-border rounded-xl px-4 py-3 flex items-center gap-3 shadow-md">
           <div className="flex-1 min-w-0">

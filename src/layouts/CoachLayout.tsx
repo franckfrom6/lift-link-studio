@@ -57,7 +57,7 @@ const CoachLayout = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-[100dvh] bg-background flex">
       <CoachCommandPalette />
 
       {/* Desktop sidebar */}
@@ -149,7 +149,7 @@ const CoachLayout = () => {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-h-screen min-w-0">
+      <div className="flex-1 flex flex-col min-h-[100dvh] min-w-0">
         <header className="md:hidden flex items-center justify-between p-3 border-b border-border bg-background">
           <Logo variant="mobile" />
           <div className="flex items-center gap-1">

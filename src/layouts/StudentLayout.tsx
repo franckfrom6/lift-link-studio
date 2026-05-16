@@ -30,7 +30,7 @@ const StudentLayout = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-[100dvh] bg-background flex">
       <ImpersonationBanner />
 
       {/* Desktop sidebar — hidden on mobile */}
@@ -65,7 +65,7 @@ const StudentLayout = () => {
       </aside>
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col min-h-screen min-w-0">
+      <div className="flex-1 flex flex-col min-h-[100dvh] min-w-0">
         {/* Mobile header */}
         <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background">
           <Logo variant="mobile" />

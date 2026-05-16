@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       screens: {
-        "xs": "375px",
+        "xs": "393px",
       },
       fontFamily: {
         sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "sans-serif"],

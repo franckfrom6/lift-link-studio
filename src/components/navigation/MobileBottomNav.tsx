@@ -46,7 +46,7 @@ const MobileBottomNav = ({ items }: MobileBottomNavProps) => {
         "border-t border-border/50",
         "bg-background/80 backdrop-blur-xl backdrop-saturate-150",
       )}
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 34px)" }}
     >
       <div className="flex items-center overflow-x-auto scrollbar-hide px-2 py-1.5 gap-1">
         {items.map((item) => {

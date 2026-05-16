@@ -750,7 +750,7 @@ const LiveSession = () => {
   // Loading — wait for both program and free session fetch to complete
   if (programLoading || freeSessionLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-background flex items-center justify-center">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Clock className="w-4 h-4 animate-spin" />
           <span className="text-sm">{t('common:loading')}</span>
@@ -762,7 +762,7 @@ const LiveSession = () => {
   // Session not found — past session or deleted
   if (!selectedSession && selectedSessionId) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
+      <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
         <Clock className="w-8 h-8 text-muted-foreground" />
         <p className="text-foreground font-semibold">{t('session:session_not_found', 'Séance introuvable')}</p>
         <p className="text-muted-foreground text-sm max-w-xs">
@@ -778,7 +778,7 @@ const LiveSession = () => {
   // Finish failed — show retry
   if (finishError && !sessionDone) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
+      <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
         <CloudOff className="w-10 h-10 text-destructive" />
         <p className="text-foreground font-semibold text-lg">{t("session:finish_failed")}</p>
         <p className="text-muted-foreground text-sm max-w-xs">
@@ -831,7 +831,7 @@ const LiveSession = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground -m-4 md:-m-8">
+    <div className="min-h-[100dvh] bg-background text-foreground -m-4 md:-m-8">
       {/* Recovery prompt for orphaned localStorage backup */}
       {showRecoveryPrompt && (
         <AlertDialog open={showRecoveryPrompt} onOpenChange={setShowRecoveryPrompt}>
@@ -1032,7 +1032,11 @@ const LiveSession = () => {
       )}
 
       {/* Share button */}
-      <div ref={shareBtnRef} className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] md:bottom-20 right-4 z-20">
+      <div
+        ref={shareBtnRef}
+        className="fixed md:bottom-20 md:right-4 z-20"
+        style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom, 34px))', right: '1rem' }}
+      >
         <ShareSessionButton
           sessionId={selectedSession?.id || ""}
           completedSessionId={completedSessionId || undefined}
