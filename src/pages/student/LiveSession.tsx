@@ -107,6 +107,23 @@ const LiveSession = () => {
     return () => { ro.disconnect(); window.removeEventListener("resize", update); };
   }, [isAdvanced]);
 
+  // Track visual viewport (iOS keyboard) and expose --keyboard-offset.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const offset = window.innerHeight - vv.height - vv.offsetTop;
+      document.documentElement.style.setProperty('--keyboard-offset', `${Math.max(0, offset)}px`);
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    update();
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+
   // Respect user's theme — no forced dark mode. ThemeContext handles light/dark.
 
   // Check for orphaned localStorage backup on mount.
@@ -873,8 +890,11 @@ const LiveSession = () => {
           --live-bottom-pad is updated via ResizeObserver below. */}
       <div
         ref={scrollRef}
-        className="max-w-2xl mx-auto px-3 py-4 space-y-3"
-        style={{ paddingBottom: "calc(var(--live-bottom-pad, 14rem) + env(safe-area-inset-bottom))" }}
+        className="max-w-2xl mx-auto px-3 py-4 space-y-3 overscroll-none"
+        style={{
+          paddingBottom: "calc(var(--live-bottom-pad, 14rem) + env(safe-area-inset-bottom))",
+          WebkitOverflowScrolling: 'touch',
+        }}
       >
         {/* Substitution + skip notices (Advanced only) */}
         <AnimatePresence>
@@ -1079,7 +1099,10 @@ const LiveSession = () => {
         </AlertDialogContent>
       </AlertDialog>
       {globalRestSeconds !== null && globalRestSeconds > 0 && (
-        <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2 pointer-events-none">
+        <div
+          className="fixed left-0 right-0 z-40 px-4 pb-2 pointer-events-none"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 34px) + var(--keyboard-offset, 0px))' }}
+        >
           <div className="max-w-xl mx-auto pointer-events-auto shadow-lg">
             <LinearRestTimer
               key={`global-${globalRestSeconds}-${activeExerciseKey}`}
