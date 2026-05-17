@@ -1170,439 +1170,77 @@ serve(async (req) => {
     // 7. Call AI - special handling for chat (multi-turn with tools)
     let aiResult;
     if (action === "chat") {
-      const allMessages: any[] = [
-        { role: "system", content: built.system },
-        ...(built.messages || []),
+      const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+      if (!ANTHROPIC_API_KEY) {
+        return jsonResp({ error: "Anthropic API key not configured" }, 500);
+      }
+
+      // Append suggestions directive to the existing VOLT system prompt
+      const systemPrompt = built.system + `
+
+FORMAT DE RÉPONSE — TRÈS IMPORTANT :
+- Pose UNE seule question ciblée à la fois.
+- Garde tes messages courts (2-3 phrases maximum).
+- Quand ta question a des réponses connues (objectifs, intensité, groupes musculaires, types de séance, fréquence, durée, niveau, etc.), TERMINE TOUJOURS ton message par un bloc JSON de suggestions au format exact :
+<suggestions>["Option A", "Option B", "Option C"]</suggestions>
+- N'utilise PAS de suggestions pour les questions ouvertes (feedback libre, ressenti détaillé, texte libre).
+- Donne 2 à 5 suggestions courtes, concrètes et cliquables.`;
+
+      // Build Claude messages (user/assistant only, no system role)
+      const priorMsgs = (built.messages || []).filter(
+        (m: any) => m.role === "user" || m.role === "assistant"
+      );
+      const conversationHistory = [
+        ...priorMsgs,
         { role: "user", content: built.user },
       ];
-      const chatBody: any = { model, messages: allMessages };
-      if (built.tools) {
-        chatBody.tools = built.tools;
-        chatBody.tool_choice = "auto";
-      }
+
       const start = Date.now();
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
         },
-        body: JSON.stringify(chatBody),
+        body: JSON.stringify({
+          model: "claude-opus-4-5",
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages: conversationHistory,
+        }),
       });
       const durationMs = Date.now() - start;
+
       if (!response.ok) {
         const errText = await response.text();
+        console.error("Anthropic error:", response.status, errText);
         aiResult = { error: true, status: response.status, durationMs, errText };
       } else {
         const data = await response.json();
-        const usageData = data.usage || {};
-        const msg = data.choices?.[0]?.message;
-        const toolCalls = msg?.tool_calls;
-        
-        let textContent = msg?.content || "";
-        let toolResults: any[] = [];
+        const assistantMessage =
+          (data.content || []).map((c: any) => c.text || "").join("").trim();
 
-        // Process tool calls if present
-        if (toolCalls && toolCalls.length > 0) {
-          for (const tc of toolCalls) {
-            if (tc.function?.name === "create_free_session") {
-              const args = typeof tc.function.arguments === "string"
-                ? JSON.parse(tc.function.arguments)
-                : tc.function.arguments;
-              
-              try {
-                // Resolve exercise IDs from names
-                async function resolveExercise(ex: any) {
-                  const cleanName = (ex.name || "").trim().replace(/\s+/g, " ");
-                  if (!cleanName) return null;
-
-                  // 1. Exact match in default library (case-insensitive)
-                  const { data: defaultMatch } = await serviceClient
-                    .from("exercises")
-                    .select("id")
-                    .eq("is_default", true)
-                    .ilike("name", cleanName)
-                    .limit(1)
-                    .maybeSingle();
-                  if (defaultMatch) return defaultMatch.id;
-
-                  // 2. Exact match among this user's custom exercises
-                  const { data: ownMatch } = await serviceClient
-                    .from("exercises")
-                    .select("id")
-                    .eq("created_by", userId)
-                    .ilike("name", cleanName)
-                    .limit(1)
-                    .maybeSingle();
-                  if (ownMatch) return ownMatch.id;
-
-                  // 3. Create — unique index protects against races
-                  const { data: created, error: createErr } = await serviceClient
-                    .from("exercises")
-                    .insert({
-                      name: cleanName,
-                      muscle_group: "Autre",
-                      equipment: "Autre",
-                      type: "compound",
-                      is_default: false,
-                      created_by: userId,
-                    })
-                    .select("id")
-                    .single();
-                  if (created) return created.id;
-
-                  // 4. Race fallback: refetch
-                  const { data: refetch } = await serviceClient
-                    .from("exercises")
-                    .select("id")
-                    .eq("created_by", userId)
-                    .ilike("name", cleanName)
-                    .limit(1)
-                    .maybeSingle();
-                  if (refetch) return refetch.id;
-
-                  console.error("Error creating exercise:", createErr);
-                  return null;
-                }
-
-                // Create the session
-                const { data: session, error: sessErr } = await serviceClient
-                  .from("sessions")
-                  .insert({
-                    name: args.name,
-                    day_of_week: args.day_of_week || 1,
-                    is_free_session: true,
-                    created_by: userId,
-                    free_session_date: args.date,
-                  })
-                  .select("id")
-                  .single();
-
-                if (sessErr || !session) {
-                  console.error("Error creating session:", sessErr);
-                  toolResults.push({ tool: "create_free_session", success: false, error: sessErr?.message });
-                } else {
-                  let totalExercises = 0;
-
-                  // Handle sections if provided
-                  if (args.sections && args.sections.length > 0) {
-                    for (let sIdx = 0; sIdx < args.sections.length; sIdx++) {
-                      const sec = args.sections[sIdx];
-                      const { data: sectionRow, error: secErr } = await serviceClient
-                        .from("session_sections")
-                        .insert({
-                          session_id: session.id,
-                          name: sec.name,
-                          sort_order: sIdx,
-                          icon: sec.icon || null,
-                          duration_estimate: sec.duration_estimate || null,
-                        })
-                        .select("id")
-                        .single();
-                      
-                      if (secErr || !sectionRow) {
-                        console.error("Error creating section:", secErr);
-                        continue;
-                      }
-
-                      for (let eIdx = 0; eIdx < (sec.exercises || []).length; eIdx++) {
-                        const ex = sec.exercises[eIdx];
-                        const exerciseId = await resolveExercise(ex);
-                        if (!exerciseId) continue;
-                        
-                        const { error: exErr } = await serviceClient
-                          .from("session_exercises")
-                          .insert({
-                            session_id: session.id,
-                            section_id: sectionRow.id,
-                            exercise_id: exerciseId,
-                            sort_order: eIdx,
-                            sets: ex.sets || 3,
-                            reps_min: ex.reps_min || 8,
-                            reps_max: ex.reps_max || 12,
-                            rest_seconds: ex.rest_seconds || 90,
-                            coach_notes: ex.coach_notes || null,
-                          });
-                        if (exErr) console.error("Error inserting exercise:", exErr);
-                        else totalExercises++;
-                      }
-                    }
-                  }
-
-                  // Handle flat exercises (backward compat)
-                  if (args.exercises && args.exercises.length > 0 && totalExercises === 0) {
-                    for (let i = 0; i < args.exercises.length; i++) {
-                      const ex = args.exercises[i];
-                      const exerciseId = await resolveExercise(ex);
-                      if (!exerciseId) continue;
-                      
-                      const { error: exErr } = await serviceClient
-                        .from("session_exercises")
-                        .insert({
-                          session_id: session.id,
-                          exercise_id: exerciseId,
-                          sort_order: i,
-                          sets: ex.sets || 3,
-                          reps_min: ex.reps_min || 8,
-                          reps_max: ex.reps_max || 12,
-                          rest_seconds: ex.rest_seconds || 90,
-                          coach_notes: ex.coach_notes || null,
-                        });
-                      if (exErr) console.error("Error inserting exercise:", exErr);
-                      else totalExercises++;
-                    }
-                  }
-
-                  toolResults.push({ tool: "create_free_session", success: true, session_id: session.id, name: args.name, date: args.date, exercise_count: totalExercises, section_count: args.sections?.length || 0 });
-                }
-              } catch (toolErr) {
-                console.error("Tool execution error:", toolErr);
-                toolResults.push({ tool: "create_free_session", success: false, error: String(toolErr) });
-              }
-            }
-
-            // ── Tool: create_nutrition_plan ──
-            if (tc.function?.name === "create_nutrition_plan") {
-              const args = typeof tc.function.arguments === "string"
-                ? JSON.parse(tc.function.arguments)
-                : tc.function.arguments;
-
-              try {
-                let totalMeals = 0;
-                let totalDays = 0;
-
-                for (const day of (args.days || [])) {
-                  for (const meal of (day.meals || [])) {
-                    const { error: mealErr } = await serviceClient
-                      .from("daily_nutrition_logs")
-                      .insert({
-                        student_id: userId,
-                        date: day.date,
-                        meal_type: meal.meal_type,
-                        description: meal.description,
-                        calories: meal.calories || null,
-                        protein_g: meal.protein_g || null,
-                        carbs_g: meal.carbs_g || null,
-                        fat_g: meal.fat_g || null,
-                        notes: meal.notes || null,
-                      });
-                    if (mealErr) {
-                      console.error("Error inserting meal:", mealErr);
-                    } else {
-                      totalMeals++;
-                    }
-                  }
-                  totalDays++;
-                }
-
-                toolResults.push({
-                  tool: "create_nutrition_plan",
-                  success: true,
-                  summary: args.summary,
-                  days_count: totalDays,
-                  meals_count: totalMeals,
-                  tips: args.tips,
-                });
-              } catch (toolErr) {
-                console.error("Nutrition plan tool error:", toolErr);
-                toolResults.push({ tool: "create_nutrition_plan", success: false, error: String(toolErr) });
-              }
-            }
-
-            // ── Tool: create_program_for_student ──
-            if (tc.function?.name === "create_program_for_student") {
-              const args = typeof tc.function.arguments === "string"
-                ? JSON.parse(tc.function.arguments)
-                : tc.function.arguments;
-
-              try {
-                // 1. Verify caller is a coach with active link to student_id
-                const { data: callerProfile } = await serviceClient
-                  .from("profiles")
-                  .select("role")
-                  .eq("user_id", userId)
-                  .maybeSingle();
-                if (!callerProfile || callerProfile.role !== "coach") {
-                  toolResults.push({ tool: "create_program_for_student", success: false, error: "not_a_coach" });
-                } else {
-                  const { data: link } = await serviceClient
-                    .from("coach_students")
-                    .select("id")
-                    .eq("coach_id", userId)
-                    .eq("student_id", args.student_id)
-                    .eq("status", "active")
-                    .maybeSingle();
-                  if (!link) {
-                    toolResults.push({ tool: "create_program_for_student", success: false, error: "no_active_link", student_id: args.student_id });
-                  } else {
-                    // Local exercise resolver (scoped to this coach so created customs belong to the coach)
-                    async function resolveExerciseForCoach(ex: any): Promise<string | null> {
-                      const cleanName = (ex.name || "").trim().replace(/\s+/g, " ");
-                      if (!cleanName) return null;
-                      const { data: dflt } = await serviceClient
-                        .from("exercises").select("id")
-                        .eq("is_default", true).ilike("name", cleanName)
-                        .limit(1).maybeSingle();
-                      if (dflt) return dflt.id;
-                      const { data: own } = await serviceClient
-                        .from("exercises").select("id")
-                        .eq("created_by", userId).ilike("name", cleanName)
-                        .limit(1).maybeSingle();
-                      if (own) return own.id;
-                      const { data: created } = await serviceClient
-                        .from("exercises").insert({
-                          name: cleanName, muscle_group: "Autre", equipment: "Autre",
-                          type: "compound", is_default: false, created_by: userId,
-                        }).select("id").single();
-                      if (created) return created.id;
-                      const { data: refetch } = await serviceClient
-                        .from("exercises").select("id")
-                        .eq("created_by", userId).ilike("name", cleanName)
-                        .limit(1).maybeSingle();
-                      return refetch?.id || null;
-                    }
-
-                    // 2. Create program
-                    const { data: program, error: progErr } = await serviceClient
-                      .from("programs")
-                      .insert({
-                        coach_id: userId,
-                        student_id: args.student_id,
-                        name: args.name,
-                        status: "active",
-                        is_ai_generated: true,
-                      })
-                      .select("id")
-                      .single();
-                    if (progErr || !program) throw progErr || new Error("program insert failed");
-
-                    let totalSessions = 0;
-                    let totalExercises = 0;
-                    const weeksCount = (args.weeks || []).length;
-
-                    for (const w of (args.weeks || [])) {
-                      const { data: weekRow, error: wErr } = await serviceClient
-                        .from("program_weeks")
-                        .insert({ program_id: program.id, week_number: w.week_number })
-                        .select("id").single();
-                      if (wErr || !weekRow) { console.error("week insert failed", wErr); continue; }
-
-                      for (const sess of (w.sessions || [])) {
-                        const { data: sessionRow, error: sErr } = await serviceClient
-                          .from("sessions")
-                          .insert({
-                            week_id: weekRow.id,
-                            name: sess.name,
-                            day_of_week: sess.day_of_week,
-                            notes: sess.notes || null,
-                          })
-                          .select("id").single();
-                        if (sErr || !sessionRow) { console.error("session insert failed", sErr); continue; }
-                        totalSessions++;
-
-                        for (let secIdx = 0; secIdx < (sess.sections || []).length; secIdx++) {
-                          const sec = sess.sections[secIdx];
-                          const { data: sectionRow, error: secErr } = await serviceClient
-                            .from("session_sections")
-                            .insert({
-                              session_id: sessionRow.id,
-                              name: sec.name,
-                              sort_order: secIdx,
-                            })
-                            .select("id").single();
-                          if (secErr || !sectionRow) { console.error("section insert failed", secErr); continue; }
-
-                          for (let exIdx = 0; exIdx < (sec.exercises || []).length; exIdx++) {
-                            const ex = sec.exercises[exIdx];
-                            const exerciseId = await resolveExerciseForCoach(ex);
-                            if (!exerciseId) continue;
-                            const { error: exErr } = await serviceClient
-                              .from("session_exercises")
-                              .insert({
-                                session_id: sessionRow.id,
-                                section_id: sectionRow.id,
-                                exercise_id: exerciseId,
-                                sort_order: exIdx,
-                                sets: ex.sets || 3,
-                                reps_min: ex.reps_min || 8,
-                                reps_max: ex.reps_max || 12,
-                                rest_seconds: ex.rest_seconds || 90,
-                                rpe_target: ex.rpe_target || null,
-                                coach_notes: ex.coach_notes || null,
-                              });
-                            if (exErr) console.error("exercise insert failed", exErr);
-                            else totalExercises++;
-                          }
-                        }
-                      }
-                    }
-
-                    toolResults.push({
-                      tool: "create_program_for_student",
-                      success: true,
-                      program_id: program.id,
-                      program_name: args.name,
-                      student_id: args.student_id,
-                      weeks_count: weeksCount,
-                      sessions_count: totalSessions,
-                      exercises_count: totalExercises,
-                    });
-                  }
-                }
-              } catch (toolErr) {
-                console.error("create_program_for_student error:", toolErr);
-                toolResults.push({ tool: "create_program_for_student", success: false, error: String(toolErr) });
-              }
-            }
-          }
-          if (!textContent && toolResults.length > 0) {
-            const followUpMessages = [
-              ...allMessages,
-              msg, // assistant message with tool calls
-              ...toolResults.map((tr, i) => ({
-                role: "tool",
-                tool_call_id: toolCalls[i]?.id || `call_${i}`,
-                content: JSON.stringify(tr),
-              })),
-            ];
-            const followUp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${LOVABLE_API_KEY}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ model, messages: followUpMessages }),
-            });
-            if (followUp.ok) {
-              const followData = await followUp.json();
-              textContent = followData.choices?.[0]?.message?.content || "";
-            }
-          }
-
-          // If still no text, generate a confirmation message
-          if (!textContent) {
-            const successOnes = toolResults.filter(r => r.success);
-            if (successOnes.length > 0) {
-              textContent = successOnes.map(r => {
-                if (r.tool === "create_nutrition_plan") {
-                  return `✅ Plan nutrition créé ! ${r.meals_count} repas programmés sur ${r.days_count} jours. Va dans l'onglet Nutrition pour voir tes repas du jour. ⚡`;
-                }
-                if (r.tool === "create_program_for_student") {
-                  return `✅ Programme "${r.program_name}" créé pour l'athlète : ${r.weeks_count} semaine(s), ${r.sessions_count} séance(s), ${r.exercises_count} exercice(s). Ouvre sa fiche pour ajuster. ⚡`;
-                }
-                return `✅ Séance "${r.name}" créée pour le ${r.date} avec ${r.exercise_count} exercices${r.section_count ? ` en ${r.section_count} sections` : ""} ! Rafraîchis ton calendrier pour la voir. ⚡`;
-              }).join("\n");
-            } else {
-              textContent = "❌ Désolé, une erreur s'est produite. Réessaie ou fais-le manuellement.";
-            }
+        const suggestionsMatch = assistantMessage.match(/<suggestions>([\s\S]*?)<\/suggestions>/);
+        let suggestions: string[] = [];
+        if (suggestionsMatch) {
+          try {
+            const parsed = JSON.parse(suggestionsMatch[1].trim());
+            if (Array.isArray(parsed)) suggestions = parsed.map((s) => String(s));
+          } catch (e) {
+            console.warn("Failed to parse suggestions JSON:", e);
           }
         }
+        const cleanMessage = assistantMessage
+          .replace(/<suggestions>[\s\S]*?<\/suggestions>/, "")
+          .trim();
 
+        const usage = data.usage || {};
         aiResult = {
           error: false,
-          result: { text: textContent, tool_results: toolResults.length > 0 ? toolResults : undefined },
-          inputTokens: usageData.prompt_tokens || null,
-          outputTokens: usageData.completion_tokens || null,
+          result: { message: cleanMessage, text: cleanMessage, suggestions },
+          inputTokens: usage.input_tokens || null,
+          outputTokens: usage.output_tokens || null,
           durationMs,
         };
       }
