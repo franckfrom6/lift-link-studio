@@ -106,12 +106,30 @@ export function useAIChat(options?: UseAIChatOptions) {
         return;
       }
 
-      const assistantContent = data?.text || data?.message || data?.result?.text || data?.result?.message || JSON.stringify(data);
+      const rawAssistantContent =
+        data?.text || data?.message || data?.result?.text || data?.result?.message || JSON.stringify(data);
       const rawSuggestions =
         data?.suggestions ?? data?.result?.suggestions ?? [];
-      const suggestions: string[] = Array.isArray(rawSuggestions)
+      let suggestions: string[] = Array.isArray(rawSuggestions)
         ? rawSuggestions.map((s: unknown) => String(s)).filter(Boolean)
         : [];
+      let assistantContent = rawAssistantContent;
+      if (suggestions.length === 0 && typeof assistantContent === "string") {
+        const m = assistantContent.match(/<suggestions>([\s\S]*?)<\/suggestions>/);
+        if (m) {
+          try {
+            const parsed = JSON.parse(m[1]);
+            if (Array.isArray(parsed)) {
+              suggestions = parsed.map((s: unknown) => String(s)).filter(Boolean);
+            }
+          } catch { /* ignore */ }
+        }
+      }
+      if (typeof assistantContent === "string") {
+        assistantContent = assistantContent
+          .replace(/<suggestions>[\s\S]*?<\/suggestions>/g, "")
+          .trim();
+      }
       const assistantMsg: Message = {
         role: "assistant",
         content: assistantContent,
