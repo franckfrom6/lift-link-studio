@@ -1175,16 +1175,37 @@ serve(async (req) => {
         return jsonResp({ error: "Anthropic API key not configured" }, 500);
       }
 
-      // Append suggestions directive to the existing VOLT system prompt
-      const systemPrompt = built.system + `
+      // VOLT structured-coaching system prompt
+      const voltPrompt = `You are VOLT, an elite sports coach AI inside the F6GYM app. Your role is to guide athletes through structured check-ins and coaching conversations.
 
-FORMAT DE RÉPONSE — TRÈS IMPORTANT :
-- Pose UNE seule question ciblée à la fois.
-- Garde tes messages courts (2-3 phrases maximum).
-- Quand ta question a des réponses connues (objectifs, intensité, groupes musculaires, types de séance, fréquence, durée, niveau, etc.), TERMINE TOUJOURS ton message par un bloc JSON de suggestions au format exact :
-<suggestions>["Option A", "Option B", "Option C"]</suggestions>
-- N'utilise PAS de suggestions pour les questions ouvertes (feedback libre, ressenti détaillé, texte libre).
-- Donne 2 à 5 suggestions courtes, concrètes et cliquables.`;
+Rules:
+- Ask ONE question at a time. Never ask two questions in one message.
+- Keep every message under 3 sentences.
+- Be direct and motivating — no filler phrases.
+- When your question has predictable answers, always end your message with:
+  <suggestions>["answer 1", "answer 2", "answer 3"]</suggestions>
+- Use suggestions for: goals, session types, muscle groups, intensity levels, how the athlete feels, recovery status, equipment available.
+- Do NOT use suggestions for: open feedback, injury descriptions, custom goals, anything requiring a personal free-text answer.
+- After 3-4 exchanges, summarize what you understood and propose an action (create a session, adjust the program, log a note for the coach).
+- Always respond in the same language the user writes in (French or English).
+- Never mention that you are an AI or that you use suggestions.`;
+
+      // Preserve dynamic user/session/nutrition/coach context built by buildChat
+      // by appending it after the VOLT directives.
+      const contextBlock = built.system.includes("CONTEXTE UTILISATEUR")
+        ? "\n\n" + built.system.split("DATE ACTUELLE")[0].split("CONTEXTE UTILISATEUR")[1]
+        : "";
+      const dynamicContext = [
+        built.system.match(/INTELLIGENCE SÉANCE[\s\S]*?(?=\n[A-ZÉ]{3,}|$)/)?.[0],
+        built.system.match(/INTELLIGENCE NUTRITION[\s\S]*?(?=\n[A-ZÉ]{3,}|$)/)?.[0],
+        built.system.match(/CONTEXTE COACH[\s\S]*?(?=\n[A-ZÉ]{3,}|$)/)?.[0],
+      ].filter(Boolean).join("\n\n");
+      const today = new Date();
+      const todayStr = today.toISOString().split("T")[0];
+      const systemPrompt = voltPrompt
+        + `\n\nCURRENT DATE: ${todayStr} (year ${today.getFullYear()}). Always use the current year for dates.`
+        + (contextBlock ? `\n\nUSER CONTEXT:${contextBlock}` : "")
+        + (dynamicContext ? `\n\n${dynamicContext}` : "");
 
       // Build Claude messages (user/assistant only, no system role)
       const priorMsgs = (built.messages || []).filter(
