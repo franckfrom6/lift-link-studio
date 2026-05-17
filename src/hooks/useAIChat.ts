@@ -11,6 +11,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   context_page?: string;
+  suggestions?: string[];
 }
 
 interface UseAIChatOptions {
@@ -106,7 +107,16 @@ export function useAIChat(options?: UseAIChatOptions) {
       }
 
       const assistantContent = data?.text || data?.message || data?.result?.text || data?.result?.message || JSON.stringify(data);
-      const assistantMsg: Message = { role: "assistant", content: assistantContent };
+      const rawSuggestions =
+        data?.suggestions ?? data?.result?.suggestions ?? [];
+      const suggestions: string[] = Array.isArray(rawSuggestions)
+        ? rawSuggestions.map((s: unknown) => String(s)).filter(Boolean)
+        : [];
+      const assistantMsg: Message = {
+        role: "assistant",
+        content: assistantContent,
+        suggestions: suggestions.length > 0 ? suggestions : undefined,
+      };
       setMessages(prev => [...prev, assistantMsg]);
 
       const { error: saveError } = await supabase.from("ai_chat_messages").insert({
