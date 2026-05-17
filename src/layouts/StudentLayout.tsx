@@ -10,6 +10,7 @@ import { useState } from "react";
 import AISidebarToggle from "@/components/ai/AISidebarToggle";
 import AISidebar from "@/components/ai/AISidebar";
 import MobileBottomNav from "@/components/navigation/MobileBottomNav";
+import { AnimatePresence } from "framer-motion";
 
 const StudentLayout = () => {
   const { t } = useTranslation(['settings', 'common', 'session']);
@@ -89,7 +90,9 @@ const StudentLayout = () => {
       </div>
 
       <AISidebarToggle onClick={() => setAiOpen(true)} />
-      <AISidebar open={aiOpen} onClose={() => setAiOpen(false)} />
+      <AnimatePresence>
+        {aiOpen && <AISidebar open={aiOpen} onClose={() => setAiOpen(false)} />}
+      </AnimatePresence>
     </div>
   );
 };
