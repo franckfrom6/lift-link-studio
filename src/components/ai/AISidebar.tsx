@@ -153,25 +153,51 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
                 </p>
               </div>
             )}
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm ${
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground"
-                  }`}
-                >
-                  {msg.role === "assistant" ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+            {messages.map((msg, i) => {
+              const isLastMessage = i === messages.length - 1;
+              const showSuggestions =
+                msg.role === "assistant" &&
+                isLastMessage &&
+                !isLoading &&
+                msg.suggestions &&
+                msg.suggestions.length > 0;
+              return (
+                <div key={i} className="space-y-2">
+                  <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm ${
+                        msg.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground"
+                      }`}
+                    >
+                      {msg.role === "assistant" ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        msg.content
+                      )}
                     </div>
-                  ) : (
-                    msg.content
+                  </div>
+                  {showSuggestions && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {msg.suggestions!.map((suggestion, si) => (
+                        <button
+                          key={si}
+                          onClick={() => sendMessage(suggestion)}
+                          disabled={isLoading}
+                          className="min-h-[44px] px-4 py-2 rounded-full border border-primary/40 bg-primary/5 text-sm font-medium text-primary hover:bg-primary/10 active:bg-primary/20 transition-colors touch-manipulation disabled:opacity-50"
+                          style={{ WebkitTapHighlightColor: "transparent" }}
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-secondary rounded-xl px-4 py-3">
@@ -188,7 +214,15 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
           {!isEnabled ? (
             <p className="text-xs text-center text-muted-foreground">{t("ai_chat:plan_required")}</p>
           ) : (
-            <AIChatInput onSend={sendMessage} disabled={isLoading} />
+            <AIChatInput
+              onSend={sendMessage}
+              disabled={isLoading}
+              secondary={
+                messages.length > 0 &&
+                messages[messages.length - 1].role === "assistant" &&
+                !!messages[messages.length - 1].suggestions?.length
+              }
+            />
           )}
         </div>
       </div>
