@@ -794,8 +794,10 @@ const LiveSession = () => {
     ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
 
-  // Loading — wait for both program and free session fetch to complete
-  if (programLoading || freeSessionLoading) {
+  // Loading — only show spinner if no cached data exists yet.
+  // With persisted query cache, cached programSession renders instantly
+  // while a silent background re-fetch happens.
+  if ((programLoading || freeSessionLoading) && !programSession && !freeSession) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center">
         <div className="flex items-center gap-2 text-muted-foreground">
