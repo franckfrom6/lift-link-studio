@@ -6,9 +6,10 @@ import { useTranslation } from "react-i18next";
 interface AIChatInputProps {
   onSend: (text: string) => void;
   disabled?: boolean;
+  secondary?: boolean;
 }
 
-const AIChatInput = ({ onSend, disabled }: AIChatInputProps) => {
+const AIChatInput = ({ onSend, disabled, secondary }: AIChatInputProps) => {
   const { t } = useTranslation("ai_chat");
   const [text, setText] = useState("");
 
@@ -31,7 +32,7 @@ const AIChatInput = ({ onSend, disabled }: AIChatInputProps) => {
         value={text}
         onChange={e => setText(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={t("placeholder")}
+        placeholder={secondary ? "Ou écris ta réponse..." : t("placeholder")}
         disabled={disabled}
         rows={1}
         className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 min-h-[40px] max-h-[120px]"
