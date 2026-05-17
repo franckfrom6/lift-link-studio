@@ -66,7 +66,7 @@ const MODEL_FOR_ACTION: Record<string, string> = {
   cycle_report: "google/gemini-2.5-flash",
   analyze_week: "google/gemini-2.5-flash",
   optimize_week: "google/gemini-2.5-flash",
-  chat: "google/gemini-3-flash-preview",
+  chat: "claude-opus-4-5",
   suggest_alternatives: "google/gemini-2.5-flash-lite",
   suggest_exercise: "google/gemini-2.5-flash-lite",
   estimate_macros: "google/gemini-2.5-flash-lite",
