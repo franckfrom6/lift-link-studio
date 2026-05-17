@@ -1,33 +1,46 @@
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useFeatureAccess } from "@/providers/PlanProvider";
+import { useAIChat } from "@/hooks/useAIChat";
 
 interface AISidebarToggleProps {
   onClick: () => void;
 }
 
-/**
- * forwardRef so React DevTools / parent Tooltip wrappers can attach refs
- * without emitting "Function components cannot be given refs" warnings.
- */
 const AISidebarToggle = forwardRef<HTMLButtonElement, AISidebarToggleProps>(
   ({ onClick }, ref) => {
     const { isEnabled } = useFeatureAccess("ai_chat");
+    const { messages } = useAIChat();
+    const [pulse, setPulse] = useState(false);
+    const lastAssistantIdRef = useRef<string>("");
 
-    // Don't show at all if feature not available
+    useEffect(() => {
+      if (messages.length === 0) return;
+      const last = messages[messages.length - 1];
+      if (last.role !== "assistant") return;
+      const key = last.id || `${messages.length}:${last.content.slice(0, 20)}`;
+      if (key === lastAssistantIdRef.current) return;
+      lastAssistantIdRef.current = key;
+      setPulse(true);
+      const t = setTimeout(() => setPulse(false), 3000);
+      return () => clearTimeout(t);
+    }, [messages]);
+
     if (!isEnabled) return null;
 
     return (
-      <Button
+      <button
         ref={ref}
         onClick={onClick}
-        size="icon"
         aria-label="Open AI assistant"
-        className="fixed bottom-20 md:bottom-6 right-4 z-30 h-12 w-12 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90"
+        className="fixed bottom-20 md:bottom-6 right-4 z-30 h-14 w-14 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-transform flex items-center justify-center"
+        style={{ WebkitTapHighlightColor: "transparent" }}
       >
-        <Zap className="w-5 h-5" strokeWidth={1.5} />
-      </Button>
+        {pulse && (
+          <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
+        )}
+        <Zap className="w-6 h-6 relative" strokeWidth={1.5} />
+      </button>
     );
   }
 );
