@@ -25,7 +25,6 @@
   "replace_exercise": "Remplacer l'exercice",
   "video_label": "Vidéo",
   "no_alternatives": "Aucune alternative disponible pour cet exercice.",
-
   "skip_btn": "Passer",
   "skip_title": "Passer cet exercice ?",
   "skip_confirm_text": "Tu veux passer « {{exercise}} » ?",
@@ -39,7 +38,6 @@
   "skip_confirm": "Confirmer",
   "skip_badge": "Passé",
   "exercises_skipped": "{{count}} exercice(s) passé(s)",
-
   "free_session_title": "Nouvelle séance libre",
   "free_session_add_exercises": "Ajouter des exercices",
   "free_session_name": "Nom de la séance",
@@ -58,7 +56,6 @@
   "free_session_badge": "Libre",
   "free_session_btn": "+ Musculation",
   "same_muscle_group": "Même groupe musculaire : {{muscleGroup}}",
-
   "builder_title": "Nouvelle séance rapide",
   "builder_duration": "Durée cible",
   "builder_target": "Quoi cibler ?",
@@ -77,14 +74,13 @@
   "builder_error": "Erreur lors de la génération.",
   "builder_default_name": "Séance rapide",
   "builder_workout_section": "Exercices",
-
   "builder_target_push": "Push",
   "builder_target_pull": "Pull",
-  "builder_target_legs": "Legs",
-  "builder_target_full_body": "Full Body",
-  "builder_target_core": "Core",
+  "builder_target_legs": "Jambes",
+  "builder_target_full_body": "Corps entier",
+  "builder_target_core": "Gainage",
   "builder_target_cardio": "Cardio",
-  "builder_target_chest": "Pectoraux",
+  "builder_target_chest": "Poitrine",
   "builder_target_back": "Dos",
   "builder_target_shoulders": "Épaules",
   "builder_target_biceps": "Biceps",
@@ -93,8 +89,7 @@
   "builder_target_hamstrings": "Ischio-jambiers",
   "builder_target_glutes": "Fessiers",
   "builder_target_calves": "Mollets",
-  "builder_target_abs": "Abdos",
-
+  "builder_target_abs": "Abdominaux",
   "builder_eq_dumbbells": "Haltères",
   "builder_eq_barbell": "Barre",
   "builder_eq_machine": "Machine",
@@ -111,14 +106,12 @@
   "coach_instructions": "📋 Consignes coach",
   "rest_simple": "Repos : {{seconds}}s",
   "exercise_progress": "Progression des exercices",
-
   "builder_draft_found": "Brouillon trouvé",
   "builder_draft_desc": "Tu as une séance en cours de construction. Veux-tu la reprendre ?",
   "builder_draft_resume": "Reprendre le brouillon",
   "builder_draft_new": "Nouvelle séance",
   "builder_save_template": "Sauvegarder comme programme",
   "builder_template_saved": "Programme sauvegardé ! 📋",
-
   "duplicate_title": "Dupliquer la séance",
   "duplicate_prefix": "Copie de",
   "duplicate_name_label": "Nom de la nouvelle séance",
@@ -126,7 +119,6 @@
   "duplicate_btn": "Dupliquer",
   "duplicate_success": "Séance dupliquée ! 🎯",
   "duplicate_error": "Erreur lors de la duplication.",
-
   "delete_session": "Supprimer cette séance",
   "delete_session_title": "Supprimer cette séance ?",
   "delete_session_desc": "\"{{name}}\" sera retirée de ton programme. Cette action peut être annulée par ton coach.",
@@ -146,5 +138,7 @@
   "save_status_saved": "Sauvegardé",
   "save_status_saving": "Sauvegarde…",
   "save_status_error": "Erreur de sauvegarde",
-  "session_resumed": "Séance reprise — tes données sont restaurées"
+  "session_resumed": "Séance reprise — tes données sont restaurées",
+  "exercise_fallback": "Exercice",
+  "exercises_section": "Exercices"
 }
