@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Bell, ChevronLeft, ChevronRight, Ruler, Moon, Calendar, Volume2, Play,
   CreditCard, Receipt, Shield, Download, HelpCircle, Mail, FileText,
@@ -120,6 +121,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 // ───────────────────────── Page
 
 const StudentProfile = () => {
+  const { t } = useTranslation("common");
   const navigate = useNavigate();
   const { user, profile, signOut, refreshProfile } = useAuth();
   const { theme, setTheme } = useTheme();
