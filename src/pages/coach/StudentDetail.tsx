@@ -8,7 +8,17 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye, MessageSquare, Pencil, Zap, UtensilsCrossed } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye, MessageSquare, Pencil, Zap, UtensilsCrossed, UserMinus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import AIAdaptationView from "@/components/coach/AIAdaptationView";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import SwapBadge from "@/components/student/SwapBadge";
@@ -66,9 +76,25 @@ const StudentDetail = () => {
   const [deletedSessionCount, setDeletedSessionCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [coachFormOpen, setCoachFormOpen] = useState(false);
+  const [unlinkOpen, setUnlinkOpen] = useState(false);
   
 
   const { swaps, loading: swapsLoading } = useCoachStudentSwaps(studentId);
+
+  const handleUnlink = async () => {
+    if (!studentId || !user) return;
+    const { error } = await supabase
+      .from("coach_students")
+      .update({ status: "inactive" })
+      .eq("coach_id", user.id)
+      .eq("student_id", studentId);
+    if (error) {
+      toast.error("Erreur lors de la dissociation");
+      return;
+    }
+    toast.success("Athlète dissocié avec succès");
+    navigate("/coach/students");
+  };
 
   useEffect(() => {
     if (!studentId || !user) return;
@@ -533,6 +559,38 @@ const StudentDetail = () => {
         date={new Date()}
         addedBy="coach"
       />
+
+      {/* Unlink athlete */}
+      <div className="pt-4 border-t border-border">
+        <Button
+          variant="ghost"
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={() => setUnlinkOpen(true)}
+        >
+          <UserMinus className="w-4 h-4 mr-2" strokeWidth={1.5} />
+          Dissocier l'athlète
+        </Button>
+      </div>
+
+      <AlertDialog open={unlinkOpen} onOpenChange={setUnlinkOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Dissocier l'athlète ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {student.full_name} ne sera plus lié à votre coaching. Vous pourrez le réinviter plus tard si besoin.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUnlink}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Dissocier
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
