@@ -21,7 +21,7 @@ import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -1043,13 +1043,32 @@ const LiveSession = () => {
 
         {/* Finish button */}
         <div className="py-4">
-          <Button
-            className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90"
-            onClick={() => finishSession()}
-            disabled={completedCount === 0}
-          >
-            {t('session:finish_session', { completed: completedCount, total: allExercises.length })}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90"
+                disabled={completedCount === 0}
+              >
+                {t('session:finish_session', { completed: completedCount, total: allExercises.length })}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Terminer la séance ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {completedCount < allExercises.length
+                    ? `${completedCount} exercice(s) sur ${allExercises.length} complété(s). Les exercices restants ne seront pas enregistrés.`
+                    : "Tous les exercices sont complétés. Bravo !"}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Reprendre la séance</AlertDialogCancel>
+                <AlertDialogAction onClick={() => finishSession()}>
+                  Terminer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
