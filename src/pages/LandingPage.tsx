@@ -143,10 +143,13 @@ const PilotForm = () => {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim() || !email.trim()) return;
     setSending(true);
+    const id = crypto.randomUUID();
+    const cleanEmail = email.trim().toLowerCase();
     const { error } = await supabase.from("pilot_requests" as any).insert({
+      id,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       role: formRole,
       objective: objective.trim() || null,
     } as any);
@@ -156,6 +159,17 @@ const PilotForm = () => {
       toast.error(t("form_error"));
     } else {
       setSent(true);
+      // Fire-and-forget confirmation email (failure shouldn't block UX)
+      supabase.functions
+        .invoke("send-transactional-email", {
+          body: {
+            templateName: "pilot-request-received",
+            recipientEmail: cleanEmail,
+            idempotencyKey: `pilot-request-received-${id}`,
+            templateData: { firstName: firstName.trim(), role: formRole },
+          },
+        })
+        .catch((err) => console.error("Confirmation email failed", err));
     }
   };
 
