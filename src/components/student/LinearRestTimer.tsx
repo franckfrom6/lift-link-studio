@@ -89,7 +89,6 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
           } catch {}
           try { navigator.vibrate?.([200, 100, 200, 100, 200]); } catch {}
           sendTimerNotification(t("common:rest_label") + " ✓");
-          sendTimerNotification(t("common:rest_label") + " — Done!");
           onCompleteRef.current?.();
           return 0;
         }
