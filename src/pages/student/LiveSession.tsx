@@ -235,7 +235,7 @@ const LiveSession = () => {
           .filter((e: any) => !e.section_id)
           .sort((a: any, b: any) => a.sort_order - b.sort_order);
         if (unsectioned.length > 0) {
-          sections.push({ id: "default", name: "Exercices", sort_order: 999, notes: null, duration_estimate: null, icon: null, exercises: unsectioned });
+          sections.push({ id: "default", name: t("session:exercises_section", "Exercises"), sort_order: 999, notes: null, duration_estimate: null, icon: null, exercises: unsectioned });
         }
         setFreeSession({ ...data, sections });
       }
@@ -275,7 +275,7 @@ const LiveSession = () => {
       duration: section.duration_estimate || "",
       notes: section.notes || "",
       exercises: section.exercises.map((ex: any) => ({
-        name: ex.exercise?.name || "Exercice",
+        name: ex.exercise?.name || t("session:exercise_fallback", "Exercise"),
         exerciseId: ex.exercise?.id,
         sets: String(ex.sets ?? ""),
         reps: ex.reps_min === ex.reps_max ? String(ex.reps_min) : `${ex.reps_min}-${ex.reps_max}`,
@@ -313,14 +313,14 @@ const LiveSession = () => {
       section.exercises.forEach((ex, eIdx) => {
         const key = `${sIdx}-${eIdx}`;
         const sub = substitutions.find(s => s.key === key);
-        map.set(key, sub ? sub.newName : ex.name || "Exercice");
+        map.set(key, sub ? sub.newName : ex.name || t("session:exercise_fallback", "Exercise"));
       });
     });
     return map;
   }, [sessionProgram.sections, substitutions]);
 
   const getExerciseName = (sIdx: number, eIdx: number): string =>
-    exerciseNameMap.get(`${sIdx}-${eIdx}`) || "Exercice";
+    exerciseNameMap.get(`${sIdx}-${eIdx}`) || t("session:exercise_fallback", "Exercise");
 
   const allExercises: ProgramExerciseDetail[] = sessionProgram.sections.flatMap((s) => s.exercises);
 
@@ -702,7 +702,7 @@ const LiveSession = () => {
   const handleSwapSelect = (alternative: { name: string; equipment: string }) => {
     if (!swapTargetKey) return;
     const [sIdx, eIdx] = swapTargetKey.split("-").map(Number);
-    const originalName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || "Exercice";
+    const originalName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || t("session:exercise_fallback", "Exercise");
     setSubstitutions(prev => [...prev.filter(s => s.key !== swapTargetKey), { key: swapTargetKey, originalName, newName: alternative.name, newEquipment: alternative.equipment }]);
     setCompletedSets(prev => { const u = { ...prev }; delete u[swapTargetKey]; return u; });
 
