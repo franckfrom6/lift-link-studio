@@ -298,6 +298,14 @@ const StudentDetail = () => {
                   {recentSwaps.length} swap{recentSwaps.length > 1 ? "s" : ""}
                 </Badge>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setUnlinkOpen(true)}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs h-8 px-2"
+              >
+                Dissocier
+              </Button>
             </div>
           </div>
         </div>
@@ -560,24 +568,12 @@ const StudentDetail = () => {
         addedBy="coach"
       />
 
-      {/* Unlink athlete */}
-      <div className="pt-4 border-t border-border">
-        <Button
-          variant="ghost"
-          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={() => setUnlinkOpen(true)}
-        >
-          <UserMinus className="w-4 h-4 mr-2" strokeWidth={1.5} />
-          Dissocier l'athlète
-        </Button>
-      </div>
-
       <AlertDialog open={unlinkOpen} onOpenChange={setUnlinkOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Dissocier l'athlète ?</AlertDialogTitle>
+            <AlertDialogTitle>Dissocier cet athlète ?</AlertDialogTitle>
             <AlertDialogDescription>
-              {student.full_name} ne sera plus lié à votre coaching. Vous pourrez le réinviter plus tard si besoin.
+              {student?.full_name} ne sera plus lié à votre compte coach. Il conservera son historique et ses données. Cette action peut être annulée en le réinvitant.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
