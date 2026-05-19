@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
 import { EXERCISE_ALTERNATIVES, AlternativeGroup } from "@/data/exercise-alternatives";
 import ExercisePicker from "@/components/coach/ExercisePicker";
@@ -245,6 +245,31 @@ const LiveSession = () => {
   }, [programLoading, programSession, selectedSessionId]);
 
   const selectedSession = programSession || freeSession;
+
+  const { data: previousPerformance } = useQuery({
+    queryKey: ["previous-performance", user?.id, selectedSession?.id],
+    queryFn: async () => {
+      if (!user || !selectedSession?.id) return null;
+      const { data: prevSession } = await supabase
+        .from("completed_sessions")
+        .select("id, completed_at")
+        .eq("student_id", user.id)
+        .eq("session_id", selectedSession.id)
+        .not("completed_at", "is", null)
+        .order("completed_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!prevSession) return null;
+      const { data: sets } = await supabase
+        .from("completed_sets")
+        .select("session_exercise_id, set_number, weight, reps")
+        .eq("completed_session_id", prevSession.id)
+        .order("set_number", { ascending: true });
+      return sets || [];
+    },
+    enabled: !!user && !!selectedSession?.id,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const sessionExerciseIdMap = useMemo(() => {
     if (!selectedSession) return {};
@@ -1018,6 +1043,13 @@ const LiveSession = () => {
                         sessionExerciseId={sessionExerciseIdMap[key]}
                         completedSessionId={completedSessionId || undefined}
                         onActivate={() => setActiveExerciseKey(key)}
+                        previousSets={
+                          previousPerformance && sessionExerciseIdMap[key]
+                            ? previousPerformance
+                                .filter((s: any) => s.session_exercise_id === sessionExerciseIdMap[key])
+                                .map((s: any) => ({ weight: Number(s.weight) || 0, reps: s.reps || 0 }))
+                            : undefined
+                        }
                       />
                     </div>
                   );

@@ -796,6 +796,27 @@ const EnhancedExerciseCard = ({
 
               {isActive && visibleCompletedSets.length > 0 && (
                 <div className="space-y-2">
+                  {previousSets && previousSets.length > 0 && trackingType === "weight_reps" && (
+                    <div className="flex items-center gap-2 py-1.5 px-2 bg-primary/5 border border-primary/15 rounded-lg">
+                      <span className="text-[11px] text-muted-foreground">Dernière fois :</span>
+                      <span className="text-[11px] font-semibold text-primary tabular-nums">
+                        {previousSets[0].weight} kg × {previousSets[0].reps} reps
+                      </span>
+                      <button
+                        type="button"
+                        className="ml-auto text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded"
+                        onClick={() => {
+                          const updated = visibleCompletedSets.map((s, i) => ({
+                            ...s,
+                            weight: previousSets[i]?.weight || previousSets[0].weight,
+                          }));
+                          onCompletedSetsChange(updated);
+                        }}
+                      >
+                        Reprendre
+                      </button>
+                    </div>
+                  )}
                   <div className="overflow-x-auto -mx-3 px-3">
                     {renderSetHeader()}
                     {visibleCompletedSets.map((set, i) => renderSetRow(set, i))}
