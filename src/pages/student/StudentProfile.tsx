@@ -320,7 +320,7 @@ const StudentProfile = () => {
       {/* Stats strip */}
       <div className="mx-4 mb-5 rounded-md border border-border bg-card grid grid-cols-3">
         {[
-          { value: stats.sessions, label: "Séances" },
+          { value: stats.sessions, label: t("sessions", "Sessions") },
           { value: stats.weeks, label: "Semaines suivies", border: true },
           { value: stats.prs, label: "Sets validés" },
         ].map((c, i) => (
