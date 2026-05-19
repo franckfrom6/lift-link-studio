@@ -176,7 +176,7 @@ const SessionBuilderModal = ({ open, onClose, date, onCreated }: SessionBuilderM
           equipment: exercise.equipment,
           type: exercise.type,
           trackingType: exercise.tracking_type || "weight_reps",
-          weightEnabled: exercise.equipment !== "bodyweight" && exercise.equipment !== "Poids du corps",
+          weightEnabled: exercise.equipment !== "bodyweight",
         };
       }));
       setSubstituteTargetId(null);
@@ -197,7 +197,7 @@ const SessionBuilderModal = ({ open, onClose, date, onCreated }: SessionBuilderM
           repsMin: isCompound ? 8 : 12,
           repsMax: isCompound ? 10 : 15,
           restSeconds: isCompound ? 90 : 60,
-          weightEnabled: exercise.equipment !== "bodyweight" && exercise.equipment !== "Poids du corps",
+          weightEnabled: exercise.equipment !== "bodyweight",
           order: state.exercises.length,
         },
       ]);

@@ -109,5 +109,6 @@
   "onboarding_checkin_title": "Check-in hebdo",
   "onboarding_checkin_desc": "Chaque semaine, indique ton niveau d'énergie et de sommeil. Ça aide ton coach à ajuster.",
   "onboarding_coach_invite_title": "Inviter tes athlètes",
-  "onboarding_coach_invite_desc": "Copie ton code d'invitation et envoie-le à tes athlètes pour les connecter à toi."
+  "onboarding_coach_invite_desc": "Copie ton code d'invitation et envoie-le à tes athlètes pour les connecter à toi.",
+  "sessions": "Séances"
 }

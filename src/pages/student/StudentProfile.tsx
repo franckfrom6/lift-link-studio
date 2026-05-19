@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Bell, ChevronLeft, ChevronRight, Ruler, Moon, Calendar, Volume2, Play,
   CreditCard, Receipt, Shield, Download, HelpCircle, Mail, FileText,
@@ -120,6 +121,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 // ───────────────────────── Page
 
 const StudentProfile = () => {
+  const { t } = useTranslation("common");
   const navigate = useNavigate();
   const { user, profile, signOut, refreshProfile } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -318,7 +320,7 @@ const StudentProfile = () => {
       {/* Stats strip */}
       <div className="mx-4 mb-5 rounded-md border border-border bg-card grid grid-cols-3">
         {[
-          { value: stats.sessions, label: "Séances" },
+          { value: stats.sessions, label: t("sessions", "Sessions") },
           { value: stats.weeks, label: "Semaines suivies", border: true },
           { value: stats.prs, label: "Sets validés" },
         ].map((c, i) => (
