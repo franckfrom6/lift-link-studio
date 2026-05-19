@@ -1043,6 +1043,13 @@ const LiveSession = () => {
                         sessionExerciseId={sessionExerciseIdMap[key]}
                         completedSessionId={completedSessionId || undefined}
                         onActivate={() => setActiveExerciseKey(key)}
+                        previousSets={
+                          previousPerformance && sessionExerciseIdMap[key]
+                            ? previousPerformance
+                                .filter((s: any) => s.session_exercise_id === sessionExerciseIdMap[key])
+                                .map((s: any) => ({ weight: Number(s.weight) || 0, reps: s.reps || 0 }))
+                            : undefined
+                        }
                       />
                     </div>
                   );
