@@ -91,6 +91,7 @@ const EnhancedExerciseCard = ({
   const [justCompletedSet, setJustCompletedSet] = useState<number | null>(null);
   const [prDetected, setPrDetected] = useState<number | null>(null);
   const [showVideo, setShowVideo] = useState(false);
+  const [readyForNext, setReadyForNext] = useState(false);
 
   useEffect(() => {
     if (isActive) setExpanded(true);
@@ -160,7 +161,7 @@ const EnhancedExerciseCard = ({
         onSetValidated?.(restSeconds);
         onRestStart?.(restSeconds);
       }
-      setTimeout(() => onAllSetsComplete(), 700);
+      setReadyForNext(true);
     }
   };
 
@@ -173,6 +174,7 @@ const EnhancedExerciseCard = ({
     if (allDone) {
       setAllDone(false);
       setCurrentSetIdx(visibleCompletedSets.length);
+      setReadyForNext(false);
     }
   };
 
@@ -802,6 +804,21 @@ const EnhancedExerciseCard = ({
                         <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
                         {t('add_set')}
                       </Button>
+                    )}
+                    {allDone && readyForNext && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="pt-1"
+                      >
+                        <Button
+                          className="w-full h-12 font-semibold"
+                          onClick={() => { setReadyForNext(false); onAllSetsComplete(); }}
+                        >
+                          {t('next_exercise', { defaultValue: 'Exercice suivant →' })}
+                        </Button>
+                      </motion.div>
                     )}
                   </div>
 
