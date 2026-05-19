@@ -799,7 +799,7 @@ const EnhancedExerciseCard = ({
                   <div className="overflow-x-auto -mx-3 px-3">
                     {renderSetHeader()}
                     {visibleCompletedSets.map((set, i) => renderSetRow(set, i))}
-                    {!allDone && (
+                    {isActive && (
                       <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={addSet}>
                         <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
                         {t('add_set')}
