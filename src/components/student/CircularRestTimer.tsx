@@ -37,12 +37,23 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
   const [finished, setFinished] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const endTimeRef = useRef<number | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
   useEffect(() => {
     requestNotificationPermission();
   }, []);
+
+  const ensureAudioCtx = () => {
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioContext();
+      } else if (audioCtxRef.current.state === "suspended") {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+    } catch {}
+  };
 
   useEffect(() => {
     if (!running || seconds <= 0) {
@@ -60,12 +71,25 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
           setRunning(false);
           setFinished(true);
           try {
-            const ctx = new AudioContext();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.frequency.value = 880; gain.gain.value = 0.3;
-            osc.start(); osc.stop(ctx.currentTime + 0.3);
+            const ctx = audioCtxRef.current;
+            if (ctx && ctx.state !== "closed") {
+              const play = () => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = "sine";
+                osc.frequency.value = 880;
+                gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.6);
+              };
+              if (ctx.state === "suspended") {
+                ctx.resume().then(play).catch(() => {});
+              } else {
+                play();
+              }
+            }
           } catch {}
           try { navigator.vibrate?.([200, 100, 200, 100, 200]); } catch {}
           sendTimerNotification(t("common:rest_label") + " — Done!");
@@ -94,12 +118,14 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
   }, [running]);
 
   const reset = () => {
+    ensureAudioCtx();
     setSeconds(totalSeconds);
     endTimeRef.current = Date.now() + totalSeconds * 1000;
     setRunning(true);
     setFinished(false);
   };
   const toggle = () => {
+    ensureAudioCtx();
     if (!running) {
       endTimeRef.current = Date.now() + seconds * 1000;
     } else {
@@ -108,6 +134,7 @@ const CircularRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Cir
     setRunning(!running);
   };
   const adjust = (delta: number) => {
+    ensureAudioCtx();
     const newTotal = Math.max(15, totalSeconds + delta);
     setTotalSeconds(newTotal);
     setSeconds((s) => {
