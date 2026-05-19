@@ -24,7 +24,7 @@ const PERIODS: { id: ProgPeriod; label: string }[] = [
 ];
 
 const StudentProgress = () => {
-  const { t } = useTranslation("dashboard");
+  const { t } = useTranslation(["dashboard", "common"]);
   const navigate = useNavigate();
   const isAdvanced = useIsAdvanced();
   const { summary, loading: summaryLoading } = useStudentDashboard();
@@ -54,7 +54,7 @@ const StudentProgress = () => {
     return [
       {
         id: "sessions",
-        label: "Séances",
+        label: t("common:sessions", "Sessions"),
         value: `${summary.programmedDone}`,
         unit: `/ ${summary.programmedTotal || "—"}`,
         delta: summary.externalCount > 0 ? `+${summary.externalCount}` : undefined,
