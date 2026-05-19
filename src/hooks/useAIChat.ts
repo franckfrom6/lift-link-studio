@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 import { usePlan, useFeatureAccess } from "@/providers/PlanProvider";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Message {
   id?: string;
@@ -24,6 +25,7 @@ export function useAIChat(options?: UseAIChatOptions) {
   const { currentPlan } = usePlan();
   const { isEnabled } = useFeatureAccess("ai_chat");
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -108,6 +110,15 @@ export function useAIChat(options?: UseAIChatOptions) {
 
       const rawAssistantContent =
         data?.text || data?.message || data?.result?.text || data?.result?.message || JSON.stringify(data);
+      // If VOLT created a session, immediately refresh the calendar
+      const toolResults: any[] = data?.result?.tool_results || [];
+      const sessionCreated = toolResults.some(
+        (tr: any) => tr.tool === "create_free_session" && tr.success === true
+      );
+      if (sessionCreated) {
+        queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+        queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
+      }
       const rawSuggestions =
         data?.suggestions ?? data?.result?.suggestions ?? [];
       let suggestions: string[] = Array.isArray(rawSuggestions)

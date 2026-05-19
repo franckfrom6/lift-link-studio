@@ -736,6 +736,20 @@ const StudentWeek = () => {
             Semaine
           </Button>
         )}
+        {/* Always visible: add a free/extra session for the selected day */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setFreeSessionDate(selectedDate);
+            setFreeSessionOpen(true);
+          }}
+          className="h-8 px-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          aria-label="Ajouter une séance"
+        >
+          <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={2} />
+          Séance
+        </Button>
       </header>
 
       {/* No-program onboarding banner */}
