@@ -94,6 +94,7 @@ const StudentWeek = () => {
   const [runSessionDate, setRunSessionDate] = useState<Date>(new Date());
   const [multiSessionOpen, setMultiSessionOpen] = useState(false);
   const [multiSessionDate, setMultiSessionDate] = useState<Date>(new Date());
+  const [raceGoalSheetOpen, setRaceGoalSheetOpen] = useState(false);
   const [builderDate, setBuilderDate] = useState<Date>(new Date());
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicateSession, setDuplicateSession] = useState<{ id: string; name: string } | null>(null);
