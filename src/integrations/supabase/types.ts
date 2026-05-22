@@ -1691,6 +1691,45 @@ export type Database = {
         }
         Relationships: []
       }
+      race_goals: {
+        Row: {
+          created_at: string
+          current_easy_pace_s_per_km: number | null
+          current_weekly_km: number | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          race_type: string
+          student_id: string
+          target_date: string
+          target_time_min: number | null
+        }
+        Insert: {
+          created_at?: string
+          current_easy_pace_s_per_km?: number | null
+          current_weekly_km?: number | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          race_type: string
+          student_id: string
+          target_date: string
+          target_time_min?: number | null
+        }
+        Update: {
+          created_at?: string
+          current_easy_pace_s_per_km?: number | null
+          current_weekly_km?: number | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          race_type?: string
+          student_id?: string
+          target_date?: string
+          target_time_min?: number | null
+        }
+        Relationships: []
+      }
       recommendation_templates: {
         Row: {
           category: string
@@ -2017,6 +2056,8 @@ export type Database = {
           is_free_session: boolean
           name: string
           notes: string | null
+          run_blocks: Json | null
+          session_type: string
           week_id: string | null
         }
         Insert: {
@@ -2031,6 +2072,8 @@ export type Database = {
           is_free_session?: boolean
           name: string
           notes?: string | null
+          run_blocks?: Json | null
+          session_type?: string
           week_id?: string | null
         }
         Update: {
@@ -2045,6 +2088,8 @@ export type Database = {
           is_free_session?: boolean
           name?: string
           notes?: string | null
+          run_blocks?: Json | null
+          session_type?: string
           week_id?: string | null
         }
         Relationships: [
