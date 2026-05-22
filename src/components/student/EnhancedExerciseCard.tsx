@@ -662,7 +662,7 @@ const EnhancedExerciseCard = ({
   );
 
   // ── ADVANCED MODE: Sage header (mirrors SessionPreview ExerciseCard) ──
-  const hasAnyVideo = !!(videoUrl || videoUrlMale || videoUrlFemale || exerciseVideoUrl);
+  const hasAnyVideo = !!(videoUrl || videoUrlMale || videoUrlFemale || exerciseVideoUrl || videoSearchQuery || name);
   const renderAdvancedHeader = () => (
     <div className={cn("p-3.5 flex flex-col gap-2.5", isActive && "p-4")}>
       <div className="flex items-start gap-2.5">
@@ -888,7 +888,7 @@ const EnhancedExerciseCard = ({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setShowVideo(true); }}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-lg transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary/80 hover:text-primary bg-primary/8 hover:bg-primary/15 border border-primary/20 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <Play className="w-3 h-3" strokeWidth={2} />
                     {t('show_demo', { defaultValue: '📹 Voir la démo' })}
