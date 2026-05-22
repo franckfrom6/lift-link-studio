@@ -15,6 +15,8 @@ import CheckinBadge from "@/components/student/CheckinBadge";
 import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
+import SessionTypeChooser from "@/components/student/SessionTypeChooser";
+import RunBlockEditor from "@/components/student/RunBlockEditor";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
 import SignatureStartCTA from "@/components/student/SignatureStartCTA";
 import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
@@ -82,6 +84,10 @@ const StudentWeek = () => {
   const [freeSessionOpen, setFreeSessionOpen] = useState(false);
   const [freeSessionDate, setFreeSessionDate] = useState<Date>(new Date());
   const [builderOpen, setBuilderOpen] = useState(false);
+  const [sessionChooserOpen, setSessionChooserOpen] = useState(false);
+  const [sessionChooserDate, setSessionChooserDate] = useState<Date>(new Date());
+  const [runSessionOpen, setRunSessionOpen] = useState(false);
+  const [runSessionDate, setRunSessionDate] = useState<Date>(new Date());
   const [builderDate, setBuilderDate] = useState<Date>(new Date());
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicateSession, setDuplicateSession] = useState<{ id: string; name: string } | null>(null);
@@ -741,8 +747,8 @@ const StudentWeek = () => {
           variant="ghost"
           size="sm"
           onClick={() => {
-            setFreeSessionDate(selectedDate);
-            setFreeSessionOpen(true);
+            setSessionChooserDate(selectedDate);
+            setSessionChooserOpen(true);
           }}
           className="h-8 px-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
           aria-label="Ajouter une séance"
@@ -900,8 +906,8 @@ const StudentWeek = () => {
               navigate(`/student/session/${dayFreeSessions[0].id}/preview`);
             } else if (!day.isPast) {
               // Rest day on current/future date → open builder directly
-              setBuilderDate(day.date);
-              setBuilderOpen(true);
+              setSessionChooserDate(day.date);
+              setSessionChooserOpen(true);
             }
           };
 
@@ -927,7 +933,7 @@ const StudentWeek = () => {
           const hasMenu = !swapMode && (isSessionDay || !day.isPast);
           const actionMenu = hasMenu ? (
             <>
-              <DropdownMenuItem onClick={() => { setBuilderDate(day.date); setBuilderOpen(true); }}>
+              <DropdownMenuItem onClick={() => { setSessionChooserDate(day.date); setSessionChooserOpen(true); }}>
                 <Dumbbell className="w-4 h-4 mr-2" />{t('session:builder_title')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
@@ -1085,6 +1091,41 @@ const StudentWeek = () => {
         onClose={() => setBuilderOpen(false)}
         date={builderDate}
         onCreated={() => fetchFreeSessions()}
+      />
+
+      <SessionTypeChooser
+        open={sessionChooserOpen}
+        onClose={() => setSessionChooserOpen(false)}
+        date={sessionChooserDate}
+        onChooseStrength={(d) => {
+          setSessionChooserOpen(false);
+          setFreeSessionDate(d);
+          setFreeSessionOpen(true);
+        }}
+        onChooseRun={(d) => {
+          setSessionChooserOpen(false);
+          setRunSessionDate(d);
+          setRunSessionOpen(true);
+        }}
+      />
+
+      <RunBlockEditor
+        open={runSessionOpen}
+        onClose={() => setRunSessionOpen(false)}
+        date={runSessionDate}
+        onSave={async (name, blocks) => {
+          await supabase.from("sessions").insert([{
+            name,
+            day_of_week: runSessionDate.getDay() === 0 ? 7 : runSessionDate.getDay(),
+            is_free_session: true,
+            created_by: user!.id,
+            free_session_date: formatLocalDate(runSessionDate),
+            session_type: "running",
+            run_blocks: blocks as unknown as never,
+          }]);
+          queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+          queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
+        }}
       />
 
       {duplicateSession && (
