@@ -283,8 +283,8 @@ const StudentDetail = () => {
                 size="sm"
                 variant="outline"
                 className="h-7 text-xs gap-1"
-                onClick={() => {
-                  startImpersonation({ id: student.user_id, fullName: student.full_name });
+                onClick={async () => {
+                  await startImpersonation({ id: student.user_id, fullName: student.full_name });
                   navigate("/student");
                 }}
               >
