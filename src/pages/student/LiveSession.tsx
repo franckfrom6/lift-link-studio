@@ -371,7 +371,7 @@ const LiveSession = () => {
         const { data: existing, error: lookupError } = await supabase
           .from("completed_sessions")
           .select("id, started_at")
-          .eq("student_id", user.id)
+          .eq("student_id", studentId!)
           .eq("session_id", selectedSession.id)
           .is("completed_at", null)
           .order("started_at", { ascending: false })
