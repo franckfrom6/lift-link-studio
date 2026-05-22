@@ -1014,6 +1014,35 @@ ${l}${contextBlock}`;
         },
       },
     },
+    {
+      type: "function",
+      function: {
+        name: "create_running_program",
+        description: "Generate a complete running preparation program for a race goal. Creates weekly sessions with progressive mileage as free running sessions in the athlete calendar.",
+        parameters: {
+          type: "object",
+          properties: {
+            race_type: {
+              type: "string",
+              enum: ["5k", "10k", "half_marathon", "marathon", "trail_20k", "trail_50k"],
+            },
+            weeks: {
+              type: "number",
+              description: "Number of preparation weeks (8 to 16)",
+            },
+            sessions_per_week: {
+              type: "number",
+              description: "Training sessions per week (3 to 5)",
+            },
+            current_weekly_km: {
+              type: "number",
+              description: "Athlete current weekly volume in km",
+            },
+          },
+          required: ["race_type", "weeks", "sessions_per_week"],
+        },
+      },
+    },
   ];
 
   return { system, user: lastUserMsg, messages: messages.slice(0, -1), tools };
