@@ -386,7 +386,7 @@ const LiveSession = () => {
           const { data: created, error: insertError } = await supabase
             .from("completed_sessions")
             .insert({
-              student_id: user.id,
+              student_id: studentId!,
               session_id: selectedSession.id,
               started_at: new Date(startTime).toISOString(),
             })
