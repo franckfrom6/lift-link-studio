@@ -1157,6 +1157,59 @@ const StudentWeek = () => {
         }}
       />
 
+      <Sheet open={multiSessionOpen} onOpenChange={(v) => !v && setMultiSessionOpen(false)}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[60dvh]">
+          <SheetHeader className="pb-3">
+            <SheetTitle className="text-sm font-semibold">
+              {multiSessionDate.toLocaleDateString("fr", {
+                weekday: "long", day: "numeric", month: "long"
+              })}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-2 pb-4">
+            {freeSessions
+              .filter(fs => fs.date === formatLocalDate(multiSessionDate))
+              .map(fs => (
+                <button
+                  key={fs.id}
+                  onClick={() => {
+                    setMultiSessionOpen(false);
+                    navigate(
+                      fs.session_type === "running"
+                        ? `/student/run/${fs.id}`
+                        : `/student/session/${fs.id}/preview`
+                    );
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/30 transition-all text-left"
+                >
+                  <span className="text-xl">
+                    {fs.session_type === "running" ? "🏃" : "💪"}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{fs.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {fs.session_type === "running"
+                        ? "Course à pied"
+                        : `${fs.exerciseCount} exercices`}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            <button
+              onClick={() => {
+                setMultiSessionOpen(false);
+                setSessionChooserDate(multiSessionDate);
+                setSessionChooserOpen(true);
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed border-border hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all text-left"
+            >
+              <span className="text-xl">➕</span>
+              <p className="font-semibold text-sm">Ajouter une séance</p>
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {duplicateSession && (
         <DuplicateSessionModal
           open={duplicateOpen}
