@@ -17,6 +17,9 @@ import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import SessionTypeChooser from "@/components/student/SessionTypeChooser";
 import RunBlockEditor from "@/components/student/RunBlockEditor";
+import RaceGoalCard from "@/components/student/RaceGoalCard";
+import RaceGoalSetupSheet from "@/components/student/RaceGoalSetupSheet";
+import { totalBlocksKm, type RunBlock } from "@/types/running";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
 import SignatureStartCTA from "@/components/student/SignatureStartCTA";
@@ -91,6 +94,7 @@ const StudentWeek = () => {
   const [runSessionDate, setRunSessionDate] = useState<Date>(new Date());
   const [multiSessionOpen, setMultiSessionOpen] = useState(false);
   const [multiSessionDate, setMultiSessionDate] = useState<Date>(new Date());
+  const [raceGoalSheetOpen, setRaceGoalSheetOpen] = useState(false);
   const [builderDate, setBuilderDate] = useState<Date>(new Date());
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicateSession, setDuplicateSession] = useState<{ id: string; name: string } | null>(null);
@@ -186,6 +190,51 @@ const StudentWeek = () => {
     getExternalForDay,
     freeSessions,
   } = useWeekData(studentId, weekStart);
+
+  const { data: raceGoal, refetch: refetchRaceGoal } = useQuery({
+    queryKey: ["race-goal", studentId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("race_goals")
+        .select("*")
+        .eq("student_id", studentId!)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!studentId,
+  });
+
+  // Weekly running volume (sum of totalBlocksKm across this week's running sessions)
+  const weekKeyStart = formatLocalDate(weekStart);
+  const weekKeyEndDate = useMemo(() => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + 6);
+    return formatLocalDate(d);
+  }, [weekStart]);
+
+  const { data: weeklyRunKm = 0 } = useQuery({
+    queryKey: ["week-running-km", studentId, weekKeyStart],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("sessions")
+        .select("run_blocks")
+        .eq("created_by", studentId!)
+        .eq("is_free_session", true)
+        .eq("session_type", "running")
+        .eq("is_deleted", false)
+        .gte("free_session_date", weekKeyStart)
+        .lte("free_session_date", weekKeyEndDate);
+      return (data || []).reduce((acc: number, row: any) => {
+        const blocks = (row.run_blocks || []) as RunBlock[];
+        return acc + totalBlocksKm(blocks);
+      }, 0);
+    },
+    enabled: !!studentId,
+    staleTime: 30 * 1000,
+  });
 
   const fetchFreeSessions = useCallback(async () => {
     queryClient.invalidateQueries({ queryKey: ['week-free-sessions'] });
@@ -811,6 +860,15 @@ const StudentWeek = () => {
         />
       )}
 
+      <div className="mt-3">
+        <RaceGoalCard
+          raceGoal={raceGoal as any}
+          weeklyKm={weeklyRunKm}
+          onSetGoal={() => setRaceGoalSheetOpen(true)}
+          onEditGoal={() => setRaceGoalSheetOpen(true)}
+        />
+      </div>
+
       {/* Selected day summary line */}
       <div className="px-4 pt-3 pb-2 flex items-baseline justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -1245,6 +1303,16 @@ const StudentWeek = () => {
       <FirstStepsChecklist />
       <OnboardingTooltip stepKey="welcome_seen" title={t('common:onboarding_welcome_title')} description={t('common:onboarding_welcome_desc')} position="center" />
       <OnboardingTooltip stepKey="program_seen" title={t('common:onboarding_program_title')} description={t('common:onboarding_program_desc')} position="bottom" />
+
+      {studentId && (
+        <RaceGoalSetupSheet
+          open={raceGoalSheetOpen}
+          onClose={() => setRaceGoalSheetOpen(false)}
+          existingGoal={raceGoal as any}
+          studentId={studentId}
+          onSaved={() => { setRaceGoalSheetOpen(false); refetchRaceGoal(); }}
+        />
+      )}
     </div>
   );
 };

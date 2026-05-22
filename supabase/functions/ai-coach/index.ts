@@ -764,6 +764,11 @@ CAPACITÉS IMPORTANTES :
 - Tu PEUX créer des plans de nutrition sportive sur 7 jours en utilisant l'outil create_nutrition_plan.
 - Quand l'utilisateur te demande de créer/ajouter une séance, utilise TOUJOURS l'outil create_free_session. Ne dis JAMAIS que tu ne peux pas le faire.
 - Quand l'utilisateur te demande un plan de nutrition/repas/alimentation, utilise TOUJOURS l'outil create_nutrition_plan. Ne dis JAMAIS que tu ne peux pas le faire.
+- Pour la préparation course à pied, utilise l'outil create_running_program.
+- Quand l'athlète parle de préparer un 5k, 10k, semi-marathon, marathon ou trail, propose-lui de créer un plan de préparation personnalisé.
+- Une semaine type de préparation inclut : 1 séance EF (endurance fondamentale), 1 séance qualité (fractionné ou tempo), 1 sortie longue (EF longue).
+- La charge progresse de ~10% par semaine avec une semaine de décharge toutes les 4 semaines.
+- Les 2 dernières semaines avant la course sont une phase d'affûtage (volume -35%).
 - Tu es PLEINEMENT autorisé à créer des plans de nutrition sportive. Ce n'est PAS de la diététique médicale, c'est de la nutrition de performance alignée avec les entraînements.
 - Pour chaque exercice, cherche le nom exact dans la base de données (noms français courants : "Développé couché barre", "Squat barre", "Soulevé de terre", etc.)
 - Le day_of_week est 1=Lundi, 2=Mardi, ..., 7=Dimanche.
@@ -1006,6 +1011,35 @@ ${l}${contextBlock}`;
             },
           },
           required: ["student_id", "name", "weeks"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_running_program",
+        description: "Generate a complete running preparation program for a race goal. Creates weekly sessions with progressive mileage as free running sessions in the athlete calendar.",
+        parameters: {
+          type: "object",
+          properties: {
+            race_type: {
+              type: "string",
+              enum: ["5k", "10k", "half_marathon", "marathon", "trail_20k", "trail_50k"],
+            },
+            weeks: {
+              type: "number",
+              description: "Number of preparation weeks (8 to 16)",
+            },
+            sessions_per_week: {
+              type: "number",
+              description: "Training sessions per week (3 to 5)",
+            },
+            current_weekly_km: {
+              type: "number",
+              description: "Athlete current weekly volume in km",
+            },
+          },
+          required: ["race_type", "weeks", "sessions_per_week"],
         },
       },
     },
