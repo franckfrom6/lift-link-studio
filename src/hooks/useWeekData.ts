@@ -11,6 +11,7 @@ interface FreeSession {
   id: string;
   name: string;
   date: string;
+  session_type: string;
   exerciseCount: number;
 }
 
@@ -36,7 +37,7 @@ export function useWeekData(studentId: string | null, weekStart: Date) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sessions")
-        .select("id, name, free_session_date, session_exercises(id, is_archived)")
+        .select("id, name, free_session_date, session_type, session_exercises(id, is_archived)")
         .eq("is_free_session", true)
         .eq("created_by", studentId!)
         .eq("is_deleted", false)
@@ -47,6 +48,7 @@ export function useWeekData(studentId: string | null, weekStart: Date) {
         id: s.id,
         name: s.name,
         date: s.free_session_date,
+        session_type: s.session_type || "strength",
         exerciseCount: (s.session_exercises || []).filter((e: any) => !e.is_archived).length,
       })) as FreeSession[];
     },
