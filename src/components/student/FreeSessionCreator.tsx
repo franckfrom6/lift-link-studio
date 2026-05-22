@@ -56,6 +56,12 @@ const FreeSessionCreator = ({ open, onClose, date, onCreated }: FreeSessionCreat
     if (!search.trim() && !muscleFilter) return allExercises.slice(0, 20);
     let results = search.trim() ? searchFn(search) : allExercises;
     if (muscleFilter) results = results.filter(ex => ex.muscle_group.toLowerCase().includes(muscleFilter));
+    // Always exclude cardio exercises from strength session builder
+    results = results.filter(
+      ex => ex.type !== "cardio"
+        && ex.tracking_type !== "distance"
+        && ex.muscle_group !== "cardio"
+    );
     return results.slice(0, 20);
   }, [search, searchFn, allExercises, muscleFilter]);
 
