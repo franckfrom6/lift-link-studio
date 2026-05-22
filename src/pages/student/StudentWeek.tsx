@@ -860,6 +860,15 @@ const StudentWeek = () => {
         />
       )}
 
+      <div className="mt-3">
+        <RaceGoalCard
+          raceGoal={raceGoal as any}
+          weeklyKm={weeklyRunKm}
+          onSetGoal={() => setRaceGoalSheetOpen(true)}
+          onEditGoal={() => setRaceGoalSheetOpen(true)}
+        />
+      </div>
+
       {/* Selected day summary line */}
       <div className="px-4 pt-3 pb-2 flex items-baseline justify-between gap-3">
         <div className="min-w-0 flex-1">
