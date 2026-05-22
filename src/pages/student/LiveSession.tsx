@@ -247,13 +247,13 @@ const LiveSession = () => {
   const selectedSession = programSession || freeSession;
 
   const { data: previousPerformance } = useQuery({
-    queryKey: ["previous-performance", user?.id, selectedSession?.id],
+    queryKey: ["previous-performance", studentId, selectedSession?.id],
     queryFn: async () => {
-      if (!user || !selectedSession?.id) return null;
+      if (!user || !selectedSession?.id || !studentId) return null;
       const { data: prevSession } = await supabase
         .from("completed_sessions")
         .select("id, completed_at")
-        .eq("student_id", user.id)
+        .eq("student_id", studentId)
         .eq("session_id", selectedSession.id)
         .not("completed_at", "is", null)
         .order("completed_at", { ascending: false })
@@ -371,7 +371,7 @@ const LiveSession = () => {
         const { data: existing, error: lookupError } = await supabase
           .from("completed_sessions")
           .select("id, started_at")
-          .eq("student_id", user.id)
+          .eq("student_id", studentId!)
           .eq("session_id", selectedSession.id)
           .is("completed_at", null)
           .order("started_at", { ascending: false })
@@ -386,7 +386,7 @@ const LiveSession = () => {
           const { data: created, error: insertError } = await supabase
             .from("completed_sessions")
             .insert({
-              student_id: user.id,
+              student_id: studentId!,
               session_id: selectedSession.id,
               started_at: new Date(startTime).toISOString(),
             })
