@@ -1093,6 +1093,41 @@ const StudentWeek = () => {
         onCreated={() => fetchFreeSessions()}
       />
 
+      <SessionTypeChooser
+        open={sessionChooserOpen}
+        onClose={() => setSessionChooserOpen(false)}
+        date={sessionChooserDate}
+        onChooseStrength={(d) => {
+          setSessionChooserOpen(false);
+          setFreeSessionDate(d);
+          setFreeSessionOpen(true);
+        }}
+        onChooseRun={(d) => {
+          setSessionChooserOpen(false);
+          setRunSessionDate(d);
+          setRunSessionOpen(true);
+        }}
+      />
+
+      <RunBlockEditor
+        open={runSessionOpen}
+        onClose={() => setRunSessionOpen(false)}
+        date={runSessionDate}
+        onSave={async (name, blocks) => {
+          await supabase.from("sessions").insert({
+            name,
+            day_of_week: runSessionDate.getDay() === 0 ? 7 : runSessionDate.getDay(),
+            is_free_session: true,
+            created_by: user!.id,
+            free_session_date: formatLocalDate(runSessionDate),
+            session_type: "running",
+            run_blocks: blocks,
+          });
+          queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+          queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
+        }}
+      />
+
       {duplicateSession && (
         <DuplicateSessionModal
           open={duplicateOpen}
