@@ -4,6 +4,7 @@ import { Pause, Play, RotateCcw, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { unlockAudio } from "@/lib/audioUnlock";
 
 interface LinearRestTimerProps {
   initialSeconds: number;
