@@ -1303,6 +1303,16 @@ const StudentWeek = () => {
       <FirstStepsChecklist />
       <OnboardingTooltip stepKey="welcome_seen" title={t('common:onboarding_welcome_title')} description={t('common:onboarding_welcome_desc')} position="center" />
       <OnboardingTooltip stepKey="program_seen" title={t('common:onboarding_program_title')} description={t('common:onboarding_program_desc')} position="bottom" />
+
+      {studentId && (
+        <RaceGoalSetupSheet
+          open={raceGoalSheetOpen}
+          onClose={() => setRaceGoalSheetOpen(false)}
+          existingGoal={raceGoal as any}
+          studentId={studentId}
+          onSaved={() => { setRaceGoalSheetOpen(false); refetchRaceGoal(); }}
+        />
+      )}
     </div>
   );
 };
