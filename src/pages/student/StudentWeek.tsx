@@ -17,6 +17,7 @@ import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import SessionTypeChooser from "@/components/student/SessionTypeChooser";
 import RunBlockEditor from "@/components/student/RunBlockEditor";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
 import SignatureStartCTA from "@/components/student/SignatureStartCTA";
 import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
@@ -88,6 +89,8 @@ const StudentWeek = () => {
   const [sessionChooserDate, setSessionChooserDate] = useState<Date>(new Date());
   const [runSessionOpen, setRunSessionOpen] = useState(false);
   const [runSessionDate, setRunSessionDate] = useState<Date>(new Date());
+  const [multiSessionOpen, setMultiSessionOpen] = useState(false);
+  const [multiSessionDate, setMultiSessionDate] = useState<Date>(new Date());
   const [builderDate, setBuilderDate] = useState<Date>(new Date());
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicateSession, setDuplicateSession] = useState<{ id: string; name: string } | null>(null);
@@ -900,12 +903,29 @@ const StudentWeek = () => {
           // Build the click handler
           const handleClick = () => {
             if (swapMode) { handleDayClickInSwapMode(day.dayIndex); return; }
+            // Programmed session from coach program
             if (isSessionDay && sessionInfo) {
               navigate(`/student/session/${sessionInfo.sessionId}/preview`);
-            } else if (dayFreeSessions.length > 0) {
-              navigate(`/student/session/${dayFreeSessions[0].id}/preview`);
-            } else if (!day.isPast) {
-              // Rest day on current/future date → open builder directly
+              return;
+            }
+            // Single free session — navigate directly
+            if (dayFreeSessions.length === 1) {
+              const fs = dayFreeSessions[0];
+              navigate(
+                fs.session_type === "running"
+                  ? `/student/run/${fs.id}`
+                  : `/student/session/${fs.id}/preview`
+              );
+              return;
+            }
+            // Multiple free sessions — open day picker sheet
+            if (dayFreeSessions.length > 1) {
+              setMultiSessionDate(day.date);
+              setMultiSessionOpen(true);
+              return;
+            }
+            // Empty day — open session type chooser
+            if (!day.isPast) {
               setSessionChooserDate(day.date);
               setSessionChooserOpen(true);
             }
@@ -990,7 +1010,14 @@ const StudentWeek = () => {
                     <button
                       key={fs.id}
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}/preview`); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(
+                          fs.session_type === "running"
+                            ? `/student/run/${fs.id}`
+                            : `/student/session/${fs.id}/preview`
+                        );
+                      }}
                       className="flex items-center justify-between w-full text-left py-1"
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
@@ -999,7 +1026,9 @@ const StudentWeek = () => {
                           <Bot className="w-2 h-2" strokeWidth={2} />IA
                         </span>
                       </div>
-                      <span className="text-[10px] tabular-nums text-muted-subtle ml-2">{fs.exerciseCount} ex.</span>
+                      <span className="text-[10px] tabular-nums text-muted-subtle ml-2">
+                        {fs.session_type === "running" ? "🏃 Course" : `${fs.exerciseCount} ex.`}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -1127,6 +1156,59 @@ const StudentWeek = () => {
           queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
         }}
       />
+
+      <Sheet open={multiSessionOpen} onOpenChange={(v) => !v && setMultiSessionOpen(false)}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[60dvh]">
+          <SheetHeader className="pb-3">
+            <SheetTitle className="text-sm font-semibold">
+              {multiSessionDate.toLocaleDateString("fr", {
+                weekday: "long", day: "numeric", month: "long"
+              })}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-2 pb-4">
+            {freeSessions
+              .filter(fs => fs.date === formatLocalDate(multiSessionDate))
+              .map(fs => (
+                <button
+                  key={fs.id}
+                  onClick={() => {
+                    setMultiSessionOpen(false);
+                    navigate(
+                      fs.session_type === "running"
+                        ? `/student/run/${fs.id}`
+                        : `/student/session/${fs.id}/preview`
+                    );
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/30 transition-all text-left"
+                >
+                  <span className="text-xl">
+                    {fs.session_type === "running" ? "🏃" : "💪"}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{fs.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {fs.session_type === "running"
+                        ? "Course à pied"
+                        : `${fs.exerciseCount} exercices`}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            <button
+              onClick={() => {
+                setMultiSessionOpen(false);
+                setSessionChooserDate(multiSessionDate);
+                setSessionChooserOpen(true);
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed border-border hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all text-left"
+            >
+              <span className="text-xl">➕</span>
+              <p className="font-semibold text-sm">Ajouter une séance</p>
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {duplicateSession && (
         <DuplicateSessionModal
