@@ -747,8 +747,8 @@ const StudentWeek = () => {
           variant="ghost"
           size="sm"
           onClick={() => {
-            setFreeSessionDate(selectedDate);
-            setFreeSessionOpen(true);
+            setSessionChooserDate(selectedDate);
+            setSessionChooserOpen(true);
           }}
           className="h-8 px-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
           aria-label="Ajouter une séance"
@@ -906,8 +906,8 @@ const StudentWeek = () => {
               navigate(`/student/session/${dayFreeSessions[0].id}/preview`);
             } else if (!day.isPast) {
               // Rest day on current/future date → open builder directly
-              setBuilderDate(day.date);
-              setBuilderOpen(true);
+              setSessionChooserDate(day.date);
+              setSessionChooserOpen(true);
             }
           };
 
@@ -933,7 +933,7 @@ const StudentWeek = () => {
           const hasMenu = !swapMode && (isSessionDay || !day.isPast);
           const actionMenu = hasMenu ? (
             <>
-              <DropdownMenuItem onClick={() => { setBuilderDate(day.date); setBuilderOpen(true); }}>
+              <DropdownMenuItem onClick={() => { setSessionChooserDate(day.date); setSessionChooserOpen(true); }}>
                 <Dumbbell className="w-4 h-4 mr-2" />{t('session:builder_title')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
