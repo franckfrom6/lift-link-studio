@@ -1121,7 +1121,7 @@ const StudentWeek = () => {
             created_by: user!.id,
             free_session_date: formatLocalDate(runSessionDate),
             session_type: "running",
-            run_blocks: blocks,
+            run_blocks: blocks as unknown as never,
           }]);
           queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
           queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
