@@ -78,11 +78,19 @@ const LiveSession = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [finishError, setFinishError] = useState(false);
-  const [startTime] = useState(() => _backup?.startTime ?? Date.now());
+  const [startTime] = useState<number>(() => {
+    if (_backup?.startTime) return _backup.startTime;
+    const saved = localStorage.getItem("ls_start_time");
+    return saved ? parseInt(saved, 10) : Date.now();
+  });
   const [elapsed, setElapsed] = useState(0);
-  const [activeExerciseKey, setActiveExerciseKey] = useState<string>(
-    () => _backup?.activeExerciseKey ?? "0-0"
+  const [activeExerciseKey, setActiveExerciseKeyState] = useState<string>(
+    () => _backup?.activeExerciseKey ?? localStorage.getItem("ls_active_key") ?? "0-0"
   );
+  const setActiveExerciseKey = useCallback((key: string) => {
+    try { localStorage.setItem("ls_active_key", key); } catch {}
+    setActiveExerciseKeyState(key);
+  }, []);
   const [globalRestSeconds, setGlobalRestSeconds] = useState<number | null>(() => {
     if (!_backup?.restEndTime) return null;
     const remaining = Math.ceil((_backup.restEndTime - Date.now()) / 1000);
@@ -193,6 +201,33 @@ const LiveSession = () => {
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [startTime, sessionDone]);
+
+  // Persist startTime once on mount; clean up dedicated keys on unmount.
+  useEffect(() => {
+    try { localStorage.setItem("ls_start_time", String(startTime)); } catch {}
+    return () => {
+      try {
+        localStorage.removeItem("ls_start_time");
+        localStorage.removeItem("ls_active_key");
+      } catch {}
+    };
+  }, [startTime]);
+
+  // Snapshot critical state when the app is backgrounded (iOS eviction).
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        try {
+          localStorage.setItem("ls_start_time", String(startTime));
+          if (activeExerciseKey) {
+            localStorage.setItem("ls_active_key", activeExerciseKey);
+          }
+        } catch {}
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [startTime, activeExerciseKey]);
 
   const programSession = useMemo(() => {
     const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
@@ -617,6 +652,10 @@ const LiveSession = () => {
       // Success — show celebration
       setSessionDone(true);
       try { localStorage.removeItem('live_session_backup'); } catch {}
+      try {
+        localStorage.removeItem("ls_start_time");
+        localStorage.removeItem("ls_active_key");
+      } catch {}
       try {
         confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"] });
         setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.5 } }), 300);
