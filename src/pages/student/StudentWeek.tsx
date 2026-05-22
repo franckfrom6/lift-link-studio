@@ -1114,7 +1114,7 @@ const StudentWeek = () => {
         onClose={() => setRunSessionOpen(false)}
         date={runSessionDate}
         onSave={async (name, blocks) => {
-          await supabase.from("sessions").insert({
+          await supabase.from("sessions").insert([{
             name,
             day_of_week: runSessionDate.getDay() === 0 ? 7 : runSessionDate.getDay(),
             is_free_session: true,
@@ -1122,7 +1122,7 @@ const StudentWeek = () => {
             free_session_date: formatLocalDate(runSessionDate),
             session_type: "running",
             run_blocks: blocks,
-          });
+          }]);
           queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
           queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
         }}
