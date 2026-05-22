@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash2, ArrowUp, ArrowDown, Plus } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import {
   RunBlock,
   RunBlockType,
@@ -14,6 +14,9 @@ import {
   estimatedBlocksMin,
 } from "@/types/running";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface RunBlockEditorProps {
   open: boolean;
@@ -96,6 +99,9 @@ const RunBlockEditor = ({
   const [blocks, setBlocks] = useState<RunBlock[]>(initialBlocks ?? []);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [voltDescription, setVoltDescription] = useState("");
+  const [voltParsing, setVoltParsing] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (open) {
@@ -118,16 +124,6 @@ const RunBlockEditor = ({
   };
   const removeBlock = (id: string) =>
     setBlocks(prev => prev.filter(b => b.id !== id));
-  const moveBlock = (id: string, dir: -1 | 1) => {
-    setBlocks(prev => {
-      const i = prev.findIndex(b => b.id === id);
-      const j = i + dir;
-      if (i < 0 || j < 0 || j >= prev.length) return prev;
-      const copy = [...prev];
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-      return copy;
-    });
-  };
   const addBlock = (type: RunBlockType) => {
     setBlocks(prev => [...prev, blockDefaults(type)]);
     setPickerOpen(false);
@@ -141,6 +137,40 @@ const RunBlockEditor = ({
       onClose();
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleVoltParse = async () => {
+    if (!voltDescription.trim()) return;
+    setVoltParsing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-coach", {
+        body: {
+          message: `Parse cette description de séance running en blocs JSON. Réponds UNIQUEMENT avec un tableau JSON valide de RunBlock, sans texte autour. Types disponibles: warmup, easy, tempo, threshold, interval, recovery, cooldown. Chaque objet doit avoir: id (uuid), type, et soit target_km soit target_min (nombre). Optionnel: zone (1-5), pace_min_s, pace_max_s, repeats, work_km, recovery_min, notes. Description: "${voltDescription}"`,
+          userId: user?.id,
+          parseMode: true,
+        },
+      });
+      if (error) throw error;
+      const raw = data?.result?.message || data?.message || "";
+      const match = typeof raw === "string" ? raw.match(/\[[\s\S]*\]/) : null;
+      if (match) {
+        const parsed = JSON.parse(match[0]) as RunBlock[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const withIds = parsed.map(b => ({ ...b, id: b.id || newId() }));
+          setBlocks(withIds);
+          setStep(2);
+          setVoltDescription("");
+        } else {
+          toast.error("Impossible de parser la description. Essaie les templates !");
+        }
+      } else {
+        toast.error("Réponse inattendue. Utilise les templates ou crée manuellement.");
+      }
+    } catch {
+      toast.error("Erreur de connexion avec VOLT");
+    } finally {
+      setVoltParsing(false);
     }
   };
 
@@ -183,6 +213,32 @@ const RunBlockEditor = ({
               </div>
             )}
 
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs text-muted-foreground">ou</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground text-center">
+                décris ta séance en quelques mots
+              </p>
+              <textarea
+                value={voltDescription}
+                onChange={e => setVoltDescription(e.target.value)}
+                placeholder="ex. 10 min échauffement, 30 min footing EF, 5 min retour au calme"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm resize-none h-20 focus:outline-none focus:border-primary/60"
+              />
+              <Button
+                variant="outline"
+                disabled={!voltDescription.trim() || voltParsing}
+                onClick={handleVoltParse}
+                className="w-full"
+              >
+                {voltParsing ? "Analyse en cours…" : "✨ Générer les blocs"}
+              </Button>
+            </div>
+
             <div className="pt-2">
               <Button
                 onClick={() => setStep(2)}
@@ -195,15 +251,12 @@ const RunBlockEditor = ({
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-            {blocks.map((b, idx) => (
+            {blocks.map((b) => (
               <BlockCard
                 key={b.id}
                 block={b}
-                index={idx}
-                total={blocks.length}
                 onChange={patch => updateBlock(b.id, patch)}
                 onDelete={() => removeBlock(b.id)}
-                onMove={dir => moveBlock(b.id, dir)}
               />
             ))}
 
@@ -270,16 +323,14 @@ const RunBlockEditor = ({
 
 interface BlockCardProps {
   block: RunBlock;
-  index: number;
-  total: number;
   onChange: (patch: Partial<RunBlock>) => void;
   onDelete: () => void;
-  onMove: (dir: -1 | 1) => void;
 }
 
-const BlockCard = ({ block, index, total, onChange, onDelete, onMove }: BlockCardProps) => {
+const BlockCard = ({ block, onChange, onDelete }: BlockCardProps) => {
   const [paceMin, setPaceMin] = useState(secToMmss(block.pace_min_s));
   const [paceMax, setPaceMax] = useState(secToMmss(block.pace_max_s));
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     setPaceMin(secToMmss(block.pace_min_s));
@@ -301,22 +352,6 @@ const BlockCard = ({ block, index, total, onChange, onDelete, onMove }: BlockCar
           {RUN_BLOCK_LABELS[block.type]}
         </span>
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => onMove(-1)}
-            disabled={index === 0}
-            className="w-11 h-11 inline-flex items-center justify-center rounded-md hover:bg-accent disabled:opacity-30"
-            aria-label="Monter"
-          >
-            <ArrowUp className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onMove(1)}
-            disabled={index === total - 1}
-            className="w-11 h-11 inline-flex items-center justify-center rounded-md hover:bg-accent disabled:opacity-30"
-            aria-label="Descendre"
-          >
-            <ArrowDown className="w-4 h-4" />
-          </button>
           <button
             onClick={onDelete}
             className="w-11 h-11 inline-flex items-center justify-center rounded-md text-destructive hover:bg-destructive/10"
@@ -459,58 +494,67 @@ const BlockCard = ({ block, index, total, onChange, onDelete, onMove }: BlockCar
       )}
 
       {/* Pace range */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Allure min (mm:ss/km)</Label>
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="text-xs text-muted-foreground flex items-center gap-1 mt-1"
+      >
+        {expanded ? "− Moins" : "＋ Allure / Zone / Notes"}
+      </button>
+
+      {expanded && (
+        <div className="space-y-3 pt-1">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Allure min (mm:ss/km)</Label>
+              <Input
+                value={paceMin}
+                onChange={e => setPaceMin(e.target.value)}
+                onBlur={() => onChange({ pace_min_s: mmssToSec(paceMin) })}
+                placeholder="6:30"
+                className="h-11 tabular-nums"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Allure max (mm:ss/km)</Label>
+              <Input
+                value={paceMax}
+                onChange={e => setPaceMax(e.target.value)}
+                onBlur={() => onChange({ pace_max_s: mmssToSec(paceMax) })}
+                placeholder="6:00"
+                className="h-11 tabular-nums"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Zone</Label>
+            <div className="flex gap-1.5">
+              {[1, 2, 3, 4, 5].map(z => (
+                <button
+                  key={z}
+                  onClick={() => onChange({ zone: block.zone === z ? undefined : (z as 1 | 2 | 3 | 4 | 5) })}
+                  className={cn(
+                    "flex-1 min-h-[44px] rounded-md border text-xs font-semibold transition",
+                    block.zone === z
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card border-border hover:bg-accent",
+                  )}
+                  title={ZONE_LABELS[z]}
+                >
+                  Z{z}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <Input
-            value={paceMin}
-            onChange={e => setPaceMin(e.target.value)}
-            onBlur={() => onChange({ pace_min_s: mmssToSec(paceMin) })}
-            placeholder="6:30"
-            className="h-11 tabular-nums"
+            value={block.notes ?? ""}
+            onChange={e => onChange({ notes: e.target.value || undefined })}
+            placeholder="Notes (optionnel)"
+            className="h-11"
           />
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Allure max (mm:ss/km)</Label>
-          <Input
-            value={paceMax}
-            onChange={e => setPaceMax(e.target.value)}
-            onBlur={() => onChange({ pace_max_s: mmssToSec(paceMax) })}
-            placeholder="6:00"
-            className="h-11 tabular-nums"
-          />
-        </div>
-      </div>
-
-      {/* Zone picker */}
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Zone</Label>
-        <div className="flex gap-1.5">
-          {[1, 2, 3, 4, 5].map(z => (
-            <button
-              key={z}
-              onClick={() => onChange({ zone: block.zone === z ? undefined : (z as 1 | 2 | 3 | 4 | 5) })}
-              className={cn(
-                "flex-1 min-h-[44px] rounded-md border text-xs font-semibold transition",
-                block.zone === z
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card border-border hover:bg-accent",
-              )}
-              title={ZONE_LABELS[z]}
-            >
-              Z{z}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Notes */}
-      <Input
-        value={block.notes ?? ""}
-        onChange={e => onChange({ notes: e.target.value || undefined })}
-        placeholder="Notes (optionnel)"
-        className="h-11"
-      />
+      )}
     </div>
   );
 };
