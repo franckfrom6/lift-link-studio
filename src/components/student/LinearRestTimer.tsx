@@ -4,6 +4,7 @@ import { Pause, Play, RotateCcw, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { unlockAudio } from "@/lib/audioUnlock";
 
 interface LinearRestTimerProps {
   initialSeconds: number;
@@ -73,12 +74,13 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.connect(gain); gain.connect(ctx.destination);
-                osc.type = "sine";
-                osc.frequency.value = 880;
-                gain.gain.setValueAtTime(0.5, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+                gain.gain.setValueAtTime(0, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.15);
                 osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + 0.6);
+                osc.stop(ctx.currentTime + 0.4);
               };
               if (ctx.state === "suspended") {
                 ctx.resume().then(play).catch(() => {});
@@ -114,6 +116,7 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
   }, [running]);
 
   const reset = () => {
+    unlockAudio();
     ensureAudioCtx();
     setSeconds(totalSeconds);
     endTimeRef.current = Date.now() + totalSeconds * 1000;
@@ -121,6 +124,7 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
     setFinished(false);
   };
   const toggle = () => {
+    unlockAudio();
     ensureAudioCtx();
     if (!running) {
       endTimeRef.current = Date.now() + seconds * 1000;
@@ -130,6 +134,7 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
     setRunning(!running);
   };
   const adjust = (delta: number) => {
+    unlockAudio();
     ensureAudioCtx();
     const newTotal = Math.max(10, totalSeconds + delta);
     setTotalSeconds(newTotal);
