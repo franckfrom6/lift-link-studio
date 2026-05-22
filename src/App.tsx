@@ -55,6 +55,7 @@ import StudentProgress from "./pages/student/StudentProgress";
 import StudentProfile from "./pages/student/StudentProfile";
 import LiveSession from "./pages/student/LiveSession";
 import SessionPreview from "./pages/student/SessionPreview";
+import RunningLiveSession from "./pages/student/RunningLiveSession";
 import AthleteProgramEditor from "./pages/student/AthleteProgramEditor";
 import StudentNutrition from "./pages/student/StudentNutrition";
 import StudentRecommendations from "./pages/student/StudentRecommendations";
@@ -192,6 +193,7 @@ const App = () => (
                   <Route index element={<StudentWeek />} />
                   <Route path="session/:sessionId/preview" element={<SessionPreview />} />
                   <Route path="session/:sessionId" element={<LiveSession />} />
+                  <Route path="run/:sessionId" element={<RunningLiveSession />} />
                   <Route path="program/edit" element={<AthleteProgramEditor />} />
                   <Route path="progress" element={<StudentProgress />} />
                   <Route path="profile" element={<StudentProfile />} />
