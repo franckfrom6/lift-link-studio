@@ -6,6 +6,8 @@ const fetchExercises = async (): Promise<Exercise[]> => {
   const { data, error } = await supabase
     .from("exercises")
     .select("*")
+    .not("type", "eq", "cardio")
+    .not("tracking_type", "eq", "distance")
     .order("muscle_group")
     .order("name");
 
