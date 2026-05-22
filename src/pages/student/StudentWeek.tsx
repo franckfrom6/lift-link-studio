@@ -191,6 +191,51 @@ const StudentWeek = () => {
     freeSessions,
   } = useWeekData(studentId, weekStart);
 
+  const { data: raceGoal, refetch: refetchRaceGoal } = useQuery({
+    queryKey: ["race-goal", studentId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("race_goals")
+        .select("*")
+        .eq("student_id", studentId!)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!studentId,
+  });
+
+  // Weekly running volume (sum of totalBlocksKm across this week's running sessions)
+  const weekKeyStart = formatLocalDate(weekStart);
+  const weekKeyEndDate = useMemo(() => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + 6);
+    return formatLocalDate(d);
+  }, [weekStart]);
+
+  const { data: weeklyRunKm = 0 } = useQuery({
+    queryKey: ["week-running-km", studentId, weekKeyStart],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("sessions")
+        .select("run_blocks")
+        .eq("created_by", studentId!)
+        .eq("is_free_session", true)
+        .eq("session_type", "running")
+        .eq("is_deleted", false)
+        .gte("free_session_date", weekKeyStart)
+        .lte("free_session_date", weekKeyEndDate);
+      return (data || []).reduce((acc: number, row: any) => {
+        const blocks = (row.run_blocks || []) as RunBlock[];
+        return acc + totalBlocksKm(blocks);
+      }, 0);
+    },
+    enabled: !!studentId,
+    staleTime: 30 * 1000,
+  });
+
   const fetchFreeSessions = useCallback(async () => {
     queryClient.invalidateQueries({ queryKey: ['week-free-sessions'] });
   }, [queryClient]);
