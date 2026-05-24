@@ -8,6 +8,11 @@ interface PlanInfo {
   name: string;
   displayNameFr: string;
   displayNameEn: string;
+  priceMonthly: number | null;
+  priceYearly: number | null;
+  descriptionFr: string;
+  descriptionEn: string;
+  sortOrder: number;
 }
 
 interface PlanFeature {
@@ -83,6 +88,11 @@ async function fetchPlanData(userId: string | null): Promise<PlanData> {
     name: p.name,
     displayNameFr: p.display_name_fr,
     displayNameEn: p.display_name_en,
+    priceMonthly: p.price_monthly ?? null,
+    priceYearly: p.price_yearly ?? null,
+    descriptionFr: p.description_fr ?? "",
+    descriptionEn: p.description_en ?? "",
+    sortOrder: p.sort_order ?? 0,
   }));
 
   if (!userId) {
