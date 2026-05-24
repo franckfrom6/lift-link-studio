@@ -66,8 +66,9 @@ Implementation hints :
 
 ### Rule 4 — auto-with-precond
 
-A test is `auto-with-precond` if its text mentions any of:
+A test is `auto-with-precond` if EITHER:
 
+**(a) Its text mentions any of:**
 - "An exercise you've done before" / previous session data
 - "Programmed session" / "active program" / "assigned program"
 - "A completed session"
@@ -76,7 +77,24 @@ A test is `auto-with-precond` if its text mentions any of:
 - "A student with no program" / "no coach program assigned"
 - "Linked coach" / "linked athletes"
 
-Examples : T-A-20 (preview requires programmed session), T-A-31 (previous weight suggestion), T-A-72 (nutrition plan from coach).
+**(b) Its parent section heading implies a contextual state (section-level precondition inheritance).** When a section's URL or theme implies that the user must already be in a specific app state, all tests in that section inherit the relevant precondition(s).
+
+Section → inherited preconditions mapping:
+
+| Section heading pattern | Inherited preconditions |
+|------------------------|------------------------|
+| "Live Session (`/student/session/:id`)" | `athlete-has-programmed-session-today` |
+| "Session Preview (`/student/session/:id/preview`)" | `athlete-has-programmed-session-today` |
+| "Weekly Calendar (`/student`)" | (none — empty state is valid) |
+| "Progress (`/student/progress`)" | `athlete-has-completed-session` |
+| "Nutrition (`/student/nutrition-plan`)" | `coach-defined-nutrition-plan` |
+| "Student Detail (`/coach/students/:id`)" | `athlete-linked-to-coach` |
+| "Program Editor" | `athlete-linked-to-coach` |
+| "Programs Library (`/coach/programs`)" | (none) |
+
+When a test has BOTH section-inherited preconditions AND its own (rule a) match, list all preconditions in the registry. Order doesn't matter for execution — all preconditions must be met before the test runs.
+
+Examples : T-A-20 (preview requires programmed session), T-A-31 (previous weight suggestion), T-A-72 (nutrition plan from coach), T-A-32 (live session context — rule b).
 
 Each `auto-with-precond` test must have its precondition mapped in `orchestration-coach-athlete.md`. If a new precondition pattern appears that's not yet mapped, flag it to the user instead of guessing.
 

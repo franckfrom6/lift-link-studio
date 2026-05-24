@@ -99,6 +99,26 @@ This is the mapping of precondition names to coach actions. When a new precondit
 
 ---
 
+### `athlete-in-advanced-mode`
+
+**State required** : test-athlete a activé le toggle "Mode avancé" disponible en haut de la page (probablement live session ou un écran proche). Ce mode révèle certains éléments UX comme les comparison arrows (T-A-33).
+
+**Idempotent check** :
+1. Login as athlete → naviguer vers une page comportant le toggle
+2. Vérifier l'état du toggle (par data-testid si disponible, sinon par présence des éléments UX gated derrière le toggle)
+
+**Setup if missing** :
+1. Cliquer le toggle pour l'activer
+2. Vérifier la persistance (reload la page, le toggle doit rester ON)
+
+**Notes** :
+- Toggle situé "en haut de la page" selon précision projet (mai 2026).
+- Si le toggle n'a pas de `data-testid`, dette de testabilité à signaler.
+- Localisation exacte du toggle à confirmer la première fois (live session ? profile ? settings ?).
+- Persistance attendue côté backend (préférence user stockée), pas seulement en localStorage.
+
+---
+
 ## Precondition spec structure
 
 Generate spec at `tests/e2e/preconditions/<name>.spec.ts`. The name matches the precondition key (e.g. `athlete-has-programmed-session-today.spec.ts`).
