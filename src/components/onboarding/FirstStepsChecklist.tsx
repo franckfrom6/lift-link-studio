@@ -1,6 +1,6 @@
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, Circle, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, Sparkles, X } from "lucide-react";
 
 const CHECKLIST_ITEMS = [
   { key: "program_seen", labelKey: "onboarding_step_program" },
@@ -10,12 +10,14 @@ const CHECKLIST_ITEMS = [
   { key: "session_builder_seen", labelKey: "onboarding_step_builder" },
 ];
 
+const DISMISS_KEY = "checklist_dismissed";
+
 const FirstStepsChecklist = () => {
   const { t } = useTranslation("common");
-  const { steps, completedCount } = useOnboarding();
+  const { steps, markStepSeen } = useOnboarding();
 
   const done = CHECKLIST_ITEMS.filter((i) => steps[i.key]).length;
-  if (done >= CHECKLIST_ITEMS.length) return null;
+  if (steps[DISMISS_KEY] || done >= CHECKLIST_ITEMS.length) return null;
 
   return (
     <div className="glass p-4 space-y-3">
@@ -25,6 +27,14 @@ const FirstStepsChecklist = () => {
         <span className="text-xs text-muted-foreground ml-auto">
           {done}/{CHECKLIST_ITEMS.length}
         </span>
+        <button
+          type="button"
+          onClick={() => markStepSeen(DISMISS_KEY)}
+          className="w-5 h-5 flex items-center justify-center rounded-sm text-muted-subtle hover:text-foreground hover:bg-bg-tinted transition-colors -mr-1"
+          aria-label="Masquer"
+        >
+          <X className="w-3.5 h-3.5" strokeWidth={2} />
+        </button>
       </div>
 
       <div className="space-y-1.5">
