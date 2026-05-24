@@ -123,7 +123,7 @@ export function HybridSessionBuilder({
   };
 
   const handleSave = async () => {
-    if (!name.trim() || blocks.length === 0) return;
+    if (!name.trim() || blocks.length === 0 || hasUnnamedExercise) return;
     setSaving(true);
     try {
       await onSave(name.trim(), blocks);
@@ -132,6 +132,10 @@ export function HybridSessionBuilder({
       setSaving(false);
     }
   };
+
+  const hasUnnamedExercise = blocks.some(
+    (b) => b.strength?.exercises.some((e) => !e.name)
+  );
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -168,6 +172,7 @@ export function HybridSessionBuilder({
             onAddClick={() => setAddOpen(true)}
             onSave={handleSave}
             saving={saving}
+            hasUnnamedExercise={hasUnnamedExercise}
           />
         )}
       </SheetContent>
