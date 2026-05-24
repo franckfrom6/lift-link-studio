@@ -17,8 +17,8 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://lift-link-studio.lovable.app";
 
     const accounts = [
-      { email: "test-coach@f6gym.test", full_name: "Coach Test", role: "coach" },
-      { email: "test-athlete@f6gym.test", full_name: "Athlete Test", role: "student" },
+      { email: "test-coach@f6gym.test", full_name: "Coach Test", role: "coach", password: "CoachTest!2026" },
+      { email: "test-athlete@f6gym.test", full_name: "Athlete Test", role: "student", password: "AthleteTest!2026" },
     ];
 
     const results: any[] = [];
@@ -31,6 +31,7 @@ serve(async (req) => {
       if (!user) {
         const { data: created, error: createErr } = await admin.auth.admin.createUser({
           email: acc.email,
+          password: acc.password,
           email_confirm: true,
         });
         if (createErr) throw createErr;
@@ -43,6 +44,7 @@ serve(async (req) => {
           onboarding_completed: true,
         }, { onConflict: "user_id" });
       } else {
+        await admin.auth.admin.updateUserById(user.id, { password: acc.password });
         await admin.from("profiles").upsert({
           user_id: user.id,
           full_name: acc.full_name,
@@ -60,6 +62,7 @@ serve(async (req) => {
 
       results.push({
         email: acc.email,
+        password: acc.password,
         role: acc.role,
         user_id: user.id,
         magic_link: linkData.properties?.action_link,
