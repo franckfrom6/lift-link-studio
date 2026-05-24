@@ -983,35 +983,51 @@ const StudentWeek = () => {
           // Build the click handler
           const handleClick = () => {
             if (swapMode) { handleDayClickInSwapMode(day.dayIndex); return; }
-            // Programmed session from coach program
             if (isSessionDay && sessionInfo) {
-              navigate(`/student/session/${sessionInfo.sessionId}/preview`);
-              return;
-            }
-            // Single free session — navigate directly
-            if (dayFreeSessions.length === 1) {
-              const fs = dayFreeSessions[0];
-              navigate(
-                fs.session_type === "running"
-                  ? `/student/run/${fs.id}`
-                  : fs.session_type === "hybrid"
-                  ? `/student/hybrid/${fs.id}`
-                  : `/student/session/${fs.id}/preview`
-              );
-              return;
-            }
-            // Multiple free sessions — open day picker sheet
-            if (dayFreeSessions.length > 1) {
-              setMultiSessionDate(day.date);
-              setMultiSessionOpen(true);
-              return;
-            }
-            // Empty day — open session type chooser
-            if (!day.isPast) {
-              setSessionChooserDate(day.date);
-              setSessionChooserOpen(true);
+              navigate(getSessionRoute(sessionInfo.sessionId, sessionInfo.session_type));
+            } else if (dayFreeSessions.length === 1) {
+              navigate(getSessionRoute(dayFreeSessions[0].id, dayFreeSessions[0].session_type));
+            } else if (dayFreeSessions.length > 1) {
+              // Multi-session day — handled by stacked cards below; row click is a no-op
+            } else if (!day.isPast) {
+              setBuilderDate(day.date);
+              setBuilderOpen(true);
             }
           };
+
+          // Flattened list of all sessions for the day (used for multi-session stacked cards)
+          const allDaySessions: Array<{
+            id: string;
+            name: string;
+            meta: string;
+            isCompleted: boolean;
+            isAI: boolean;
+            sessionType?: string;
+          }> = [];
+          if (isSessionDay && sessionInfo) {
+            allDaySessions.push({
+              id: sessionInfo.sessionId,
+              name: sessionInfo.name,
+              meta: [
+                `${sessionInfo.exerciseCount} ex.`,
+                ...(sessionInfo.muscleGroups.slice(0, 2)),
+              ].join(' · '),
+              isCompleted: sessionCompleted,
+              isAI: false,
+              sessionType: sessionInfo.session_type,
+            });
+          }
+          dayFreeSessions.forEach(fs => {
+            allDaySessions.push({
+              id: fs.id,
+              name: fs.name,
+              meta: `${fs.exerciseCount} ex.`,
+              isCompleted: isSessionCompleted(fs.id),
+              isAI: true,
+              sessionType: fs.session_type,
+            });
+          });
+          const isMultiSession = allDaySessions.length > 1;
 
           // Pick what to show as session name/meta
           let sessionName: string | null = null;
@@ -1029,6 +1045,13 @@ const StudentWeek = () => {
             sessionName = fs.name;
             sessionMeta = `${fs.exerciseCount} ex.`;
             isAI = true;
+          }
+          // For multi-session days, the row stays compact (label + menu) and the
+          // session details live in the stacked cards below.
+          if (isMultiSession) {
+            sessionName = null;
+            sessionMeta = null;
+            isAI = false;
           }
 
           // Action menu (kept feature parity with previous version)
