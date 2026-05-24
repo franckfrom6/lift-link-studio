@@ -151,27 +151,116 @@ function ExerciseRow({
   showGroup,
   onChange,
   onDelete,
+  isPickerOpen,
+  onOpenPicker,
+  onClosePicker,
+  search,
+  setSearch,
+  searchFn,
+  lang,
 }: {
   exercise: InlineExercise;
   showGroup: boolean;
   onChange: (patch: Partial<InlineExercise>) => void;
   onDelete: () => void;
+  isPickerOpen: boolean;
+  onOpenPicker: () => void;
+  onClosePicker: () => void;
+  search: string;
+  setSearch: (s: string) => void;
+  searchFn: (q: string) => any[];
+  lang: string;
 }) {
   const [showDetails, setShowDetails] = useState(
     !!(exercise.suggested_weight || exercise.rpe_target || exercise.tempo || exercise.notes)
   );
-  const [localName, setLocalName] = useState(exercise.name);
 
   return (
     <div className="rounded-lg border border-border bg-card p-3 space-y-2">
       <div className="flex items-start gap-2">
-        <Input
-          value={localName}
-          onChange={(e) => setLocalName(e.target.value)}
-          onBlur={() => onChange({ name: localName })}
-          placeholder="Nom de l'exercice"
-          className="h-10 text-sm font-semibold flex-1"
-        />
+        <div className="flex-1 min-w-0">
+          {isPickerOpen ? (
+            <div className="space-y-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  autoFocus
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Rechercher un exercice…"
+                  className="pl-10 pr-9 h-10 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={onClosePicker}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                  aria-label="Fermer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              {search.length > 0 && (
+                <div className="rounded-lg border border-border bg-popover max-h-64 overflow-y-auto">
+                  {searchFn(search).slice(0, 8).map((result: any) => (
+                    <button
+                      key={result.id}
+                      type="button"
+                      onClick={() => {
+                        onChange({
+                          exercise_id: result.id,
+                          name: getExerciseName(result, lang),
+                          muscle_group: result.muscle_group,
+                        });
+                        onClosePicker();
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/40 text-left"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {getExerciseName(result, lang)}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {result.muscle_group} · {result.equipment}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                  {searchFn(search).length === 0 && (
+                    <p className="px-3 py-3 text-xs text-muted-foreground">
+                      Aucun résultat
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenPicker}
+              className="w-full flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-card hover:border-primary/40 text-left transition-colors"
+            >
+              {exercise.name ? (
+                <>
+                  <span className="text-sm font-semibold truncate flex-1 min-w-0">
+                    {exercise.name}
+                  </span>
+                  {exercise.muscle_group && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
+                      {exercise.muscle_group}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm text-muted-foreground">
+                    Choisir un exercice...
+                  </span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
         {showGroup && (
           <div className="flex gap-1">
             {GROUPS.map((g) => {
