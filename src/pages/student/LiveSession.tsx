@@ -1257,6 +1257,7 @@ const LiveSession = () => {
           <LinearRestTimer
             key={`global-${globalRestSeconds}-${activeExerciseKey}`}
             initialSeconds={globalRestSeconds}
+            storageKey={`rest_${activeExerciseKey}`}
             onComplete={() => setGlobalRestSeconds(null)}
           />
         </div>
