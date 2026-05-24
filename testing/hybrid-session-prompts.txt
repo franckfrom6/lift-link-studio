@@ -1,0 +1,1128 @@
+================================================================================
+F6GYM — HYBRID SESSIONS FEATURE PROMPTS
+Séances mixtes Cardio + Force (Hyrox, Hybrid Athlete, Conditioning)
+Ordre exact — copier-coller un prompt à la fois dans Lovable.
+Attendre la fin du déploiement avant d'envoyer le suivant.
+================================================================================
+
+ORDRE :
+  1. Prompt H1  — DB migration + TypeScript types + templates data
+  2. Prompt H2  — CardioBlockEditor + StrengthBlockEditor (composants coach)
+  3. Prompt H3  — HybridSessionBuilder + mise à jour SessionTypeChooser + StudentWeek
+  4. Prompt H4  — HybridLiveSession page + CardioBlockExecutor + MixedBlockExecutor
+  5. Prompt H5  — StrengthBlockExecutor + HybridSessionRecap + save en DB
+  6. Prompt H6  — Navigation calendrier + useWeekData + vue coach StudentDetail
+
+================================================================================
+PROMPT 1 / 6  —  H1 : DB migration + types TypeScript + données templates
+================================================================================
+
+Add the foundation for hybrid sessions (cardio + strength mixed workouts).
+Do NOT touch any existing files except to add the new migration.
+
+--- DATABASE MIGRATION ---
+
+Create a new Supabase migration with:
+
+-- 1. Extend sessions with hybrid type and blocks storage
+ALTER TABLE sessions
+  DROP CONSTRAINT IF EXISTS sessions_session_type_check;
+
+ALTER TABLE sessions
+  ADD COLUMN IF NOT EXISTS hybrid_blocks jsonb;
+
+ALTER TABLE sessions
+  ADD CONSTRAINT sessions_session_type_check
+    CHECK (session_type IN ('strength', 'running', 'hybrid'));
+
+-- 2. Extended fields on completed_sessions for post-session feedback
+ALTER TABLE completed_sessions
+  ADD COLUMN IF NOT EXISTS global_rpe integer CHECK (global_rpe BETWEEN 1 AND 10),
+  ADD COLUMN IF NOT EXISTS sensation_tag text CHECK (sensation_tag IN ('easy', 'solid', 'hard', 'cooked')),
+  ADD COLUMN IF NOT EXISTS notes_for_coach text;
+
+-- 3. Per-block execution log for hybrid sessions
+CREATE TABLE IF NOT EXISTS hybrid_block_executions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  completed_session_id uuid NOT NULL REFERENCES completed_sessions(id) ON DELETE CASCADE,
+  block_id text NOT NULL,
+  status text NOT NULL CHECK (status IN ('done', 'partial', 'skipped')),
+  skip_reason text,
+  log_data jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE hybrid_block_executions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Athletes manage their own block executions"
+  ON hybrid_block_executions FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM completed_sessions cs
+      WHERE cs.id = hybrid_block_executions.completed_session_id
+        AND cs.student_id = auth.uid()
+    )
+  );
+
+--- NEW FILE src/types/hybrid.ts ---
+
+Create this file with the following exact content:
+
+// ─── Cardio ──────────────────────────────────────────────────────────────────
+
+export type CardioModality =
+  | 'run' | 'trail' | 'row' | 'ski_erg' | 'bike' | 'assault' | 'walk' | 'other';
+
+export type CardioMode = 'distance' | 'time' | 'intervals';
+export type RecoveryType = 'active' | 'passive';
+export type IntentTag = 'ef' | 'seuil' | 'vma' | 'recup';
+
+export interface CardioInterval {
+  work_distance_m?: number;
+  work_duration_s?: number;
+  pace_s_per_km?: number;
+  zone?: 1 | 2 | 3 | 4 | 5;
+  recovery_type: RecoveryType;
+  recovery_duration_s: number;
+}
+
+export interface CardioSpec {
+  modality: CardioModality;
+  mode: CardioMode;
+  // Distance mode
+  target_distance_m?: number;
+  target_pace_s?: number;        // s/km (or s/500m for row)
+  pace_min_s?: number;
+  pace_max_s?: number;
+  // Time mode
+  target_duration_s?: number;
+  target_zone?: 1 | 2 | 3 | 4 | 5;
+  target_rpe?: number;
+  // Intervals mode
+  repeats?: number;
+  interval?: CardioInterval;
+  // Common
+  notes?: string;
+  intent_tag?: IntentTag;
+}
+
+// ─── Strength ─────────────────────────────────────────────────────────────────
+
+export type StrengthFormat =
+  | 'straight' | 'superset' | 'amrap' | 'emom' | 'for_time' | 'rounds';
+
+export interface InlineExercise {
+  id: string;
+  name: string;
+  sets: number;
+  reps_min: number;
+  reps_max: number;
+  tempo?: string;
+  rest_s?: number;
+  rpe_target?: number;
+  suggested_weight?: number;
+  notes?: string;
+  group?: 'A1' | 'A2' | 'A3' | 'B1' | 'B2'; // for supersets
+}
+
+export interface StrengthSpec {
+  format: StrengthFormat;
+  exercises: InlineExercise[];
+  duration_s?: number;       // AMRAP / EMOM
+  rounds?: number;           // Rounds for Reps
+  time_cap_s?: number;       // For Time / AMRAP / EMOM
+  scaling_notes?: string;
+  notes?: string;
+}
+
+// ─── Mixed block ─────────────────────────────────────────────────────────────
+
+export interface SubBlock {
+  id: string;
+  type: 'cardio' | 'strength';
+  label: string;
+  cardio?: CardioSpec;
+  exercise?: InlineExercise & { target_reps?: number; target_distance_m?: number };
+}
+
+// ─── Main block ───────────────────────────────────────────────────────────────
+
+export type HybridBlockType = 'cardio' | 'strength' | 'mixed' | 'warmup' | 'cooldown';
+
+export interface HybridBlock {
+  id: string;
+  type: HybridBlockType;
+  name?: string;
+  notes?: string;
+  cardio?: CardioSpec;       // type === 'cardio' | 'warmup' | 'cooldown'
+  strength?: StrengthSpec;   // type === 'strength'
+  sub_blocks?: SubBlock[];   // type === 'mixed'
+}
+
+// ─── Execution log ────────────────────────────────────────────────────────────
+
+export interface CardioBlockLog {
+  actual_duration_s?: number;
+  actual_distance_m?: number;
+  actual_rpe?: number;
+  note?: string;
+}
+
+export interface StrengthSetLog {
+  set_number: number;
+  weight?: number;
+  reps?: number;
+  done: boolean;
+}
+
+export interface MixedSubLog {
+  sub_block_id: string;
+  done: boolean;
+  actual_value?: number;
+  note?: string;
+}
+
+export interface BlockExecution {
+  block_id: string;
+  status: 'done' | 'partial' | 'skipped';
+  skip_reason?: string;
+  cardio_log?: CardioBlockLog;
+  strength_log?: StrengthSetLog[];
+  mixed_log?: MixedSubLog[];
+}
+
+export type SensationTag = 'easy' | 'solid' | 'hard' | 'cooked';
+
+// ─── Labels & display ─────────────────────────────────────────────────────────
+
+export const MODALITY_LABELS: Record<CardioModality, string> = {
+  run: '🏃 Course',
+  trail: '🏔️ Trail',
+  row: '🚣 Rameur',
+  ski_erg: '⛷️ Ski-erg',
+  bike: '🚴 Vélo',
+  assault: '🥊 Assault Bike',
+  walk: '🚶 Marche inclinée',
+  other: '⚡ Autre',
+};
+
+export const MODALITY_ICONS: Record<CardioModality, string> = {
+  run: '🏃', trail: '🏔️', row: '🚣', ski_erg: '⛷️',
+  bike: '🚴', assault: '🥊', walk: '🚶', other: '⚡',
+};
+
+export const FORMAT_LABELS: Record<StrengthFormat, string> = {
+  straight: 'Séries classiques',
+  superset: 'Superset / Tri-set',
+  amrap: 'AMRAP',
+  emom: 'EMOM',
+  for_time: 'For Time',
+  rounds: 'Rounds for Reps',
+};
+
+export const BLOCK_TYPE_LABELS: Record<HybridBlockType, string> = {
+  cardio: 'Cardio',
+  strength: 'Force',
+  mixed: 'Station mixte',
+  warmup: 'Échauffement',
+  cooldown: 'Retour au calme',
+};
+
+export const BLOCK_TYPE_ICONS: Record<HybridBlockType, string> = {
+  cardio: '🏃', strength: '💪', mixed: '🔥', warmup: '🌡️', cooldown: '🧊',
+};
+
+export const BLOCK_TYPE_COLORS: Record<HybridBlockType, string> = {
+  cardio:   'bg-sky-500/15 text-sky-600 border-sky-500/25',
+  strength: 'bg-violet-500/15 text-violet-600 border-violet-500/25',
+  mixed:    'bg-orange-500/15 text-orange-600 border-orange-500/25',
+  warmup:   'bg-yellow-500/15 text-yellow-600 border-yellow-500/25',
+  cooldown: 'bg-blue-400/15 text-blue-500 border-blue-400/25',
+};
+
+export const INTENT_LABELS: Record<IntentTag, string> = {
+  ef: 'Endurance fondamentale',
+  seuil: 'Seuil lactique',
+  vma: 'VMA / VO2max',
+  recup: 'Récupération active',
+};
+
+export const SENSATION_CONFIG: Record<SensationTag, { label: string; emoji: string }> = {
+  easy:   { label: 'Easy', emoji: '😎' },
+  solid:  { label: 'Solide', emoji: '💪' },
+  hard:   { label: 'Dur', emoji: '🥵' },
+  cooked: { label: 'À la masse', emoji: '🪦' },
+};
+
+export const RPE_LABELS: Record<number, string> = {
+  1: 'Repos absolu',
+  2: 'Très facile',
+  3: 'Facile',
+  4: 'Confortable',
+  5: 'Modéré',
+  6: 'Soutenu',
+  7: 'Soutenu mais soutenable',
+  8: 'Très difficile',
+  9: 'Extrême',
+  10: 'Max absolu',
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Format pace seconds/km as "mm:ss /km" */
+export function formatPace(s: number | null | undefined): string {
+  if (!s || s <= 0) return '—';
+  const m = Math.floor(s / 60);
+  const sec = Math.round(s % 60).toString().padStart(2, '0');
+  return `${m}:${sec} /km`;
+}
+
+/** Format seconds as "Xmin" or "mm:ss" */
+export function formatDuration(s: number | null | undefined): string {
+  if (!s || s <= 0) return '—';
+  const m = Math.floor(s / 60);
+  const sec = Math.round(s % 60);
+  if (sec === 0) return `${m} min`;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+/** Estimated total duration in seconds for a hybrid session */
+export function estimatedSessionDuration(blocks: HybridBlock[]): number {
+  return blocks.reduce((total, block) => {
+    if (block.cardio) {
+      if (block.cardio.mode === 'time') return total + (block.cardio.target_duration_s || 0);
+      if (block.cardio.mode === 'distance' && block.cardio.target_distance_m && block.cardio.target_pace_s)
+        return total + (block.cardio.target_distance_m / 1000) * block.cardio.target_pace_s;
+      if (block.cardio.mode === 'intervals' && block.cardio.repeats && block.cardio.interval) {
+        const work = block.cardio.interval.work_duration_s || 120;
+        const rec = block.cardio.interval.recovery_duration_s || 60;
+        return total + block.cardio.repeats * (work + rec);
+      }
+    }
+    if (block.strength) {
+      if (block.strength.duration_s) return total + block.strength.duration_s;
+      const setsPerEx = block.strength.exercises[0]?.sets || 3;
+      return total + setsPerEx * 60 * 1.5;
+    }
+    if (block.sub_blocks) return total + block.sub_blocks.length * 120;
+    return total;
+  }, 0);
+}
+
+/** One-line text summary of a block for display in lists */
+export function blockSummary(block: HybridBlock): string {
+  if (block.cardio) {
+    const { modality, mode } = block.cardio;
+    const icon = MODALITY_ICONS[modality];
+    if (mode === 'distance' && block.cardio.target_distance_m)
+      return `${icon} ${block.cardio.target_distance_m >= 1000 ? (block.cardio.target_distance_m / 1000).toFixed(1) + ' km' : block.cardio.target_distance_m + ' m'}`;
+    if (mode === 'time' && block.cardio.target_duration_s)
+      return `${icon} ${formatDuration(block.cardio.target_duration_s)}${block.cardio.target_zone ? ' Z' + block.cardio.target_zone : ''}`;
+    if (mode === 'intervals' && block.cardio.repeats)
+      return `${icon} ${block.cardio.repeats}×${block.cardio.interval?.work_distance_m ? block.cardio.interval.work_distance_m + 'm' : formatDuration(block.cardio.interval?.work_duration_s)}`;
+  }
+  if (block.strength) {
+    const ex = block.strength.exercises[0];
+    if (!ex) return FORMAT_LABELS[block.strength.format];
+    const label = ex.sets ? `${ex.sets}×${ex.reps_min === ex.reps_max ? ex.reps_min : ex.reps_min + '-' + ex.reps_max}` : '';
+    return `💪 ${label} ${ex.name}${block.strength.exercises.length > 1 ? ` +${block.strength.exercises.length - 1}` : ''}`;
+  }
+  if (block.sub_blocks) return `🔥 ${block.sub_blocks.length} mini-blocs`;
+  return BLOCK_TYPE_LABELS[block.type];
+}
+
+// ─── Templates ────────────────────────────────────────────────────────────────
+
+export interface HybridTemplate {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  estimated_min: number;
+  blocks: Omit<HybridBlock, 'id'>[];
+}
+
+const mkId = () => Math.random().toString(36).slice(2, 9);
+
+export const HYBRID_TEMPLATES: HybridTemplate[] = [
+  {
+    id: 'hyrox_short',
+    name: 'Hyrox Sim — Short',
+    description: '4 runs 1 km + 4 stations',
+    icon: '🏆',
+    estimated_min: 45,
+    blocks: [
+      { type: 'warmup', name: 'Échauffement', cardio: { modality: 'run', mode: 'time', target_duration_s: 600, target_zone: 1 } },
+      { type: 'cardio', name: 'Run 1', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000, target_rpe: 7 } },
+      { type: 'strength', name: 'Wall Balls', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Wall Ball', sets: 1, reps_min: 50, reps_max: 50, suggested_weight: 9 }] } },
+      { type: 'cardio', name: 'Run 2', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000, target_rpe: 7 } },
+      { type: 'strength', name: 'Burpees Broad Jumps', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Burpee Broad Jump', sets: 1, reps_min: 30, reps_max: 30 }] } },
+      { type: 'cardio', name: 'Run 3', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000, target_rpe: 7 } },
+      { type: 'strength', name: 'Farmers Carry', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Farmer Carry', sets: 1, reps_min: 200, reps_max: 200, suggested_weight: 24, notes: '200m total' }] } },
+      { type: 'cardio', name: 'Run 4', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000, target_rpe: 8 } },
+      { type: 'strength', name: 'Sled Push', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Sled Push', sets: 1, reps_min: 50, reps_max: 50, suggested_weight: 50, notes: '50m' }] } },
+      { type: 'cooldown', name: 'Retour au calme', cardio: { modality: 'walk', mode: 'time', target_duration_s: 300, target_zone: 1 } },
+    ],
+  },
+  {
+    id: 'hyrox_full',
+    name: 'Hyrox Sim — Full',
+    description: '8 runs 1 km + 8 stations officielles',
+    icon: '🥇',
+    estimated_min: 75,
+    blocks: [
+      { type: 'warmup', name: 'Échauffement', cardio: { modality: 'run', mode: 'time', target_duration_s: 600, target_zone: 1 } },
+      { type: 'cardio', name: 'Run 1', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000, target_rpe: 7 } },
+      { type: 'strength', name: 'SkiErg 1000m', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Ski-Erg', sets: 1, reps_min: 1000, reps_max: 1000, notes: '1000m' }] } },
+      { type: 'cardio', name: 'Run 2', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000, target_rpe: 7 } },
+      { type: 'strength', name: 'Sled Push 50m', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Sled Push', sets: 1, reps_min: 50, reps_max: 50, suggested_weight: 102, notes: '50m (102 kg H / 72 kg F)' }] } },
+      { type: 'cardio', name: 'Run 3', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000, target_rpe: 7 } },
+      { type: 'strength', name: 'Sled Pull 50m', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Sled Pull', sets: 1, reps_min: 50, reps_max: 50, suggested_weight: 102, notes: '50m' }] } },
+      { type: 'cardio', name: 'Run 4', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000, target_rpe: 7 } },
+      { type: 'strength', name: 'Burpees Broad Jumps', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Burpee Broad Jump', sets: 1, reps_min: 80, reps_max: 80 }] } },
+      { type: 'cardio', name: 'Run 5', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000, target_rpe: 8 } },
+      { type: 'strength', name: 'Rowing 1000m', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Rameur', sets: 1, reps_min: 1000, reps_max: 1000, notes: '1000m' }] } },
+      { type: 'cardio', name: 'Run 6', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000, target_rpe: 8 } },
+      { type: 'strength', name: 'Farmers Carry 200m', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Farmer Carry', sets: 1, reps_min: 200, reps_max: 200, suggested_weight: 24, notes: '200m' }] } },
+      { type: 'cardio', name: 'Run 7', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000, target_rpe: 8 } },
+      { type: 'strength', name: 'Sandbag Lunges 100m', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Sandbag Lunge', sets: 1, reps_min: 100, reps_max: 100, suggested_weight: 20, notes: '100m' }] } },
+      { type: 'cardio', name: 'Run 8', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000, target_rpe: 9 } },
+      { type: 'strength', name: 'Wall Balls 100 reps', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Wall Ball', sets: 1, reps_min: 100, reps_max: 100, suggested_weight: 9 }] } },
+    ],
+  },
+  {
+    id: 'endurance_strength',
+    name: 'Endurance + Force',
+    description: '30 min run Z2 + squat + accessoires',
+    icon: '🏋️',
+    estimated_min: 65,
+    blocks: [
+      { type: 'warmup', name: 'Échauffement mobilité', cardio: { modality: 'run', mode: 'time', target_duration_s: 600, target_zone: 1, intent_tag: 'ef' } },
+      { type: 'cardio', name: 'Footing EF 30min', cardio: { modality: 'run', mode: 'time', target_duration_s: 1800, target_zone: 2, intent_tag: 'ef', notes: 'Rythme conversationnel, pas de montre nécessaire' } },
+      { type: 'strength', name: 'Squat lourd', strength: { format: 'straight', exercises: [{ id: mkId(), name: 'Back Squat', sets: 4, reps_min: 5, reps_max: 6, rpe_target: 8, rest_s: 180 }] } },
+      { type: 'strength', name: 'Accessoires', strength: { format: 'superset', exercises: [
+        { id: mkId(), name: 'Romanian Deadlift', sets: 3, reps_min: 10, reps_max: 12, rest_s: 90, group: 'A1' },
+        { id: mkId(), name: 'Hip Thrust', sets: 3, reps_min: 12, reps_max: 15, rest_s: 90, group: 'A2' },
+      ] } },
+      { type: 'cooldown', name: 'Étirements 10min', cardio: { modality: 'walk', mode: 'time', target_duration_s: 600, target_zone: 1 } },
+    ],
+  },
+  {
+    id: 'emom_conditioning',
+    name: 'Conditioning EMOM 20',
+    description: 'EMOM 20 min alternant cardio et force',
+    icon: '⏱️',
+    estimated_min: 35,
+    blocks: [
+      { type: 'warmup', name: 'Activation 10min', cardio: { modality: 'run', mode: 'time', target_duration_s: 600, target_zone: 1 } },
+      {
+        type: 'mixed',
+        name: 'EMOM 20 min',
+        sub_blocks: [
+          { id: mkId(), type: 'cardio', label: 'Min impaires — Calorie Bike 12 cal', cardio: { modality: 'assault', mode: 'time', target_duration_s: 45, target_rpe: 8 } },
+          { id: mkId(), type: 'strength', label: 'Min paires — Kettlebell Swing 15 reps', exercise: { id: mkId(), name: 'Kettlebell Swing', sets: 1, reps_min: 15, reps_max: 15, suggested_weight: 24 } },
+        ],
+      },
+      { type: 'cooldown', name: 'Récup active', cardio: { modality: 'walk', mode: 'time', target_duration_s: 300, target_zone: 1 } },
+    ],
+  },
+  {
+    id: 'vma_core',
+    name: 'VMA + Core',
+    description: '8×400m récup 1min + circuit core 3 tours',
+    icon: '⚡',
+    estimated_min: 50,
+    blocks: [
+      { type: 'warmup', name: 'Échauffement 15min', cardio: { modality: 'run', mode: 'time', target_duration_s: 900, target_zone: 1, intent_tag: 'ef' } },
+      {
+        type: 'cardio',
+        name: '8 × 400m VMA',
+        cardio: {
+          modality: 'run', mode: 'intervals', repeats: 8,
+          interval: { work_distance_m: 400, zone: 5, recovery_type: 'active', recovery_duration_s: 60 },
+          intent_tag: 'vma', notes: 'Allure 5km, récup trot lent 1min',
+        },
+      },
+      {
+        type: 'strength',
+        name: 'Circuit Core × 3',
+        strength: {
+          format: 'rounds', rounds: 3,
+          exercises: [
+            { id: mkId(), name: 'Planche', sets: 3, reps_min: 45, reps_max: 60, notes: '45-60 sec' },
+            { id: mkId(), name: 'Crunch bicyclette', sets: 3, reps_min: 20, reps_max: 20 },
+            { id: mkId(), name: 'Dead Bug', sets: 3, reps_min: 10, reps_max: 10 },
+          ],
+        },
+      },
+      { type: 'cooldown', name: 'Retour au calme + étirements', cardio: { modality: 'walk', mode: 'time', target_duration_s: 600, target_zone: 1 } },
+    ],
+  },
+  {
+    id: 'recup_active',
+    name: 'Récupération active',
+    description: '40 min Z1 + mobilité 15 min',
+    icon: '🧊',
+    estimated_min: 55,
+    blocks: [
+      { type: 'cardio', name: 'Footing très facile 40min', cardio: { modality: 'run', mode: 'time', target_duration_s: 2400, target_zone: 1, intent_tag: 'recup', notes: 'Très facile, conversation possible, no watch' } },
+      {
+        type: 'strength',
+        name: 'Mobilité & relâchement',
+        strength: {
+          format: 'straight',
+          exercises: [
+            { id: mkId(), name: 'Hip flexor stretch', sets: 2, reps_min: 60, reps_max: 60, notes: '60 sec chaque côté' },
+            { id: mkId(), name: 'Pigeon pose', sets: 2, reps_min: 90, reps_max: 90, notes: '90 sec chaque côté' },
+            { id: mkId(), name: 'Cat-Cow', sets: 2, reps_min: 10, reps_max: 10 },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: 'test_hyrox',
+    name: 'Test Hyrox Benchmark',
+    description: 'Protocole standardisé pour se chronomètrer',
+    icon: '🔬',
+    estimated_min: 60,
+    blocks: [
+      { type: 'warmup', name: 'Échauffement protocole 15min', cardio: { modality: 'run', mode: 'time', target_duration_s: 900, target_zone: 1, notes: 'Inclure 3×20sec accélérations' } },
+      { type: 'cardio', name: 'Run 1 km', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000 } },
+      { type: 'strength', name: 'SkiErg 1000m', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Ski-Erg', sets: 1, reps_min: 1000, reps_max: 1000 }] } },
+      { type: 'cardio', name: 'Run 1 km', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000 } },
+      { type: 'strength', name: 'Sled Push 50m', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Sled Push', sets: 1, reps_min: 50, reps_max: 50, suggested_weight: 102 }] } },
+      { type: 'cardio', name: 'Run 1 km', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000 } },
+      { type: 'strength', name: 'Burpees Broad Jumps 30 reps', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Burpee Broad Jump', sets: 1, reps_min: 30, reps_max: 30 }] } },
+      { type: 'cardio', name: 'Run 1 km', cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000 } },
+      { type: 'strength', name: 'Rowing 500m', strength: { format: 'for_time', exercises: [{ id: mkId(), name: 'Rameur', sets: 1, reps_min: 500, reps_max: 500 }] } },
+    ],
+  },
+];
+
+--- END src/types/hybrid.ts ---
+
+Do not modify any existing file. Only create the migration and this types file.
+
+================================================================================
+PROMPT 2 / 6  —  H2 : CardioBlockEditor + StrengthBlockEditor
+================================================================================
+
+Create two form components used inside HybridSessionBuilder (next step).
+Do NOT wire them anywhere yet. Only create the component files.
+
+--- NEW FILE src/components/hybrid/CardioBlockEditor.tsx ---
+
+Props:
+  interface CardioBlockEditorProps {
+    value: CardioSpec;
+    onChange: (spec: CardioSpec) => void;
+  }
+
+Use types from `@/types/hybrid`.
+
+UI layout (compact, designed to sit inside a block card — no outer card wrapper):
+
+SECTION 1 — Modalité
+  Horizontal scrollable row of icon buttons, one per CardioModality.
+  Each button: rounded-lg border p-2.5 flex flex-col items-center gap-0.5 min-w-[60px]
+  Icon (text-xl) + label (text-[9px] font-medium truncate max-w-[52px] text-center)
+  Active state: border-primary bg-primary/10 text-primary
+  Inactive: border-border text-muted-foreground hover:border-primary/30
+
+SECTION 2 — Mode de prescription
+  Segmented control with 3 options: "Distance", "Temps", "Intervalles"
+  Use grid-cols-3 with buttons, same pattern as existing segmented controls in the app.
+
+SECTION 3 — Fields per mode:
+
+  MODE DISTANCE:
+    Row 1: Number input "Distance" (value in meters, display as km if ≥ 1000 else m) +
+           Text input "Allure cible" (format "mm:ss /km", convert to/from seconds internally)
+    Row 2 (optional toggle "Fourchette d'allure"):
+           Text inputs "Allure min" + "Allure max" (same format)
+
+  MODE TEMPS:
+    Row 1: Number input "Durée (min)" (convert to/from seconds internally)
+    Row 2: Either Zone picker (Z1–Z5 chips, single select) OR RPE slider 1-10
+           Toggle between "Zone" and "RPE" with two small chips
+    Optional: number input "FC cible (bpm)" — collapsed by default under "+ Détails"
+
+  MODE INTERVALLES:
+    Row 1: Number input "Répétitions" (integer)
+    Row 2: Toggle "par distance" / "par durée"
+           → distance: number input in meters
+           → durée: number input in minutes
+    Row 3: Zone picker Z1–Z5 (single select)
+    Row 4: Récupération — toggle "Active" / "Passive" + number input "Durée récup (min)"
+
+SECTION 4 — Notes coach (all modes)
+  Single textarea, rows=2, placeholder "Intention, consigne technique…"
+  Collapsed by default — revealed by "＋ Notes" toggle
+
+SECTION 5 — Tag d'intention (all modes, optional)
+  4 chips: "EF" / "Seuil" / "VMA" / "Récup"
+  Single select, shows in INTENT_LABELS from hybrid.ts
+
+All inputs: h-10 minimum height, text-sm. All tap targets ≥ 44px.
+Use only existing design tokens (bg-card, border-border, text-primary, etc.).
+
+--- NEW FILE src/components/hybrid/StrengthBlockEditor.tsx ---
+
+Props:
+  interface StrengthBlockEditorProps {
+    value: StrengthSpec;
+    onChange: (spec: StrengthSpec) => void;
+  }
+
+UI layout:
+
+SECTION 1 — Format
+  Horizontal scroll of format chips (6 options, use FORMAT_LABELS from hybrid.ts).
+  Active chip: bg-primary text-primary-foreground. Inactive: border border-border.
+
+SECTION 2 — Exercises list
+  For each exercise in value.exercises, show a compact card with:
+    - Name input (text-sm font-semibold, placeholder "Nom de l'exercice")
+    - For format === 'superset': a group selector A1/A2/A3 (small chip, top-right of card)
+    - Inline row: "Séries" integer input (w-14) + "Reps min" (w-14) + "–" + "Reps max" (w-14) +
+      "Repos (s)" (w-16)
+    - Optionally (collapsed under "＋ Détails" toggle):
+        Suggested weight input (kg) + RPE target (1-10) + Tempo (text) + Notes
+    - Delete button (trash icon, top-right)
+
+  At the bottom of the list:
+    Ghost button "＋ Ajouter un exercice"
+    → appends InlineExercise with id=crypto.randomUUID(), name='', sets=3, reps_min=8, reps_max=12
+
+SECTION 3 — Format-specific fields
+  Conditionally show based on selected format:
+  - amrap / emom: "Durée (min)" number input + optional "Time cap (min)" for AMRAP
+  - for_time: "Time cap (min)" input + "Notes scaling" textarea (2 rows)
+  - rounds: "Nombre de rounds" integer input
+  - straight / superset: no extra fields (rest is per exercise)
+
+SECTION 4 — Block notes
+  Single textarea "Notes générales" placeholder "Intention, scaling, consignes…"
+  Collapsed under "＋ Notes" toggle.
+
+All inputs: h-10, text-sm. Tap targets ≥ 44px.
+
+================================================================================
+PROMPT 3 / 6  —  H3 : HybridSessionBuilder + SessionTypeChooser + StudentWeek
+================================================================================
+
+Wire the hybrid session creation into the app using the components from H2.
+
+--- NEW FILE src/components/hybrid/HybridSessionBuilder.tsx ---
+
+Props:
+  interface HybridSessionBuilderProps {
+    open: boolean;
+    onClose: () => void;
+    date: Date;
+    onSave: (name: string, blocks: HybridBlock[]) => Promise<void>;
+  }
+
+This is a bottom sheet (h-[95dvh], rounded-t-2xl).
+
+STEP 1 — Template chooser:
+  Header: "Nouvelle séance hybride"
+  Input: session name (placeholder "ex. Hyrox Prep, Conditioning Lundi...")
+  Sub-header: "Partir d'un template"
+  Scrollable horizontal row of template cards (min-w-[200px] each, h-24):
+    - Emoji (text-3xl) + name (font-semibold text-sm) + description (text-xs text-muted-foreground)
+    - Click: pre-fills blocks with template.blocks (add ids via crypto.randomUUID())
+  Below: "ou commencer vide →" ghost button (skips to step 2 with empty blocks)
+  CTA: "Continuer →" primary button (disabled if name empty)
+
+STEP 2 — Block builder:
+  Sticky sub-header: session name (truncated) + "X blocs · ~Y min" (from estimatedSessionDuration)
+
+  Block list:
+    Each block is a card (bg-card border border-border rounded-xl mb-3):
+      CARD HEADER (always visible):
+        Row: block type icon + colored type badge (BLOCK_TYPE_COLORS) +
+             name input (text-sm font-semibold, editable inline) +
+             chevron expand/collapse + delete (trash icon)
+        Below header: one-line summary (blockSummary from hybrid.ts) when collapsed
+
+      CARD BODY (expanded):
+        If type === 'cardio' or 'warmup' or 'cooldown':
+          <CardioBlockEditor value={block.cardio!} onChange={...} />
+        If type === 'strength':
+          <StrengthBlockEditor value={block.strength!} onChange={...} />
+        If type === 'mixed':
+          <MixedBlockEditorInline sub_blocks={block.sub_blocks!} onChange={...} />
+
+  Below block list:
+    "＋ Ajouter un bloc" button → opens a mini bottom sheet:
+      5 options in a grid: Échauffement 🌡️ / Cardio 🏃 / Force 💪 / Station mixte 🔥 / Retour au calme 🧊
+      Each option adds a new block with sensible defaults and auto-expands it.
+      Default cardio: { modality: 'run', mode: 'distance', target_distance_m: 1000 }
+      Default strength: { format: 'straight', exercises: [] }
+      Default mixed: { sub_blocks: [] }
+
+  FOOTER (sticky bottom):
+    Left: duration estimate "~X min"
+    Right: "Enregistrer la séance" primary button
+    On save: call onSave(name, blocks), then onClose()
+
+--- MixedBlockEditorInline (inline inside HybridSessionBuilder, not a separate file) ---
+
+Show sub_blocks as a vertical list. Each row:
+  - Up/down arrows (swap order)
+  - Type emoji (cardio or strength)
+  - Editable label text input
+  - For cardio sub-blocks: compact distance/time input
+  - For strength sub-blocks: compact reps input
+  - Delete button
+
+"＋ Ajouter mini-bloc" ghost button → adds either cardio or strength sub-block (type picker).
+
+--- UPDATE src/components/student/SessionTypeChooser.tsx ---
+
+Add a third card "Hybride" to the existing two-card grid. Change grid-cols-2 to grid-cols-3.
+New card:
+  emoji: 🔥 (text-3xl)
+  title: "Hybride" (font-semibold text-sm)
+  subtitle: "Cardio · Force · Mixed" (text-xs text-muted-foreground)
+  onClick: onChooseHybrid(date)
+
+Update the props interface:
+  Add: onChooseHybrid: (date: Date) => void
+
+--- UPDATE src/pages/student/StudentWeek.tsx ---
+
+1. Import HybridSessionBuilder and add state:
+   const [hybridOpen, setHybridOpen] = useState(false);
+   const [hybridDate, setHybridDate] = useState<Date>(new Date());
+
+2. Pass the new prop to SessionTypeChooser:
+   onChooseHybrid={(d) => {
+     setSessionChooserOpen(false);
+     setHybridDate(d);
+     setHybridOpen(true);
+   }}
+
+3. Mount HybridSessionBuilder in JSX:
+   <HybridSessionBuilder
+     open={hybridOpen}
+     onClose={() => setHybridOpen(false)}
+     date={hybridDate}
+     onSave={async (name, blocks) => {
+       await supabase.from("sessions").insert({
+         name,
+         day_of_week: hybridDate.getDay() === 0 ? 7 : hybridDate.getDay(),
+         is_free_session: true,
+         created_by: user!.id,
+         free_session_date: formatLocalDate(hybridDate),
+         session_type: "hybrid",
+         hybrid_blocks: blocks,
+       });
+       queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+       queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
+     }}
+   />
+
+4. In handleClick, add hybrid routing (after the running branch):
+   navigate(
+     fs.session_type === "running"
+       ? `/student/run/${fs.id}`
+       : fs.session_type === "hybrid"
+       ? `/student/hybrid/${fs.id}`
+       : `/student/session/${fs.id}/preview`
+   );
+
+5. Update the multi-session picker sheet icon to show 🔥 for hybrid:
+   fs.session_type === "hybrid" ? "🔥" : fs.session_type === "running" ? "🏃" : "💪"
+
+6. Update useWeekData.ts: Add "hybrid" to session_type mapping (same pattern as running):
+   session_type: s.session_type || "strength",
+
+================================================================================
+PROMPT 4 / 6  —  H4 : HybridLiveSession + CardioBlockExecutor + MixedBlockExecutor
+================================================================================
+
+Create the athlete execution page and the cardio/mixed executors.
+Add the route. Do NOT yet implement the strength executor or recap screen (next step).
+
+--- NEW FILE src/components/hybrid/CardioBlockExecutor.tsx ---
+
+Props:
+  interface CardioBlockExecutorProps {
+    block: HybridBlock;
+    blockIndex: number;
+    totalBlocks: number;
+    onComplete: (log: CardioBlockLog) => void;
+    onSkip: (reason?: string) => void;
+  }
+
+PHASE A — "Ready to start":
+  Full-screen layout (no nav, white/dark bg):
+  TOP: block counter "Bloc X / Y" (muted, text-sm)
+  CENTER:
+    Modality icon (text-7xl emoji)
+    Block name (text-2xl font-bold)
+    Target summary line (text-lg text-muted-foreground):
+      e.g. "5,0 km @ 5:00 /km" or "20 min Z2" or "8 × 400m récup 1min"
+    Notes (if any): italic text-sm text-muted-foreground, limited to 2 lines
+  BOTTOM:
+    Primary button h-16 w-full "▶ DÉMARRER" (starts chrono)
+    Ghost link "Saisir directement →" (skips to Phase C)
+
+PHASE B — Chrono active:
+  TOP BAR: Block name + block counter
+  CENTER:
+    Large chrono display: MM:SS (text-[72px] font-bold tabular-nums text-primary)
+    Below: target reminder line (text-sm text-muted-foreground)
+  BOTTOM:
+    Row: [Pause / Resume] large icon button + [Stop ⏹] icon button
+    Ghost below: "Passer ce bloc →" (opens skip reason input)
+
+PHASE C — Log entry (shown after Stop or "Saisir directement"):
+  Form with:
+    "Temps réalisé (min:sec)" — text input pre-filled if chrono was used
+    "Distance réalisée (km)" — number input, pre-filled with target if known
+    "RPE ressenti" — horizontal slider 1-10 with label from RPE_LABELS below
+    "Note (optionnel)" — single-line text input
+  Primary button "Valider et continuer →" (h-14 w-full)
+
+Skip flow: shows a short textarea "Motif du passage (optionnel)" + "Confirmer" button.
+
+All text: readable in bright light (high contrast). No decorative elements.
+Font sizes: target summary ≥ 18px, chrono ≥ 60px on mobile.
+
+--- NEW FILE src/components/hybrid/MixedBlockExecutor.tsx ---
+
+Props:
+  interface MixedBlockExecutorProps {
+    block: HybridBlock;
+    blockIndex: number;
+    totalBlocks: number;
+    onComplete: (log: MixedSubLog[]) => void;
+    onSkip: (reason?: string) => void;
+  }
+
+Layout:
+  TOP BAR (sticky): Block name + "Bloc X/Y" + global block chrono (MM:SS, auto-running from mount)
+  CENTER: Vertical list of sub_blocks, each as a tappable row:
+    [ checkbox ] [ emoji ] [ label ] [ inline value input ] [ done check ]
+    - Checkbox: tap to toggle done (green fill when done)
+    - Emoji: type icon (🏃 for cardio, 💪 for strength)
+    - Label: sub-block label text
+    - Inline input: small number input for actual value (reps or distance m) pre-filled with target
+    - Done state: row fades to 70% opacity when checked
+
+  BOTTOM (fixed): "Valider le bloc →" primary button (h-14 w-full)
+    → calls onComplete with the log of each sub-block (done state + actual value)
+
+  Skip: same pattern as CardioBlockExecutor (ghost "Passer ce bloc")
+
+--- NEW FILE src/pages/student/HybridLiveSession.tsx ---
+
+Route params: sessionId
+
+DATA FETCH: On mount, fetch:
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, name, hybrid_blocks, session_type")
+    .eq("id", sessionId)
+    .single();
+  const blocks: HybridBlock[] = session.hybrid_blocks || [];
+
+STATES:
+  phase: "overview" | "executing" | "done"
+  activeBlockIdx: number (starts at 0)
+  blockExecutions: BlockExecution[] (accumulates as blocks are completed)
+  sessionStartTime: number (Date.now() on phase change to "executing")
+  elapsed: number (auto-increments when phase === "executing")
+
+PHASE "overview" — Session summary page:
+  Header: back button + session name
+  Body:
+    - Date (formatted) + estimated duration from estimatedSessionDuration
+    - Equipment list: unique modalities + exercise names (first 5, then "+ X autres")
+    - Block list: for each block, a colored pill row showing:
+        BLOCK_TYPE_ICONS + colored badge (BLOCK_TYPE_COLORS) + blockSummary(block)
+  Footer: "Démarrer la séance ▶" primary button h-16
+
+PHASE "executing":
+  Render based on active block type:
+    - type === 'cardio' or 'warmup' or 'cooldown':
+        <CardioBlockExecutor
+          block={blocks[activeBlockIdx]}
+          blockIndex={activeBlockIdx}
+          totalBlocks={blocks.length}
+          onComplete={(log) => {
+            setBlockExecutions(prev => [...prev, { block_id: blocks[activeBlockIdx].id, status: 'done', cardio_log: log }]);
+            if (activeBlockIdx === blocks.length - 1) setPhase("done");
+            else setActiveBlockIdx(i => i + 1);
+          }}
+          onSkip={(reason) => {
+            setBlockExecutions(prev => [...prev, { block_id: blocks[activeBlockIdx].id, status: 'skipped', skip_reason: reason }]);
+            if (activeBlockIdx === blocks.length - 1) setPhase("done");
+            else setActiveBlockIdx(i => i + 1);
+          }}
+        />
+    - type === 'strength':
+        // Placeholder for next step — show a simple "bloc force" screen
+        // with a "Terminer ce bloc →" button (no inline exercise logging yet)
+        <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-8">
+          <span className="text-6xl">💪</span>
+          <h2 className="text-2xl font-bold text-center">{blocks[activeBlockIdx].name || "Bloc Force"}</h2>
+          <p className="text-sm text-muted-foreground text-center">{blockSummary(blocks[activeBlockIdx])}</p>
+          <Button className="w-full h-14" onClick={() => { /* same completion logic as cardio */ }}>Bloc terminé →</Button>
+        </div>
+    - type === 'mixed':
+        <MixedBlockExecutor ... />
+
+ELAPSED TIMER: useEffect that runs setInterval while phase === "executing", same anchor pattern as LiveSession (Date.now() - sessionStartTime).
+
+--- UPDATE src/App.tsx ---
+
+Add this route alongside the other student routes:
+  import HybridLiveSession from "@/pages/student/HybridLiveSession";
+
+  <Route path="/student/hybrid/:sessionId" element={
+    <AuthGuard role="student">
+      <HybridLiveSession />
+    </AuthGuard>
+  } />
+
+================================================================================
+PROMPT 5 / 6  —  H5 : StrengthBlockExecutor + HybridSessionRecap + save DB
+================================================================================
+
+Complete the execution flow: add the strength executor, the recap screen, and saving.
+
+--- NEW FILE src/components/hybrid/StrengthBlockExecutor.tsx ---
+
+Props:
+  interface StrengthBlockExecutorProps {
+    block: HybridBlock;
+    blockIndex: number;
+    totalBlocks: number;
+    onComplete: (log: StrengthSetLog[]) => void;
+    onSkip: (reason?: string) => void;
+  }
+
+For AMRAP / EMOM / For Time blocks:
+  Show a countdown timer (time_cap_s or duration_s) at the top.
+  Below: exercise names + prescribed reps as read-only info (no per-set logging).
+  On timer end OR "Terminé" button: prompt for "Rounds réalisés" or "Reps totales" + RPE.
+  Log: [{ set_number: 1, reps: X, done: true }]
+
+For Straight / Superset / Rounds blocks:
+  Display exercise list with set tracking, one exercise at a time (or all visible if superset).
+  Each exercise shows its sets as rows: [Set N] [Weight input] [Reps input] [✓ Validate]
+  Similar to the existing EnhancedExerciseCard but simpler (no timer, no rest timer inline).
+  "Rest" between sets: show a compact LinearRestTimer (import existing component) after each validated set.
+  After last set of last exercise: "Bloc terminé →" button.
+
+Top bar: block name + block counter + "Passer →" ghost.
+
+--- NEW FILE src/components/hybrid/HybridSessionRecap.tsx ---
+
+Props:
+  interface HybridSessionRecapProps {
+    session: { id: string; name: string; hybrid_blocks: HybridBlock[] };
+    blockExecutions: BlockExecution[];
+    elapsedSeconds: number;
+    onSave: (globalRpe: number | null, sensation: SensationTag | null, notes: string) => Promise<void>;
+  }
+
+Layout (full-screen scroll):
+
+HEADER: "Séance terminée 🎉" (text-2xl font-bold) + confetti via canvas-confetti on mount.
+
+STATS ROW: 3 stat chips:
+  - Chrono total (formatDuration from hybrid.ts)
+  - Blocs réalisés: N / total (done or partial vs skipped)
+  - RPE moyen (moyenne des logs cardio)
+
+BLOC TABLE (compact):
+  For each block: one row showing
+    Left: icon + name (truncated) + badge "✓" or "⏭ Skip"
+    Right: one-line actual result (e.g. "4.8 km · RPE 7" or "4×8 squat 80kg" or "Passé")
+
+FEEDBACK SECTION:
+  "Comment s'est passée cette séance ?"
+
+  RPE global (1-10) — horizontal row of 10 numbered chips, single select
+
+  Sensation — 4 large tappable cards in a 2×2 grid (h-20 each):
+    😎 Easy / 💪 Solide / 🥵 Dur / 🪦 À la masse
+    Selected: border-2 border-primary bg-primary/10
+    Use SENSATION_CONFIG from hybrid.ts for labels + emojis
+
+  Notes pour le coach (textarea, rows=3, placeholder "Ressenti, douleurs, contexte…")
+
+FOOTER (sticky):
+  "Valider la séance" primary button h-14 (calls onSave, then navigates to /student)
+
+--- UPDATE src/pages/student/HybridLiveSession.tsx ---
+
+Replace the placeholder strength block with:
+  <StrengthBlockExecutor
+    block={blocks[activeBlockIdx]}
+    blockIndex={activeBlockIdx}
+    totalBlocks={blocks.length}
+    onComplete={(log) => {
+      setBlockExecutions(prev => [...prev, { block_id: blocks[activeBlockIdx].id, status: 'done', strength_log: log }]);
+      if (activeBlockIdx === blocks.length - 1) setPhase("done");
+      else setActiveBlockIdx(i => i + 1);
+    }}
+    onSkip={...} // same pattern
+  />
+
+Replace PHASE "done" with:
+  <HybridSessionRecap
+    session={session}
+    blockExecutions={blockExecutions}
+    elapsedSeconds={elapsed}
+    onSave={async (globalRpe, sensation, notes) => {
+      try {
+        // 1. Create completed_session
+        const { data: cs, error: csErr } = await supabase
+          .from("completed_sessions")
+          .insert({
+            student_id: user!.id,
+            session_id: sessionId,
+            started_at: new Date(sessionStartTime).toISOString(),
+            completed_at: new Date().toISOString(),
+            duration: elapsed,
+            global_rpe: globalRpe,
+            sensation_tag: sensation,
+            notes_for_coach: notes || null,
+          })
+          .select("id")
+          .single();
+        if (csErr) throw csErr;
+
+        // 2. Save per-block executions
+        if (blockExecutions.length > 0) {
+          await supabase.from("hybrid_block_executions").insert(
+            blockExecutions.map(be => ({
+              completed_session_id: cs.id,
+              block_id: be.block_id,
+              status: be.status,
+              skip_reason: be.skip_reason || null,
+              log_data: {
+                cardio_log: be.cardio_log,
+                strength_log: be.strength_log,
+                mixed_log: be.mixed_log,
+              },
+            }))
+          );
+        }
+
+        toast.success("Séance enregistrée !");
+        navigate("/student");
+      } catch {
+        toast.error("Erreur lors de l'enregistrement");
+      }
+    }}
+  />
+
+Also add confetti import: import confetti from "canvas-confetti";
+
+================================================================================
+PROMPT 6 / 6  —  H6 : Navigation calendrier + useWeekData + vue coach
+================================================================================
+
+Final wiring: calendar display, navigation routing, and coach visibility.
+
+--- CHANGE 1 : src/hooks/useWeekData.ts ---
+
+Ensure hybrid sessions appear in the calendar with the right icon and navigation.
+In the FreeSession interface, `session_type` should already exist from the running prompts.
+If it does not, add: session_type: string;
+
+In the free sessions query, ensure:
+  .select("id, name, free_session_date, session_type, session_exercises(id, is_archived)")
+
+In the mapping, ensure session_type is returned:
+  session_type: s.session_type || "strength",
+
+--- CHANGE 2 : src/pages/student/StudentWeek.tsx — calendar day row ---
+
+In the JSX that renders each day row, when displaying the session dot/badge for a free session,
+show 🔥 for hybrid:
+
+  const freeSessionIcon = (fs: FreeSession) =>
+    fs.session_type === "hybrid" ? "🔥" :
+    fs.session_type === "running" ? "🏃" : "💪";
+
+In the extras section (secondary session pills below the day row), display:
+  {fs.session_type === "hybrid"
+    ? "🔥 Hybride"
+    : fs.session_type === "running"
+    ? "🏃 Course"
+    : `${fs.exerciseCount} ex.`}
+
+--- CHANGE 3 : src/pages/coach/StudentDetail.tsx — Hybrid session visibility ---
+
+In the student detail page (for the coach), in the section that lists recent or upcoming
+sessions for the student, add a case for hybrid sessions.
+
+If free sessions are displayed in a list on this page, show hybrid sessions with:
+  - Icon 🔥 badge (orange, matching BLOCK_TYPE_COLORS['mixed'])
+  - Session name
+  - If the session has been completed: show the sensation_tag emoji and global_rpe from
+    the associated completed_session record
+  - If a block was skipped: show a small "⚠️ X bloc(s) sautés" warning chip
+
+To fetch completed hybrid sessions for a student on StudentDetail, add a query:
+  const { data: hybridExecutions } = useQuery({
+    queryKey: ["hybrid-executions", studentId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("completed_sessions")
+        .select(`
+          id, completed_at, duration, global_rpe, sensation_tag, notes_for_coach,
+          session:sessions!inner(name, session_type, hybrid_blocks),
+          block_executions:hybrid_block_executions(block_id, status, skip_reason, log_data)
+        `)
+        .eq("student_id", studentId!)
+        .eq("session.session_type", "hybrid")
+        .order("completed_at", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+    enabled: !!studentId,
+  });
+
+Render these as compact cards in a "Séances hybrides récentes" section on StudentDetail,
+below the existing program section. Each card:
+  - Date (formatted) + Session name + Duration
+  - Sensation emoji (from SENSATION_CONFIG) + "RPE global: X"
+  - If skipped blocks exist: orange "⚠️ N bloc(s) passés" chip
+  - notes_for_coach (if any): quote block in muted italic text
+
+If hybridExecutions is empty, show nothing (no empty state needed on this page).
+
+--- CHANGE 4 : App.tsx route already added in H4 — verify it is present ---
+
+Confirm the route `/student/hybrid/:sessionId` exists in App.tsx with AuthGuard role="student".
+If it is missing (Lovable didn't apply it in step H4), add it now:
+
+  import HybridLiveSession from "@/pages/student/HybridLiveSession";
+  // Inside the student Routes:
+  <Route path="/student/hybrid/:sessionId" element={
+    <AuthGuard role="student">
+      <HybridLiveSession />
+    </AuthGuard>
+  } />
+
+================================================================================
+FIN DU FICHIER — 6 PROMPTS — À ENVOYER UN PAR UN DANS LOVABLE
+Attendre la fin du déploiement de chaque prompt avant d'envoyer le suivant.
+
+Ordre récapitulatif :
+  H1 → Types + DB (foundation, rien de visible)
+  H2 → CardioBlockEditor + StrengthBlockEditor (composants seuls)
+  H3 → HybridSessionBuilder + SessionTypeChooser + StudentWeek (création visible)
+  H4 → HybridLiveSession + CardioBlockExecutor + MixedBlockExecutor (exécution cardio/mixed)
+  H5 → StrengthBlockExecutor + Recap + save (exécution force + fin de séance)
+  H6 → Calendrier + navigation + coach view (intégration finale)
+================================================================================
