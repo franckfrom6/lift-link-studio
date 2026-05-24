@@ -393,6 +393,27 @@ const LiveSession = () => {
     return () => clearInterval(interval);
   }, [startTime, sessionDone]);
 
+  // Snapshot active exercise when backgrounded + BFCache elapsed re-sync
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && activeExerciseKey) {
+        localStorage.setItem(LS_ACTIVE_KEY, activeExerciseKey);
+      }
+    };
+    const onPageShow = (e: PageTransitionEvent) => {
+      // BFCache restore — re-sync elapsed without waiting for next interval tick
+      if (e.persisted) {
+        setElapsed(Math.floor((Date.now() - startTime) / 1000));
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pageshow", onPageShow as EventListener);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pageshow", onPageShow as EventListener);
+    };
+  }, [activeExerciseKey, startTime, LS_ACTIVE_KEY]);
+
   // Hydrate or create completed_session at mount.
   // - If an in-progress completed_session already exists for (student, session),
   //   reuse it and rehydrate completedSets + skippedExercises from DB.
