@@ -888,16 +888,23 @@ const LiveSession = () => {
     ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
 
-  // Loading — only show spinner if no cached data exists yet.
-  // With persisted query cache, cached programSession renders instantly
-  // while a silent background re-fetch happens.
-  if ((programLoading || freeSessionLoading) && !programSession && !freeSession) {
+  if (programLoading || freeSessionLoading || !selectedSession) {
     return (
-      <div className="min-h-[100dvh] bg-background flex items-center justify-center">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Clock className="w-4 h-4 animate-spin" />
-          <span className="text-sm">{t('common:loading')}</span>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="text-center space-y-1">
+          <p className="font-semibold text-sm">Reprise de séance…</p>
+          <p className="text-xs text-muted-foreground">Chargement de ta progression</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Synchronisation…</p>
       </div>
     );
   }
