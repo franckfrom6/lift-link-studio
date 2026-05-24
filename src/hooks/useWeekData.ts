@@ -11,7 +11,7 @@ interface FreeSession {
   id: string;
   name: string;
   date: string;
-  session_type: string;
+  session_type?: string;
   exerciseCount: number;
 }
 
@@ -48,7 +48,7 @@ export function useWeekData(studentId: string | null, weekStart: Date) {
         id: s.id,
         name: s.name,
         date: s.free_session_date,
-        session_type: s.session_type || "strength",
+        session_type: s.session_type ?? undefined,
         exerciseCount: (s.session_exercises || []).filter((e: any) => !e.is_archived).length,
       })) as FreeSession[];
     },
