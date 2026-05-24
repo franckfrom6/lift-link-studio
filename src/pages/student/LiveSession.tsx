@@ -414,6 +414,18 @@ const LiveSession = () => {
     };
   }, [activeExerciseKey, startTime, LS_ACTIVE_KEY]);
 
+  // Scroll to the last active exercise once hydration is complete
+  useEffect(() => {
+    if (!hydrated) return;
+    const savedKey = localStorage.getItem(LS_ACTIVE_KEY);
+    if (!savedKey || savedKey === "0-0") return;
+    // Small delay to let the DOM render
+    setTimeout(() => {
+      const el = document.querySelector(`[data-exercise-key="${savedKey}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+  }, [hydrated, LS_ACTIVE_KEY]);
+
   // Hydrate or create completed_session at mount.
   // - If an in-progress completed_session already exists for (student, session),
   //   reuse it and rehydrate completedSets + skippedExercises from DB.
