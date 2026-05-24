@@ -84,13 +84,15 @@ const LiveSession = () => {
     return saved ? parseInt(saved, 10) : Date.now();
   });
   const [elapsed, setElapsed] = useState(0);
-  const [activeExerciseKey, setActiveExerciseKeyState] = useState<string>(
-    () => _backup?.activeExerciseKey ?? localStorage.getItem("ls_active_key") ?? "0-0"
-  );
-  const setActiveExerciseKey = useCallback((key: string) => {
-    try { localStorage.setItem("ls_active_key", key); } catch {}
+  const LS_ACTIVE_KEY = `ls_active_${selectedSessionId}`;
+  const [activeExerciseKey, setActiveExerciseKeyState] = useState<string>(() => {
+    if (!selectedSessionId) return "0-0";
+    return localStorage.getItem(LS_ACTIVE_KEY) ?? "0-0";
+  });
+  const setActiveExercise = useCallback((key: string) => {
+    localStorage.setItem(LS_ACTIVE_KEY, key);
     setActiveExerciseKeyState(key);
-  }, []);
+  }, [LS_ACTIVE_KEY]);
   const [globalRestSeconds, setGlobalRestSeconds] = useState<number | null>(() => {
     if (!_backup?.restEndTime) return null;
     const remaining = Math.ceil((_backup.restEndTime - Date.now()) / 1000);
@@ -208,10 +210,10 @@ const LiveSession = () => {
     return () => {
       try {
         localStorage.removeItem("ls_start_time");
-        localStorage.removeItem("ls_active_key");
+        localStorage.removeItem(LS_ACTIVE_KEY);
       } catch {}
     };
-  }, [startTime]);
+  }, [startTime, LS_ACTIVE_KEY]);
 
   // Snapshot critical state when the app is backgrounded (iOS eviction).
   useEffect(() => {
@@ -220,14 +222,14 @@ const LiveSession = () => {
         try {
           localStorage.setItem("ls_start_time", String(startTime));
           if (activeExerciseKey) {
-            localStorage.setItem("ls_active_key", activeExerciseKey);
+            localStorage.setItem(LS_ACTIVE_KEY, activeExerciseKey);
           }
         } catch {}
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [startTime, activeExerciseKey]);
+  }, [startTime, activeExerciseKey, LS_ACTIVE_KEY]);
 
   const programSession = useMemo(() => {
     const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
@@ -489,7 +491,7 @@ const LiveSession = () => {
                 const setsForKey = grouped[k] || [];
                 const allDone = setsForKey.length > 0 && setsForKey.every(s => s.reps > 0 || (s.durationSeconds || 0) > 0);
                 if (!allDone) {
-                  setActiveExerciseKey(k);
+                  setActiveExercise(k);
                   break outer;
                 }
               }
@@ -617,7 +619,7 @@ const LiveSession = () => {
     await saveSetsForExercise(key);
     const nextKey = getNextExerciseKey(key);
     if (nextKey) {
-      setActiveExerciseKey(nextKey);
+      setActiveExercise(nextKey);
       setTimeout(() => {
         document.querySelector(`[data-exercise-key="${nextKey}"]`)
           ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -635,6 +637,7 @@ const LiveSession = () => {
   const finishSession = async () => {
     setFinishError(false);
     if (!completedSessionId) {
+      localStorage.removeItem(LS_ACTIVE_KEY);
       setSessionDone(true);
       return;
     }
@@ -655,11 +658,12 @@ const LiveSession = () => {
       if (error) throw error;
 
       // Success — show celebration
+      localStorage.removeItem(LS_ACTIVE_KEY);
       setSessionDone(true);
       try { localStorage.removeItem('live_session_backup'); } catch {}
       try {
         localStorage.removeItem("ls_start_time");
-        localStorage.removeItem("ls_active_key");
+        localStorage.removeItem(LS_ACTIVE_KEY);
       } catch {}
       try {
         confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"] });
@@ -689,7 +693,7 @@ const LiveSession = () => {
     setSkippedExercises(prev => new Set(prev).add(skipTargetKey));
     setSkipModalOpen(false);
     const nextKey = getNextExerciseKey(skipTargetKey);
-    if (nextKey) setActiveExerciseKey(nextKey);
+    if (nextKey) setActiveExercise(nextKey);
     setSkipTargetKey(null);
   };
 
@@ -1053,8 +1057,8 @@ const LiveSession = () => {
                       data-exercise-key={key}
                       role={!isActive && !isSkipped ? "button" : undefined}
                       tabIndex={!isActive && !isSkipped ? 0 : undefined}
-                      onClick={() => !isActive && !isSkipped && setActiveExerciseKey(key)}
-                      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isActive && !isSkipped) { e.preventDefault(); setActiveExerciseKey(key); } }}
+                      onClick={() => !isActive && !isSkipped && setActiveExercise(key)}
+                      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isActive && !isSkipped) { e.preventDefault(); setActiveExercise(key); } }}
                       className={cn(!isActive && !isSkipped && "cursor-pointer")}
                     >
                       <EnhancedExerciseCard
@@ -1086,7 +1090,7 @@ const LiveSession = () => {
                         trackingType={(trackingTypeMap[key] as any) || "weight_reps"}
                         sessionExerciseId={sessionExerciseIdMap[key]}
                         completedSessionId={completedSessionId || undefined}
-                        onActivate={() => setActiveExerciseKey(key)}
+                        onActivate={() => setActiveExercise(key)}
                         previousSets={
                           previousPerformance && sessionExerciseIdMap[key]
                             ? previousPerformance
