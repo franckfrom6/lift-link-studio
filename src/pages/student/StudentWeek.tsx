@@ -700,42 +700,20 @@ const StudentWeek = () => {
   const handleJoinCoach = async (code: string) => {
     if (!user) return;
     const upper = code.toUpperCase();
-    const { data: tokenData } = await supabase
-      .from("coach_invite_tokens")
-      .select("id, coach_id, token, uses_count, max_uses, expires_at")
-      .eq("token", upper)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (!tokenData) { toast.error(t('auth:token_invalid', "Code invalide ou expiré")); return; }
-    if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) { toast.error(t('auth:token_invalid')); return; }
-    if (tokenData.max_uses !== null && tokenData.uses_count >= tokenData.max_uses) { toast.error(t('auth:token_invalid')); return; }
-
-    const { data: existing } = await supabase
-      .from("coach_students")
-      .select("id")
-      .eq("coach_id", tokenData.coach_id)
-      .eq("student_id", user.id)
-      .eq("status", "active")
-      .maybeSingle();
-
-    if (existing) { toast.info(t('auth:token_join_already')); return; }
-
-    const { error } = await supabase.from("coach_students").insert({
-      coach_id: tokenData.coach_id,
-      student_id: user.id,
-      status: "active",
-    });
-
-    if (error) { toast.error(t('auth:error_generic')); return; }
-
-    await supabase
-      .from("coach_invite_tokens")
-      .update({ uses_count: tokenData.uses_count + 1 })
-      .eq("id", tokenData.id);
-
-    toast.success(t('auth:token_join_success'));
-    window.location.reload();
+    const { data, error } = await supabase.rpc("redeem_coach_invite_token", { _token: upper });
+    const status = (data as any)?.status;
+    if (error || !status || status === "invalid" || status === "expired" || status === "maxed") {
+      toast.error(t('auth:token_invalid', "Code invalide ou expiré"));
+      return;
+    }
+    if (status === "already_linked") {
+      toast.info(t('auth:token_join_already'));
+      return;
+    }
+    if (status === "success") {
+      toast.success(t('auth:token_join_success'));
+      window.location.reload();
+    }
   };
 
   const weekLabel =
