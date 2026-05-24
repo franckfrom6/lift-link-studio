@@ -78,7 +78,7 @@ const LiveSession = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [finishError, setFinishError] = useState(false);
-  const [startTime] = useState<number>(() => {
+  const [startTime, setStartTime] = useState<number>(() => {
     if (_backup?.startTime) return _backup.startTime;
     const saved = localStorage.getItem("ls_start_time");
     return saved ? parseInt(saved, 10) : Date.now();
@@ -415,6 +415,11 @@ const LiveSession = () => {
         if (lookupError) throw lookupError;
 
         let csId = existing?.id;
+
+        // Use the DB record's started_at as the real timer anchor
+        if (existing?.started_at) {
+          setStartTime(new Date(existing.started_at).getTime());
+        }
 
         if (!csId) {
           // 2a. No in-progress session — create one
