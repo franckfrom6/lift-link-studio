@@ -325,7 +325,7 @@ export default function HybridLiveSession() {
                   cardio_log: be.cardio_log,
                   strength_log: be.strength_log,
                   mixed_log: be.mixed_log,
-                },
+                } as any,
               })),
             );
           }
