@@ -1,7 +1,3 @@
-> ⚠️ **OBSOLÈTE** — Le login magic link a été abandonné. Les comptes de test utilisent désormais email + password classique. Les credentials sont dans `.env.test` (non commité) et le pattern live est dans `playwright-conventions.md`. Ce document est conservé pour mémoire uniquement.
-
----
-
 # Roadmap — Automatisation du login magic link
 
 ## État actuel (v0)

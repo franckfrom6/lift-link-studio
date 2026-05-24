@@ -1,132 +1,171 @@
 ---
 name: e2e-test-runner
-description: Generate, execute, and report on end-to-end tests for the coaching app using Playwright. Use this skill whenever the user wants to test a user flow, validate a feature, run E2E tests, check that something works after a change, verify a parcours utilisateur, test a parcours coach or athlete, or generate a bug report after testing. Trigger this skill for any request involving "teste", "test E2E", "vérifie le parcours", "lance un scénario", "valide cette feature", "QA", or whenever a user describes a flow they want exercised against the running app. Also use proactively after major changes to suggest a test run.
+description: Generate, execute, and report on end-to-end tests for the coaching app using Playwright. Use this skill whenever the user wants to test a user flow, validate a feature, run E2E tests, check that something works after a change, verify a parcours utilisateur, test a parcours coach or athlete, run a test script, exercise a test section, or generate a bug report after testing. Trigger this skill for any request involving "teste", "test E2E", "vérifie le parcours", "lance un scénario", "valide cette feature", "QA", "déroule la section X du script", "exécute le cahier de test", or whenever a user describes a flow they want exercised against the running app. Also use proactively after major changes to suggest a test run.
 ---
 
 # E2E Test Runner — Coaching App
 
-Generates Playwright tests targeted at specific user flows, runs them against the live app at `https://fit.from6agency.com/`, and produces a structured report ready to be consumed for Lovable prompt generation.
+Generates Playwright tests targeted at user flows, runs them against `https://fit.from6agency.com/`, and produces structured reports consumable for downstream Lovable prompt generation.
+
+Supports two operating modes:
+
+- **Mode A — Ad-hoc scenario** : user describes a flow in natural language → skill produces a scenario doc → spec → run → report (workflow original).
+- **Mode B — Batch from script** : user points to a section of a long-format test script (`docs/testing/*-test-script.md`) → skill parses, classifies, orchestrates preconditions, runs, reports.
+
+The same artifact format (report, screenshots, etc.) is used in both modes.
 
 ## When to use this skill
 
 - User wants to test a feature, flow, or parcours (coach or athlete)
 - User asks to validate behavior after a Lovable update
 - User mentions QA, end-to-end, scenarios, regression, smoke test
+- User references a test script or one of its sections (e.g. "déroule la section 3 du script athlete")
 - User describes a sequence of actions and asks "ça marche ?"
 
-## High-level workflow
+## Routing — Mode A vs Mode B
+
+Apply this decision in order:
+
+1. **The user references a test script section or test ID** (e.g. "T-A-30", "Section 3 athlete", "athlete-test-script.md") → **Mode B**.
+2. **The user describes a flow in natural language**, no script referenced → **Mode A**.
+3. **Ambiguous** → ask one clarifying question before guessing.
+
+---
+
+# Mode A — Ad-hoc scenario (workflow original)
+
+Used for quick smoke tests, regression checks on a specific flow, or any one-off testing need not yet captured in a script.
+
+## Workflow
 
 1. **Capture the scope** — what flow, which persona, which viewport
-2. **Generate the scenario** — a structured plan before any code is written
-3. **Generate the Playwright spec** — TypeScript file under `tests/e2e/`
-4. **Run the tests** — `npx playwright test` with the right config
-5. **Produce the report** — structured Markdown, ready for downstream prompt generation
+2. **Generate the scenario** — `tests/e2e/scenarios/<flow-name>.md` following `references/scenario-template.md`. Show to user, get green light.
+3. **Generate the Playwright spec** — `tests/e2e/<flow-name>.spec.ts` following `references/playwright-conventions.md`
+4. **Run the tests** — `npx playwright test ...`
+5. **Produce the report** — `tests/e2e/reports/<flow-name>-<YYYY-MM-DD-HHMM>.md` following `references/report-template.md`
 
-Do these steps in order. Don't skip the scenario step — the user reviews and adjusts before code gets written.
+See `references/scenario-template.md` and `references/report-template.md` for templates.
 
-## Step 1 — Capture the scope
+---
 
-Before writing anything, confirm with the user:
+# Mode B — Batch from test script
 
-- **Flow to test**: what user action(s) — e.g. "coach creates a client and assigns a program"
-- **Persona**: `coach` or `athlete` (sometimes both, sequentially)
-- **Viewport**: `desktop`, `mobile`, or `both`
-- **Starting state**: fresh login, or assume an existing state? (default: fresh login each run)
-- **Out-of-scope**: anything the user explicitly doesn't want exercised
+Used when the user wants to exercise a section of one of the long-format scripts in `docs/testing/`.
 
-If the user already provided this in a structured brief (e.g. generated from another Claude session), parse it directly — don't re-ask.
+## Workflow overview
 
-## Step 2 — Generate the scenario document
-
-Before generating code, write a scenario in `tests/e2e/scenarios/<flow-name>.md` following the template in `references/scenario-template.md`. Show it to the user and get a green light before moving to code.
-
-The scenario document contains:
-- Metadata (flow name, persona, viewport, date)
-- Preconditions
-- Step-by-step actions with expected results
-- Assertions (what must be true at each checkpoint)
-- Teardown notes
-
-Keep scenarios focused — one user goal per scenario file. Multi-persona flows (coach → athlete) get split into two linked scenarios.
-
-## Step 3 — Generate the Playwright spec
-
-Read `references/playwright-conventions.md` for the project-specific conventions (selectors, fixtures, viewport handling, login). Generate the spec file as `tests/e2e/<flow-name>.spec.ts`.
-
-Key constraints:
-- TypeScript only
-- Use `data-testid` selectors when available; fall back to role-based selectors (`getByRole`, `getByLabel`). Avoid CSS class selectors — Tailwind classes change too often.
-- Each `test()` block maps to one scenario step group from the scenario doc
-- Use `test.describe.configure({ mode: 'serial' })` when steps depend on each other
-- Screenshots on every assertion failure and at key checkpoints (use `await page.screenshot({ path: ... })`)
-- For mobile, use Playwright's `devices['iPhone 13']` or set viewport explicitly per the conventions doc
-
-**Login** uses email + password. Call `loginAsPersona(page, 'coach' | 'athlete')` — credentials are loaded automatically from `.env.test` via dotenv. No manual intervention required. See `references/playwright-conventions.md` for the full pattern.
-
-## Step 4 — Run the tests
-
-Run from the project root:
-
-```bash
-npx playwright test tests/e2e/<flow-name>.spec.ts --reporter=list,html
+```
+Parse script section
+        ↓
+Classify each test (auto / auto-with-precond / auto-ai-flaky / auto-with-caveat / manual-only)
+        ↓
+Update test-registry.json
+        ↓
+Identify required preconditions (coach state for athlete tests)
+        ↓
+Generate precondition spec(s) if missing
+        ↓
+Generate batch spec from in-scope tests
+        ↓
+Run preconditions → run batch → produce segmented report
 ```
 
-For mobile viewport:
+Read these three reference files **before** doing anything in Mode B:
+
+- `references/test-script-parsing.md` — how to read the MD scripts
+- `references/test-classification.md` — classification rules
+- `references/orchestration-coach-athlete.md` — precondition handling
+
+## Step 1 — Confirm scope with user
+
+Before parsing, confirm:
+
+- **Which script** : `coach-test-script.md` or `athlete-test-script.md`
+- **Which section(s)** : section numbers (e.g. "Section 3" = T-A-30 to T-A-46)
+- **Which viewport** : `desktop`, `mobile`, or `both`
+- **Test categories included** : by default, include `auto` and `auto-with-precond`. Exclude `manual-only` (will be listed in report as deferred). Ask before including `auto-ai-flaky` or `auto-with-caveat`.
+
+If the user provided this already, parse it directly — don't re-ask.
+
+## Step 2 — Parse and classify
+
+Follow `references/test-script-parsing.md` to extract each test. Apply rules from `references/test-classification.md` to assign a category to each.
+
+Write or update `docs/testing/test-registry.json` with the new/updated entries. This file is committed to Git — it's the audit trail of how tests are categorized.
+
+## Step 3 — Identify and prepare preconditions
+
+Follow `references/orchestration-coach-athlete.md`.
+
+For athlete tests with category `auto-with-precond`, identify the coach actions required and generate (or reuse) a precondition spec at `tests/e2e/preconditions/<name>.spec.ts`. These specs must be **idempotent**: check first, create only if missing. Never delete data.
+
+## Step 4 — Generate batch spec
+
+Generate one spec per (script, section, viewport) combination at `tests/e2e/<script-name>-section-<N>-<viewport>.spec.ts`. Include only in-scope tests. Tests not in scope (manual-only, deferred) appear as `test.skip(...)` with a comment referencing why.
+
+Use `references/playwright-conventions.md` for selector and pattern guidance.
+
+## Step 5 — Run
+
+Run preconditions first, then the batch:
+
 ```bash
-npx playwright test tests/e2e/<flow-name>.spec.ts --project=mobile
+npx playwright test tests/e2e/preconditions/ --project=desktop
+npx playwright test tests/e2e/<batch-spec> --project=<viewport>
 ```
 
-For both:
-```bash
-npx playwright test tests/e2e/<flow-name>.spec.ts --project=desktop --project=mobile
-```
+Preconditions always run desktop (coach UI is desktop-primary). The batch viewport follows the user's choice.
 
-If Playwright isn't yet installed in the project, run the setup procedure in `references/setup.md` first.
+## Step 6 — Segmented report
 
-Capture the run output. Don't try to fix failing tests on the first pass — failures are the signal, not noise. If the test itself looks broken (selector wrong, race condition), distinguish that from an actual app bug in the report.
+Report goes to `tests/e2e/reports/<script-name>-section-<N>-<viewport>-<YYYY-MM-DD-HHMM>.md` following `references/batch-report-template.md`.
 
-## Step 5 — Produce the report
+The batch report extends the standard report format with three additional sections:
 
-Generate the report at `tests/e2e/reports/<flow-name>-<YYYY-MM-DD-HHMM>.md` following `references/report-template.md`. The format is fixed because it's consumed downstream to generate Lovable prompts — don't deviate.
+- **Preconditions executed** : what setup ran, outcome
+- **Tests skipped** : list of tests in scope but skipped (manual-only, deferred AI), with the reason for each
+- **Per-test verdict table** : `T-A-XX | PASS/FAIL | one-line summary`
 
-Key sections (must all be present, even if empty):
-- Test Run Report (metadata)
-- Scénario déroulé (step-by-step with attendu vs constaté)
-- Anomalies détectées (numbered, each with steps to reproduce)
-- Observations annexes (non-blocking friction)
+After writing the report, surface to user with verdict, anomaly count, and report path.
 
-After writing the report, surface it to the user with:
-1. A one-line verdict (`PASS` / `FAIL` / `PARTIAL`)
-2. The count of anomalies by severity (if any)
-3. The path to the full report file
-4. The path to the Playwright HTML report (`playwright-report/index.html`) if useful
+---
 
-Don't summarize the anomalies inline unless the user asks — the report file is the canonical artifact.
+# Common rules (both modes)
 
 ## Distinguishing test bugs from app bugs
 
 When a test fails, before reporting it as an app bug:
 
-1. Re-read the scenario doc — is the expected behavior actually what the app should do, or did we mis-spec?
-2. Check the selector — did it miss because the element isn't there (app bug) or because the selector is brittle (test bug)?
-3. Check timing — race condition in the test? Add an explicit wait and rerun once.
-4. If still failing, it's an app bug. Report it.
+1. Re-read the source (scenario or script entry) — is the expected behavior actually what the app should do?
+2. Check the selector — element missing (app bug) or selector brittle (test bug)?
+3. Check timing — race condition in the test? Add explicit wait, rerun once.
+4. Still failing → app bug. Report it.
 
-In the report's "Hypothèse root cause" field, explicitly state which category applies.
+In the report's "Hypothèse root cause" field, state which category applies.
 
-## Anti-patterns to avoid
+## Anti-patterns
 
-- ❌ Writing the Playwright spec before the scenario doc is approved
-- ❌ Using brittle selectors (Tailwind classes, deep CSS paths, `nth-child`)
-- ❌ Hardcoding test data inline — use fixtures from `tests/e2e/fixtures/`
-- ❌ Skipping the scenario document for "quick tests" — there are no quick tests; the doc is what the user reviews
+- ❌ Generating a spec before scenario/script is parsed and validated
+- ❌ Brittle selectors (Tailwind classes, deep CSS paths, `nth-child`)
+- ❌ Hardcoded test data inline — use fixtures
+- ❌ Skipping classification for "obvious" tests in Mode B
 - ❌ Reporting a test framework issue as an app bug
 - ❌ Bundling multiple unrelated flows in one spec file
+- ❌ **Destructive operations in preconditions** (DELETE, truncate). Preconditions are idempotent. Always.
 
 ## Reference files
 
-- `references/setup.md` — First-time Playwright installation in the project
-- `references/playwright-conventions.md` — Selector strategy, fixtures, viewport, login (email+password)
-- `references/scenario-template.md` — Template for Step 2
-- `references/report-template.md` — Template for Step 5
-- `references/magic-link-roadmap.md` — ⚠️ OBSOLÈTE — magic link remplacé par email+password
+**Setup and conventions (both modes)** :
+- `references/setup.md` — first-time Playwright installation
+- `references/playwright-conventions.md` — selectors, fixtures, viewport, auth helper
+- `references/report-template.md` — Mode A report format
+- `references/magic-link-roadmap.md` — superseded by email/password auth, kept for record
+
+**Mode A** :
+- `references/scenario-template.md` — ad-hoc scenario doc format
+
+**Mode B** :
+- `references/test-script-parsing.md` — how to read `docs/testing/*-test-script.md`
+- `references/test-classification.md` — classification rules and examples
+- `references/orchestration-coach-athlete.md` — coach precondition setup for athlete tests
+- `references/batch-report-template.md` — Mode B report format
