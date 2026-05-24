@@ -148,6 +148,12 @@ const PricingPage = () => {
                   {PLAN_FEATURES.coach.map((feat) => {
                     const value = feat[plan.name as keyof typeof feat] || "❌";
                     const enabled = value !== "❌";
+                    const displayValue =
+                      value === "unlimited"
+                        ? t("unlimited")
+                        : /^\d+\/mo$/.test(value)
+                          ? `${value.split("/")[0]}${t("per_month")}`
+                          : value;
                     return (
                       <div key={feat.key} className="flex items-start gap-2.5 text-xs">
                         {enabled ? (
@@ -158,7 +164,7 @@ const PricingPage = () => {
                         <span className={enabled ? "text-foreground" : "text-muted-foreground/50"}>
                           {t(`feature_desc_${feat.key}`, feat.key)}
                           {value !== "✅" && value !== "❌" && (
-                            <span className="text-muted-foreground ml-1">({value})</span>
+                            <span className="text-muted-foreground ml-1">({displayValue})</span>
                           )}
                         </span>
                       </div>
