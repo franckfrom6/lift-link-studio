@@ -1,6 +1,6 @@
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, Circle, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, Sparkles, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CHECKLIST_ITEMS = [
