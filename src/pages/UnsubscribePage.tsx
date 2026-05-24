@@ -65,7 +65,7 @@ export default function UnsubscribePage() {
             <MailX className="w-12 h-12 mx-auto text-primary" />
             <h1 className="text-xl font-bold">Se désabonner des emails</h1>
             <p className="text-sm text-muted-foreground">
-              Tu ne recevras plus d'emails de F6GYM à cette adresse.
+              Tu ne recevras plus d'emails de 6way à cette adresse.
             </p>
             <Button onClick={confirm} className="w-full">Confirmer le désabonnement</Button>
           </>
@@ -78,7 +78,7 @@ export default function UnsubscribePage() {
             <CheckCircle2 className="w-12 h-12 mx-auto text-primary" />
             <h1 className="text-xl font-bold">Désabonnement confirmé</h1>
             <p className="text-sm text-muted-foreground">
-              Tu ne recevras plus d'emails de F6GYM.
+              Tu ne recevras plus d'emails de 6way.
             </p>
           </>
         )}

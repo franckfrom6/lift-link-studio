@@ -1,4 +1,4 @@
-# F6GYM — Coach Testing Script
+# 6way — Coach Testing Script
 **Purpose:** UX audit + bug detection for the coach experience  
 **Device target:** Desktop Chrome (primary) + iOS Safari (secondary)  
 **Precondition:** Coach account with at least 2 linked athletes, one of whom has a completed session. Run each section top-to-bottom before moving to the next.

@@ -13,7 +13,7 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE_NAME = 'F6GYM'
+const SITE_NAME = '6way'
 const APP_URL = 'https://fit.from6agency.com'
 
 interface PilotWelcomeProps {
@@ -73,7 +73,7 @@ const PilotWelcomeEmail = ({
 
 export const template = {
   component: PilotWelcomeEmail,
-  subject: 'Bienvenue sur F6GYM — ton accès pilote est prêt ⚡',
+  subject: 'Bienvenue sur 6way — ton accès pilote est prêt ⚡',
   displayName: 'Pilot welcome',
   previewData: {
     firstName: 'Jane',

@@ -10,7 +10,7 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE_NAME = 'F6GYM'
+const SITE_NAME = '6way'
 
 interface PilotRequestReceivedProps {
   firstName?: string
@@ -45,7 +45,7 @@ const PilotRequestReceivedEmail = ({ firstName, role }: PilotRequestReceivedProp
 
 export const template = {
   component: PilotRequestReceivedEmail,
-  subject: 'Ta demande pilote F6GYM est bien reçue ⚡',
+  subject: 'Ta demande pilote 6way est bien reçue ⚡',
   displayName: 'Pilot request received',
   previewData: { firstName: 'Jane', role: 'athlete' },
 } satisfies TemplateEntry

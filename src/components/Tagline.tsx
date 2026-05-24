@@ -8,7 +8,7 @@ const Tagline = ({ className = "" }: TaglineProps) => {
   const { t } = useTranslation("common");
   return (
     <p className={`text-muted-foreground ${className}`}>
-      {t("brand_tagline", "Ton coaching, structuré.")}
+      {t("brand_tagline", "Ton coach. Ton IA. Ton chemin.")}
     </p>
   );
 };

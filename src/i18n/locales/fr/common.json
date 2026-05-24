@@ -1,6 +1,6 @@
 {
-  "app_name": "F6GYM",
-  "brand_tagline": "Ton coaching, structuré.",
+  "app_name": "6way",
+  "brand_tagline": "Ton coach. Ton IA. Ton chemin.",
   "save": "Enregistrer",
   "cancel": "Annuler",
   "delete": "Supprimer",
@@ -94,7 +94,7 @@
   "onboarding_step_nutrition": "Saisir un repas",
   "onboarding_step_checkin": "Faire ton check-in",
   "onboarding_step_builder": "Créer une séance libre",
-  "onboarding_welcome_title": "Bienvenue sur F6GYM 👋",
+  "onboarding_welcome_title": "Bienvenue sur 6way 👋",
   "onboarding_welcome_desc": "Ton coach a préparé ton programme. Explore les onglets ci-dessous pour commencer.",
   "onboarding_program_title": "Ton programme",
   "onboarding_program_desc": "Chaque semaine est organisée en séances. Tape sur une séance pour la démarrer.",

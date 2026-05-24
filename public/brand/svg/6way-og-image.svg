@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#0A0A0B"/>
+  <defs>
+    <radialGradient id="glow" cx="80%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#FF5B1F" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#FF5B1F" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <text x="60" y="58" font-family="JetBrains Mono, monospace" font-size="14" font-weight="500" fill="#8C8C92" letter-spacing="3">6WAY · 001</text>
+  <text x="1140" y="58" font-family="JetBrains Mono, monospace" font-size="14" font-weight="500" fill="#8C8C92" letter-spacing="3" text-anchor="end">EST · 2026</text>
+
+  <rect x="60" y="180" width="280" height="36" rx="18" fill="rgba(255,91,31,0.1)" stroke="#FF5B1F" stroke-opacity="0.3" stroke-width="1"/>
+  <circle cx="80" cy="198" r="4" fill="#FF5B1F"/>
+  <text x="96" y="203" font-family="JetBrains Mono, monospace" font-size="12" font-weight="500" fill="#FF5B1F" letter-spacing="2.5">COACHING · AI · ATHLETES</text>
+
+  <text x="60" y="320" font-family="Fraunces, serif" font-size="96" font-weight="300" font-style="italic" fill="#F4F4F0">Ton coach.</text>
+  <text x="60" y="420" font-family="Fraunces, serif" font-size="96" font-weight="300" font-style="italic" fill="#F4F4F0">Ton IA.</text>
+  <text x="60" y="520" font-family="Fraunces, serif" font-size="96" font-weight="300" font-style="italic" fill="#FF5B1F">Ton chemin.</text>
+
+  <text x="985" y="540" font-family="Fraunces, serif" font-size="64" font-weight="300" font-style="italic" fill="#F4F4F0">6</text>
+  <text x="1025" y="540" font-family="Fraunces, serif" font-size="64" font-weight="300" font-style="italic" fill="#FF5B1F">way</text>
+
+  <text x="60" y="588" font-family="JetBrains Mono, monospace" font-size="12" font-weight="500" fill="#8C8C92" letter-spacing="3">TRAIN · TRACK · EVOLVE</text>
+  <text x="1140" y="588" font-family="JetBrains Mono, monospace" font-size="12" font-weight="500" fill="#8C8C92" letter-spacing="3" text-anchor="end">6WAY.APP</text>
+</svg>

@@ -22,7 +22,7 @@ const SelfGuidedDashboard = ({ onStartAI, onJoinCoach }: SelfGuidedDashboardProp
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold">{t('dashboard:welcome_title', 'Bienvenue sur F6GYM 👋')}</h1>
+        <h1 className="text-2xl font-bold">{t('dashboard:welcome_title', 'Bienvenue sur 6way 👋')}</h1>
         <p className="text-muted-foreground text-sm">
           {t('dashboard:no_coach_subtitle', "Vous n'avez pas encore de programme. Choisissez comment commencer :")}
         </p>

@@ -17,8 +17,8 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://lift-link-studio.lovable.app";
 
     const accounts = [
-      { email: "test-coach@f6gym.test", full_name: "Coach Test", role: "coach", password: "CoachTest!2026" },
-      { email: "test-athlete@f6gym.test", full_name: "Athlete Test", role: "student", password: "AthleteTest!2026" },
+      { email: "test-coach@6way.test", full_name: "Coach Test", role: "coach", password: "CoachTest!2026" },
+      { email: "test-athlete@6way.test", full_name: "Athlete Test", role: "student", password: "AthleteTest!2026" },
     ];
 
     const results: any[] = [];
