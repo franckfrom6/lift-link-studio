@@ -1271,19 +1271,27 @@ const StudentWeek = () => {
                     navigate(
                       fs.session_type === "running"
                         ? `/student/run/${fs.id}`
+                        : fs.session_type === "hybrid"
+                        ? `/student/hybrid/${fs.id}`
                         : `/student/session/${fs.id}/preview`
                     );
                   }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/30 transition-all text-left"
                 >
                   <span className="text-xl">
-                    {fs.session_type === "running" ? "🏃" : "💪"}
+                    {fs.session_type === "hybrid"
+                      ? "🔥"
+                      : fs.session_type === "running"
+                      ? "🏃"
+                      : "💪"}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate">{fs.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {fs.session_type === "running"
                         ? "Course à pied"
+                        : fs.session_type === "hybrid"
+                        ? "Hybride"
                         : `${fs.exerciseCount} exercices`}
                     </p>
                   </div>
