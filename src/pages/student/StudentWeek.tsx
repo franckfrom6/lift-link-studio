@@ -1,4 +1,5 @@
-import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Bot, Copy, Trash2 } from "lucide-react";
+import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Bot, Copy, Trash2, Activity, Zap, Check, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
@@ -55,6 +56,13 @@ import { useMonthSessions } from "@/hooks/useMonthSessions";
 import { formatLocalDate } from "@/lib/date-utils";
 import { AnimatePresence, motion } from "framer-motion";
 
+// Route resolver based on session type (handles legacy untyped sessions)
+const getSessionRoute = (id: string, sessionType?: string): string => {
+  if (sessionType === 'running') return `/student/run/${id}`;
+  if (sessionType === 'hybrid') return `/student/hybrid/${id}`;
+  return `/student/session/${id}/preview`;
+};
+
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
   const { user } = useAuth();
@@ -79,6 +87,7 @@ const StudentWeek = () => {
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const [calendarMode, setCalendarMode] = useState<"week" | "month">("week");
+  const [monthNavDir, setMonthNavDir] = useState<'left' | 'right' | null>(null);
   // Calendar filters (scope + session type)
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
   const [typeFilter, setTypeFilter] = useState<CategoryKey | null>(null);
@@ -143,7 +152,7 @@ const StudentWeek = () => {
   const weekSessions = currentWeek?.sessions || [];
 
   const DEFAULT_SESSIONS = useMemo(() => {
-    const map: Record<number, { name: string; sessionId: string; exerciseCount: number; muscleGroups: string[] }> = {};
+    const map: Record<number, { name: string; sessionId: string; exerciseCount: number; muscleGroups: string[]; session_type?: string }> = {};
     for (const session of weekSessions) {
       const muscleGroups = session.sections
         .flatMap(s => s.exercises.map(e => e.exercise?.muscle_group))
@@ -155,6 +164,7 @@ const StudentWeek = () => {
         sessionId: session.id,
         exerciseCount,
         muscleGroups: uniqueMuscles,
+        session_type: session.session_type ?? undefined,
       };
     }
     return map;
@@ -371,11 +381,15 @@ const StudentWeek = () => {
     // 1) Date-bound items (free sessions / externals / completed)
     monthSummaries.forEach((s, key) => {
       const m = ensure(key);
-      if (s.free > 0) m.hasSession = true;
+      if (s.free > 0) {
+        m.hasSession = true;
+        m.sessionCount = (m.sessionCount ?? 0) + s.free;
+      }
       if (s.external > 0) m.hasExternal = true;
       if (s.completed > 0) {
         m.hasSession = true;
         m.isCompleted = true;
+        // completed is a superset of free — don't double-count
       }
     });
 
@@ -413,6 +427,7 @@ const StudentWeek = () => {
             const key = formatLocalDate(d);
             const m = ensure(key);
             m.hasSession = true;
+            m.sessionCount = (m.sessionCount ?? 0) + 1;
           }
         }
         cursor.setDate(cursor.getDate() + 7);
@@ -551,9 +566,11 @@ const StudentWeek = () => {
   };
 
   const handlePrevMonth = () => {
+    setMonthNavDir('left');
     setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1));
   };
   const handleNextMonth = () => {
+    setMonthNavDir('right');
     setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1));
   };
 
@@ -861,6 +878,7 @@ const StudentWeek = () => {
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
           onJumpToday={handleJumpToday}
+          direction={monthNavDir}
         />
       )}
 
@@ -965,35 +983,51 @@ const StudentWeek = () => {
           // Build the click handler
           const handleClick = () => {
             if (swapMode) { handleDayClickInSwapMode(day.dayIndex); return; }
-            // Programmed session from coach program
             if (isSessionDay && sessionInfo) {
-              navigate(`/student/session/${sessionInfo.sessionId}/preview`);
-              return;
-            }
-            // Single free session — navigate directly
-            if (dayFreeSessions.length === 1) {
-              const fs = dayFreeSessions[0];
-              navigate(
-                fs.session_type === "running"
-                  ? `/student/run/${fs.id}`
-                  : fs.session_type === "hybrid"
-                  ? `/student/hybrid/${fs.id}`
-                  : `/student/session/${fs.id}/preview`
-              );
-              return;
-            }
-            // Multiple free sessions — open day picker sheet
-            if (dayFreeSessions.length > 1) {
-              setMultiSessionDate(day.date);
-              setMultiSessionOpen(true);
-              return;
-            }
-            // Empty day — open session type chooser
-            if (!day.isPast) {
-              setSessionChooserDate(day.date);
-              setSessionChooserOpen(true);
+              navigate(getSessionRoute(sessionInfo.sessionId, sessionInfo.session_type));
+            } else if (dayFreeSessions.length === 1) {
+              navigate(getSessionRoute(dayFreeSessions[0].id, dayFreeSessions[0].session_type));
+            } else if (dayFreeSessions.length > 1) {
+              // Multi-session day — handled by stacked cards below; row click is a no-op
+            } else if (!day.isPast) {
+              setBuilderDate(day.date);
+              setBuilderOpen(true);
             }
           };
+
+          // Flattened list of all sessions for the day (used for multi-session stacked cards)
+          const allDaySessions: Array<{
+            id: string;
+            name: string;
+            meta: string;
+            isCompleted: boolean;
+            isAI: boolean;
+            sessionType?: string;
+          }> = [];
+          if (isSessionDay && sessionInfo) {
+            allDaySessions.push({
+              id: sessionInfo.sessionId,
+              name: sessionInfo.name,
+              meta: [
+                `${sessionInfo.exerciseCount} ex.`,
+                ...(sessionInfo.muscleGroups.slice(0, 2)),
+              ].join(' · '),
+              isCompleted: sessionCompleted,
+              isAI: false,
+              sessionType: sessionInfo.session_type,
+            });
+          }
+          dayFreeSessions.forEach(fs => {
+            allDaySessions.push({
+              id: fs.id,
+              name: fs.name,
+              meta: `${fs.exerciseCount} ex.`,
+              isCompleted: isSessionCompleted(fs.id),
+              isAI: true,
+              sessionType: fs.session_type,
+            });
+          });
+          const isMultiSession = allDaySessions.length > 1;
 
           // Pick what to show as session name/meta
           let sessionName: string | null = null;
@@ -1011,6 +1045,13 @@ const StudentWeek = () => {
             sessionName = fs.name;
             sessionMeta = `${fs.exerciseCount} ex.`;
             isAI = true;
+          }
+          // For multi-session days, the row stays compact (label + menu) and the
+          // session details live in the stacked cards below.
+          if (isMultiSession) {
+            sessionName = null;
+            sessionMeta = null;
+            isAI = false;
           }
 
           // Action menu (kept feature parity with previous version)
@@ -1068,7 +1109,61 @@ const StudentWeek = () => {
                   ))}
                 </div>
               )}
-              {isSessionDay && dayFreeSessions.length > 0 && (
+              {isMultiSession ? (
+                <div className="space-y-1.5 pb-1">
+                  {allDaySessions.map((s) => {
+                    const sessionIcon = s.sessionType === 'running'
+                      ? <Activity className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+                      : s.sessionType === 'hybrid'
+                        ? <Zap className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+                        : <Dumbbell className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(getSessionRoute(s.id, s.sessionType));
+                        }}
+                        className={cn(
+                          "w-full text-left flex items-center gap-2.5 px-3 py-2.5 rounded-md border transition-colors",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                          s.isCompleted
+                            ? "bg-success-bg/40 border-success/20 text-muted-foreground"
+                            : day.isToday
+                              ? "bg-primary/5 border-primary/15 hover:bg-primary/10 active:bg-primary/15"
+                              : "bg-bg-tinted border-border hover:bg-card active:bg-card"
+                        )}
+                      >
+                        <span className={cn(
+                          s.isCompleted ? "text-success" : day.isToday ? "text-primary" : "text-muted-foreground"
+                        )}>
+                          {s.isCompleted
+                            ? <Check className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
+                            : sessionIcon}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className={cn(
+                            "text-[13px] font-semibold truncate leading-tight",
+                            s.isCompleted ? "text-muted-foreground line-through" : "text-foreground"
+                          )}>
+                            {s.name}
+                          </p>
+                          <p className="text-[10px] text-muted-subtle mt-0.5 truncate">{s.meta}</p>
+                        </div>
+                        {s.isAI && (
+                          <span className="inline-flex items-center gap-0.5 bg-bg-tinted text-muted-foreground text-[8px] font-bold uppercase px-1.5 py-[1px] rounded-xs flex-shrink-0">
+                            <Bot className="w-2 h-2" strokeWidth={2} />IA
+                          </span>
+                        )}
+                        {!s.isCompleted && (
+                          <ChevronRight className="w-3.5 h-3.5 text-muted-subtle flex-shrink-0" strokeWidth={2} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : isSessionDay && dayFreeSessions.length > 0 && (
                 <div className="space-y-1 mt-1 pt-1 border-t border-border">
                   {dayFreeSessions.map(fs => (
                     <button
@@ -1076,13 +1171,7 @@ const StudentWeek = () => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(
-                          fs.session_type === "running"
-                            ? `/student/run/${fs.id}`
-                            : fs.session_type === "hybrid"
-                            ? `/student/hybrid/${fs.id}`
-                            : `/student/session/${fs.id}/preview`
-                        );
+                        navigate(getSessionRoute(fs.id, fs.session_type));
                       }}
                       className="flex items-center justify-between w-full text-left py-1"
                     >
@@ -1127,7 +1216,7 @@ const StudentWeek = () => {
               onClick={rowOnClick}
               actionMenu={actionMenu}
             >
-              {(dayExternals.length > 0 || (isSessionDay && dayFreeSessions.length > 0)) ? extras : null}
+              {(dayExternals.length > 0 || isMultiSession || (isSessionDay && dayFreeSessions.length > 0)) ? extras : null}
             </ProgDayRow>
           );
         })()}
