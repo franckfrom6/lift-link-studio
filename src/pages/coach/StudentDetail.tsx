@@ -527,6 +527,72 @@ const StudentDetail = () => {
         )}
       </div>
 
+      {/* Recent hybrid sessions */}
+      {hybridExecutions && hybridExecutions.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="font-bold flex items-center gap-2">
+            <span className="text-base">🔥</span>
+            Séances hybrides récentes
+          </h2>
+          <div className="space-y-2">
+            {hybridExecutions.map((exec: any) => {
+              const skipped = (exec.block_executions || []).filter(
+                (b: any) => b.status === "skipped",
+              ).length;
+              const sensation = exec.sensation_tag
+                ? SENSATION_CONFIG[exec.sensation_tag as SensationTag]
+                : null;
+              const date = exec.completed_at
+                ? new Date(exec.completed_at).toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "short",
+                  })
+                : "";
+              return (
+                <div
+                  key={exec.id}
+                  className="rounded-xl border bg-card p-3 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-xs text-muted-foreground">{date}</div>
+                      <div className="font-semibold truncate">
+                        {exec.session?.name || "Séance hybride"}
+                      </div>
+                      <div className="text-xs text-muted-foreground tabular-nums">
+                        {formatDuration(exec.duration ?? 0)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {sensation && (
+                        <span className="text-xl" title={sensation.label}>
+                          {sensation.emoji}
+                        </span>
+                      )}
+                      {exec.global_rpe != null && (
+                        <Badge variant="secondary" className="tabular-nums">
+                          RPE {exec.global_rpe}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {skipped > 0 && (
+                    <div className="inline-flex items-center text-xs px-2 py-1 rounded-md bg-orange-500/15 text-orange-600 font-medium">
+                      ⚠️ {skipped} bloc{skipped > 1 ? "s" : ""} passé{skipped > 1 ? "s" : ""}
+                    </div>
+                  )}
+                  {exec.notes_for_coach && (
+                    <blockquote className="text-xs italic text-muted-foreground border-l-2 border-border pl-2">
+                      {exec.notes_for_coach}
+                    </blockquote>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Nutrition plan shortcut */}
       <div className="space-y-3">
         <h2 className="font-bold flex items-center gap-2">
