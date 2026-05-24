@@ -762,7 +762,7 @@ const StudentWeek = () => {
   return (
     <div className="animate-fade-in max-w-2xl mx-auto relative pb-32 md:pb-0">
       {refreshing && (
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full animate-pulse">
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full">
           <RefreshCw className="h-3 w-3 animate-spin" />
           {t('common:refreshing', 'Mise à jour…')}
         </div>
@@ -1094,9 +1094,9 @@ const StudentWeek = () => {
                       </div>
                       <span className="text-[10px] tabular-nums text-muted-subtle ml-2">
                         {fs.session_type === "running"
-                          ? "🏃 Course"
+                          ? <span className="text-sky-600 dark:text-sky-400">Course</span>
                           : fs.session_type === "hybrid"
-                          ? "🔥 Hybride"
+                          ? <span className="text-orange-600 dark:text-orange-400">Hybride</span>
                           : `${fs.exerciseCount} ex.`}
                       </span>
                     </button>
