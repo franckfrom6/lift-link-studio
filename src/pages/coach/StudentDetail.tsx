@@ -83,6 +83,25 @@ const StudentDetail = () => {
 
   const { swaps, loading: swapsLoading } = useCoachStudentSwaps(studentId);
 
+  const { data: hybridExecutions } = useQuery({
+    queryKey: ["hybrid-executions", studentId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("completed_sessions")
+        .select(
+          `id, completed_at, duration, global_rpe, sensation_tag, notes_for_coach,
+           session:sessions!inner(name, session_type, hybrid_blocks),
+           block_executions:hybrid_block_executions(block_id, status, skip_reason, log_data)`,
+        )
+        .eq("student_id", studentId!)
+        .eq("session.session_type", "hybrid")
+        .order("completed_at", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+    enabled: !!studentId,
+  });
+
   const handleUnlink = async () => {
     if (!studentId || !user) return;
     const { error } = await supabase
