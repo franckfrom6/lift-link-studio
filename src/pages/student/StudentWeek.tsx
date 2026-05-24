@@ -1079,6 +1079,8 @@ const StudentWeek = () => {
                         navigate(
                           fs.session_type === "running"
                             ? `/student/run/${fs.id}`
+                            : fs.session_type === "hybrid"
+                            ? `/student/hybrid/${fs.id}`
                             : `/student/session/${fs.id}/preview`
                         );
                       }}
@@ -1091,7 +1093,11 @@ const StudentWeek = () => {
                         </span>
                       </div>
                       <span className="text-[10px] tabular-nums text-muted-subtle ml-2">
-                        {fs.session_type === "running" ? "🏃 Course" : `${fs.exerciseCount} ex.`}
+                        {fs.session_type === "running"
+                          ? "🏃 Course"
+                          : fs.session_type === "hybrid"
+                          ? "🔥 Hybride"
+                          : `${fs.exerciseCount} ex.`}
                       </span>
                     </button>
                   ))}
