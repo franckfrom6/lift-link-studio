@@ -208,7 +208,7 @@ function ExerciseRow({
                       onClick={() => {
                         onChange({
                           exercise_id: result.id,
-                          name: getExerciseName(result, lang),
+                          name: getExerciseName(result),
                           muscle_group: result.muscle_group,
                         });
                         onClosePicker();
@@ -217,7 +217,7 @@ function ExerciseRow({
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">
-                          {getExerciseName(result, lang)}
+                          {getExerciseName(result)}
                         </p>
                         <p className="text-[11px] text-muted-foreground truncate">
                           {result.muscle_group} · {result.equipment}
