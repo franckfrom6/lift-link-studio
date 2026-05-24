@@ -17,6 +17,8 @@ import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import SessionTypeChooser from "@/components/student/SessionTypeChooser";
 import RunBlockEditor from "@/components/student/RunBlockEditor";
+import { HybridSessionBuilder } from "@/components/hybrid/HybridSessionBuilder";
+import type { HybridBlock } from "@/types/hybrid";
 import RaceGoalCard from "@/components/student/RaceGoalCard";
 import RaceGoalSetupSheet from "@/components/student/RaceGoalSetupSheet";
 import { totalBlocksKm, type RunBlock } from "@/types/running";
