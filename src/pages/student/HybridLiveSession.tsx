@@ -272,55 +272,70 @@ export default function HybridLiveSession() {
       );
     }
 
-    // Strength placeholder (next step)
+    // strength
     return (
-      <div className="fixed inset-0 z-50 bg-background flex flex-col">
-        <div className="px-4 pt-6 text-center text-sm text-muted-foreground">
-          Bloc {activeBlockIdx + 1} / {blocks.length} • {mmss(elapsed)}
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-          <div className="text-7xl">💪</div>
-          <h1 className="text-2xl font-bold">{block.name || "Bloc Force"}</h1>
-          <p className="text-sm text-muted-foreground">{blockSummary(block)}</p>
-          <p className="text-xs text-muted-foreground italic max-w-sm">
-            Saisie inline des séries arrive bientôt — termine le bloc à ton rythme et valide.
-          </p>
-        </div>
-        <div className="px-4 pb-8 space-y-3">
-          <Button
-            className="h-14 w-full text-base font-bold"
-            onClick={() =>
-              advance({ block_id: block.id, status: "done" })
-            }
-          >
-            Bloc terminé →
-          </Button>
-          <button
-            className="block mx-auto text-sm text-muted-foreground underline"
-            onClick={() => handleSkip()}
-          >
-            Passer ce bloc →
-          </button>
-        </div>
-      </div>
+      <StrengthBlockExecutor
+        key={block.id}
+        block={block}
+        blockIndex={activeBlockIdx}
+        totalBlocks={blocks.length}
+        onComplete={handleStrengthComplete}
+        onSkip={handleSkip}
+      />
     );
   }
 
   // phase === "done"
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center">
-      <div className="text-6xl">🏁</div>
-      <h1 className="text-2xl font-bold">Séance terminée !</h1>
-      <p className="text-sm text-muted-foreground">
-        {blockExecutions.filter((b) => b.status === "done").length} / {blocks.length} blocs complétés
-        • {mmss(elapsed)}
-      </p>
-      <p className="text-xs italic text-muted-foreground max-w-sm">
-        Le récap détaillé (RPE global, sensation, sauvegarde) arrive à l'étape suivante.
-      </p>
-      <Button className="mt-4 h-12 px-8" onClick={() => navigate("/student")}>
-        Retour à ma semaine
-      </Button>
-    </div>
+    <HybridSessionRecap
+      session={{
+        id: session.id,
+        name: session.name || "Séance hybride",
+        hybrid_blocks: blocks,
+      }}
+      blockExecutions={blockExecutions}
+      elapsedSeconds={elapsed}
+      onSave={async (globalRpe, sensation, notes) => {
+        try {
+          if (!user) throw new Error("not auth");
+          const { data: cs, error: csErr } = await supabase
+            .from("completed_sessions")
+            .insert({
+              student_id: user.id,
+              session_id: sessionId!,
+              started_at: new Date(sessionStartRef.current).toISOString(),
+              completed_at: new Date().toISOString(),
+              duration: elapsed,
+              global_rpe: globalRpe,
+              sensation_tag: sensation,
+              notes_for_coach: notes || null,
+            })
+            .select("id")
+            .single();
+          if (csErr) throw csErr;
+
+          if (blockExecutions.length > 0) {
+            await supabase.from("hybrid_block_executions").insert(
+              blockExecutions.map((be) => ({
+                completed_session_id: cs.id,
+                block_id: be.block_id,
+                status: be.status,
+                skip_reason: be.skip_reason || null,
+                log_data: {
+                  cardio_log: be.cardio_log,
+                  strength_log: be.strength_log,
+                  mixed_log: be.mixed_log,
+                },
+              })),
+            );
+          }
+
+          toast.success("Séance enregistrée !");
+          navigate("/student");
+        } catch {
+          toast.error("Erreur lors de l'enregistrement");
+        }
+      }}
+    />
   );
 }
