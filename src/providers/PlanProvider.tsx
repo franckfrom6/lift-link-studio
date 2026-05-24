@@ -8,6 +8,10 @@ interface PlanInfo {
   name: string;
   displayNameFr: string;
   displayNameEn: string;
+  priceMonthly: number | null;
+  priceYearly: number | null;
+  descriptionFr: string;
+  descriptionEn: string;
 }
 
 interface PlanFeature {
