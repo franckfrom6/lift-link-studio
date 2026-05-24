@@ -1109,7 +1109,61 @@ const StudentWeek = () => {
                   ))}
                 </div>
               )}
-              {isSessionDay && dayFreeSessions.length > 0 && (
+              {isMultiSession ? (
+                <div className="space-y-1.5 pb-1">
+                  {allDaySessions.map((s) => {
+                    const sessionIcon = s.sessionType === 'running'
+                      ? <Activity className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+                      : s.sessionType === 'hybrid'
+                        ? <Zap className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+                        : <Dumbbell className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(getSessionRoute(s.id, s.sessionType));
+                        }}
+                        className={cn(
+                          "w-full text-left flex items-center gap-2.5 px-3 py-2.5 rounded-md border transition-colors",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                          s.isCompleted
+                            ? "bg-success-bg/40 border-success/20 text-muted-foreground"
+                            : day.isToday
+                              ? "bg-primary/5 border-primary/15 hover:bg-primary/10 active:bg-primary/15"
+                              : "bg-bg-tinted border-border hover:bg-card active:bg-card"
+                        )}
+                      >
+                        <span className={cn(
+                          s.isCompleted ? "text-success" : day.isToday ? "text-primary" : "text-muted-foreground"
+                        )}>
+                          {s.isCompleted
+                            ? <Check className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
+                            : sessionIcon}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className={cn(
+                            "text-[13px] font-semibold truncate leading-tight",
+                            s.isCompleted ? "text-muted-foreground line-through" : "text-foreground"
+                          )}>
+                            {s.name}
+                          </p>
+                          <p className="text-[10px] text-muted-subtle mt-0.5 truncate">{s.meta}</p>
+                        </div>
+                        {s.isAI && (
+                          <span className="inline-flex items-center gap-0.5 bg-bg-tinted text-muted-foreground text-[8px] font-bold uppercase px-1.5 py-[1px] rounded-xs flex-shrink-0">
+                            <Bot className="w-2 h-2" strokeWidth={2} />IA
+                          </span>
+                        )}
+                        {!s.isCompleted && (
+                          <ChevronRight className="w-3.5 h-3.5 text-muted-subtle flex-shrink-0" strokeWidth={2} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : isSessionDay && dayFreeSessions.length > 0 && (
                 <div className="space-y-1 mt-1 pt-1 border-t border-border">
                   {dayFreeSessions.map(fs => (
                     <button
@@ -1117,13 +1171,7 @@ const StudentWeek = () => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(
-                          fs.session_type === "running"
-                            ? `/student/run/${fs.id}`
-                            : fs.session_type === "hybrid"
-                            ? `/student/hybrid/${fs.id}`
-                            : `/student/session/${fs.id}/preview`
-                        );
+                        navigate(getSessionRoute(fs.id, fs.session_type));
                       }}
                       className="flex items-center justify-between w-full text-left py-1"
                     >
