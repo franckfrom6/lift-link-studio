@@ -52,10 +52,15 @@ const LandingNav = () => {
           </Link>
         </div>
 
-        {/* Mobile burger */}
-        <button className="md:hidden p-2" onClick={() => setOpen(!open)}>
-          {open ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        {/* Mobile header actions */}
+        <div className="md:hidden flex items-center gap-3">
+          <Link to="/auth" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+            {t("nav_login")}
+          </Link>
+          <button className="p-2" onClick={() => setOpen(!open)}>
+            {open ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}
