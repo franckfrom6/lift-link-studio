@@ -491,7 +491,7 @@ const LiveSession = () => {
                 const setsForKey = grouped[k] || [];
                 const allDone = setsForKey.length > 0 && setsForKey.every(s => s.reps > 0 || (s.durationSeconds || 0) > 0);
                 if (!allDone) {
-                  setActiveExerciseKey(k);
+                  setActiveExercise(k);
                   break outer;
                 }
               }
@@ -619,7 +619,7 @@ const LiveSession = () => {
     await saveSetsForExercise(key);
     const nextKey = getNextExerciseKey(key);
     if (nextKey) {
-      setActiveExerciseKey(nextKey);
+      setActiveExercise(nextKey);
       setTimeout(() => {
         document.querySelector(`[data-exercise-key="${nextKey}"]`)
           ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -692,7 +692,7 @@ const LiveSession = () => {
     setSkippedExercises(prev => new Set(prev).add(skipTargetKey));
     setSkipModalOpen(false);
     const nextKey = getNextExerciseKey(skipTargetKey);
-    if (nextKey) setActiveExerciseKey(nextKey);
+    if (nextKey) setActiveExercise(nextKey);
     setSkipTargetKey(null);
   };
 
@@ -1056,8 +1056,8 @@ const LiveSession = () => {
                       data-exercise-key={key}
                       role={!isActive && !isSkipped ? "button" : undefined}
                       tabIndex={!isActive && !isSkipped ? 0 : undefined}
-                      onClick={() => !isActive && !isSkipped && setActiveExerciseKey(key)}
-                      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isActive && !isSkipped) { e.preventDefault(); setActiveExerciseKey(key); } }}
+                      onClick={() => !isActive && !isSkipped && setActiveExercise(key)}
+                      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isActive && !isSkipped) { e.preventDefault(); setActiveExercise(key); } }}
                       className={cn(!isActive && !isSkipped && "cursor-pointer")}
                     >
                       <EnhancedExerciseCard
@@ -1089,7 +1089,7 @@ const LiveSession = () => {
                         trackingType={(trackingTypeMap[key] as any) || "weight_reps"}
                         sessionExerciseId={sessionExerciseIdMap[key]}
                         completedSessionId={completedSessionId || undefined}
-                        onActivate={() => setActiveExerciseKey(key)}
+                        onActivate={() => setActiveExercise(key)}
                         previousSets={
                           previousPerformance && sessionExerciseIdMap[key]
                             ? previousPerformance
