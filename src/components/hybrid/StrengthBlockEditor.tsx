@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import { useExercises } from "@/hooks/useExercises";
+import { useExerciseSearch } from "@/hooks/useExerciseSearch";
+import { getExerciseName } from "@/lib/exercise-utils";
 import {
   StrengthSpec,
   StrengthFormat,
@@ -26,6 +30,7 @@ function newExercise(): InlineExercise {
   return {
     id: crypto.randomUUID(),
     name: "",
+    exercise_id: undefined,
     sets: 3,
     reps_min: 8,
     reps_max: 12,
@@ -34,6 +39,10 @@ function newExercise(): InlineExercise {
 
 export function StrengthBlockEditor({ value, onChange }: StrengthBlockEditorProps) {
   const [showNotes, setShowNotes] = useState(!!value.notes);
+  const { i18n } = useTranslation();
+  const { exercises: allExercises } = useExercises();
+  const { search: searchFn, query: search, setQuery: setSearch } = useExerciseSearch(allExercises, { debounceMs: 150 });
+  const [openPickerForId, setOpenPickerForId] = useState<string | null>(null);
 
   const update = (patch: Partial<StrengthSpec>) => onChange({ ...value, ...patch });
 
@@ -91,6 +100,13 @@ export function StrengthBlockEditor({ value, onChange }: StrengthBlockEditorProp
             showGroup={value.format === "superset"}
             onChange={(patch) => updateExercise(ex.id, patch)}
             onDelete={() => removeExercise(ex.id)}
+            isPickerOpen={openPickerForId === ex.id}
+            onOpenPicker={() => setOpenPickerForId(ex.id)}
+            onClosePicker={() => { setOpenPickerForId(null); setSearch(""); }}
+            search={search}
+            setSearch={setSearch}
+            searchFn={searchFn}
+            lang={i18n.language}
           />
         ))}
         <Button
