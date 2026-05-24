@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   BLOCK_TYPE_COLORS,
   BLOCK_TYPE_ICONS,
@@ -14,12 +15,15 @@ import {
   HybridBlock,
   MODALITY_LABELS,
   MixedSubLog,
+  StrengthSetLog,
   blockSummary,
   estimatedSessionDuration,
   formatDuration,
 } from "@/types/hybrid";
 import CardioBlockExecutor from "@/components/hybrid/CardioBlockExecutor";
 import MixedBlockExecutor from "@/components/hybrid/MixedBlockExecutor";
+import StrengthBlockExecutor from "@/components/hybrid/StrengthBlockExecutor";
+import HybridSessionRecap from "@/components/hybrid/HybridSessionRecap";
 import { cn } from "@/lib/utils";
 
 type Phase = "overview" | "executing" | "done";
