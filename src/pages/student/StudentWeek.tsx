@@ -1216,7 +1216,7 @@ const StudentWeek = () => {
               onClick={rowOnClick}
               actionMenu={actionMenu}
             >
-              {(dayExternals.length > 0 || (isSessionDay && dayFreeSessions.length > 0)) ? extras : null}
+              {(dayExternals.length > 0 || isMultiSession || (isSessionDay && dayFreeSessions.length > 0)) ? extras : null}
             </ProgDayRow>
           );
         })()}
