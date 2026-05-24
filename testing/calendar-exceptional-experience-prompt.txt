@@ -1,0 +1,418 @@
+PROMPT — CALENDAR EXCEPTIONAL EXPERIENCE
+Fluid navigation · multi-session display · correct routing
+=========================================================
+
+Goal: make the /student weekly calendar feel native-grade.
+Three pillars:
+  (A) Fluid month navigation — swipe gesture + animated slide transitions
+  (B) Multi-session clarity — up to 3 dots + count badge in MonthGrid
+  (C) Correct routing + stacked session cards in the selected-day detail
+
+No new dependencies. Uses Framer Motion (already installed) + existing
+touch events. Do not change WorkoutStatsBar, SignatureStartCTA, or any
+component outside the files listed below.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FILE 1 — src/components/student/MonthGrid.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+(A) Touch swipe + animated transitions
+---------------------------------------
+
+Add two new props to MonthGridProps:
+  direction?: 'left' | 'right' | null   // animation direction for slide
+  // onPrevMonth / onNextMonth already exist
+
+Add to MonthGrid internal state:
+  const touchStartX = useRef<number>(0);
+
+Replace the plain wrapper `<div className="border-b border-border">` with:
+
+```tsx
+<div
+  className="border-b border-border overflow-hidden"
+  onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+  onTouchEnd={(e) => {
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    if (delta < -50) onNextMonth();
+    else if (delta > 50) onPrevMonth();
+  }}
+>
+```
+
+Wrap the day-grid section (the `<div className="grid grid-cols-7 px-2 pb-3 gap-y-1">` block) with
+AnimatePresence + motion.div for directional slide:
+
+```tsx
+<AnimatePresence mode="wait" initial={false} custom={direction}>
+  <motion.div
+    key={monthLabel}   // changes every time month changes, triggering animation
+    custom={direction}
+    variants={{
+      enter: (dir) => ({ x: dir === 'right' ? '100%' : dir === 'left' ? '-100%' : 0, opacity: 0 }),
+      center: { x: 0, opacity: 1 },
+      exit: (dir) => ({ x: dir === 'right' ? '-100%' : dir === 'left' ? '100%' : 0, opacity: 0 }),
+    }}
+    initial="enter"
+    animate="center"
+    exit="exit"
+    transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+  >
+    {/* the grid of cells */}
+  </motion.div>
+</AnimatePresence>
+```
+
+(B) Multi-session dots
+------------------------
+
+Update the exported MonthDayMarkers interface:
+
+```ts
+export interface MonthDayMarkers {
+  hasSession?: boolean;
+  isCompleted?: boolean;
+  hasExternal?: boolean;
+  weekTag?: string;
+  /** Total number of sessions (programmed + free) on this day — used for count dots */
+  sessionCount?: number;
+}
+```
+
+In the marker-dot area of each cell (the `<div className="mt-1 flex items-center gap-0.5 h-1">` block),
+replace the current single-dot logic with:
+
+```tsx
+<div className="mt-1 flex items-center gap-[2px] h-1.5">
+  {/* Show up to 3 session dots; first dot always primary/success */}
+  {Array.from({ length: Math.min(m?.sessionCount ?? (hasSession ? 1 : 0), 3) }).map((_, i) => (
+    <span
+      key={i}
+      className={cn(
+        "rounded-full",
+        i === 0 && isCompleted ? "bg-success w-1.5 h-1.5" :
+        i === 0 ? "bg-primary w-1.5 h-1.5" :
+        "bg-primary/40 w-1 h-1"
+      )}
+    />
+  ))}
+  {/* Badge for 4+ sessions (rare but possible) */}
+  {(m?.sessionCount ?? 0) > 3 && (
+    <span className="text-[7px] font-bold text-primary/60 leading-none ml-[1px]">
+      +{(m.sessionCount ?? 0) - 3}
+    </span>
+  )}
+  {hasExternal && (
+    <span className="w-1 h-1 rounded-full bg-muted-foreground ml-[1px]" />
+  )}
+</div>
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FILE 2 — src/hooks/useStudentProgram.ts
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Add `session_type?: string` to the DBSession interface:
+
+```ts
+export interface DBSession {
+  id: string;
+  name: string;
+  day_of_week: number;
+  session_type?: string;   // ← ADD THIS
+  notes: string | null;
+  sections: DBSection[];
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+}
+```
+
+The existing query already uses `select("*")` so no query change needed —
+`session_type` will now be present on the returned objects.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FILE 3 — src/hooks/useWeekData.ts
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Add `session_type` to the FreeSession interface and query:
+
+1. Update the interface:
+```ts
+interface FreeSession {
+  id: string;
+  name: string;
+  date: string;
+  exerciseCount: number;
+  session_type?: string;   // ← ADD
+}
+```
+
+2. In the free sessions query, change the `.select(...)` to include `session_type`:
+```ts
+.select("id, name, free_session_date, session_type, session_exercises(id, is_archived)")
+```
+
+3. In the `.map()` that builds the FreeSession array, add `session_type`:
+```ts
+return (data || []).map((s: any) => ({
+  id: s.id,
+  name: s.name,
+  date: s.free_session_date,
+  exerciseCount: (s.session_exercises || []).filter((e: any) => !e.is_archived).length,
+  session_type: s.session_type ?? undefined,
+})) as FreeSession[];
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FILE 4 — src/pages/student/StudentWeek.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CHANGE 1 — Add session_type to DEFAULT_SESSIONS
+
+Change the type annotation of the DEFAULT_SESSIONS map:
+```ts
+const map: Record<number, {
+  name: string;
+  sessionId: string;
+  exerciseCount: number;
+  muscleGroups: string[];
+  session_type?: string;   // ← ADD
+}> = {};
+```
+
+And include it in the map assignment:
+```ts
+map[session.day_of_week - 1] = {
+  name: session.name,
+  sessionId: session.id,
+  exerciseCount,
+  muscleGroups: uniqueMuscles,
+  session_type: session.session_type ?? undefined,  // ← ADD
+};
+```
+
+CHANGE 2 — Track month-navigation direction
+
+Add state near the other nav state declarations (around line 76):
+```ts
+const [monthNavDir, setMonthNavDir] = useState<'left' | 'right' | null>(null);
+```
+
+Update handlePrevMonth and handleNextMonth to set direction before changing month.
+Find the existing month navigation handlers (look for `setDisplayMonth` calls triggered
+by prev/next). Wrap them:
+- `onPrevMonth` handler: `setMonthNavDir('left');` then existing month change logic
+- `onNextMonth` handler: `setMonthNavDir('right');` then existing month change logic
+
+Pass `direction={monthNavDir}` to `<MonthGrid ... />`.
+
+CHANGE 3 — Add sessionCount to monthMarkers
+
+In the `monthMarkers` useMemo (around line 296), after `m.hasSession = true` is set for
+free sessions, also track the count. Change the free/completed section to:
+
+```ts
+monthSummaries.forEach((s, key) => {
+  const m = ensure(key);
+  if (s.free > 0) {
+    m.hasSession = true;
+    m.sessionCount = (m.sessionCount ?? 0) + s.free;
+  }
+  if (s.external > 0) m.hasExternal = true;
+  if (s.completed > 0) {
+    m.hasSession = true;
+    m.isCompleted = true;
+    // completed is a superset of free — don't double-count
+  }
+});
+```
+
+In the programmed sessions loop (the `for (let i = 0; i < 7; i++)` block), add:
+```ts
+m.hasSession = true;
+m.sessionCount = (m.sessionCount ?? 0) + 1;  // ← ADD THIS LINE after m.hasSession = true
+```
+
+CHANGE 4 — Fix handleClick routing by session_type
+
+Replace the existing `handleClick` function (around lines 847-858) with:
+
+```ts
+const getSessionRoute = (id: string, sessionType?: string): string => {
+  if (sessionType === 'running') return `/student/run/${id}`;
+  if (sessionType === 'hybrid') return `/student/hybrid/${id}`;
+  return `/student/session/${id}/preview`;
+};
+
+const handleClick = () => {
+  if (swapMode) { handleDayClickInSwapMode(day.dayIndex); return; }
+  if (isSessionDay && sessionInfo) {
+    navigate(getSessionRoute(sessionInfo.sessionId, sessionInfo.session_type));
+  } else if (dayFreeSessions.length === 1) {
+    navigate(getSessionRoute(dayFreeSessions[0].id, dayFreeSessions[0].session_type));
+  } else if (dayFreeSessions.length > 1) {
+    // Multi-session day — handled by stacked cards below, click does nothing at row level
+  } else if (!day.isPast) {
+    setBuilderDate(day.date);
+    setBuilderOpen(true);
+  }
+};
+```
+
+Also update the free session buttons in the "extras" section (around line 939):
+Change `navigate(`/student/session/${fs.id}/preview`)` to:
+`navigate(getSessionRoute(fs.id, fs.session_type))`
+
+CHANGE 5 — Multi-session stacked cards for selected day
+
+The current detail section shows one ProgDayRow for the selected day, with free
+sessions as plain button children. Improve this so that when a day has 2+ sessions,
+each session gets its own tappable card.
+
+After the `handleClick` definition, add this computed variable:
+
+```ts
+// All sessions for the day as a flat array for the stacked-cards path
+const allDaySessions: Array<{
+  id: string;
+  name: string;
+  meta: string;
+  isCompleted: boolean;
+  isAI: boolean;
+  sessionType?: string;
+}> = [];
+
+if (isSessionDay && sessionInfo) {
+  allDaySessions.push({
+    id: sessionInfo.sessionId,
+    name: sessionInfo.name,
+    meta: [
+      `${sessionInfo.exerciseCount} ex.`,
+      ...(sessionInfo.muscleGroups.slice(0, 2)),
+    ].join(' · '),
+    isCompleted: sessionCompleted,
+    isAI: false,
+    sessionType: sessionInfo.session_type,
+  });
+}
+dayFreeSessions.forEach(fs => {
+  allDaySessions.push({
+    id: fs.id,
+    name: fs.name,
+    meta: `${fs.exerciseCount} ex.`,
+    isCompleted: isSessionCompleted(fs.id),
+    isAI: true,
+    sessionType: fs.session_type,
+  });
+});
+
+const isMultiSession = allDaySessions.length > 1;
+```
+
+Then, in the JSX return of the `ProgDayRow` block, after the main `ProgDayRow`
+(inside its `children` prop or below it), when `isMultiSession` is true, instead of
+passing `sessionName`/`sessionMeta` directly to ProgDayRow, pass the row as a
+compact header-only row (no session name) and render the stacked cards below:
+
+If `isMultiSession`:
+- Pass `sessionName={null}` and `sessionMeta={null}` to ProgDayRow so the main row
+  just shows the day label + action menu (no session name — the cards show everything)
+- Pass as `children` to ProgDayRow:
+
+```tsx
+<div className="space-y-1.5 pb-1">
+  {allDaySessions.map((s) => {
+    const sessionIcon = s.sessionType === 'running'
+      ? <Activity className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+      : s.sessionType === 'hybrid'
+        ? <Zap className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+        : <Dumbbell className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />;
+
+    return (
+      <button
+        key={s.id}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          navigate(getSessionRoute(s.id, s.sessionType));
+        }}
+        className={cn(
+          "w-full text-left flex items-center gap-2.5 px-3 py-2.5 rounded-md border transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          s.isCompleted
+            ? "bg-success-bg/40 border-success/20 text-muted-foreground"
+            : day.isToday
+              ? "bg-primary/5 border-primary/15 hover:bg-primary/10 active:bg-primary/15"
+              : "bg-bg-tinted border-border hover:bg-card active:bg-card"
+        )}
+      >
+        <span className={cn(
+          s.isCompleted ? "text-success" : day.isToday ? "text-primary" : "text-muted-foreground"
+        )}>
+          {s.isCompleted
+            ? <Check className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
+            : sessionIcon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className={cn(
+            "text-[13px] font-semibold truncate leading-tight",
+            s.isCompleted ? "text-muted-foreground line-through" : "text-foreground"
+          )}>
+            {s.name}
+          </p>
+          <p className="text-[10px] text-muted-subtle mt-0.5 truncate">{s.meta}</p>
+        </div>
+        {s.isAI && (
+          <span className="inline-flex items-center gap-0.5 bg-bg-tinted text-muted-foreground text-[8px] font-bold uppercase px-1.5 py-[1px] rounded-xs flex-shrink-0">
+            <Bot className="w-2 h-2" strokeWidth={2} />IA
+          </span>
+        )}
+        {!s.isCompleted && (
+          <ChevronRight className="w-3.5 h-3.5 text-muted-subtle flex-shrink-0" strokeWidth={2} />
+        )}
+      </button>
+    );
+  })}
+</div>
+```
+
+Make sure `Activity`, `Zap`, `Check`, `ChevronRight` are imported from lucide-react
+(most are already imported; add `Activity` and `Zap` if not present).
+
+If `!isMultiSession` (single or zero sessions) — keep the existing behavior exactly as-is.
+No changes to the ProgDayRow props logic for single-session days.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EDGE CASES & CONSTRAINTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- The `getSessionRoute` helper lives INSIDE the day-detail rendering closure
+  (inside the `{(() => { ... })()}` IIFE) so it can be declared at top of that
+  function. Or hoist it to module scope — either works.
+
+- The `filteredMarkers` useMemo feeds into MonthGrid. It already filters the
+  `monthMarkers` map. After adding `sessionCount` to `monthMarkers`, make sure
+  the filter logic in `filteredMarkers` preserves `sessionCount` when copying
+  markers (it uses spread `{ ...m }` so it will propagate automatically if the
+  interface is updated).
+
+- Session type 'running' maps to `/student/run/:id`. Session type 'hybrid' maps
+  to `/student/hybrid/:id`. Everything else (undefined, 'strength', null) maps
+  to `/student/session/:id/preview`. This handles legacy sessions with no type.
+
+- Do NOT touch the SwapModal, ExternalSessionForm, WeeklyCheckinForm, or any
+  of the modal/dialog components.
+
+- The `SignatureStartCTA` (floating bottom CTA) and `CheckinBadge` are
+  unaffected by these changes.
+
+- TypeScript: if MonthDayMarkers is exported from MonthGrid.tsx, the interface
+  update there automatically propagates to StudentWeek which imports it.
+  Check that `monthMarkers` useMemo type infers correctly — if not, add
+  explicit `MonthDayMarkers` typing to the `ensure()` function return.
