@@ -51,8 +51,8 @@ const SignatureStartCTA = ({
         <div
           className={
             isCompleted
-              ? "rounded-2xl bg-card border border-border shadow-lg overflow-hidden"
-              : "rounded-2xl bg-primary text-primary-foreground shadow-lg overflow-hidden"
+              ? "rounded-2xl bg-card border border-border shadow-sm overflow-hidden"
+              : "rounded-2xl bg-primary text-primary-foreground shadow-sm overflow-hidden"
           }
         >
           <div className="px-4 pt-3 pb-2">
