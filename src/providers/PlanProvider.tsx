@@ -12,6 +12,7 @@ interface PlanInfo {
   priceYearly: number | null;
   descriptionFr: string;
   descriptionEn: string;
+  sortOrder: number;
 }
 
 interface PlanFeature {
