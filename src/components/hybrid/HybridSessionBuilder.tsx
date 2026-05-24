@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Dumbbell, Activity, Zap, Thermometer, Snowflake } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,14 @@ import {
 } from "@/types/hybrid";
 import { CardioBlockEditor } from "./CardioBlockEditor";
 import { StrengthBlockEditor } from "./StrengthBlockEditor";
+
+const BLOCK_TYPE_LUCIDE: Record<HybridBlockType, React.ReactNode> = {
+  cardio:   <Activity className="w-3.5 h-3.5" strokeWidth={2} />,
+  strength: <Dumbbell className="w-3.5 h-3.5" strokeWidth={2} />,
+  mixed:    <Zap className="w-3.5 h-3.5" strokeWidth={2} />,
+  warmup:   <Thermometer className="w-3.5 h-3.5" strokeWidth={2} />,
+  cooldown: <Snowflake className="w-3.5 h-3.5" strokeWidth={2} />,
+};
 
 interface HybridSessionBuilderProps {
   open: boolean;
@@ -398,7 +406,7 @@ function BlockCard({
               BLOCK_TYPE_COLORS[block.type]
             )}
           >
-            <span>{BLOCK_TYPE_ICONS[block.type]}</span>
+            <span className="inline-flex items-center">{BLOCK_TYPE_LUCIDE[block.type]}</span>
             <span>{BLOCK_TYPE_LABELS[block.type]}</span>
           </span>
           <Input

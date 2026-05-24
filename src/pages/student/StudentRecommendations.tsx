@@ -20,7 +20,7 @@ const StudentRecommendations = () => {
           <ChevronLeft className="w-5 h-5" strokeWidth={2} />
         </button>
         <ClipboardList className="w-5 h-5 text-muted-foreground" />
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <h1 className="text-lg font-semibold tracking-tight">{t("title")}</h1>
       </div>
       <StudentRecommendationCards type="all" />
       <div className="text-center py-4">

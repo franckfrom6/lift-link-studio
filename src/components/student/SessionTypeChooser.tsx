@@ -1,4 +1,5 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dumbbell, Activity, Zap } from "lucide-react";
 
 interface SessionTypeChooserProps {
   open: boolean;
@@ -37,7 +38,7 @@ const SessionTypeChooser = ({
             onClick={() => pick("strength")}
             className="h-28 rounded-xl border border-border hover:border-primary/40 hover:bg-accent/30 transition-all flex flex-col items-center justify-center gap-1 px-2 text-center"
           >
-            <span className="text-3xl" aria-hidden>💪</span>
+            <Dumbbell className="w-8 h-8 text-primary" strokeWidth={1.5} aria-hidden />
             <span className="font-semibold text-sm">Musculation</span>
             <span className="text-[10px] text-muted-foreground leading-tight">Exercices · Séries</span>
           </button>
@@ -47,7 +48,7 @@ const SessionTypeChooser = ({
             onClick={() => pick("run")}
             className="h-28 rounded-xl border border-border hover:border-primary/40 hover:bg-accent/30 transition-all flex flex-col items-center justify-center gap-1 px-2 text-center"
           >
-            <span className="text-3xl" aria-hidden>🏃</span>
+            <Activity className="w-8 h-8 text-primary" strokeWidth={1.5} aria-hidden />
             <span className="font-semibold text-sm">Course à pied</span>
             <span className="text-[10px] text-muted-foreground leading-tight">Blocs · Allure</span>
           </button>
@@ -57,7 +58,7 @@ const SessionTypeChooser = ({
             onClick={() => pick("hybrid")}
             className="h-28 rounded-xl border border-border hover:border-primary/40 hover:bg-accent/30 transition-all flex flex-col items-center justify-center gap-1 px-2 text-center"
           >
-            <span className="text-3xl" aria-hidden>🔥</span>
+            <Zap className="w-8 h-8 text-primary" strokeWidth={1.5} aria-hidden />
             <span className="font-semibold text-sm">Hybride</span>
             <span className="text-[10px] text-muted-foreground leading-tight">Cardio · Force · Mixed</span>
           </button>
