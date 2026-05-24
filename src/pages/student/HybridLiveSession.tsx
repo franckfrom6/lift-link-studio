@@ -29,7 +29,7 @@ interface SessionRow {
   name: string | null;
   session_type: string | null;
   hybrid_blocks: any;
-  scheduled_date?: string | null;
+  free_session_date?: string | null;
 }
 
 function mmss(totalSec: number): string {
@@ -56,7 +56,7 @@ export default function HybridLiveSession() {
       if (!sessionId) return;
       const { data, error } = await supabase
         .from("sessions")
-        .select("id, name, hybrid_blocks, session_type, scheduled_date")
+        .select("id, name, hybrid_blocks, session_type, free_session_date")
         .eq("id", sessionId)
         .single();
       if (!cancelled) {
@@ -136,8 +136,8 @@ export default function HybridLiveSession() {
     const equipmentDisplay = equipment.slice(0, 5);
     const equipmentExtra = equipment.length - equipmentDisplay.length;
 
-    const dateStr = session.scheduled_date
-      ? new Date(session.scheduled_date).toLocaleDateString("fr-FR", {
+    const dateStr = session.free_session_date
+      ? new Date(session.free_session_date).toLocaleDateString("fr-FR", {
           weekday: "long",
           day: "numeric",
           month: "long",
