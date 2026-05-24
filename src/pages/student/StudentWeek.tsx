@@ -976,6 +976,8 @@ const StudentWeek = () => {
               navigate(
                 fs.session_type === "running"
                   ? `/student/run/${fs.id}`
+                  : fs.session_type === "hybrid"
+                  ? `/student/hybrid/${fs.id}`
                   : `/student/session/${fs.id}/preview`
               );
               return;
