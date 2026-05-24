@@ -2560,6 +2560,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      lookup_coach_invite_token: { Args: { _token: string }; Returns: string }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -2577,6 +2578,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      redeem_coach_invite_token: { Args: { _token: string }; Returns: Json }
       session_is_completed: { Args: { _session_id: string }; Returns: boolean }
     }
     Enums: {
