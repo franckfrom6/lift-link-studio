@@ -498,7 +498,10 @@ export type Database = {
           completed_at: string | null
           created_at: string
           duration: number | null
+          global_rpe: number | null
           id: string
+          notes_for_coach: string | null
+          sensation_tag: string | null
           session_id: string
           started_at: string
           student_id: string
@@ -508,7 +511,10 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           duration?: number | null
+          global_rpe?: number | null
           id?: string
+          notes_for_coach?: string | null
+          sensation_tag?: string | null
           session_id: string
           started_at?: string
           student_id: string
@@ -518,7 +524,10 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           duration?: number | null
+          global_rpe?: number | null
           id?: string
+          notes_for_coach?: string | null
+          sensation_tag?: string | null
           session_id?: string
           started_at?: string
           student_id?: string
@@ -1007,6 +1016,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      hybrid_block_executions: {
+        Row: {
+          block_id: string
+          completed_session_id: string
+          created_at: string
+          id: string
+          log_data: Json | null
+          skip_reason: string | null
+          status: string
+        }
+        Insert: {
+          block_id: string
+          completed_session_id: string
+          created_at?: string
+          id?: string
+          log_data?: Json | null
+          skip_reason?: string | null
+          status: string
+        }
+        Update: {
+          block_id?: string
+          completed_session_id?: string
+          created_at?: string
+          id?: string
+          log_data?: Json | null
+          skip_reason?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hybrid_block_executions_completed_session_id_fkey"
+            columns: ["completed_session_id"]
+            isOneToOne: false
+            referencedRelation: "completed_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       impersonation_audit: {
         Row: {
@@ -2051,6 +2098,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           free_session_date: string | null
+          hybrid_blocks: Json | null
           id: string
           is_deleted: boolean | null
           is_free_session: boolean
@@ -2067,6 +2115,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           free_session_date?: string | null
+          hybrid_blocks?: Json | null
           id?: string
           is_deleted?: boolean | null
           is_free_session?: boolean
@@ -2083,6 +2132,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           free_session_date?: string | null
+          hybrid_blocks?: Json | null
           id?: string
           is_deleted?: boolean | null
           is_free_session?: boolean
