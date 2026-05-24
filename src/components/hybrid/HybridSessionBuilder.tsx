@@ -289,7 +289,7 @@ function Step1({
 // ─── Step 2 ─────────────────────────────────────────────────────
 function Step2({
   name, setName, blocks, expandedId, setExpandedId,
-  updateBlock, removeBlock, totalMin, onBack, onAddClick, onSave, saving,
+  updateBlock, removeBlock, totalMin, onBack, onAddClick, onSave, saving, hasUnnamedExercise,
 }: {
   name: string;
   setName: (s: string) => void;
@@ -303,6 +303,7 @@ function Step2({
   onAddClick: () => void;
   onSave: () => void;
   saving: boolean;
+  hasUnnamedExercise: boolean;
 }) {
   return (
     <>
@@ -361,10 +362,10 @@ function Step2({
         <Button
           type="button"
           className="flex-1 h-11"
-          disabled={saving || blocks.length === 0 || !name.trim()}
+          disabled={saving || blocks.length === 0 || !name.trim() || hasUnnamedExercise}
           onClick={onSave}
         >
-          {saving ? "Enregistrement…" : "Enregistrer la séance"}
+          {saving ? "Enregistrement…" : hasUnnamedExercise ? "Choisis tous les exercices" : "Enregistrer la séance"}
         </Button>
       </div>
     </>
