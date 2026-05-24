@@ -10,6 +10,7 @@ interface LinearRestTimerProps {
   initialSeconds: number;
   onComplete?: () => void;
   autoStart?: boolean;
+  storageKey?: string;
 }
 
 function requestNotificationPermission() {
@@ -26,10 +27,19 @@ function sendTimerNotification(title: string) {
   }
 }
 
-const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: LinearRestTimerProps) => {
+const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true, storageKey }: LinearRestTimerProps) => {
   const { t } = useTranslation(["common", "session"]);
   const [totalSeconds, setTotalSeconds] = useState(initialSeconds);
-  const [seconds, setSeconds] = useState(initialSeconds);
+  const [seconds, setSeconds] = useState<number>(() => {
+    if (storageKey) {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const remaining = Math.ceil((parseInt(saved, 10) - Date.now()) / 1000);
+        if (remaining > 0 && remaining <= initialSeconds) return remaining;
+      }
+    }
+    return initialSeconds;
+  });
   const [running, setRunning] = useState(autoStart);
   const [finished, setFinished] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -42,107 +52,95 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true }: Linea
     requestNotificationPermission();
   }, []);
 
-  const ensureAudioCtx = () => {
-    try {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new AudioContext();
-      } else if (audioCtxRef.current.state === "suspended") {
-        audioCtxRef.current.resume().catch(() => {});
-      }
-    } catch {}
+  const warmAudio = () => {
+    if (!audioCtxRef.current) {
+      try { audioCtxRef.current = new AudioContext(); } catch {}
+    }
+    audioCtxRef.current?.resume().catch(() => {});
   };
 
   useEffect(() => {
     if (!running || seconds <= 0) {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
       return;
     }
-    if (running) {
-      endTimeRef.current = Date.now() + seconds * 1000;
-    }
-    intervalRef.current = setInterval(() => {
-      setSeconds(() => {
-        if (!endTimeRef.current) return 0;
-        const remaining = Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000));
-        if (remaining <= 0) {
-          setRunning(false);
-          setFinished(true);
-          try {
-            const ctx = audioCtxRef.current;
-            if (ctx && ctx.state !== "closed") {
-              const play = () => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain); gain.connect(ctx.destination);
-                gain.gain.setValueAtTime(0, ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-                osc.frequency.setValueAtTime(880, ctx.currentTime);
-                osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.15);
-                osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + 0.4);
-              };
-              if (ctx.state === "suspended") {
-                ctx.resume().then(play).catch(() => {});
-              } else {
-                play();
-              }
-            }
-          } catch {}
-          try { navigator.vibrate?.([200, 100, 200, 100, 200]); } catch {}
-          sendTimerNotification(t("common:rest_label") + " ✓");
-          onCompleteRef.current?.();
-          return 0;
-        }
-        return remaining;
-      });
-    }, 1000);
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible' && endTimeRef.current && running) {
-        const remaining = Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000));
-        setSeconds(remaining);
-        if (remaining <= 0) {
-          setRunning(false);
-          setFinished(true);
-          onCompleteRef.current?.();
+    if (!endTimeRef.current) {
+      if (storageKey) {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          const ts = parseInt(saved, 10);
+          if (ts > Date.now()) { endTimeRef.current = ts; }
         }
       }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
+      if (!endTimeRef.current) {
+        endTimeRef.current = Date.now() + seconds * 1000;
+        if (storageKey) localStorage.setItem(storageKey, String(endTimeRef.current));
+      }
+    }
+    intervalRef.current = setInterval(() => {
+      if (!endTimeRef.current) return;
+      const remaining = Math.ceil((endTimeRef.current - Date.now()) / 1000);
+      if (remaining <= 0) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = null;
+        setSeconds(0);
+        setRunning(false);
+        setFinished(true);
+        endTimeRef.current = null;
+        if (storageKey) localStorage.removeItem(storageKey);
+        try {
+          const ctx = audioCtxRef.current ?? new AudioContext();
+          audioCtxRef.current = ctx;
+          ctx.resume().then(() => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            gain.gain.setValueAtTime(0, ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.15);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.4);
+          });
+        } catch {}
+        try { navigator.vibrate?.([200, 100, 200, 100, 200]); } catch {}
+        sendTimerNotification(t("common:rest_label") + " — " + t("session:session_done", "Done!"));
+        onCompleteRef.current?.();
+      } else {
+        setSeconds(remaining);
+      }
+    }, 500);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [running]);
 
   const reset = () => {
+    endTimeRef.current = null;
+    if (storageKey) localStorage.removeItem(storageKey);
     unlockAudio();
-    ensureAudioCtx();
+    warmAudio();
     setSeconds(totalSeconds);
-    endTimeRef.current = Date.now() + totalSeconds * 1000;
     setRunning(true);
     setFinished(false);
   };
   const toggle = () => {
     unlockAudio();
-    ensureAudioCtx();
-    if (!running) {
-      endTimeRef.current = Date.now() + seconds * 1000;
-    } else {
+    warmAudio();
+    if (running) {
       endTimeRef.current = null;
+      if (storageKey) localStorage.removeItem(storageKey);
     }
-    setRunning(!running);
+    setRunning(r => !r);
   };
   const adjust = (delta: number) => {
     unlockAudio();
-    ensureAudioCtx();
+    warmAudio();
+    endTimeRef.current = null;
+    if (storageKey) localStorage.removeItem(storageKey);
     const newTotal = Math.max(10, totalSeconds + delta);
     setTotalSeconds(newTotal);
-    setSeconds((s) => {
-      const next = Math.max(0, s + delta);
-      if (running) endTimeRef.current = Date.now() + next * 1000;
-      return next;
-    });
+    setSeconds(s => Math.max(0, s + delta));
   };
 
   const progress = totalSeconds > 0 ? (totalSeconds - seconds) / totalSeconds : 1;
