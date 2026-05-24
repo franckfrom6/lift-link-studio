@@ -151,7 +151,7 @@ const StudentWeek = () => {
   const weekSessions = currentWeek?.sessions || [];
 
   const DEFAULT_SESSIONS = useMemo(() => {
-    const map: Record<number, { name: string; sessionId: string; exerciseCount: number; muscleGroups: string[] }> = {};
+    const map: Record<number, { name: string; sessionId: string; exerciseCount: number; muscleGroups: string[]; session_type?: string }> = {};
     for (const session of weekSessions) {
       const muscleGroups = session.sections
         .flatMap(s => s.exercises.map(e => e.exercise?.muscle_group))
@@ -163,6 +163,7 @@ const StudentWeek = () => {
         sessionId: session.id,
         exerciseCount,
         muscleGroups: uniqueMuscles,
+        session_type: session.session_type ?? undefined,
       };
     }
     return map;
