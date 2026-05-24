@@ -11,6 +11,8 @@ const CHECKLIST_ITEMS = [
   { key: "session_builder_seen", labelKey: "onboarding_step_builder" },
 ];
 
+const DISMISS_KEY = "checklist_dismissed";
+
 const FirstStepsChecklist = () => {
   const { t } = useTranslation("common");
   const { steps, completedCount } = useOnboarding();
