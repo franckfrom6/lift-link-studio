@@ -1198,6 +1198,11 @@ const StudentWeek = () => {
           setRunSessionDate(d);
           setRunSessionOpen(true);
         }}
+        onChooseHybrid={(d) => {
+          setSessionChooserOpen(false);
+          setHybridDate(d);
+          setHybridOpen(true);
+        }}
       />
 
       <RunBlockEditor
@@ -1213,6 +1218,25 @@ const StudentWeek = () => {
             free_session_date: formatLocalDate(runSessionDate),
             session_type: "running",
             run_blocks: blocks as unknown as never,
+          }]);
+          queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+          queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
+        }}
+      />
+
+      <HybridSessionBuilder
+        open={hybridOpen}
+        onClose={() => setHybridOpen(false)}
+        date={hybridDate}
+        onSave={async (name, blocks) => {
+          await supabase.from("sessions").insert([{
+            name,
+            day_of_week: hybridDate.getDay() === 0 ? 7 : hybridDate.getDay(),
+            is_free_session: true,
+            created_by: user!.id,
+            free_session_date: formatLocalDate(hybridDate),
+            session_type: "hybrid",
+            hybrid_blocks: blocks as unknown as never,
           }]);
           queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
           queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
