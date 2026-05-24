@@ -41,6 +41,8 @@ export type StrengthFormat =
 
 export interface InlineExercise {
   id: string;
+  exercise_id?: string;
+  muscle_group?: string;
   name: string;
   sets: number;
   reps_min: number;
