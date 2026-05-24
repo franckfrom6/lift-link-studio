@@ -45,6 +45,7 @@ function mmss(totalSec: number): string {
 export default function HybridLiveSession() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [session, setSession] = useState<SessionRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<Phase>("overview");
@@ -110,6 +111,8 @@ export default function HybridLiveSession() {
       mixed_log: log,
     });
   };
+  const handleStrengthComplete = (log: StrengthSetLog[]) =>
+    advance({ block_id: blocks[activeBlockIdx].id, status: "done", strength_log: log });
   const handleSkip = (reason?: string) =>
     advance({ block_id: blocks[activeBlockIdx].id, status: "skipped", skip_reason: reason });
 
