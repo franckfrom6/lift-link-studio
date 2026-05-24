@@ -1,4 +1,4 @@
-# F6GYM — Athlete Testing Script
+# 6way — Athlete Testing Script
 **Purpose:** UX audit + bug detection for the athlete (student) experience  
 **Device target:** iOS Safari PWA (primary) + Chrome desktop (secondary)  
 **Precondition:** Test account with an active coach program assigned. Run each section top-to-bottom before moving to the next.

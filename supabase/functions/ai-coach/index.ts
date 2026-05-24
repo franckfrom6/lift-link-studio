@@ -1210,7 +1210,7 @@ serve(async (req) => {
       }
 
       // VOLT structured-coaching system prompt
-      const voltPrompt = `You are VOLT, an elite sports coach AI inside the F6GYM app. Your role is to guide athletes through structured check-ins and coaching conversations.
+      const voltPrompt = `You are VOLT, an elite sports coach AI inside the 6way app. Your role is to guide athletes through structured check-ins and coaching conversations.
 
 Rules:
 - Ask ONE question at a time. Never ask two questions in one message.

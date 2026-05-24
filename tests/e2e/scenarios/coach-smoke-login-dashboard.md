@@ -18,7 +18,7 @@ Valider que la chaîne complète fonctionne : magic link → session active → 
 ## Préconditions
 
 - L'app est accessible à `https://fit.from6agency.com/`
-- Le compte `test-coach@f6gym.test` existe avec un mot de passe valide
+- Le compte `test-coach@6way.test` existe avec un mot de passe valide
 - Les variables `TEST_COACH_EMAIL` et `TEST_COACH_PASSWORD` sont renseignées dans `.env.test`
 
 ## Hors-périmètre
@@ -33,7 +33,7 @@ Valider que la chaîne complète fonctionne : magic link → session active → 
 
 **Actions** :
 1. Naviguer vers `/`
-2. Remplir le champ email avec `test-coach@f6gym.test`
+2. Remplir le champ email avec `test-coach@6way.test`
 3. Remplir le champ password
 4. Cliquer le bouton de soumission
 
@@ -84,7 +84,7 @@ Valider que la chaîne complète fonctionne : magic link → session active → 
 
 ## Données de test utilisées
 
-- **Persona email** : `PERSONAS.coach` → `test-coach@f6gym.test`
+- **Persona email** : `PERSONAS.coach` → `test-coach@6way.test`
 - **Données saisies** : aucune (smoke test, lecture seule)
 
 ## Teardown

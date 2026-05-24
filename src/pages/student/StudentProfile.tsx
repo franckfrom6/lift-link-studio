@@ -259,7 +259,7 @@ const StudentProfile = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `f6gym-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `6way-export-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Export téléchargé");
@@ -386,7 +386,7 @@ const StudentProfile = () => {
 
       <Section label="Support">
         <Row icon={HelpCircle} label="Centre d'aide" onClick={() => navigate("/support")} />
-        <Row icon={Mail} label="Contacter From6" onClick={() => { window.location.href = "mailto:support@f6gym.com"; }} />
+        <Row icon={Mail} label="Contacter From6" onClick={() => { window.location.href = "mailto:support@6way.com"; }} />
         <Row icon={FileText} label="CGU & confidentialité" last onClick={() => navigate("/legal")} />
       </Section>
 
@@ -398,7 +398,7 @@ const StudentProfile = () => {
           Se déconnecter
         </button>
         <div className="t-caption tabular text-[9px] text-muted-foreground/70 text-center mt-3.5 normal-case tracking-normal">
-          F6GYM · {APP_VERSION}
+          6way · {APP_VERSION}
         </div>
       </div>
 

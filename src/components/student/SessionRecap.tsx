@@ -138,14 +138,14 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
       await new Promise<void>((resolve) => {
         canvas.toBlob(async (blob) => {
           if (!blob) { resolve(); return; }
-          const file = new File([blob], "seance-f6gym.png", { type: "image/png" });
+          const file = new File([blob], "seance-6way.png", { type: "image/png" });
           try {
             if (navigator.share && (navigator as any).canShare?.({ files: [file] })) {
-              await navigator.share({ files: [file], title: "Ma séance F6Gym" });
+              await navigator.share({ files: [file], title: "Ma séance 6way" });
             } else {
               const a = document.createElement("a");
               a.href = URL.createObjectURL(blob);
-              a.download = "seance-f6gym.png";
+              a.download = "seance-6way.png";
               a.click();
             }
           } catch (e) {
@@ -332,7 +332,7 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
         className="bg-gradient-to-br from-gray-900 to-gray-800 text-white p-5 flex flex-col justify-between"
       >
         <div className="flex items-start justify-between">
-          <span className="text-white font-black text-lg tracking-tight">F6GYM</span>
+          <span className="text-white font-black text-lg tracking-tight">6way</span>
           <span className="text-[11px] text-gray-300 italic">{motivationalPhrase}</span>
         </div>
         <div className="text-center">
@@ -356,7 +356,7 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
         </div>
         <div className="flex items-end justify-between text-[10px]">
           <span className="text-gray-300 capitalize">{dateLabel}</span>
-          <span className="text-gray-400">@f6gym</span>
+          <span className="text-gray-400">@6way</span>
         </div>
       </div>
     </div>

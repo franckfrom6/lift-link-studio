@@ -31,7 +31,7 @@
   :root {
 
     /* ──────────────────────────────────────────────────────────
-       From6Gym — Light theme · Bleu Klein signature
+       6way — Light theme · Bleu Klein signature
        Sport-tech premium, geometric, restrained.
        Accent reserved for: CTA, active set, target metric, rest timer.
        ────────────────────────────────────────────────────────── */
@@ -126,7 +126,7 @@
 
   .dark {
     /* ──────────────────────────────────────────────────────────
-       From6Gym — Dark theme · Orange signature
+       6way — Dark theme · Orange signature
        Warmth at night, electricity at day.
        ────────────────────────────────────────────────────────── */
 
@@ -230,7 +230,7 @@
     font-feature-settings: "tnum";
   }
 
-  /* Typography scale — From6Gym sport-tech */
+  /* Typography scale — 6way sport-tech */
   .t-display {
     font-size: 3rem; /* 48px */
     font-weight: 700;
