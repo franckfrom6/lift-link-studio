@@ -47,6 +47,14 @@ const FirstStepsChecklist = () => {
               />
             </svg>
           </div>
+          <button
+            type="button"
+            onClick={() => markStepSeen(DISMISS_KEY)}
+            className="w-5 h-5 flex items-center justify-center rounded-sm text-muted-subtle hover:text-foreground hover:bg-bg-tinted transition-colors -mr-1"
+            aria-label="Masquer"
+          >
+            <X className="w-3.5 h-3.5" strokeWidth={2} />
+          </button>
         </div>
       </div>
 
