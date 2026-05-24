@@ -153,7 +153,7 @@ const Nav = () => {
           <LanguageSwitcher />
           <Link
             to="/login"
-            className="hidden sm:inline text-sm font-medium hover:opacity-60 transition-opacity"
+            className="text-sm font-medium hover:opacity-60 transition-opacity"
             style={{ color: DIM }}
           >
             {t("nav_login")}
