@@ -47,6 +47,7 @@ export interface DBSession {
   id: string;
   name: string;
   day_of_week: number;
+  session_type?: string;
   notes: string | null;
   sections: DBSection[];
   is_deleted?: boolean;
