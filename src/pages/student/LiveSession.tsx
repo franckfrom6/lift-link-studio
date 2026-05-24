@@ -84,13 +84,15 @@ const LiveSession = () => {
     return saved ? parseInt(saved, 10) : Date.now();
   });
   const [elapsed, setElapsed] = useState(0);
-  const [activeExerciseKey, setActiveExerciseKeyState] = useState<string>(
-    () => _backup?.activeExerciseKey ?? localStorage.getItem("ls_active_key") ?? "0-0"
-  );
-  const setActiveExerciseKey = useCallback((key: string) => {
-    try { localStorage.setItem("ls_active_key", key); } catch {}
+  const LS_ACTIVE_KEY = `ls_active_${selectedSessionId}`;
+  const [activeExerciseKey, setActiveExerciseKeyState] = useState<string>(() => {
+    if (!selectedSessionId) return "0-0";
+    return localStorage.getItem(LS_ACTIVE_KEY) ?? "0-0";
+  });
+  const setActiveExercise = useCallback((key: string) => {
+    localStorage.setItem(LS_ACTIVE_KEY, key);
     setActiveExerciseKeyState(key);
-  }, []);
+  }, [LS_ACTIVE_KEY]);
   const [globalRestSeconds, setGlobalRestSeconds] = useState<number | null>(() => {
     if (!_backup?.restEndTime) return null;
     const remaining = Math.ceil((_backup.restEndTime - Date.now()) / 1000);
@@ -208,10 +210,10 @@ const LiveSession = () => {
     return () => {
       try {
         localStorage.removeItem("ls_start_time");
-        localStorage.removeItem("ls_active_key");
+        localStorage.removeItem(LS_ACTIVE_KEY);
       } catch {}
     };
-  }, [startTime]);
+  }, [startTime, LS_ACTIVE_KEY]);
 
   // Snapshot critical state when the app is backgrounded (iOS eviction).
   useEffect(() => {
@@ -220,14 +222,14 @@ const LiveSession = () => {
         try {
           localStorage.setItem("ls_start_time", String(startTime));
           if (activeExerciseKey) {
-            localStorage.setItem("ls_active_key", activeExerciseKey);
+            localStorage.setItem(LS_ACTIVE_KEY, activeExerciseKey);
           }
         } catch {}
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [startTime, activeExerciseKey]);
+  }, [startTime, activeExerciseKey, LS_ACTIVE_KEY]);
 
   const programSession = useMemo(() => {
     const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
@@ -635,6 +637,7 @@ const LiveSession = () => {
   const finishSession = async () => {
     setFinishError(false);
     if (!completedSessionId) {
+      localStorage.removeItem(LS_ACTIVE_KEY);
       setSessionDone(true);
       return;
     }
