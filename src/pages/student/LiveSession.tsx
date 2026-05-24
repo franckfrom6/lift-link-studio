@@ -527,7 +527,7 @@ const LiveSession = () => {
             setSkippedExercises(new Set(skippedKeys));
           }
 
-          toast.success(t("session:session_resumed", { defaultValue: "Séance reprise" }));
+          toast.success("Séance reprise ✓", { duration: 2000 });
         }
 
         setCompletedSessionId(csId!);
