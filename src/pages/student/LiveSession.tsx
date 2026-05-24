@@ -658,11 +658,12 @@ const LiveSession = () => {
       if (error) throw error;
 
       // Success — show celebration
+      localStorage.removeItem(LS_ACTIVE_KEY);
       setSessionDone(true);
       try { localStorage.removeItem('live_session_backup'); } catch {}
       try {
         localStorage.removeItem("ls_start_time");
-        localStorage.removeItem("ls_active_key");
+        localStorage.removeItem(LS_ACTIVE_KEY);
       } catch {}
       try {
         confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"] });
