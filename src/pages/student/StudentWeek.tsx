@@ -381,11 +381,15 @@ const StudentWeek = () => {
     // 1) Date-bound items (free sessions / externals / completed)
     monthSummaries.forEach((s, key) => {
       const m = ensure(key);
-      if (s.free > 0) m.hasSession = true;
+      if (s.free > 0) {
+        m.hasSession = true;
+        m.sessionCount = (m.sessionCount ?? 0) + s.free;
+      }
       if (s.external > 0) m.hasExternal = true;
       if (s.completed > 0) {
         m.hasSession = true;
         m.isCompleted = true;
+        // completed is a superset of free — don't double-count
       }
     });
 
@@ -423,6 +427,7 @@ const StudentWeek = () => {
             const key = formatLocalDate(d);
             const m = ensure(key);
             m.hasSession = true;
+            m.sessionCount = (m.sessionCount ?? 0) + 1;
           }
         }
         cursor.setDate(cursor.getDate() + 7);
