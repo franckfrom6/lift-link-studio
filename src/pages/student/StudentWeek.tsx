@@ -1,4 +1,5 @@
-import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Bot, Copy, Trash2 } from "lucide-react";
+import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Bot, Copy, Trash2, Activity, Zap, Check, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
@@ -54,6 +55,13 @@ import { useWeekData } from "@/hooks/useWeekData";
 import { useMonthSessions } from "@/hooks/useMonthSessions";
 import { formatLocalDate } from "@/lib/date-utils";
 import { AnimatePresence, motion } from "framer-motion";
+
+// Route resolver based on session type (handles legacy untyped sessions)
+const getSessionRoute = (id: string, sessionType?: string): string => {
+  if (sessionType === 'running') return `/student/run/${id}`;
+  if (sessionType === 'hybrid') return `/student/hybrid/${id}`;
+  return `/student/session/${id}/preview`;
+};
 
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
