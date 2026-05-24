@@ -17,6 +17,8 @@ import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
 import SessionTypeChooser from "@/components/student/SessionTypeChooser";
 import RunBlockEditor from "@/components/student/RunBlockEditor";
+import { HybridSessionBuilder } from "@/components/hybrid/HybridSessionBuilder";
+import type { HybridBlock } from "@/types/hybrid";
 import RaceGoalCard from "@/components/student/RaceGoalCard";
 import RaceGoalSetupSheet from "@/components/student/RaceGoalSetupSheet";
 import { totalBlocksKm, type RunBlock } from "@/types/running";
@@ -92,6 +94,8 @@ const StudentWeek = () => {
   const [sessionChooserDate, setSessionChooserDate] = useState<Date>(new Date());
   const [runSessionOpen, setRunSessionOpen] = useState(false);
   const [runSessionDate, setRunSessionDate] = useState<Date>(new Date());
+  const [hybridOpen, setHybridOpen] = useState(false);
+  const [hybridDate, setHybridDate] = useState<Date>(new Date());
   const [multiSessionOpen, setMultiSessionOpen] = useState(false);
   const [multiSessionDate, setMultiSessionDate] = useState<Date>(new Date());
   const [raceGoalSheetOpen, setRaceGoalSheetOpen] = useState(false);
@@ -972,6 +976,8 @@ const StudentWeek = () => {
               navigate(
                 fs.session_type === "running"
                   ? `/student/run/${fs.id}`
+                  : fs.session_type === "hybrid"
+                  ? `/student/hybrid/${fs.id}`
                   : `/student/session/${fs.id}/preview`
               );
               return;
@@ -1073,6 +1079,8 @@ const StudentWeek = () => {
                         navigate(
                           fs.session_type === "running"
                             ? `/student/run/${fs.id}`
+                            : fs.session_type === "hybrid"
+                            ? `/student/hybrid/${fs.id}`
                             : `/student/session/${fs.id}/preview`
                         );
                       }}
@@ -1085,7 +1093,11 @@ const StudentWeek = () => {
                         </span>
                       </div>
                       <span className="text-[10px] tabular-nums text-muted-subtle ml-2">
-                        {fs.session_type === "running" ? "🏃 Course" : `${fs.exerciseCount} ex.`}
+                        {fs.session_type === "running"
+                          ? "🏃 Course"
+                          : fs.session_type === "hybrid"
+                          ? "🔥 Hybride"
+                          : `${fs.exerciseCount} ex.`}
                       </span>
                     </button>
                   ))}
@@ -1194,6 +1206,11 @@ const StudentWeek = () => {
           setRunSessionDate(d);
           setRunSessionOpen(true);
         }}
+        onChooseHybrid={(d) => {
+          setSessionChooserOpen(false);
+          setHybridDate(d);
+          setHybridOpen(true);
+        }}
       />
 
       <RunBlockEditor
@@ -1209,6 +1226,25 @@ const StudentWeek = () => {
             free_session_date: formatLocalDate(runSessionDate),
             session_type: "running",
             run_blocks: blocks as unknown as never,
+          }]);
+          queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+          queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
+        }}
+      />
+
+      <HybridSessionBuilder
+        open={hybridOpen}
+        onClose={() => setHybridOpen(false)}
+        date={hybridDate}
+        onSave={async (name, blocks) => {
+          await supabase.from("sessions").insert([{
+            name,
+            day_of_week: hybridDate.getDay() === 0 ? 7 : hybridDate.getDay(),
+            is_free_session: true,
+            created_by: user!.id,
+            free_session_date: formatLocalDate(hybridDate),
+            session_type: "hybrid",
+            hybrid_blocks: blocks as unknown as never,
           }]);
           queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
           queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
@@ -1235,19 +1271,27 @@ const StudentWeek = () => {
                     navigate(
                       fs.session_type === "running"
                         ? `/student/run/${fs.id}`
+                        : fs.session_type === "hybrid"
+                        ? `/student/hybrid/${fs.id}`
                         : `/student/session/${fs.id}/preview`
                     );
                   }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/30 transition-all text-left"
                 >
                   <span className="text-xl">
-                    {fs.session_type === "running" ? "🏃" : "💪"}
+                    {fs.session_type === "hybrid"
+                      ? "🔥"
+                      : fs.session_type === "running"
+                      ? "🏃"
+                      : "💪"}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate">{fs.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {fs.session_type === "running"
                         ? "Course à pied"
+                        : fs.session_type === "hybrid"
+                        ? "Hybride"
                         : `${fs.exerciseCount} exercices`}
                     </p>
                   </div>
