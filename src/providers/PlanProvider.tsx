@@ -92,6 +92,7 @@ async function fetchPlanData(userId: string | null): Promise<PlanData> {
     priceYearly: p.price_yearly ?? null,
     descriptionFr: p.description_fr ?? "",
     descriptionEn: p.description_en ?? "",
+    sortOrder: p.sort_order ?? 0,
   }));
 
   if (!userId) {
