@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -31,6 +32,7 @@ import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
 import CoachFeedbackView from "@/components/coach/CoachFeedbackView";
 import StudentDisplayModeBanner from "@/components/coach/StudentDisplayModeBanner";
+import { SENSATION_CONFIG, SensationTag, formatDuration } from "@/types/hybrid";
 
 interface StudentProfile {
   user_id: string;
