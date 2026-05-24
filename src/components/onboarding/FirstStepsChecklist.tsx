@@ -15,14 +15,14 @@ const DISMISS_KEY = "checklist_dismissed";
 
 const FirstStepsChecklist = () => {
   const { t } = useTranslation("common");
-  const { steps, completedCount } = useOnboarding();
+  const { steps, markStepSeen } = useOnboarding();
 
   const done = CHECKLIST_ITEMS.filter((i) => steps[i.key]).length;
   const total = CHECKLIST_ITEMS.length;
   const pct = total > 0 ? done / total : 0;
   const RADIUS = 9;
   const CIRC = 2 * Math.PI * RADIUS;
-  if (done >= CHECKLIST_ITEMS.length) return null;
+  if (steps[DISMISS_KEY] || done >= CHECKLIST_ITEMS.length) return null;
 
   return (
     <div className="glass p-4 space-y-3">
