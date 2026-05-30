@@ -522,7 +522,10 @@ const LiveSession = () => {
                 const k = `${si}-${ei}`;
                 if (skippedKeys.has(k)) continue;
                 const setsForKey = grouped[k] || [];
-                const allDone = setsForKey.length > 0 && setsForKey.every(s => s.reps > 0 || (s.durationSeconds || 0) > 0);
+                const expectedSets = selectedSession.sections[si].exercises[ei].sets || 3;
+                const allDone =
+                  setsForKey.length >= expectedSets &&
+                  setsForKey.every(s => s.reps > 0 || (s.durationSeconds || 0) > 0);
                 if (!allDone) {
                   setActiveExercise(k);
                   break outer;
