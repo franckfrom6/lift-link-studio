@@ -108,11 +108,41 @@ const EnhancedExerciseCard = ({
     }))
   ), [suggestedWeight, targetSets, trackingType]);
 
-  const visibleCompletedSets = completedSets.length > 0 ? completedSets : initialCompletedSets;
+  // Always show at least `targetSets` rows. If the parent's completedSets is
+  // shorter than the expected count (e.g. only validated sets came back from
+  // DB), pad with placeholder pending rows so they never disappear from the UI
+  // — including after the rest timer completes.
+  const visibleCompletedSets = useMemo<EnhancedCompletedSet[]>(() => {
+    const base = completedSets.length > 0 ? completedSets : initialCompletedSets;
+    if (base.length >= targetSets) return base;
+    const padded = [...base];
+    for (let i = base.length; i < targetSets; i++) {
+      padded.push({
+        setNumber: i + 1,
+        weight: trackingType === "weight_reps" ? (suggestedWeight || 0) : 0,
+        reps: 0,
+        isFailure: false,
+        rpeActual: null,
+        durationSeconds: 0,
+      });
+    }
+    return padded;
+  }, [completedSets, initialCompletedSets, targetSets, suggestedWeight, trackingType]);
 
+  // One-shot initialization: push the initial placeholder rows up to the parent
+  // exactly once, and only while the parent has no sets yet. Guarded so it
+  // cannot fire later (e.g. mid-exercise after a re-render) and overwrite
+  // validated sets back to all-zero.
   const initializedRef = useRef(false);
   useEffect(() => {
-    if (!isActive || initializedRef.current || completedSets.length > 0 || initialCompletedSets.length === 0) return;
+    if (initializedRef.current) return;
+    if (!isActive) return;
+    if (completedSets.length > 0) {
+      // Parent already has sets — consider us initialized; never reset later.
+      initializedRef.current = true;
+      return;
+    }
+    if (initialCompletedSets.length === 0) return;
     initializedRef.current = true;
     onCompletedSetsChange(initialCompletedSets);
   }, [isActive, completedSets.length, initialCompletedSets, onCompletedSetsChange]);
