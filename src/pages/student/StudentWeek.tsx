@@ -876,6 +876,7 @@ const StudentWeek = () => {
           onNextMonth={handleNextMonth}
           onJumpToday={handleJumpToday}
           direction={monthNavDir}
+          swapMode={swapMode}
         />
       )}
 
