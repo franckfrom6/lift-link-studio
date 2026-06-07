@@ -103,6 +103,13 @@ export function useAIChat(options?: UseAIChatOptions) {
         }
         if (parsed.error === "plan_required") toast.error(t("plan_required"));
         else if (parsed.error === "rate_limited") toast.error(t("rate_limited"));
+        else if (
+          parsed.error === "AI not configured" ||
+          parsed.message?.includes("AI not configured") ||
+          parsed.message?.includes("not configured")
+        ) {
+          toast.error("VOLT IA n'est pas encore configuré sur ce projet. Contactez le support.");
+        }
         else toast.error(t("error"));
         setIsLoading(false);
         return;
@@ -156,7 +163,7 @@ export function useAIChat(options?: UseAIChatOptions) {
       });
       if (saveError) console.error("Error saving assistant message:", saveError);
     } catch (e) {
-      console.error(e);
+      console.error("VOLT AI error details:", e);
       toast.error(t("error"));
     } finally {
       setIsLoading(false);
