@@ -1,0 +1,2 @@
+ALTER TABLE public.session_exercises ADD COLUMN IF NOT EXISTS superset_group INTEGER DEFAULT NULL;
+CREATE INDEX IF NOT EXISTS idx_session_exercises_superset_group ON public.session_exercises(session_id, superset_group) WHERE superset_group IS NOT NULL;
