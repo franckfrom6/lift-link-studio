@@ -1,0 +1,834 @@
+================================================================================
+F6GYM — RUNNING FEATURE PROMPTS
+Ordre exact à respecter — copier-coller un prompt à la fois dans Lovable
+Attendre que Lovable ait terminé avant d'envoyer le suivant.
+================================================================================
+
+ORDRE :
+  1. Correctif A  — Exclure exercices cardio du picker muscu
+  2. Prompt R1    — DB schema + types TypeScript (fondation running)
+  3. Prompt R2    — Composant RunBlockEditor (créer une séance running)
+  4. Correctif B  — Chemin unique de création (SessionTypeChooser)
+  5. Correctif C  — Multi-séances même jour + navigation par type
+  6. Prompt R3    — Live running session (séance guidée bloc par bloc)
+  7. Prompt R4    — Objectif course + programme VOLT
+
+================================================================================
+PROMPT 1 / 7  —  Correctif A : Exclure les exercices cardio du picker muscu
+================================================================================
+
+In `src/hooks/useExercises.ts`, the query fetches all exercises with no filter,
+which causes cardio/running exercises (type = "cardio", tracking_type =
+"distance") to appear in strength session builders.
+
+Fix the query to exclude them by default:
+
+const { data, error } = await supabase
+  .from("exercises")
+  .select("*")
+  .not("type", "eq", "cardio")
+  .not("tracking_type", "eq", "distance")
+  .order("muscle_group")
+  .order("name");
+
+Also in `src/components/student/FreeSessionCreator.tsx`, add a filter in the
+`searchResults` useMemo, after the existing muscleFilter line:
+
+  // Always exclude cardio exercises from strength session builder
+  results = results.filter(
+    ex => ex.type !== "cardio"
+      && ex.tracking_type !== "distance"
+      && ex.muscle_group !== "cardio"
+  );
+
+Also remove "cardio" from the MUSCLE_FILTERS array if it is present.
+
+No other changes.
+
+================================================================================
+PROMPT 2 / 7  —  Prompt R1 : DB schema + types TypeScript (fondation running)
+================================================================================
+
+Add dedicated running session support to the app. This is a new feature — do
+not touch any existing strength training logic.
+
+--- DATABASE MIGRATION ---
+
+Create a new Supabase migration with:
+
+-- 1. Extend sessions with a type + run structure
+ALTER TABLE sessions
+  ADD COLUMN IF NOT EXISTS session_type text NOT NULL DEFAULT 'strength'
+    CHECK (session_type IN ('strength', 'running')),
+  ADD COLUMN IF NOT EXISTS run_blocks jsonb;
+
+-- 2. Race goals for athletes (for program generation)
+CREATE TABLE IF NOT EXISTS race_goals (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  race_type text NOT NULL CHECK (race_type IN (
+    '5k', '10k', 'half_marathon', 'marathon', 'trail_20k', 'trail_50k'
+  )),
+  target_date date NOT NULL,
+  target_time_min integer,
+  current_weekly_km integer,
+  current_easy_pace_s_per_km integer,
+  notes text,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE race_goals ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Students manage their own race goals"
+  ON race_goals FOR ALL USING (auth.uid() = student_id);
+
+--- NEW FILE src/types/running.ts ---
+
+Create this file with the following content:
+
+/** One structured segment inside a running session. */
+export interface RunBlock {
+  id: string;
+  type: RunBlockType;
+  label?: string;
+  target_km?: number;
+  target_min?: number;
+  pace_min_s?: number;   // slowest pace in s/km  e.g. 390 = 6:30/km
+  pace_max_s?: number;   // fastest pace in s/km  e.g. 360 = 6:00/km
+  zone?: 1 | 2 | 3 | 4 | 5;
+  repeats?: number;
+  work_km?: number;
+  work_min?: number;
+  recovery_min?: number;
+  notes?: string;
+}
+
+export type RunBlockType =
+  | "warmup"
+  | "easy"
+  | "tempo"
+  | "threshold"
+  | "interval"
+  | "recovery"
+  | "cooldown";
+
+export const RUN_BLOCK_LABELS: Record<RunBlockType, string> = {
+  warmup:    "Échauffement",
+  easy:      "Footing EF",
+  tempo:     "Tempo",
+  threshold: "Seuil",
+  interval:  "Fractionné",
+  recovery:  "Récupération",
+  cooldown:  "Retour au calme",
+};
+
+export const RUN_BLOCK_COLORS: Record<RunBlockType, string> = {
+  warmup:    "bg-blue-500/15 text-blue-600 border-blue-500/25",
+  easy:      "bg-success/15 text-success border-success/25",
+  tempo:     "bg-yellow-500/15 text-yellow-600 border-yellow-500/25",
+  threshold: "bg-orange-500/15 text-orange-600 border-orange-500/25",
+  interval:  "bg-destructive/15 text-destructive border-destructive/25",
+  recovery:  "bg-muted/30 text-muted-foreground border-border",
+  cooldown:  "bg-blue-500/10 text-blue-500 border-blue-500/20",
+};
+
+export const ZONE_LABELS: Record<number, string> = {
+  1: "Z1 · Très facile",
+  2: "Z2 · Endurance fondamentale",
+  3: "Z3 · Allure tempo",
+  4: "Z4 · Seuil lactique",
+  5: "Z5 · VO2max",
+};
+
+export const ZONE_COLORS: Record<number, string> = {
+  1: "text-sky-500",
+  2: "text-success",
+  3: "text-yellow-500",
+  4: "text-orange-500",
+  5: "text-destructive",
+};
+
+export const RACE_TYPE_LABELS: Record<string, string> = {
+  "5k":            "5 km",
+  "10k":           "10 km",
+  "half_marathon": "Semi-marathon",
+  "marathon":      "Marathon",
+  "trail_20k":     "Trail 20 km",
+  "trail_50k":     "Trail 50 km",
+};
+
+/** Format seconds/km as "mm:ss /km" */
+export function formatPaceSec(s: number | null | undefined): string {
+  if (!s || s <= 0) return "—";
+  const m = Math.floor(s / 60);
+  const sec = Math.round(s % 60).toString().padStart(2, "0");
+  return `${m}:${sec} /km`;
+}
+
+/** Compute pace s/km from km + minutes */
+export function paceFromKmMin(km: number, minutes: number): number | null {
+  if (!km || !minutes || km <= 0 || minutes <= 0) return null;
+  return Math.round((minutes * 60) / km);
+}
+
+/** Total distance of a run session's blocks in km */
+export function totalBlocksKm(blocks: RunBlock[]): number {
+  return blocks.reduce((acc, b) => {
+    if (b.type === "interval" && b.work_km && b.repeats)
+      return acc + b.work_km * b.repeats;
+    return acc + (b.target_km || 0);
+  }, 0);
+}
+
+/** Estimated total duration of a run session in minutes */
+export function estimatedBlocksMin(blocks: RunBlock[]): number {
+  return blocks.reduce((acc, b) => {
+    if (b.type === "interval" && b.repeats) {
+      const workMin =
+        b.work_min ||
+        (b.work_km && b.pace_max_s ? (b.work_km * b.pace_max_s) / 60 : 0);
+      const recov = b.recovery_min || 1.5;
+      return acc + (workMin + recov) * b.repeats;
+    }
+    if (b.target_min) return acc + b.target_min;
+    if (b.target_km && b.pace_max_s)
+      return acc + (b.target_km * b.pace_max_s) / 60;
+    return acc;
+  }, 0);
+}
+
+--- END ---
+
+Do not modify any existing files. Only create the migration and this new types
+file.
+
+================================================================================
+PROMPT 3 / 7  —  Prompt R2 : Composant RunBlockEditor
+================================================================================
+
+Using the RunBlock type from `src/types/running.ts`, create a new standalone
+bottom sheet component `src/components/student/RunBlockEditor.tsx`.
+
+This component is used to build a running session as an ordered list of blocks.
+It will be wired into the app in a subsequent step — for now just create the
+component itself.
+
+PROPS:
+
+interface RunBlockEditorProps {
+  open: boolean;
+  onClose: () => void;
+  date: Date;
+  initialBlocks?: RunBlock[];
+  sessionName?: string;
+  onSave: (name: string, blocks: RunBlock[]) => Promise<void>;
+}
+
+UX — two steps inside the sheet (h-[92dvh]):
+
+STEP 1 — Name + optional template
+  - Input: session name (e.g. "Footing 8km", "Fractionné 10×400m")
+  - If no blocks yet, show 4 template buttons to prefill:
+
+    "Footing facile" →
+      [warmup 10min Z1, easy 30min Z2, cooldown 5min Z1]
+
+    "Tempo run" →
+      [warmup 10min Z1, tempo 20min Z3, cooldown 10min Z1]
+
+    "Fractionné court" →
+      [warmup 15min Z1, interval repeats=8 work_km=0.2 recovery_min=1 Z5,
+       cooldown 10min Z1]
+
+    "Sortie longue" →
+      [warmup 10min Z1, easy 60min Z2, cooldown 10min Z1]
+
+  - "Continuer →" primary button (disabled if name is empty)
+
+STEP 2 — Block builder
+  - Vertical scrollable list of block cards
+  - Each block card shows:
+      * Colored type badge (use RUN_BLOCK_COLORS from running.ts)
+      * Type selector: horizontal chip row of the 7 types
+      * Target toggle: "km" or "min" (two chips, only one active)
+        → shows a number input for the selected unit
+      * Optional pace range: two inputs "Allure min" / "Allure max"
+        displayed as mm:ss (convert to/from seconds internally)
+      * Zone picker: Z1–Z5 chips (optional, single select)
+      * For "interval" type only: extra row with
+        "Répétitions" + "Dist. (m) ou Durée (min)" + "Récup (min)"
+      * Notes: one-line text input
+      * Delete button (trash icon, top right of card)
+  - Below the list: "＋ Ajouter un bloc" ghost button
+    Opens a mini bottom sheet to pick the block type (7 options as a grid)
+    and appends a new block with default values
+  - Blocks can be reordered with up/down arrow buttons (no drag needed)
+
+FOOTER (sticky bottom, outside scroll):
+  Left side: "X km · ~Y min" computed from totalBlocksKm + estimatedBlocksMin
+  Right side: "Enregistrer" primary button (disabled if no blocks)
+  On save: call onSave(name, blocks), then onClose()
+
+Generate block ids with crypto.randomUUID() or a simple Math.random() string.
+
+Use only existing design tokens (bg-card, border-border, text-primary, etc.).
+All tap targets minimum 44px.
+Do not wire this component anywhere — that is done in the next step.
+
+================================================================================
+PROMPT 4 / 7  —  Correctif B : Chemin unique de création de séance
+================================================================================
+
+Create a single entry point for session creation that routes to either the
+strength session creator or the running session creator.
+
+--- NEW FILE src/components/student/SessionTypeChooser.tsx ---
+
+interface SessionTypeChooserProps {
+  open: boolean;
+  onClose: () => void;
+  date: Date;
+  onChooseStrength: (date: Date) => void;
+  onChooseRun: (date: Date) => void;
+}
+
+UI: a compact bottom sheet (rounded-t-2xl, auto height, no scroll needed).
+Header: "Quelle séance ajouter ?"
+Two large tappable cards side by side (grid-cols-2, gap-3, h-28 each):
+
+  Card 1 — Musculation
+    emoji: 💪 (text-3xl)
+    title: "Musculation" (font-semibold text-sm)
+    subtitle: "Exercices · Séries · Reps" (text-xs text-muted-foreground)
+
+  Card 2 — Course à pied
+    emoji: 🏃 (text-3xl)
+    title: "Course à pied" (font-semibold text-sm)
+    subtitle: "Blocs · Allure · Zones" (text-xs text-muted-foreground)
+
+Each card: rounded-xl border border-border hover:border-primary/40
+hover:bg-accent/30 transition-all flex flex-col items-center justify-center gap-1
+
+On tap: close the sheet, then call onChooseStrength(date) or onChooseRun(date).
+
+--- CHANGES IN src/pages/student/StudentWeek.tsx ---
+
+1. Add imports:
+   import SessionTypeChooser from "@/components/student/SessionTypeChooser";
+   import RunBlockEditor from "@/components/student/RunBlockEditor";
+
+2. Add states:
+   const [sessionChooserOpen, setSessionChooserOpen] = useState(false);
+   const [sessionChooserDate, setSessionChooserDate] = useState<Date>(new Date());
+   const [runSessionOpen, setRunSessionOpen] = useState(false);
+   const [runSessionDate, setRunSessionDate] = useState<Date>(new Date());
+
+3. Replace EVERY existing call to setFreeSessionOpen(true) or setBuilderOpen(true)
+   that comes from user-initiated actions (header button, rest-day click, dropdown
+   menu) with:
+     setSessionChooserDate(<the relevant date>);
+     setSessionChooserOpen(true);
+
+   Exception: do NOT change setBuilderOpen calls that come from the coach
+   "add exercise" workflow if any exist.
+
+4. At the bottom of the JSX, alongside the existing modal mounts, add:
+
+   <SessionTypeChooser
+     open={sessionChooserOpen}
+     onClose={() => setSessionChooserOpen(false)}
+     date={sessionChooserDate}
+     onChooseStrength={(d) => {
+       setSessionChooserOpen(false);
+       setFreeSessionDate(d);
+       setFreeSessionOpen(true);
+     }}
+     onChooseRun={(d) => {
+       setSessionChooserOpen(false);
+       setRunSessionDate(d);
+       setRunSessionOpen(true);
+     }}
+   />
+
+   <RunBlockEditor
+     open={runSessionOpen}
+     onClose={() => setRunSessionOpen(false)}
+     date={runSessionDate}
+     onSave={async (name, blocks) => {
+       await supabase.from("sessions").insert({
+         name,
+         day_of_week: runSessionDate.getDay() === 0 ? 7 : runSessionDate.getDay(),
+         is_free_session: true,
+         created_by: user!.id,
+         free_session_date: formatLocalDate(runSessionDate),
+         session_type: "running",
+         run_blocks: blocks,
+       });
+       queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+       queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
+     }}
+   />
+
+Do NOT add a "Course à pied" tab inside FreeSessionCreator. Keep
+FreeSessionCreator strictly for strength sessions.
+
+================================================================================
+PROMPT 5 / 7  —  Correctif C : Multi-séances même jour + navigation par type
+================================================================================
+
+Fix the calendar to handle multiple sessions on the same day and to navigate
+to the correct page based on session type.
+
+--- CHANGE 1 : useWeekData — fetch session_type ---
+
+In `src/hooks/useWeekData.ts`, update the free sessions SELECT to include
+session_type:
+
+  .select("id, name, free_session_date, session_type, session_exercises(id, is_archived)")
+
+Update the mapped result to include session_type:
+
+  return (data || []).map((s: any) => ({
+    id: s.id,
+    name: s.name,
+    date: s.free_session_date,
+    session_type: s.session_type || "strength",
+    exerciseCount: (s.session_exercises || []).filter(
+      (e: any) => !e.is_archived
+    ).length,
+  }));
+
+Update the FreeSession interface to add:
+  session_type: string;
+
+--- CHANGE 2 : StudentWeek — smart handleClick ---
+
+In `src/pages/student/StudentWeek.tsx`, replace the handleClick function for
+each day row with logic that handles multiple free sessions:
+
+  const handleClick = () => {
+    if (swapMode) { handleDayClickInSwapMode(day.dayIndex); return; }
+
+    // Programmed session from coach program
+    if (isSessionDay && sessionInfo) {
+      navigate(`/student/session/${sessionInfo.sessionId}/preview`);
+      return;
+    }
+
+    // Single free session — navigate directly
+    if (dayFreeSessions.length === 1) {
+      const fs = dayFreeSessions[0];
+      navigate(
+        fs.session_type === "running"
+          ? `/student/run/${fs.id}`
+          : `/student/session/${fs.id}/preview`
+      );
+      return;
+    }
+
+    // Multiple free sessions — open day picker sheet
+    if (dayFreeSessions.length > 1) {
+      setMultiSessionDate(day.date);
+      setMultiSessionOpen(true);
+      return;
+    }
+
+    // Empty day — open session type chooser
+    if (!day.isPast) {
+      setSessionChooserDate(day.date);
+      setSessionChooserOpen(true);
+    }
+  };
+
+--- CHANGE 3 : StudentWeek — multi-session state + sheet ---
+
+Add two new state variables near the existing modal states:
+  const [multiSessionOpen, setMultiSessionOpen] = useState(false);
+  const [multiSessionDate, setMultiSessionDate] = useState<Date>(new Date());
+
+At the bottom of the JSX (alongside other sheets), add this inline sheet:
+
+  <Sheet open={multiSessionOpen} onOpenChange={(v) => !v && setMultiSessionOpen(false)}>
+    <SheetContent side="bottom" className="rounded-t-2xl max-h-[60dvh]">
+      <SheetHeader className="pb-3">
+        <SheetTitle className="text-sm font-semibold">
+          {multiSessionDate.toLocaleDateString("fr", {
+            weekday: "long", day: "numeric", month: "long"
+          })}
+        </SheetTitle>
+      </SheetHeader>
+      <div className="space-y-2 pb-4">
+        {freeSessions
+          .filter(fs => fs.date === formatLocalDate(multiSessionDate))
+          .map(fs => (
+            <button
+              key={fs.id}
+              onClick={() => {
+                setMultiSessionOpen(false);
+                navigate(
+                  fs.session_type === "running"
+                    ? `/student/run/${fs.id}`
+                    : `/student/session/${fs.id}/preview`
+                );
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/30 transition-all text-left"
+            >
+              <span className="text-xl">
+                {fs.session_type === "running" ? "🏃" : "💪"}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm truncate">{fs.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {fs.session_type === "running"
+                    ? "Course à pied"
+                    : `${fs.exerciseCount} exercices`}
+                </p>
+              </div>
+            </button>
+          ))}
+        <button
+          onClick={() => {
+            setMultiSessionOpen(false);
+            setSessionChooserDate(multiSessionDate);
+            setSessionChooserOpen(true);
+          }}
+          className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed border-border hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all text-left"
+        >
+          <span className="text-xl">➕</span>
+          <p className="font-semibold text-sm">Ajouter une séance</p>
+        </button>
+      </div>
+    </SheetContent>
+  </Sheet>
+
+--- CHANGE 4 : extras section — fix secondary session navigation ---
+
+In the `extras` block where secondary free sessions are listed (the section that
+renders dayFreeSessions.map when isSessionDay && dayFreeSessions.length > 0),
+update the onClick and the meta text:
+
+  onClick={(e) => {
+    e.stopPropagation();
+    navigate(
+      fs.session_type === "running"
+        ? `/student/run/${fs.id}`
+        : `/student/session/${fs.id}/preview`
+    );
+  }}
+
+  // Meta text:
+  {fs.session_type === "running" ? "🏃 Course" : `${fs.exerciseCount} ex.`}
+
+================================================================================
+PROMPT 6 / 7  —  Prompt R3 : Live Running Session (séance guidée bloc par bloc)
+================================================================================
+
+Create a new page `src/pages/student/RunningLiveSession.tsx` for the athlete
+to execute a structured running workout block by block.
+
+Add the route `/student/run/:sessionId` to `src/App.tsx`.
+
+--- STATE ---
+
+interface BlockResult {
+  block_id: string;
+  actual_km?: number;
+  actual_min?: number;
+  actual_pace_s?: number;   // computed from actual_km + actual_min
+  perceived_effort?: number; // RPE 1-10
+}
+
+States:
+  activeBlockIdx: number (starts at 0)
+  blockResults: BlockResult[]
+  phase: "ready" | "running" | "done"
+  sessionElapsed: number  // total seconds, auto-increments when phase="running"
+  blockElapsed: number    // current block seconds, resets on block change
+  logSheetOpen: boolean   // quick log after each block
+
+--- DATA FETCHING ---
+
+On mount, fetch the session:
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, name, run_blocks, session_type")
+    .eq("id", sessionId)
+    .single();
+
+  const blocks: RunBlock[] = session.run_blocks || [];
+
+--- PHASE "ready" — Session overview ---
+
+Full screen card:
+  - Session name (text-xl font-bold)
+  - Total km + estimated duration from totalBlocksKm + estimatedBlocksMin
+  - Vertical block list: for each block, a colored pill chip with
+    type label + target (km or min) + pace range if set
+  - Large "Démarrer la séance" button at bottom
+
+--- PHASE "running" — Active block view ---
+
+Layout (full screen, no scroll):
+
+  TOP BAR:
+    Back button (pauses session, shows "Quitter ?" alert dialog)
+    Session name (truncated)
+    Total elapsed: HH:MM:SS (bold, tabular-nums)
+    Progress: "Bloc 2 / 5" (muted text)
+
+  CENTER CARD (takes most of the screen, colored with block type color):
+    Block type label (text-3xl font-bold, e.g. "Fractionné")
+    Target: large number (text-4xl tabular-nums)
+      e.g. "5.0 km" or "20 min"
+    Pace target (if set): "Allure 5:30 – 6:00 /km" (text-sm text-muted-foreground)
+    Zone badge (if set): "Z2 · Endurance fondamentale" (colored chip)
+    Block stopwatch: MM:SS (text-2xl tabular-nums, auto-running)
+    Notes (if any): italic text-sm text-muted-foreground
+    For "interval" type: sub-counter "Répétition 3 / 8"
+
+  BOTTOM:
+    "Bloc suivant →" primary button h-14 w-full
+      → opens quick log bottom sheet before advancing
+    Ghost row below: "← Bloc précédent" (left) + dot progress (center)
+
+  QUICK LOG BOTTOM SHEET (opens when "Bloc suivant →" is tapped):
+    Title: "Comment s'est passé ce bloc ?"
+    Distance input: "Distance parcourue (km)" — pre-filled with target_km
+    RPE chips: 1 to 10 in a horizontal scroll row
+    "Valider" button → saves BlockResult, closes sheet, advances to next block
+    "Passer" link (skip logging)
+    On last block: button label is "Terminer la séance"
+
+--- PHASE "done" — Recap ---
+
+  Title: "Séance terminée 🎉"
+  Summary row: total km · total time · avg pace (mm:ss /km)
+  Block table:
+    Columns: Type | Objectif | Réalisé | Allure | RPE
+    One row per block
+  "Enregistrer" primary button → saves to DB then navigates to /student
+
+  On save:
+    // 1. Create completed_session
+    await supabase.from("completed_sessions").insert({
+      student_id: user.id,
+      session_id: sessionId,
+      started_at: startTime.toISOString(),
+      completed_at: new Date().toISOString(),
+      duration: sessionElapsed,
+    });
+
+    // 2. Create external_session for calendar/metrics
+    const totalKm = blockResults.reduce((a, r) => a + (r.actual_km || 0), 0);
+    const avgPaceSec =
+      totalKm > 0 && sessionElapsed > 0
+        ? Math.round(sessionElapsed / totalKm)
+        : null;
+
+    await supabase.from("external_sessions").insert({
+      student_id: user.id,
+      date: formatLocalDate(new Date()),
+      activity_type: "running",
+      activity_label: session.name,
+      duration_minutes: Math.round(sessionElapsed / 60),
+      distance_meters: Math.round(totalKm * 1000),
+      avg_pace_s_per_km: avgPaceSec,
+      source: "manual",
+      metrics: { splits: blockResults },
+    });
+
+--- DESIGN RULES ---
+
+  - All touch targets ≥ 44px
+  - Use existing tokens only (bg-card, border-border, text-primary, etc.)
+  - Apply RUN_BLOCK_COLORS from running.ts for block type colors
+  - Use formatPaceSec from running.ts for pace display
+  - The page must work without GPS — all inputs are manual
+
+================================================================================
+PROMPT 7 / 7  —  Prompt R4 : Objectif course + programme VOLT
+================================================================================
+
+Add race goal tracking and VOLT-driven running program generation.
+
+--- NEW COMPONENT src/components/student/RaceGoalCard.tsx ---
+
+Displayed on StudentWeek when athlete has an active race goal. If none, shows a
+subtle CTA instead.
+
+Props:
+  raceGoal: {
+    race_type: string;
+    target_date: string;
+    target_time_min?: number;
+    current_weekly_km?: number;
+  } | null
+  onSetGoal: () => void
+  onEditGoal: () => void
+
+When raceGoal is null — show small "Préparer une course ? →" clickable banner
+(bg-bg-tinted, rounded-lg, p-3, onClick → onSetGoal).
+
+When raceGoal exists — show a card (rounded-xl border border-border p-4 space-y-2):
+  Row 1: Race type badge + emoji 🏁 + countdown "Dans X semaines"
+  Row 2: Target date (formatted) + target time if set "Objectif : 1h45"
+  Row 3: Weekly km progress bar
+    Label: "Volume cette semaine"
+    Value: computed from that week's running sessions (sum of totalBlocksKm)
+    Target: current_weekly_km from race goal
+  Row 4 (right-aligned): "Modifier" ghost button text-xs → onEditGoal
+
+--- NEW COMPONENT src/components/student/RaceGoalSetupSheet.tsx ---
+
+Bottom sheet to create or edit a race goal.
+
+Props:
+  open: boolean
+  onClose: () => void
+  existingGoal?: { id: string; race_type: string; target_date: string;
+                   target_time_min?: number; current_weekly_km?: number;
+                   current_easy_pace_s_per_km?: number } | null
+  studentId: string
+  onSaved: () => void
+
+Fields (all inside a ScrollArea):
+  1. Race type — horizontal scroll of 6 pills:
+     5 km / 10 km / Semi-marathon / Marathon / Trail 20 km / Trail 50 km
+  2. Target date — date input (min = today + 4 weeks)
+  3. Target time — optional, HH:MM:SS text input
+     (stored as total minutes: hours*60 + minutes)
+  4. Current weekly km — slider 0–100 with value chip
+  5. Current easy pace — optional mm:ss /km text input
+     (convert to seconds: minutes*60 + seconds)
+  6. Notes — optional textarea
+
+Save logic:
+  // Deactivate previous goal
+  await supabase.from("race_goals")
+    .update({ is_active: false })
+    .eq("student_id", studentId)
+    .eq("is_active", true);
+
+  // Insert new goal
+  await supabase.from("race_goals").insert({
+    student_id: studentId,
+    race_type,
+    target_date,
+    target_time_min: parsedMinutes || null,
+    current_weekly_km: sliderValue || null,
+    current_easy_pace_s_per_km: parsedPaceSec || null,
+    notes: notes || null,
+    is_active: true,
+  });
+
+  onSaved();
+  onClose();
+
+--- CHANGES IN src/pages/student/StudentWeek.tsx ---
+
+1. Add the race goal query:
+   const { data: raceGoal, refetch: refetchRaceGoal } = useQuery({
+     queryKey: ["race-goal", studentId],
+     queryFn: async () => {
+       const { data } = await supabase
+         .from("race_goals")
+         .select("*")
+         .eq("student_id", studentId!)
+         .eq("is_active", true)
+         .order("created_at", { ascending: false })
+         .limit(1)
+         .maybeSingle();
+       return data;
+     },
+     enabled: !!studentId,
+   });
+
+2. Add state: const [raceGoalSheetOpen, setRaceGoalSheetOpen] = useState(false);
+
+3. In the JSX, above the weekly session list (below MonthGrid), add:
+   <RaceGoalCard
+     raceGoal={raceGoal}
+     onSetGoal={() => setRaceGoalSheetOpen(true)}
+     onEditGoal={() => setRaceGoalSheetOpen(true)}
+   />
+
+4. At the bottom of JSX, add:
+   <RaceGoalSetupSheet
+     open={raceGoalSheetOpen}
+     onClose={() => setRaceGoalSheetOpen(false)}
+     existingGoal={raceGoal}
+     studentId={studentId!}
+     onSaved={() => { setRaceGoalSheetOpen(false); refetchRaceGoal(); }}
+   />
+
+--- CHANGES IN supabase/functions/ai-coach/index.ts ---
+
+1. Add tool to the tools array:
+
+{
+  "name": "create_running_program",
+  "description": "Generate a complete running preparation program for a race goal. Creates weekly sessions with progressive mileage as free running sessions in the athlete calendar.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "race_type": {
+        "type": "string",
+        "enum": ["5k","10k","half_marathon","marathon","trail_20k","trail_50k"]
+      },
+      "weeks": {
+        "type": "number",
+        "description": "Number of preparation weeks (8 to 16)"
+      },
+      "sessions_per_week": {
+        "type": "number",
+        "description": "Training sessions per week (3 to 5)"
+      },
+      "current_weekly_km": {
+        "type": "number",
+        "description": "Athlete current weekly volume in km"
+      }
+    },
+    "required": ["race_type", "weeks", "sessions_per_week"]
+  }
+}
+
+2. In the French system prompt string, add after the existing tool instructions:
+
+- Pour la préparation course à pied, utilise l'outil create_running_program.
+- Quand l'athlète parle de préparer un 5k, 10k, semi-marathon, marathon ou trail, propose-lui de créer un plan de préparation personnalisé.
+- Une semaine type de préparation inclut : 1 séance EF (endurance fondamentale), 1 séance qualité (fractionné ou tempo), 1 sortie longue (EF longue).
+- La charge progresse de ~10% par semaine avec une semaine de décharge toutes les 4 semaines.
+- Les 2 dernières semaines avant la course sont une phase d'affûtage (volume -35%).
+
+3. Handle the create_running_program tool call alongside the existing
+   create_free_session handler:
+
+When tc.function?.name === "create_running_program":
+  - Parse args: race_type, weeks, sessions_per_week, current_weekly_km (default 20)
+  - Generate sessions: for each week (1 to weeks), for each training day,
+    create a session with session_type = "running" and run_blocks = JSON array
+    of RunBlock objects matching the week's goal (EF / quality / long run)
+  - Progressive load: base_km = current_weekly_km, each week * 1.10,
+    deload every 4th week (* 0.70, cap at 100km/week
+  - Insert each session:
+
+    await supabase.from("sessions").insert({
+      name: sessionLabel,        // e.g. "S3 · Footing EF 45min"
+      day_of_week: dayOfWeek,    // 1=Mon … 7=Sun
+      is_free_session: true,
+      created_by: userId,
+      free_session_date: isoDate, // computed from today + offset
+      session_type: "running",
+      run_blocks: blocksArray,
+    });
+
+  - Push to toolResults:
+    { tool: "create_running_program", success: true,
+      weeks, sessions_count: totalInserted, race_type }
+
+No other changes to the edge function.
+
+================================================================================
+FIN DU FICHIER — 7 PROMPTS — À ENVOYER UN PAR UN DANS LOVABLE
+Attendre la fin du déploiement de chaque prompt avant d'envoyer le suivant.
+================================================================================

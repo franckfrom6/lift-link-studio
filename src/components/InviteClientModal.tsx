@@ -109,7 +109,7 @@ const InviteClientModal = () => {
         toast.error(t("error_generic"));
       } else {
         const shortId = data.id.replace(/-/g, '').slice(0, 8);
-        const url = `${window.location.origin}/join/f6gym-${shortId}`;
+        const url = `${window.location.origin}/join/6way-${shortId}`;
         setInviteUrl(url);
         toast.success(t("invite_success"));
       }
