@@ -61,7 +61,14 @@ export const useCoachExercises = () => {
     },
     onError: (err: any) => {
       console.error(err);
-      toast.error(i18n.t("exercises:custom_error"));
+      const msg = String(err?.message ?? "").toLowerCase();
+      if (msg.includes("duplicate") || msg.includes("unique")) {
+        toast.error("Un exercice avec ce nom existe déjà.");
+      } else if (msg.includes("row-level security") || msg.includes("policy")) {
+        toast.error("Permission refusée. Rechargez la page et réessayez.");
+      } else {
+        toast.error(i18n.t("exercises:custom_error"));
+      }
     },
   });
 
