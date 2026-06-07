@@ -622,8 +622,8 @@ const StudentWeek = () => {
       sessionId: sourceSession.sessionId,
       originalDay: swapSourceDay + 1,
       newDay: swapTargetDay + 1,
-      originalDate: dates[swapSourceDay].date,
-      newDate: dates[swapTargetDay].date,
+      originalDate: swapSourceDate!,
+      newDate: swapTargetDate!,
       reason: reason || undefined,
     });
     if (result) {
@@ -632,6 +632,8 @@ const StudentWeek = () => {
     setSwapMode(false);
     setSwapSourceDay(null);
     setSwapTargetDay(null);
+    setSwapSourceDate(null);
+    setSwapTargetDate(null);
     setSwapModalOpen(false);
   };
 
