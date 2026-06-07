@@ -96,6 +96,8 @@ const StudentWeek = () => {
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [swapTargetDay, setSwapTargetDay] = useState<number | null>(null);
+  const [swapSourceDate, setSwapSourceDate] = useState<Date | null>(null);
+  const [swapTargetDate, setSwapTargetDate] = useState<Date | null>(null);
   const [freeSessionOpen, setFreeSessionOpen] = useState(false);
   const [freeSessionDate, setFreeSessionDate] = useState<Date>(new Date());
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -561,6 +563,21 @@ const StudentWeek = () => {
   const handleSelectDate = (date: Date) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
+    if (swapMode && swapSourceDate !== null) {
+      if (d.toDateString() === swapSourceDate.toDateString()) {
+        setSwapMode(false);
+        setSwapSourceDay(null);
+        setSwapSourceDate(null);
+        return;
+      }
+      const targetDayIndex = (d.getDay() + 6) % 7;
+      setSelectedDate(d);
+      setDisplayMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+      setSwapTargetDay(targetDayIndex);
+      setSwapTargetDate(d);
+      setSwapModalOpen(true);
+      return;
+    }
     setSelectedDate(d);
     setDisplayMonth(new Date(d.getFullYear(), d.getMonth(), 1));
   };
@@ -605,8 +622,8 @@ const StudentWeek = () => {
       sessionId: sourceSession.sessionId,
       originalDay: swapSourceDay + 1,
       newDay: swapTargetDay + 1,
-      originalDate: dates[swapSourceDay].date,
-      newDate: dates[swapTargetDay].date,
+      originalDate: swapSourceDate!,
+      newDate: swapTargetDate!,
       reason: reason || undefined,
     });
     if (result) {
@@ -615,6 +632,8 @@ const StudentWeek = () => {
     setSwapMode(false);
     setSwapSourceDay(null);
     setSwapTargetDay(null);
+    setSwapSourceDate(null);
+    setSwapTargetDate(null);
     setSwapModalOpen(false);
   };
 
@@ -857,6 +876,7 @@ const StudentWeek = () => {
           onNextMonth={handleNextMonth}
           onJumpToday={handleJumpToday}
           direction={monthNavDir}
+          swapMode={swapMode}
         />
       )}
 
@@ -924,7 +944,7 @@ const StudentWeek = () => {
           <Button
             variant="ghost" size="icon"
             className="h-7 w-7 text-warning hover:text-warning"
-            onClick={() => { setSwapMode(false); setSwapSourceDay(null); }}
+            onClick={() => { setSwapMode(false); setSwapSourceDay(null); setSwapSourceDate(null); setSwapTargetDate(null); }}
             aria-label={t('common:cancel')}
           >
             <X className="w-4 h-4" strokeWidth={1.5} />
@@ -1041,7 +1061,7 @@ const StudentWeek = () => {
                   <DropdownMenuItem onClick={() => { setDuplicateSession({ id: sessionInfo.sessionId, name: sessionInfo.name }); setDuplicateOpen(true); }}>
                     <Copy className="w-4 h-4 mr-2" />{t('session:duplicate_title')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setSwapMode(true); setSwapSourceDay(day.dayIndex); }}>
+                  <DropdownMenuItem onClick={() => { setSwapMode(true); setSwapSourceDay(day.dayIndex); setSwapSourceDate(dates[day.dayIndex].date); }}>
                     <ArrowLeftRight className="w-4 h-4 mr-2" />{t('calendar:swap_session')}
                   </DropdownMenuItem>
                 </>
@@ -1162,7 +1182,7 @@ const StudentWeek = () => {
           // On rest days, expose the same action ("add a session") through both
           // the row click and the menu so creating a session on a week without
           // a program is intuitive.
-          const restDayClickable = state === "rest" && !day.isPast && !swapMode;
+          const restDayClickable = state === "rest" && !day.isPast;
           const rowOnClick = state === "rest"
             ? (restDayClickable ? handleClick : undefined)
             : handleClick;
@@ -1202,13 +1222,13 @@ const StudentWeek = () => {
       {swapSourceDay !== null && swapTargetDay !== null && (
         <SessionSwapModal
           open={swapModalOpen}
-          onClose={() => { setSwapModalOpen(false); setSwapMode(false); setSwapSourceDay(null); setSwapTargetDay(null); }}
+          onClose={() => { setSwapModalOpen(false); setSwapMode(false); setSwapSourceDay(null); setSwapTargetDay(null); setSwapSourceDate(null); setSwapTargetDate(null); }}
           onConfirm={handleSwapConfirm}
           sessionName={effectiveSessions[swapSourceDay]?.name || "Session"}
           fromDayIndex={swapSourceDay}
           toDayIndex={swapTargetDay}
-          fromDate={dates[swapSourceDay].date}
-          toDate={dates[swapTargetDay].date}
+          fromDate={swapSourceDate ?? dates[swapSourceDay].date}
+          toDate={swapTargetDate ?? dates[swapTargetDay].date}
           isMutualSwap={targetHasSession}
           targetSessionName={targetHasSession ? effectiveSessions[swapTargetDay]?.name : undefined}
         />
