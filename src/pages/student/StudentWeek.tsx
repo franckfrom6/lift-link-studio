@@ -1007,7 +1007,6 @@ const StudentWeek = () => {
           // Pick what to show as session name/meta
           let sessionName: string | null = null;
           let sessionMeta: string | null = null;
-          let isAI = false;
           if (isSessionDay && sessionInfo) {
             sessionName = sessionInfo.name;
             const parts: string[] = [`${sessionInfo.exerciseCount} ex.`];
@@ -1019,14 +1018,12 @@ const StudentWeek = () => {
             const fs = dayFreeSessions[0];
             sessionName = fs.name;
             sessionMeta = `${fs.exerciseCount} ex.`;
-            isAI = true;
           }
           // For multi-session days, the row stays compact (label + menu) and the
           // session details live in the stacked cards below.
           if (isMultiSession) {
             sessionName = null;
             sessionMeta = null;
-            isAI = false;
           }
 
           // Action menu (kept feature parity with previous version)
@@ -1147,9 +1144,6 @@ const StudentWeek = () => {
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className="text-xs font-semibold text-foreground truncate">{fs.name}</span>
-                        <span className="inline-flex items-center gap-0.5 bg-bg-tinted text-muted-foreground text-[8px] font-bold uppercase px-1 py-[1px] rounded-xs">
-                          <Bot className="w-2 h-2" strokeWidth={2} />IA
-                        </span>
                       </div>
                       <span className="text-[10px] tabular-nums text-muted-subtle ml-2">
                         {fs.session_type === "running"
@@ -1182,7 +1176,6 @@ const StudentWeek = () => {
               isLast={isLast}
               sessionName={sessionName}
               sessionMeta={sessionMeta}
-              isAI={isAI}
               onClick={rowOnClick}
               actionMenu={actionMenu}
             >
