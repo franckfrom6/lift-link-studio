@@ -1,4 +1,4 @@
-import { Check, ChevronRight, MessageCircle, MoreVertical, Bot, Plus } from "lucide-react";
+import { Check, ChevronRight, MessageCircle, MoreVertical, Plus } from "lucide-react";
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,6 @@ export interface ProgDayRowProps {
   sessionName?: string | null;
   sessionMeta?: string | null;     // e.g. "~62 min · 6 exos" or "64 min · terminée 18h42"
   hasCoachNote?: boolean;
-  isAI?: boolean;
 
   onClick?: () => void;
   actionMenu?: ReactNode;          // dropdown content for the "..." menu
@@ -82,7 +81,6 @@ const ProgDayRow = ({
   sessionName,
   sessionMeta,
   hasCoachNote,
-  isAI,
   onClick,
   actionMenu,
   children,
