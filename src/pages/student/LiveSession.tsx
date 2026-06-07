@@ -352,6 +352,7 @@ const LiveSession = () => {
         videoUrlFemale: (ex.exercise as any)?.video_url_female || "",
         videoUrlMale: (ex.exercise as any)?.video_url_male || "",
         exerciseVideoUrl: (ex.exercise as any)?.video_url || "",
+        supersetGroup: (ex as any).superset_group ?? null,
       })),
     }));
   }, [selectedSession]);
