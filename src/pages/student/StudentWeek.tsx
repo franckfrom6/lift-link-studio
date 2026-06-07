@@ -1181,7 +1181,7 @@ const StudentWeek = () => {
           // On rest days, expose the same action ("add a session") through both
           // the row click and the menu so creating a session on a week without
           // a program is intuitive.
-          const restDayClickable = state === "rest" && !day.isPast && !swapMode;
+          const restDayClickable = state === "rest" && !day.isPast;
           const rowOnClick = state === "rest"
             ? (restDayClickable ? handleClick : undefined)
             : handleClick;
