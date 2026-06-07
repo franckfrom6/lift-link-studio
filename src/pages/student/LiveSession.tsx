@@ -1162,16 +1162,38 @@ const LiveSession = () => {
                   }
                   if (ex.rest === "—" || !ex.rest) restSeconds = 0;
                   const isSkipped = skippedExercises.has(key);
+                  const biSetLink = supersetPartnerMap[key];
+                  const showBiSetHeader = !!biSetLink && biSetLink.isFirst;
+                  const showBiSetTail = !!biSetLink && !biSetLink.isFirst;
 
                   return (
+                  <div key={key} className={cn(biSetLink && "relative")}>
+                    {showBiSetHeader && (
+                      <div className="flex items-center gap-2 mb-2 px-1">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold uppercase tracking-[0.05em]">
+                          ↕ Bi-set
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          Alterner les séries · repos partagé après chaque tour
+                        </span>
+                      </div>
+                    )}
+                    {biSetLink && (
+                      <div
+                        aria-hidden
+                        className={cn(
+                          "absolute left-0 w-1 bg-primary/60 rounded-full",
+                          biSetLink.isFirst ? "top-8 bottom-[-12px]" : "top-[-12px] bottom-4",
+                        )}
+                      />
+                    )}
                     <div
-                      key={key}
                       data-exercise-key={key}
                       role={!isActive && !isSkipped ? "button" : undefined}
                       tabIndex={!isActive && !isSkipped ? 0 : undefined}
                       onClick={() => !isActive && !isSkipped && setActiveExercise(key)}
                       onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isActive && !isSkipped) { e.preventDefault(); setActiveExercise(key); } }}
-                      className={cn(!isActive && !isSkipped && "cursor-pointer")}
+                      className={cn(!isActive && !isSkipped && "cursor-pointer", biSetLink && "pl-3")}
                     >
                       <EnhancedExerciseCard
                         name={displayName}
@@ -1193,8 +1215,8 @@ const LiveSession = () => {
                         completedSets={sets}
                         onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
                         onAllSetsComplete={() => handleExerciseComplete(key)}
-                        onSetValidated={(rest) => setGlobalRestSeconds(rest)}
-                        onRestStart={(secs) => setGlobalRestSeconds(secs)}
+                        onSetValidated={(rest) => handleSupersetAwareRest(key, rest)}
+                        onRestStart={(secs) => handleSupersetAwareRest(key, secs)}
                         onSwapExercise={() => handleOpenSwap(key)}
                         onSkipExercise={() => handleOpenSkip(key)}
                         isSubstituted={isSubstituted}
@@ -1212,6 +1234,7 @@ const LiveSession = () => {
                         }
                       />
                     </div>
+                  </div>
                   );
                 })}
               </SessionSection>
