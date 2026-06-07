@@ -200,7 +200,8 @@ const MonthGrid = ({
                 !inMonth && "opacity-30",
                 isSelected
                   ? "bg-primary/10"
-                  : "hover:bg-bg-tinted active:bg-bg-tinted"
+                  : "hover:bg-bg-tinted active:bg-bg-tinted",
+                swapMode && "cursor-crosshair ring-1 ring-primary/20 hover:ring-primary/60"
               )}
               aria-label={d.toLocaleDateString("fr", {
                 weekday: "long",
