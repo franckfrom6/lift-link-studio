@@ -1245,9 +1245,78 @@ Rules:
       const priorMsgs = (built.messages || []).filter(
         (m: any) => m.role === "user" || m.role === "assistant"
       );
+
+      // Handle optional attachment: image (vision), pdf/txt (decoded text), fit (note)
+      const attachment = payload?.attachment as
+        | { name: string; type: string; base64: string }
+        | undefined;
+
+      let lastUserContent: any = built.user;
+      let attachmentNote = "";
+
+      if (attachment && attachment.base64) {
+        const isImage = (attachment.type || "").startsWith("image/");
+        const lowerName = (attachment.name || "").toLowerCase();
+
+        if (isImage) {
+          lastUserContent = [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: attachment.type,
+                data: attachment.base64,
+              },
+            },
+            {
+              type: "text",
+              text:
+                (built.user && built.user.trim()) ||
+                "Analyse ce plan d'entraînement et crée les séances correspondantes dans mon calendrier.",
+            },
+          ];
+        } else if (lowerName.endsWith(".pdf")) {
+          // Claude supports PDF as document blocks
+          lastUserContent = [
+            {
+              type: "document",
+              source: {
+                type: "base64",
+                media_type: "application/pdf",
+                data: attachment.base64,
+              },
+            },
+            {
+              type: "text",
+              text:
+                (built.user && built.user.trim()) ||
+                `Analyse ce document (${attachment.name}) et propose les séances à créer dans mon calendrier.`,
+            },
+          ];
+        } else if (lowerName.endsWith(".txt") || (attachment.type || "").startsWith("text/")) {
+          let decoded = "";
+          try {
+            decoded = new TextDecoder().decode(
+              Uint8Array.from(atob(attachment.base64), (c) => c.charCodeAt(0))
+            );
+          } catch (e) {
+            console.warn("Failed to decode text attachment:", e);
+          }
+          const truncated = decoded.slice(0, 20000);
+          attachmentNote = `\n\nFICHIER JOINT (${attachment.name}) :\n\`\`\`\n${truncated}\n\`\`\``;
+          lastUserContent = (built.user || "") + attachmentNote;
+        } else if (lowerName.endsWith(".fit")) {
+          attachmentNote = `\n\n(Fichier FIT joint : ${attachment.name} — données brutes non décodées. Demande à l'utilisateur les infos clés (sport, durée, distance, intensité) si nécessaire.)`;
+          lastUserContent = (built.user || "") + attachmentNote;
+        } else {
+          attachmentNote = `\n\n(Fichier joint : ${attachment.name}, type ${attachment.type} — non lisible directement.)`;
+          lastUserContent = (built.user || "") + attachmentNote;
+        }
+      }
+
       const conversationHistory = [
         ...priorMsgs,
-        { role: "user", content: built.user },
+        { role: "user", content: lastUserContent },
       ];
 
       const start = Date.now();
