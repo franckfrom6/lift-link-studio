@@ -1,4 +1,4 @@
-import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Bot, Copy, Trash2, Activity, Zap, Check, ChevronRight } from "lucide-react";
+import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Copy, Trash2, Activity, Zap, Check, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
@@ -979,7 +979,6 @@ const StudentWeek = () => {
             name: string;
             meta: string;
             isCompleted: boolean;
-            isAI: boolean;
             sessionType?: string;
           }> = [];
           if (isSessionDay && sessionInfo) {
@@ -990,10 +989,9 @@ const StudentWeek = () => {
                 `${sessionInfo.exerciseCount} ex.`,
                 ...(sessionInfo.muscleGroups.slice(0, 2)),
               ].join(' · '),
-              isCompleted: sessionCompleted,
-              isAI: false,
-              sessionType: sessionInfo.session_type,
-            });
+            isCompleted: sessionCompleted,
+            sessionType: sessionInfo.session_type,
+          });
           }
           dayFreeSessions.forEach(fs => {
             allDaySessions.push({
@@ -1001,7 +999,6 @@ const StudentWeek = () => {
               name: fs.name,
               meta: `${fs.exerciseCount} ex.`,
               isCompleted: isSessionCompleted(fs.id),
-              isAI: true,
               sessionType: fs.session_type,
             });
           });
@@ -1010,7 +1007,6 @@ const StudentWeek = () => {
           // Pick what to show as session name/meta
           let sessionName: string | null = null;
           let sessionMeta: string | null = null;
-          let isAI = false;
           if (isSessionDay && sessionInfo) {
             sessionName = sessionInfo.name;
             const parts: string[] = [`${sessionInfo.exerciseCount} ex.`];
@@ -1022,14 +1018,12 @@ const StudentWeek = () => {
             const fs = dayFreeSessions[0];
             sessionName = fs.name;
             sessionMeta = `${fs.exerciseCount} ex.`;
-            isAI = true;
           }
           // For multi-session days, the row stays compact (label + menu) and the
           // session details live in the stacked cards below.
           if (isMultiSession) {
             sessionName = null;
             sessionMeta = null;
-            isAI = false;
           }
 
           // Action menu (kept feature parity with previous version)
@@ -1129,11 +1123,6 @@ const StudentWeek = () => {
                           </p>
                           <p className="text-[10px] text-muted-subtle mt-0.5 truncate">{s.meta}</p>
                         </div>
-                        {s.isAI && (
-                          <span className="inline-flex items-center gap-0.5 bg-bg-tinted text-muted-foreground text-[8px] font-bold uppercase px-1.5 py-[1px] rounded-xs flex-shrink-0">
-                            <Bot className="w-2 h-2" strokeWidth={2} />IA
-                          </span>
-                        )}
                         {!s.isCompleted && (
                           <ChevronRight className="w-3.5 h-3.5 text-muted-subtle flex-shrink-0" strokeWidth={2} />
                         )}
@@ -1155,9 +1144,6 @@ const StudentWeek = () => {
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className="text-xs font-semibold text-foreground truncate">{fs.name}</span>
-                        <span className="inline-flex items-center gap-0.5 bg-bg-tinted text-muted-foreground text-[8px] font-bold uppercase px-1 py-[1px] rounded-xs">
-                          <Bot className="w-2 h-2" strokeWidth={2} />IA
-                        </span>
                       </div>
                       <span className="text-[10px] tabular-nums text-muted-subtle ml-2">
                         {fs.session_type === "running"
@@ -1190,7 +1176,6 @@ const StudentWeek = () => {
               isLast={isLast}
               sessionName={sessionName}
               sessionMeta={sessionMeta}
-              isAI={isAI}
               onClick={rowOnClick}
               actionMenu={actionMenu}
             >

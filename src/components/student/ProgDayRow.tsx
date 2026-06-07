@@ -1,4 +1,4 @@
-import { Check, ChevronRight, MessageCircle, MoreVertical, Bot, Plus } from "lucide-react";
+import { Check, ChevronRight, MessageCircle, MoreVertical, Plus } from "lucide-react";
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,6 @@ export interface ProgDayRowProps {
   sessionName?: string | null;
   sessionMeta?: string | null;     // e.g. "~62 min · 6 exos" or "64 min · terminée 18h42"
   hasCoachNote?: boolean;
-  isAI?: boolean;
 
   onClick?: () => void;
   actionMenu?: ReactNode;          // dropdown content for the "..." menu
@@ -82,7 +81,6 @@ const ProgDayRow = ({
   sessionName,
   sessionMeta,
   hasCoachNote,
-  isAI,
   onClick,
   actionMenu,
   children,
@@ -194,12 +192,6 @@ const ProgDayRow = ({
             {isToday && (
               <span className="px-1.5 py-[1px] rounded-xs bg-primary text-primary-foreground text-[9px] font-bold uppercase tracking-[0.04em]">
                 Aujourd'hui
-              </span>
-            )}
-            {isAI && (
-              <span className="inline-flex items-center gap-0.5 bg-bg-tinted text-muted-foreground text-[9px] font-bold uppercase tracking-[0.04em] px-1.5 py-[1px] rounded-xs">
-                <Bot className="w-2.5 h-2.5" strokeWidth={2} />
-                IA
               </span>
             )}
             {hasCoachNote && (
