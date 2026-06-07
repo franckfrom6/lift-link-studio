@@ -319,6 +319,74 @@ const LiveSession = () => {
     return map;
   }, [selectedSession]);
 
+  /**
+   * Map of `${sIdx}-${eIdx}` → partner key when this exercise is part of a
+   * bi-set (two consecutive exercises in the same section sharing the same
+   * non-null `superset_group`).
+   */
+  const supersetPartnerMap = useMemo(() => {
+    const map: Record<string, { partnerKey: string; isFirst: boolean; firstKey: string }> = {};
+    if (!selectedSession) return map;
+    selectedSession.sections.forEach((section: any, sIdx: number) => {
+      const exs = section.exercises as any[];
+      for (let i = 0; i < exs.length - 1; i++) {
+        const a = exs[i];
+        const b = exs[i + 1];
+        const ag = a?.superset_group ?? a?.supersetGroup;
+        const bg = b?.superset_group ?? b?.supersetGroup;
+        if (ag != null && ag === bg) {
+          const keyA = `${sIdx}-${i}`;
+          const keyB = `${sIdx}-${i + 1}`;
+          map[keyA] = { partnerKey: keyB, isFirst: true, firstKey: keyA };
+          map[keyB] = { partnerKey: keyA, isFirst: false, firstKey: keyA };
+        }
+      }
+    });
+    return map;
+  }, [selectedSession]);
+
+  // Latest completedSets in a ref so the rest-gating callback can read it
+  // synchronously without recreating itself on every change.
+  const completedSetsRef = useRef(completedSets);
+  useEffect(() => {
+    completedSetsRef.current = completedSets;
+  }, [completedSets]);
+
+  const countValidatedSets = useCallback((key: string) => {
+    const arr = completedSetsRef.current[key] || [];
+    const tType = trackingTypeMap[key] || "weight_reps";
+    return arr.filter((s: any) =>
+      tType === "duration" ? (s.durationSeconds || 0) > 0 : (s.reps || 0) > 0,
+    ).length;
+  }, [trackingTypeMap]);
+
+  /**
+   * Bi-set aware rest trigger. When called from an exercise that has a
+   * partner, only fires the global rest timer once both partners have
+   * completed the same set index. Otherwise (non-superset) behaves exactly
+   * like setGlobalRestSeconds.
+   */
+  const handleSupersetAwareRest = useCallback(
+    (key: string, restSec: number) => {
+      const link = supersetPartnerMap[key];
+      if (!link) {
+        setGlobalRestSeconds(restSec);
+        return;
+      }
+      const myCount = countValidatedSets(key);
+      const partnerCount = countValidatedSets(link.partnerKey);
+      if (myCount > partnerCount) {
+        // Partner hasn't done this round yet → hand control to partner, no rest.
+        setActiveExercise(link.partnerKey);
+      } else {
+        // Both partners have completed this round → rest, then resume on first.
+        setGlobalRestSeconds(restSec);
+        setActiveExercise(link.firstKey);
+      }
+    },
+    [supersetPartnerMap, countValidatedSets, setActiveExercise],
+  );
+
   const trackingTypeMap = useMemo(() => {
     if (!selectedSession) return {};
     const map: Record<string, string> = {};
