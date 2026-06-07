@@ -194,12 +194,6 @@ const ProgDayRow = ({
                 Aujourd'hui
               </span>
             )}
-            {isAI && (
-              <span className="inline-flex items-center gap-0.5 bg-bg-tinted text-muted-foreground text-[9px] font-bold uppercase tracking-[0.04em] px-1.5 py-[1px] rounded-xs">
-                <Bot className="w-2.5 h-2.5" strokeWidth={2} />
-                IA
-              </span>
-            )}
             {hasCoachNote && (
               <MessageCircle
                 className={cn(

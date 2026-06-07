@@ -1,4 +1,4 @@
-import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Bot, Copy, Trash2, Activity, Zap, Check, ChevronRight } from "lucide-react";
+import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Copy, Trash2, Activity, Zap, Check, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
@@ -990,10 +990,9 @@ const StudentWeek = () => {
                 `${sessionInfo.exerciseCount} ex.`,
                 ...(sessionInfo.muscleGroups.slice(0, 2)),
               ].join(' · '),
-              isCompleted: sessionCompleted,
-              isAI: false,
-              sessionType: sessionInfo.session_type,
-            });
+            isCompleted: sessionCompleted,
+            sessionType: sessionInfo.session_type,
+          });
           }
           dayFreeSessions.forEach(fs => {
             allDaySessions.push({
