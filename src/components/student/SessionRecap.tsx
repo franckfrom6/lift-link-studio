@@ -1,6 +1,6 @@
 import { CompletedSet } from "@/components/student/ExerciseTracker";
 import { ProgramExerciseDetail } from "@/data/yana-program";
-import { Trophy, Clock, Dumbbell, TrendingUp, MessageSquare, Sparkles } from "lucide-react";
+import { Trophy, Clock, Dumbbell, TrendingUp, MessageSquare, Sparkles, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import RecommendationSheet from "@/components/nutrition/RecommendationSheet";
@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
+import html2canvas from "html2canvas";
 
 // Counting-up hook
 function useCountUp(target: number, duration = 1200, enabled = true) {
@@ -42,15 +43,23 @@ interface SessionRecapProps {
   muscleGroups?: string[];
   activityType?: string | null;
   completedSessionId?: string;
+  sessionName?: string;
 }
 
-const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroups, activityType, completedSessionId }: SessionRecapProps) => {
+const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroups, activityType, completedSessionId, sessionName }: SessionRecapProps) => {
   const { t } = useTranslation(['session', 'feedback']);
   const { user } = useAuth();
   const isAdvanced = useIsAdvanced();
   const [recoOpen, setRecoOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const shareCardRef = useRef<HTMLDivElement>(null);
+  const motivationalPhrase = useRef(
+    ["Séance validée 💪", "On lâche rien 🔥", "Chaque rep compte ✅", "La régularité paie 📈", "Beast mode ON 🏋️"][
+      Math.floor(Math.random() * 5)
+    ]
+  ).current;
 
   // Confetti + vibrate on mount
   useEffect(() => {
@@ -119,6 +128,43 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
     id: String(i),
     name: ex.name,
   }));
+
+  const handleShareCard = async () => {
+    const node = shareCardRef.current;
+    if (!node) return;
+    setSharing(true);
+    try {
+      const canvas = await html2canvas(node, { backgroundColor: null, scale: 2 });
+      await new Promise<void>((resolve) => {
+        canvas.toBlob(async (blob) => {
+          if (!blob) { resolve(); return; }
+          const file = new File([blob], "seance-6way.png", { type: "image/png" });
+          try {
+            if (navigator.share && (navigator as any).canShare?.({ files: [file] })) {
+              await navigator.share({ files: [file], title: "Ma séance 6way" });
+            } else {
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = "seance-6way.png";
+              a.click();
+            }
+          } catch (e) {
+            console.error("Share failed:", e);
+          }
+          resolve();
+        }, "image/png");
+      });
+    } catch (e) {
+      console.error("Capture failed:", e);
+      toast.error("Impossible de générer l'image");
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const dateLabel = new Intl.DateTimeFormat("fr", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  }).format(new Date());
 
   if (showFeedback && !feedbackDone) {
     return (
@@ -259,6 +305,15 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
             {t('session:finish_save')}
           </Button>
         </div>
+        <Button
+          variant="outline"
+          className="w-full h-12 font-semibold gap-2"
+          onClick={handleShareCard}
+          disabled={sharing}
+        >
+          <Share2 className="w-4 h-4" strokeWidth={1.5} />
+          {sharing ? "Génération..." : "Partager sur mes réseaux"}
+        </Button>
       </motion.div>
 
       <RecommendationSheet
@@ -268,6 +323,42 @@ const SessionRecap = ({ exercises, completedSets, duration, onClose, muscleGroup
         activityType={activityType || null}
         muscleGroups={muscleGroups || ["glutes", "quads", "hamstrings"]}
       />
+
+      {/* Off-screen share card — captured by html2canvas */}
+      <div
+        ref={shareCardRef}
+        id="share-card"
+        style={{ position: "absolute", left: "-9999px", top: 0, width: "400px", height: "220px" }}
+        className="bg-gradient-to-br from-gray-900 to-gray-800 text-white p-5 flex flex-col justify-between"
+      >
+        <div className="flex items-start justify-between">
+          <span className="text-white font-black text-lg tracking-tight">6way</span>
+          <span className="text-[11px] text-gray-300 italic">{motivationalPhrase}</span>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-bold leading-tight truncate">{sessionName || "Séance terminée"}</p>
+          <div className="flex items-center justify-center gap-4 mt-3 text-sm">
+            <div className="text-center">
+              <p className="text-lg font-black tabular-nums">{mins}:{secs.toString().padStart(2, "0")}</p>
+              <p className="text-[9px] uppercase tracking-wider text-gray-400">Durée</p>
+            </div>
+            <div className="w-px h-8 bg-gray-600" />
+            <div className="text-center">
+              <p className="text-lg font-black tabular-nums">{totalSets}</p>
+              <p className="text-[9px] uppercase tracking-wider text-gray-400">Séries</p>
+            </div>
+            <div className="w-px h-8 bg-gray-600" />
+            <div className="text-center">
+              <p className="text-lg font-black tabular-nums">{Math.round(totalVolume).toLocaleString()} kg</p>
+              <p className="text-[9px] uppercase tracking-wider text-gray-400">Volume</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-end justify-between text-[10px]">
+          <span className="text-gray-300 capitalize">{dateLabel}</span>
+          <span className="text-gray-400">@6way</span>
+        </div>
+      </div>
     </div>
   );
 };

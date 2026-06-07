@@ -10,6 +10,7 @@ import { useState } from "react";
 import AISidebarToggle from "@/components/ai/AISidebarToggle";
 import AISidebar from "@/components/ai/AISidebar";
 import MobileBottomNav from "@/components/navigation/MobileBottomNav";
+import { AnimatePresence } from "framer-motion";
 
 const StudentLayout = () => {
   const { t } = useTranslation(['settings', 'common', 'session']);
@@ -30,7 +31,7 @@ const StudentLayout = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-[100dvh] bg-background flex">
       <ImpersonationBanner />
 
       {/* Desktop sidebar — hidden on mobile */}
@@ -65,9 +66,12 @@ const StudentLayout = () => {
       </aside>
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col min-h-screen min-w-0">
+      <div className="flex-1 flex flex-col min-h-[100dvh] min-w-0">
         {/* Mobile header */}
-        <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background">
+        <header
+          className="md:hidden flex items-center justify-between p-4 border-b border-border bg-background"
+          style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+        >
           <Logo variant="mobile" />
           <div className="flex items-center gap-2">
             <DisplayModeToggle />
@@ -86,7 +90,9 @@ const StudentLayout = () => {
       </div>
 
       <AISidebarToggle onClick={() => setAiOpen(true)} />
-      <AISidebar open={aiOpen} onClose={() => setAiOpen(false)} />
+      <AnimatePresence>
+        {aiOpen && <AISidebar open={aiOpen} onClose={() => setAiOpen(false)} />}
+      </AnimatePresence>
     </div>
   );
 };

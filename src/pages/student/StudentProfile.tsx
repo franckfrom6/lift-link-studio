@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
-  Bell, ChevronRight, Ruler, Moon, Calendar, Volume2, Play,
+  Bell, ChevronLeft, ChevronRight, Ruler, Moon, Calendar, Volume2, Play,
   CreditCard, Receipt, Shield, Download, HelpCircle, Mail, FileText,
   type LucideIcon,
 } from "lucide-react";
@@ -120,6 +121,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 // ───────────────────────── Page
 
 const StudentProfile = () => {
+  const { t } = useTranslation("common");
   const navigate = useNavigate();
   const { user, profile, signOut, refreshProfile } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -277,7 +279,18 @@ const StudentProfile = () => {
         className="sticky top-0 z-20 bg-background border-b border-border flex items-center justify-between"
         style={{ padding: "14px 20px" }}
       >
-        <div className="text-[18px] font-bold tracking-[-0.02em]">Profil</div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            aria-label="Retour"
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors h-11 w-11 -ml-3 justify-center"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+          >
+            <ChevronLeft className="w-5 h-5" strokeWidth={2} />
+          </button>
+          <div className="text-[18px] font-bold tracking-[-0.02em]">Profil</div>
+        </div>
         <button
           aria-label="Notifications"
           onClick={() => setOpenSheet("notifications")}
@@ -307,7 +320,7 @@ const StudentProfile = () => {
       {/* Stats strip */}
       <div className="mx-4 mb-5 rounded-md border border-border bg-card grid grid-cols-3">
         {[
-          { value: stats.sessions, label: "Séances" },
+          { value: stats.sessions, label: t("sessions", "Sessions") },
           { value: stats.weeks, label: "Semaines suivies", border: true },
           { value: stats.prs, label: "Sets validés" },
         ].map((c, i) => (
@@ -373,7 +386,7 @@ const StudentProfile = () => {
 
       <Section label="Support">
         <Row icon={HelpCircle} label="Centre d'aide" onClick={() => navigate("/support")} />
-        <Row icon={Mail} label="Contacter From6" onClick={() => { window.location.href = "mailto:support@f6gym.com"; }} />
+        <Row icon={Mail} label="Contacter From6" onClick={() => { window.location.href = "mailto:support@6way.com"; }} />
         <Row icon={FileText} label="CGU & confidentialité" last onClick={() => navigate("/legal")} />
       </Section>
 

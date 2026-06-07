@@ -58,4 +58,10 @@ export interface SessionExerciseData {
   videoUrl?: string;
   videoSearchQuery?: string;
   sectionId?: string;
+  /**
+   * Bi-set (superset) group identifier. Two exercises in the same session
+   * sharing the same non-null `supersetGroup` value are performed back-to-back
+   * with a single shared rest period.
+   */
+  supersetGroup?: number | null;
 }

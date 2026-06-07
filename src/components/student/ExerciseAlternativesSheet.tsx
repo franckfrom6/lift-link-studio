@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Dumbbell, Star, Zap } from "lucide-react";
+import { ArrowLeftRight, Check, Dumbbell, Star, Zap } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,11 @@ interface ExerciseAlternativesSheetProps {
   exerciseName: string;
   group: AlternativeGroup | null;
   onSelect: (alternative: ExerciseAlternative) => void;
+  selectedName?: string | null;
 }
 
 const ExerciseAlternativesSheet = ({
-  open, onClose, exerciseName, group, onSelect,
+  open, onClose, exerciseName, group, onSelect, selectedName,
 }: ExerciseAlternativesSheetProps) => {
   const { t } = useTranslation(['session', 'common', 'recovery']);
 
@@ -43,7 +44,10 @@ const ExerciseAlternativesSheet = ({
           )}
         </SheetHeader>
 
-        <div className="space-y-2 mt-4 overflow-y-auto max-h-[55dvh] pb-4">
+       <div
+         className="space-y-2 mt-4 overflow-y-auto max-h-[55dvh] pb-4"
+         style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+       >
           {isEmpty ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
               {t('session:no_alternatives', 'Aucune alternative disponible pour cet exercice.')}
@@ -51,11 +55,17 @@ const ExerciseAlternativesSheet = ({
           ) : (
             group!.alternatives.map((alt, i) => {
               const diff = difficultyConfig[alt.difficulty];
+              const isSelected = selectedName === alt.name;
               return (
                 <button
                   key={i}
                   onClick={() => onSelect(alt)}
-                  className="w-full flex items-start gap-3 p-3 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/30 transition-all text-left group"
+                  className={cn(
+                    "w-full flex items-start gap-3 p-3 rounded-xl border transition-all text-left group",
+                    isSelected
+                      ? "border-primary bg-primary/8 ring-1 ring-primary/20"
+                      : "border-border hover:border-primary/30 hover:bg-accent/30"
+                  )}
                 >
                   <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
                     <Dumbbell className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" strokeWidth={1.5} />
@@ -72,6 +82,9 @@ const ExerciseAlternativesSheet = ({
                       </span>
                     </div>
                   </div>
+                  {isSelected && (
+                    <Check className="w-5 h-5 text-primary shrink-0 self-center" strokeWidth={2.5} />
+                  )}
                 </button>
               );
             })

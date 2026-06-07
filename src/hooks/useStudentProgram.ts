@@ -30,6 +30,7 @@ export interface DBSessionExercise {
   video_url: string | null;
   video_search_query: string | null;
   section_id: string | null;
+  superset_group: number | null;
   exercise: DBExercise;
 }
 
@@ -47,6 +48,7 @@ export interface DBSession {
   id: string;
   name: string;
   day_of_week: number;
+  session_type?: string;
   notes: string | null;
   sections: DBSection[];
   is_deleted?: boolean;
@@ -150,6 +152,7 @@ async function fetchProgramTree(studentId: string): Promise<DBProgram | null> {
       video_url: se.video_url,
       video_search_query: se.video_search_query,
       section_id: se.section_id,
+      superset_group: (se as any).superset_group ?? null,
       exercise: ex,
     };
     if (se.section_id && sectionMap.has(se.section_id)) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Dumbbell, HeartPulse } from "lucide-react";
+import { Loader2, Dumbbell, HeartPulse, PartyPopper } from "lucide-react";
+import confetti from "canvas-confetti";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,8 +30,13 @@ const OnboardingPage = () => {
   );
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState("");
-  const [firstName, setFirstName] = useState("");
+  const [firstName, setFirstName] = useState(() => localStorage.getItem("f6gym-firstname") || "");
   const [lastName, setLastName] = useState("");
+  const [celebrate, setCelebrate] = useState(false);
+
+  const totalSteps = isInviteFlow ? 1 : 2;
+  const currentStepIndex = step === "role" ? 1 : 2;
+  const progressPct = Math.round((currentStepIndex / totalSteps) * 100);
 
   // Auto-assign student role if invite flow
   useEffect(() => {
@@ -85,9 +91,13 @@ const OnboardingPage = () => {
       if (inviteToken) {
         localStorage.removeItem("6way-invite");
       }
+      localStorage.removeItem("f6gym-firstname");
 
       await refreshProfile();
-      navigate(selectedRole === "coach" ? "/coach" : "/student", { replace: true });
+      setCelebrate(true);
+      try {
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ["#1A3CFF", "#FF6A1A", "#22c55e"] });
+      } catch {}
     } catch {
       toast.error(t("error_generic"));
     } finally {
@@ -95,8 +105,12 @@ const OnboardingPage = () => {
     }
   };
 
+  const handleStartFirstSession = () => {
+    navigate(selectedRole === "coach" ? "/coach" : "/student", { replace: true });
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6 relative">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background p-6 relative">
       <div className="absolute top-4 right-4 flex items-center gap-1">
         <LanguageSwitcher />
         <ThemeToggle />
@@ -106,6 +120,37 @@ const OnboardingPage = () => {
         <div className="flex justify-center">
           <Logo variant="full" />
         </div>
+
+        {celebrate ? (
+          <div className="text-center space-y-5 py-6">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <PartyPopper className="w-10 h-10 text-primary" strokeWidth={1.5} />
+            </div>
+            <h2 className="text-2xl font-bold">🎉 Tu es prêt !</h2>
+            <ul className="text-sm text-muted-foreground space-y-1.5 max-w-xs mx-auto text-left">
+              <li>✅ Profil configuré</li>
+              <li>✅ Rôle {selectedRole === "coach" ? "coach" : "athlète"} activé</li>
+              <li>✅ Espace personnel prêt</li>
+            </ul>
+            <Button className="w-full max-w-sm mx-auto" onClick={handleStartFirstSession}>
+              {selectedRole === "coach" ? "Accéder à mon espace coach" : "Démarrer ma première séance"} →
+            </Button>
+          </div>
+        ) : (
+          <>
+          {/* Progress bar */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Étape {currentStepIndex} / {totalSteps}</span>
+              <span className="tabular-nums">{progressPct}%</span>
+            </div>
+            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-500"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
 
         {step === "role" ? (
           <div className="space-y-6">
@@ -160,6 +205,8 @@ const OnboardingPage = () => {
               </Button>
             </form>
           </div>
+        )}
+        </>
         )}
       </div>
     </div>

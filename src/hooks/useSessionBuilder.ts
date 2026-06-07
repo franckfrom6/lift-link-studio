@@ -161,7 +161,7 @@ export function useSessionBuilder() {
           repsMin: isCompound ? 8 : 12,
           repsMax: isCompound ? 10 : 15,
           restSeconds: useSupersets ? 30 : (isCompound ? 90 : 60),
-          weightEnabled: ex.equipment !== "bodyweight" && ex.equipment !== "Poids du corps",
+          weightEnabled: ex.equipment !== "bodyweight",
           order: i,
         };
       });

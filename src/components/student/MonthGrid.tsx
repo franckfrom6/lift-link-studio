@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ export interface MonthDayMarkers {
   hasExternal?: boolean;
   /** Optional program week number to show as small footer text (e.g. "S3") */
   weekTag?: string;
+  /** Total number of sessions (programmed + free) on this day — used for count dots */
+  sessionCount?: number;
 }
 
 interface MonthGridProps {
@@ -26,6 +29,10 @@ interface MonthGridProps {
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onJumpToday?: () => void;
+  /** Animation direction for the slide transition between months */
+  direction?: "left" | "right" | null;
+  /** When true, the calendar is in "pick a target day" swap mode */
+  swapMode?: boolean;
 }
 
 const DAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
@@ -44,7 +51,10 @@ const MonthGrid = ({
   onPrevMonth,
   onNextMonth,
   onJumpToday,
+  direction = null,
+  swapMode = false,
 }: MonthGridProps) => {
+  const touchStartX = useRef<number>(0);
   const today = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -86,7 +96,17 @@ const MonthGrid = ({
     today.getMonth() === currentMonth;
 
   return (
-    <div className="border-b border-border">
+    <div
+      className="border-b border-border overflow-hidden"
+      onTouchStart={(e) => {
+        touchStartX.current = e.touches[0].clientX;
+      }}
+      onTouchEnd={(e) => {
+        const delta = e.changedTouches[0].clientX - touchStartX.current;
+        if (delta < -50) onNextMonth();
+        else if (delta > 50) onPrevMonth();
+      }}
+    >
       {/* Header: month label + nav */}
       <div className="flex items-center justify-between px-3 py-2.5">
         <Button
@@ -137,8 +157,28 @@ const MonthGrid = ({
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-7 px-2 pb-3 gap-y-1">
-        {cells.map((d, i) => {
+      <AnimatePresence mode="wait" initial={false} custom={direction}>
+        <motion.div
+          key={monthLabel}
+          custom={direction}
+          variants={{
+            enter: (dir: "left" | "right" | null) => ({
+              x: dir === "right" ? "100%" : dir === "left" ? "-100%" : 0,
+              opacity: 0,
+            }),
+            center: { x: 0, opacity: 1 },
+            exit: (dir: "left" | "right" | null) => ({
+              x: dir === "right" ? "-100%" : dir === "left" ? "100%" : 0,
+              opacity: 0,
+            }),
+          }}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+          className="grid grid-cols-7 px-2 pb-3 gap-y-1"
+        >
+          {cells.map((d, i) => {
           const key = formatLocalDate(d);
           const inMonth = d.getMonth() === currentMonth;
           const isToday = key === todayKey;
@@ -160,7 +200,8 @@ const MonthGrid = ({
                 !inMonth && "opacity-30",
                 isSelected
                   ? "bg-primary/10"
-                  : "hover:bg-bg-tinted active:bg-bg-tinted"
+                  : "hover:bg-bg-tinted active:bg-bg-tinted",
+                swapMode && "cursor-crosshair ring-1 ring-primary/20 hover:ring-primary/60"
               )}
               aria-label={d.toLocaleDateString("fr", {
                 weekday: "long",
@@ -184,17 +225,29 @@ const MonthGrid = ({
                 {d.getDate()}
               </span>
               {/* Marker row */}
-              <div className="mt-1 flex items-center gap-0.5 h-1">
-                {hasSession && (
+              <div className="mt-1 flex items-center gap-[2px] h-1.5">
+                {Array.from({
+                  length: Math.min(m?.sessionCount ?? (hasSession ? 1 : 0), 3),
+                }).map((_, i) => (
                   <span
+                    key={i}
                     className={cn(
-                      "w-1 h-1 rounded-full",
-                      isCompleted ? "bg-success" : "bg-primary"
+                      "rounded-full",
+                      i === 0 && isCompleted
+                        ? "bg-success w-1.5 h-1.5"
+                        : i === 0
+                          ? "bg-primary w-1.5 h-1.5"
+                          : "bg-primary/40 w-1 h-1"
                     )}
                   />
+                ))}
+                {(m?.sessionCount ?? 0) > 3 && (
+                  <span className="text-[7px] font-bold text-primary/60 leading-none ml-[1px]">
+                    +{(m!.sessionCount ?? 0) - 3}
+                  </span>
                 )}
                 {hasExternal && (
-                  <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+                  <span className="w-1 h-1 rounded-full bg-muted-foreground ml-[1px]" />
                 )}
               </div>
               {/* Today ring (subtle) */}
@@ -206,8 +259,9 @@ const MonthGrid = ({
               )}
             </button>
           );
-        })}
-      </div>
+          })}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };

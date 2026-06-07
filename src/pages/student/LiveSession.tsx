@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { ProgramExerciseDetail, ProgramSection } from "@/data/yana-program";
 import { EXERCISE_ALTERNATIVES, AlternativeGroup } from "@/data/exercise-alternatives";
 import ExercisePicker from "@/components/coach/ExercisePicker";
 import { Exercise } from "@/types/exercise";
 import { EnhancedCompletedSet } from "@/components/student/EnhancedExerciseCard";
 import EnhancedExerciseCard from "@/components/student/EnhancedExerciseCard";
+import LinearRestTimer from "@/components/student/LinearRestTimer";
 import SkipExerciseModal from "@/components/student/SkipExerciseModal";
 import ExerciseAlternativesSheet from "@/components/student/ExerciseAlternativesSheet";
 import SessionSection from "@/components/student/SessionSection";
@@ -15,12 +16,12 @@ import ProgressionTimeline, { ProgressionPhase } from "@/components/student/Prog
 import WorkoutStatsBar from "@/components/student/WorkoutStatsBar";
 import NextExercisePreview from "@/components/student/NextExercisePreview";
 import ShareSessionButton from "@/components/student/ShareSessionButton";
-import { Clock, Plus, CloudOff } from "lucide-react";
+import { Clock, Plus, CloudOff, Loader2 } from "lucide-react";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,23 @@ interface Substitution {
   newEquipment: string;
 }
 
+function readSessionBackup(sessionId: string | undefined) {
+  if (!sessionId) return null;
+  try {
+    const raw = localStorage.getItem('live_session_backup');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const age = Date.now() - new Date(parsed.date ?? 0).getTime();
+    if (parsed.sessionId !== sessionId || age > 4 * 60 * 60 * 1000) {
+      localStorage.removeItem('live_session_backup');
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 const LiveSession = () => {
   const navigate = useNavigate();
   const { sessionId: selectedSessionId } = useParams<{ sessionId: string }>();
@@ -50,21 +68,48 @@ const LiveSession = () => {
   const { effectiveStudentId } = useImpersonation();
   const studentId = user ? effectiveStudentId(user.id) : null;
 
-  const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>({});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const _backup = useMemo(() => readSessionBackup(selectedSessionId), []);
+
+  const [completedSets, setCompletedSets] = useState<Record<string, EnhancedCompletedSet[]>>(
+    () => _backup?.completedSets ?? {}
+  );
   const [sessionDone, setSessionDone] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [finishError, setFinishError] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState<number>(() => {
+    if (_backup?.startTime) return _backup.startTime;
+    const saved = localStorage.getItem("ls_start_time");
+    return saved ? parseInt(saved, 10) : Date.now();
+  });
   const [elapsed, setElapsed] = useState(0);
-  const [activeExerciseKey, setActiveExerciseKey] = useState<string>("0-0");
+  const LS_ACTIVE_KEY = `ls_active_${selectedSessionId}`;
+  const [activeExerciseKey, setActiveExerciseKeyState] = useState<string>(() => {
+    if (!selectedSessionId) return "0-0";
+    return localStorage.getItem(LS_ACTIVE_KEY) ?? "0-0";
+  });
+  const setActiveExercise = useCallback((key: string) => {
+    localStorage.setItem(LS_ACTIVE_KEY, key);
+    setActiveExerciseKeyState(key);
+  }, [LS_ACTIVE_KEY]);
+  const [globalRestSeconds, setGlobalRestSeconds] = useState<number | null>(() => {
+    if (!_backup?.restEndTime) return null;
+    const remaining = Math.ceil((_backup.restEndTime - Date.now()) / 1000);
+    return remaining > 0 ? remaining : null;
+  });
   const [showProgression, setShowProgression] = useState(false);
   const [completedSessionId, setCompletedSessionId] = useState<string | null>(null);
-  const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
+  const [substitutions, setSubstitutions] = useState<Substitution[]>(
+    () => _backup?.substitutions ?? []
+  );
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
   const [swapTargetKey, setSwapTargetKey] = useState<string | null>(null);
+  const [swapSelectedName, setSwapSelectedName] = useState<string | null>(null);
   const [dynamicAlternatives, setDynamicAlternatives] = useState<AlternativeGroup | null>(null);
-  const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
+  const [skippedExercises, setSkippedExercises] = useState<Set<string>>(
+    () => new Set(_backup?.skippedExercises ?? [])
+  );
   const [skipModalOpen, setSkipModalOpen] = useState(false);
   const [skipTargetKey, setSkipTargetKey] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -75,8 +120,6 @@ const LiveSession = () => {
   const [freeSessionLoading, setFreeSessionLoading] = useState(false);
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
   const [addToSectionIdx, setAddToSectionIdx] = useState<number>(0);
-  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
-  const [recoveryData, setRecoveryData] = useState<any>(null);
 
   // Refs for the bottom-fixed elements so we can measure their combined
   // height and reserve matching padding on the scroll container. This
@@ -104,46 +147,89 @@ const LiveSession = () => {
     return () => { ro.disconnect(); window.removeEventListener("resize", update); };
   }, [isAdvanced]);
 
+  // Track visual viewport (iOS keyboard) and expose --keyboard-offset.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const offset = window.innerHeight - vv.height - vv.offsetTop;
+      document.documentElement.style.setProperty('--keyboard-offset', `${Math.max(0, offset)}px`);
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    update();
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+
   // Respect user's theme — no forced dark mode. ThemeContext handles light/dark.
 
-  // Check for orphaned localStorage backup on mount.
-  // Backup is keyed by sessionId AND must be < 24h old, otherwise discarded.
+  // Aggressive backup: write to localStorage on every meaningful state change
+  // AND right before the page is hidden/unloaded (iOS suspends JS quickly).
   useEffect(() => {
-    try {
-      const backup = localStorage.getItem("live_session_backup");
-      if (!backup) return;
-      const parsed = JSON.parse(backup);
-      const ageMs = parsed?.date ? Date.now() - new Date(parsed.date).getTime() : Infinity;
-      const STALE_AFTER = 24 * 60 * 60 * 1000;
-      if (parsed.sessionId !== selectedSessionId || ageMs > STALE_AFTER || ageMs < 0) {
-        try { localStorage.removeItem("live_session_backup"); } catch { /* ignore */ }
-        return;
+    if (!selectedSessionId || sessionDone) return;
+    const save = () => {
+      try {
+        localStorage.setItem('live_session_backup', JSON.stringify({
+          sessionId: selectedSessionId,
+          completedSets,
+          substitutions,
+          skippedExercises: Array.from(skippedExercises),
+          activeExerciseKey,
+          startTime,
+          restEndTime: globalRestSeconds ? Date.now() + globalRestSeconds * 1000 : null,
+          date: new Date().toISOString(),
+        }));
+      } catch { /* ignore quota errors */ }
+    };
+    save();
+    window.addEventListener('beforeunload', save);
+    document.addEventListener('visibilitychange', save);
+    return () => {
+      window.removeEventListener('beforeunload', save);
+      document.removeEventListener('visibilitychange', save);
+    };
+  }, [completedSets, substitutions, skippedExercises, activeExerciseKey, startTime, globalRestSeconds, sessionDone, selectedSessionId]);
+
+  // Re-sync elapsed time when the user returns to the tab (iOS suspends timers).
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && !sessionDone) {
+        setElapsed(Math.floor((Date.now() - startTime) / 1000));
       }
-      setRecoveryData(parsed);
-      setShowRecoveryPrompt(true);
-    } catch {
-      try { localStorage.removeItem("live_session_backup"); } catch { /* ignore */ }
-    }
-  }, [selectedSessionId]);
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [startTime, sessionDone]);
 
-  const handleRestoreBackup = () => {
-    if (recoveryData?.completedSets) {
-      setCompletedSets(recoveryData.completedSets);
-    }
-    if (recoveryData?.substitutions) {
-      setSubstitutions(recoveryData.substitutions);
-    }
-    localStorage.removeItem("live_session_backup");
-    setShowRecoveryPrompt(false);
-    setRecoveryData(null);
-    toast.success(t('session:session_restored', 'Session restaurée'));
-  };
+  // Persist startTime once on mount; clean up dedicated keys on unmount.
+  useEffect(() => {
+    try { localStorage.setItem("ls_start_time", String(startTime)); } catch {}
+    return () => {
+      try {
+        localStorage.removeItem("ls_start_time");
+        localStorage.removeItem(LS_ACTIVE_KEY);
+      } catch {}
+    };
+  }, [startTime, LS_ACTIVE_KEY]);
 
-  const handleDismissBackup = () => {
-    localStorage.removeItem("live_session_backup");
-    setShowRecoveryPrompt(false);
-    setRecoveryData(null);
-  };
+  // Snapshot critical state when the app is backgrounded (iOS eviction).
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        try {
+          localStorage.setItem("ls_start_time", String(startTime));
+          if (activeExerciseKey) {
+            localStorage.setItem(LS_ACTIVE_KEY, activeExerciseKey);
+          }
+        } catch {}
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [startTime, activeExerciseKey, LS_ACTIVE_KEY]);
 
   const programSession = useMemo(() => {
     const sessions = dbProgram?.weeks?.flatMap((w) => w.sessions) || [];
@@ -166,7 +252,7 @@ const LiveSession = () => {
           session_exercises(
             id, sort_order, sets, reps_min, reps_max, rest_seconds, tempo,
             rpe_target, suggested_weight, coach_notes, video_url, video_search_query,
-            section_id, is_archived,
+            section_id, is_archived, superset_group,
             exercise:exercises(id, name, name_en, muscle_group, equipment, type, tracking_type, video_url_female, video_url_male)
           )
         `)
@@ -186,7 +272,7 @@ const LiveSession = () => {
           .filter((e: any) => !e.section_id)
           .sort((a: any, b: any) => a.sort_order - b.sort_order);
         if (unsectioned.length > 0) {
-          sections.push({ id: "default", name: "Exercices", sort_order: 999, notes: null, duration_estimate: null, icon: null, exercises: unsectioned });
+          sections.push({ id: "default", name: t("session:exercises_section", "Exercises"), sort_order: 999, notes: null, duration_estimate: null, icon: null, exercises: unsectioned });
         }
         setFreeSession({ ...data, sections });
       }
@@ -196,6 +282,31 @@ const LiveSession = () => {
   }, [programLoading, programSession, selectedSessionId]);
 
   const selectedSession = programSession || freeSession;
+
+  const { data: previousPerformance } = useQuery({
+    queryKey: ["previous-performance", studentId, selectedSession?.id],
+    queryFn: async () => {
+      if (!user || !selectedSession?.id || !studentId) return null;
+      const { data: prevSession } = await supabase
+        .from("completed_sessions")
+        .select("id, completed_at")
+        .eq("student_id", studentId)
+        .eq("session_id", selectedSession.id)
+        .not("completed_at", "is", null)
+        .order("completed_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!prevSession) return null;
+      const { data: sets } = await supabase
+        .from("completed_sets")
+        .select("session_exercise_id, set_number, weight, reps")
+        .eq("completed_session_id", prevSession.id)
+        .order("set_number", { ascending: true });
+      return sets || [];
+    },
+    enabled: !!user && !!selectedSession?.id,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const sessionExerciseIdMap = useMemo(() => {
     if (!selectedSession) return {};
@@ -208,6 +319,39 @@ const LiveSession = () => {
     return map;
   }, [selectedSession]);
 
+  /**
+   * Map of `${sIdx}-${eIdx}` → partner key when this exercise is part of a
+   * bi-set (two consecutive exercises in the same section sharing the same
+   * non-null `superset_group`).
+   */
+  const supersetPartnerMap = useMemo(() => {
+    const map: Record<string, { partnerKey: string; isFirst: boolean; firstKey: string }> = {};
+    if (!selectedSession) return map;
+    selectedSession.sections.forEach((section: any, sIdx: number) => {
+      const exs = section.exercises as any[];
+      for (let i = 0; i < exs.length - 1; i++) {
+        const a = exs[i];
+        const b = exs[i + 1];
+        const ag = a?.superset_group ?? a?.supersetGroup;
+        const bg = b?.superset_group ?? b?.supersetGroup;
+        if (ag != null && ag === bg) {
+          const keyA = `${sIdx}-${i}`;
+          const keyB = `${sIdx}-${i + 1}`;
+          map[keyA] = { partnerKey: keyB, isFirst: true, firstKey: keyA };
+          map[keyB] = { partnerKey: keyA, isFirst: false, firstKey: keyA };
+        }
+      }
+    });
+    return map;
+  }, [selectedSession]);
+
+  // Latest completedSets in a ref so the rest-gating callback can read it
+  // synchronously without recreating itself on every change.
+  const completedSetsRef = useRef(completedSets);
+  useEffect(() => {
+    completedSetsRef.current = completedSets;
+  }, [completedSets]);
+
   const trackingTypeMap = useMemo(() => {
     if (!selectedSession) return {};
     const map: Record<string, string> = {};
@@ -219,6 +363,41 @@ const LiveSession = () => {
     return map;
   }, [selectedSession]);
 
+  const countValidatedSets = useCallback((key: string) => {
+    const arr = completedSetsRef.current[key] || [];
+    const tType = trackingTypeMap[key] || "weight_reps";
+    return arr.filter((s: any) =>
+      tType === "duration" ? (s.durationSeconds || 0) > 0 : (s.reps || 0) > 0,
+    ).length;
+  }, [trackingTypeMap]);
+
+  /**
+   * Bi-set aware rest trigger. When called from an exercise that has a
+   * partner, only fires the global rest timer once both partners have
+   * completed the same set index. Otherwise (non-superset) behaves exactly
+   * like setGlobalRestSeconds.
+   */
+  const handleSupersetAwareRest = useCallback(
+    (key: string, restSec: number) => {
+      const link = supersetPartnerMap[key];
+      if (!link) {
+        setGlobalRestSeconds(restSec);
+        return;
+      }
+      const myCount = countValidatedSets(key);
+      const partnerCount = countValidatedSets(link.partnerKey);
+      if (myCount > partnerCount) {
+        // Partner hasn't done this round yet → hand control to partner, no rest.
+        setActiveExercise(link.partnerKey);
+      } else {
+        // Both partners have completed this round → rest, then resume on first.
+        setGlobalRestSeconds(restSec);
+        setActiveExercise(link.firstKey);
+      }
+    },
+    [supersetPartnerMap, countValidatedSets, setActiveExercise],
+  );
+
   const mappedSections = useMemo<ProgramSection[]>(() => {
     if (!selectedSession) return [];
     return selectedSession.sections.map((section: any) => ({
@@ -226,7 +405,7 @@ const LiveSession = () => {
       duration: section.duration_estimate || "",
       notes: section.notes || "",
       exercises: section.exercises.map((ex: any) => ({
-        name: ex.exercise?.name || "Exercice",
+        name: ex.exercise?.name || t("session:exercise_fallback", "Exercise"),
         exerciseId: ex.exercise?.id,
         sets: String(ex.sets ?? ""),
         reps: ex.reps_min === ex.reps_max ? String(ex.reps_min) : `${ex.reps_min}-${ex.reps_max}`,
@@ -241,6 +420,7 @@ const LiveSession = () => {
         videoUrlFemale: (ex.exercise as any)?.video_url_female || "",
         videoUrlMale: (ex.exercise as any)?.video_url_male || "",
         exerciseVideoUrl: (ex.exercise as any)?.video_url || "",
+        supersetGroup: (ex as any).superset_group ?? null,
       })),
     }));
   }, [selectedSession]);
@@ -264,14 +444,14 @@ const LiveSession = () => {
       section.exercises.forEach((ex, eIdx) => {
         const key = `${sIdx}-${eIdx}`;
         const sub = substitutions.find(s => s.key === key);
-        map.set(key, sub ? sub.newName : ex.name || "Exercice");
+        map.set(key, sub ? sub.newName : ex.name || t("session:exercise_fallback", "Exercise"));
       });
     });
     return map;
   }, [sessionProgram.sections, substitutions]);
 
   const getExerciseName = (sIdx: number, eIdx: number): string =>
-    exerciseNameMap.get(`${sIdx}-${eIdx}`) || "Exercice";
+    exerciseNameMap.get(`${sIdx}-${eIdx}`) || t("session:exercise_fallback", "Exercise");
 
   const allExercises: ProgramExerciseDetail[] = sessionProgram.sections.flatMap((s) => s.exercises);
 
@@ -281,6 +461,39 @@ const LiveSession = () => {
     const interval = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000);
     return () => clearInterval(interval);
   }, [startTime, sessionDone]);
+
+  // Snapshot active exercise when backgrounded + BFCache elapsed re-sync
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && activeExerciseKey) {
+        localStorage.setItem(LS_ACTIVE_KEY, activeExerciseKey);
+      }
+    };
+    const onPageShow = (e: PageTransitionEvent) => {
+      // BFCache restore — re-sync elapsed without waiting for next interval tick
+      if (e.persisted) {
+        setElapsed(Math.floor((Date.now() - startTime) / 1000));
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pageshow", onPageShow as EventListener);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pageshow", onPageShow as EventListener);
+    };
+  }, [activeExerciseKey, startTime, LS_ACTIVE_KEY]);
+
+  // Scroll to the last active exercise once hydration is complete
+  useEffect(() => {
+    if (!hydrated) return;
+    const savedKey = localStorage.getItem(LS_ACTIVE_KEY);
+    if (!savedKey || savedKey === "0-0") return;
+    // Small delay to let the DOM render
+    setTimeout(() => {
+      const el = document.querySelector(`[data-exercise-key="${savedKey}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+  }, [hydrated, LS_ACTIVE_KEY]);
 
   // Hydrate or create completed_session at mount.
   // - If an in-progress completed_session already exists for (student, session),
@@ -297,7 +510,7 @@ const LiveSession = () => {
         const { data: existing, error: lookupError } = await supabase
           .from("completed_sessions")
           .select("id, started_at")
-          .eq("student_id", user.id)
+          .eq("student_id", studentId!)
           .eq("session_id", selectedSession.id)
           .is("completed_at", null)
           .order("started_at", { ascending: false })
@@ -307,12 +520,17 @@ const LiveSession = () => {
 
         let csId = existing?.id;
 
+        // Use the DB record's started_at as the real timer anchor
+        if (existing?.started_at) {
+          setStartTime(new Date(existing.started_at).getTime());
+        }
+
         if (!csId) {
           // 2a. No in-progress session — create one
           const { data: created, error: insertError } = await supabase
             .from("completed_sessions")
             .insert({
-              student_id: user.id,
+              student_id: studentId!,
               session_id: selectedSession.id,
               started_at: new Date(startTime).toISOString(),
             })
@@ -373,9 +591,12 @@ const LiveSession = () => {
                 const k = `${si}-${ei}`;
                 if (skippedKeys.has(k)) continue;
                 const setsForKey = grouped[k] || [];
-                const allDone = setsForKey.length > 0 && setsForKey.every(s => s.reps > 0 || (s.durationSeconds || 0) > 0);
+                const expectedSets = selectedSession.sections[si].exercises[ei].sets || 3;
+                const allDone =
+                  setsForKey.length >= expectedSets &&
+                  setsForKey.every(s => s.reps > 0 || (s.durationSeconds || 0) > 0);
                 if (!allDone) {
-                  setActiveExerciseKey(k);
+                  setActiveExercise(k);
                   break outer;
                 }
               }
@@ -390,7 +611,7 @@ const LiveSession = () => {
             setSkippedExercises(new Set(skippedKeys));
           }
 
-          toast.success(t("session:session_resumed", { defaultValue: "Séance reprise" }));
+          toast.success("Séance reprise ✓", { duration: 2000 });
         }
 
         setCompletedSessionId(csId!);
@@ -503,7 +724,11 @@ const LiveSession = () => {
     await saveSetsForExercise(key);
     const nextKey = getNextExerciseKey(key);
     if (nextKey) {
-      setActiveExerciseKey(nextKey);
+      setActiveExercise(nextKey);
+      setTimeout(() => {
+        document.querySelector(`[data-exercise-key="${nextKey}"]`)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     } else {
       setIsSaving(true);
       try {
@@ -517,6 +742,7 @@ const LiveSession = () => {
   const finishSession = async () => {
     setFinishError(false);
     if (!completedSessionId) {
+      localStorage.removeItem(LS_ACTIVE_KEY);
       setSessionDone(true);
       return;
     }
@@ -537,7 +763,13 @@ const LiveSession = () => {
       if (error) throw error;
 
       // Success — show celebration
+      localStorage.removeItem(LS_ACTIVE_KEY);
       setSessionDone(true);
+      try { localStorage.removeItem('live_session_backup'); } catch {}
+      try {
+        localStorage.removeItem("ls_start_time");
+        localStorage.removeItem(LS_ACTIVE_KEY);
+      } catch {}
       try {
         confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"] });
         setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.5 } }), 300);
@@ -566,7 +798,7 @@ const LiveSession = () => {
     setSkippedExercises(prev => new Set(prev).add(skipTargetKey));
     setSkipModalOpen(false);
     const nextKey = getNextExerciseKey(skipTargetKey);
-    if (nextKey) setActiveExerciseKey(nextKey);
+    if (nextKey) setActiveExercise(nextKey);
     setSkipTargetKey(null);
   };
 
@@ -648,13 +880,17 @@ const LiveSession = () => {
   const handleSwapSelect = (alternative: { name: string; equipment: string }) => {
     if (!swapTargetKey) return;
     const [sIdx, eIdx] = swapTargetKey.split("-").map(Number);
-    const originalName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || "Exercice";
+    const originalName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || t("session:exercise_fallback", "Exercise");
     setSubstitutions(prev => [...prev.filter(s => s.key !== swapTargetKey), { key: swapTargetKey, originalName, newName: alternative.name, newEquipment: alternative.equipment }]);
     setCompletedSets(prev => { const u = { ...prev }; delete u[swapTargetKey]; return u; });
-    
-    toast.success(`${originalName} → ${alternative.name}`);
-    setSwapSheetOpen(false);
-    setSwapTargetKey(null);
+
+    setSwapSelectedName(alternative.name);
+    toast.success(`✓ ${alternative.name} sélectionné`);
+    setTimeout(() => {
+      setSwapSheetOpen(false);
+      setSwapTargetKey(null);
+      setSwapSelectedName(null);
+    }, 500);
   };
 
   const handleAddExercise = async (exercise: Exercise) => {
@@ -736,14 +972,23 @@ const LiveSession = () => {
     ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
 
-  // Loading — wait for both program and free session fetch to complete
-  if (programLoading || freeSessionLoading) {
+  if (programLoading || freeSessionLoading || !selectedSession) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Clock className="w-4 h-4 animate-spin" />
-          <span className="text-sm">{t('common:loading')}</span>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="text-center space-y-1">
+          <p className="font-semibold text-sm">Reprise de séance…</p>
+          <p className="text-xs text-muted-foreground">Chargement de ta progression</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Synchronisation…</p>
       </div>
     );
   }
@@ -751,7 +996,7 @@ const LiveSession = () => {
   // Session not found — past session or deleted
   if (!selectedSession && selectedSessionId) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
+      <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
         <Clock className="w-8 h-8 text-muted-foreground" />
         <p className="text-foreground font-semibold">{t('session:session_not_found', 'Séance introuvable')}</p>
         <p className="text-muted-foreground text-sm max-w-xs">
@@ -767,7 +1012,7 @@ const LiveSession = () => {
   // Finish failed — show retry
   if (finishError && !sessionDone) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
+      <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
         <CloudOff className="w-10 h-10 text-destructive" />
         <p className="text-foreground font-semibold text-lg">{t("session:finish_failed")}</p>
         <p className="text-muted-foreground text-sm max-w-xs">
@@ -820,28 +1065,7 @@ const LiveSession = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground -m-4 md:-m-8">
-      {/* Recovery prompt for orphaned localStorage backup */}
-      {showRecoveryPrompt && (
-        <AlertDialog open={showRecoveryPrompt} onOpenChange={setShowRecoveryPrompt}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('session:unsaved_session_found', 'Session non sauvegardée trouvée')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('session:unsaved_session_description', 'Une session précédente n\'a pas pu être sauvegardée. Voulez-vous restaurer vos données ?')}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={handleDismissBackup}>
-                {t('common:ignore', 'Ignorer')}
-              </AlertDialogCancel>
-              <AlertDialogAction onClick={handleRestoreBackup}>
-                {t('common:restore', 'Restaurer')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+    <div className="min-h-[100dvh] bg-background text-foreground -m-4 md:-m-8">
       {/* Immersive stats bar */}
       <WorkoutStatsBar
         elapsed={elapsed}
@@ -862,8 +1086,11 @@ const LiveSession = () => {
           --live-bottom-pad is updated via ResizeObserver below. */}
       <div
         ref={scrollRef}
-        className="max-w-2xl mx-auto px-3 py-4 space-y-3"
-        style={{ paddingBottom: "calc(var(--live-bottom-pad, 14rem) + env(safe-area-inset-bottom))" }}
+        className="max-w-2xl mx-auto px-3 py-4 space-y-3 overscroll-none"
+        style={{
+          paddingBottom: "calc(var(--live-bottom-pad, 14rem) + env(safe-area-inset-bottom))",
+          WebkitOverflowScrolling: 'touch',
+        }}
       >
         {/* Substitution + skip notices (Advanced only) */}
         <AnimatePresence>
@@ -935,15 +1162,37 @@ const LiveSession = () => {
                   }
                   if (ex.rest === "—" || !ex.rest) restSeconds = 0;
                   const isSkipped = skippedExercises.has(key);
+                  const biSetLink = supersetPartnerMap[key];
+                  const showBiSetHeader = !!biSetLink && biSetLink.isFirst;
 
                   return (
+                  <div key={key} className={cn(biSetLink && "relative")}>
+                    {showBiSetHeader && (
+                      <div className="flex items-center gap-2 mb-2 px-1">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold uppercase tracking-[0.05em]">
+                          ↕ Bi-set
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          Alterner les séries · repos partagé après chaque tour
+                        </span>
+                      </div>
+                    )}
+                    {biSetLink && (
+                      <div
+                        aria-hidden
+                        className={cn(
+                          "absolute left-0 w-1 bg-primary/60 rounded-full",
+                          biSetLink.isFirst ? "top-8 bottom-[-12px]" : "top-[-12px] bottom-4",
+                        )}
+                      />
+                    )}
                     <div
-                      key={key}
+                      data-exercise-key={key}
                       role={!isActive && !isSkipped ? "button" : undefined}
                       tabIndex={!isActive && !isSkipped ? 0 : undefined}
-                      onClick={() => !isActive && !isSkipped && setActiveExerciseKey(key)}
-                      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isActive && !isSkipped) { e.preventDefault(); setActiveExerciseKey(key); } }}
-                      className={cn(!isActive && !isSkipped && "cursor-pointer")}
+                      onClick={() => !isActive && !isSkipped && setActiveExercise(key)}
+                      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isActive && !isSkipped) { e.preventDefault(); setActiveExercise(key); } }}
+                      className={cn(!isActive && !isSkipped && "cursor-pointer", biSetLink && "pl-3")}
                     >
                       <EnhancedExerciseCard
                         name={displayName}
@@ -965,6 +1214,8 @@ const LiveSession = () => {
                         completedSets={sets}
                         onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
                         onAllSetsComplete={() => handleExerciseComplete(key)}
+                        onSetValidated={(rest) => handleSupersetAwareRest(key, rest)}
+                        onRestStart={(secs) => handleSupersetAwareRest(key, secs)}
                         onSwapExercise={() => handleOpenSwap(key)}
                         onSkipExercise={() => handleOpenSkip(key)}
                         isSubstituted={isSubstituted}
@@ -972,9 +1223,17 @@ const LiveSession = () => {
                         trackingType={(trackingTypeMap[key] as any) || "weight_reps"}
                         sessionExerciseId={sessionExerciseIdMap[key]}
                         completedSessionId={completedSessionId || undefined}
-                        onActivate={() => setActiveExerciseKey(key)}
+                        onActivate={() => setActiveExercise(key)}
+                        previousSets={
+                          previousPerformance && sessionExerciseIdMap[key]
+                            ? previousPerformance
+                                .filter((s: any) => s.session_exercise_id === sessionExerciseIdMap[key])
+                                .map((s: any) => ({ weight: Number(s.weight) || 0, reps: s.reps || 0 }))
+                            : undefined
+                        }
                       />
                     </div>
+                  </div>
                   );
                 })}
               </SessionSection>
@@ -998,13 +1257,32 @@ const LiveSession = () => {
 
         {/* Finish button */}
         <div className="py-4">
-          <Button
-            className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90"
-            onClick={() => finishSession()}
-            disabled={completedCount === 0}
-          >
-            {t('session:finish_session', { completed: completedCount, total: allExercises.length })}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90"
+                disabled={completedCount === 0}
+              >
+                {t('session:finish_session', { completed: completedCount, total: allExercises.length })}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Terminer la séance ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {completedCount < allExercises.length
+                    ? `${completedCount} exercice(s) sur ${allExercises.length} complété(s). Les exercices restants ne seront pas enregistrés.`
+                    : "Tous les exercices sont complétés. Bravo !"}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Reprendre la séance</AlertDialogCancel>
+                <AlertDialogAction onClick={() => finishSession()}>
+                  Terminer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
@@ -1019,7 +1297,11 @@ const LiveSession = () => {
       )}
 
       {/* Share button */}
-      <div ref={shareBtnRef} className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] md:bottom-20 right-4 z-20">
+      <div
+        ref={shareBtnRef}
+        className="fixed md:bottom-20 md:right-4 z-20"
+        style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom, 34px))', right: '1rem' }}
+      >
         <ShareSessionButton
           sessionId={selectedSession?.id || ""}
           completedSessionId={completedSessionId || undefined}
@@ -1035,10 +1317,11 @@ const LiveSession = () => {
       />
       <ExerciseAlternativesSheet
         open={swapSheetOpen}
-        onClose={() => { setSwapSheetOpen(false); setSwapTargetKey(null); }}
+        onClose={() => { setSwapSheetOpen(false); setSwapTargetKey(null); setSwapSelectedName(null); }}
         exerciseName={swapExerciseOriginalName}
         group={EXERCISE_ALTERNATIVES[swapExerciseOriginalName] || dynamicAlternatives}
         onSelect={handleSwapSelect}
+        selectedName={swapSelectedName}
       />
       <SkipExerciseModal
         open={skipModalOpen}
@@ -1060,6 +1343,19 @@ const LiveSession = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {globalRestSeconds !== null && globalRestSeconds > 0 && (
+        <div
+          className="fixed left-3 right-3 z-40 rounded-2xl shadow-lg overflow-hidden"
+          style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom, 34px) + var(--keyboard-offset, 0px))' }}
+        >
+          <LinearRestTimer
+            key={`global-${globalRestSeconds}-${activeExerciseKey}`}
+            initialSeconds={globalRestSeconds}
+            storageKey={`rest_${activeExerciseKey}`}
+            onComplete={() => setGlobalRestSeconds(null)}
+          />
+        </div>
+      )}
     </div>
   );
 };

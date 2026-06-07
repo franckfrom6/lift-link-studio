@@ -52,6 +52,11 @@ const DurationInput = ({
       value={localValue}
       onChange={(e) => setLocalValue(e.target.value)}
       onBlur={commit}
+      onFocus={(e) => {
+        setTimeout(() => {
+          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 350);
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           (e.target as HTMLInputElement).blur();
@@ -62,6 +67,9 @@ const DurationInput = ({
         "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
         className
       )}
+      style={{ fontSize: '16px' }}
+      inputMode="numeric"
+      pattern="[0-9]*"
       disabled={disabled}
     />
   );

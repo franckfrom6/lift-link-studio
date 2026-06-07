@@ -85,6 +85,7 @@ const AthleteProgramEditor = () => {
           coachNotes: ex.coach_notes || undefined, tempo: ex.tempo || undefined,
           rpeTarget: ex.rpe_target || undefined, videoUrl: ex.video_url || undefined,
           videoSearchQuery: ex.video_search_query || undefined, sectionId: ex.section_id || undefined,
+          supersetGroup: (ex as any).superset_group ?? null,
         };
         if (ex.section_id && sectionMap.has(ex.section_id)) {
           sectionMap.get(ex.section_id)!.exercises.push(mapped);
@@ -103,6 +104,7 @@ const AthleteProgramEditor = () => {
             coachNotes: ex.coach_notes || undefined, tempo: ex.tempo || undefined,
             rpeTarget: ex.rpe_target || undefined, videoUrl: ex.video_url || undefined,
             videoSearchQuery: ex.video_search_query || undefined,
+            supersetGroup: (ex as any).superset_group ?? null,
           })),
         })),
       }));

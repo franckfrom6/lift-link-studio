@@ -1,4 +1,5 @@
-import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Bot, Copy, Trash2 } from "lucide-react";
+import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Copy, Trash2, Activity, Zap, Check, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
@@ -15,10 +16,19 @@ import CheckinBadge from "@/components/student/CheckinBadge";
 import WeeklyLoadBar from "@/components/student/WeeklyLoadBar";
 import FreeSessionCreator from "@/components/student/FreeSessionCreator";
 import SessionBuilderModal from "@/components/student/SessionBuilderModal";
+import SessionTypeChooser from "@/components/student/SessionTypeChooser";
+import RunBlockEditor from "@/components/student/RunBlockEditor";
+import { HybridSessionBuilder } from "@/components/hybrid/HybridSessionBuilder";
+import type { HybridBlock } from "@/types/hybrid";
+import RaceGoalCard from "@/components/student/RaceGoalCard";
+import RaceGoalSetupSheet from "@/components/student/RaceGoalSetupSheet";
+import { totalBlocksKm, type RunBlock } from "@/types/running";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import DuplicateSessionModal from "@/components/student/DuplicateSessionModal";
 import SignatureStartCTA from "@/components/student/SignatureStartCTA";
 import ProgDayRow, { DayState } from "@/components/student/ProgDayRow";
 import MonthGrid, { MonthDayMarkers } from "@/components/student/MonthGrid";
+import WeekStrip from "@/components/student/WeekStrip";
 import MonthFilters, { ActivityFilter } from "@/components/student/MonthFilters";
 import {
   CategoryKey,
@@ -46,6 +56,13 @@ import { useMonthSessions } from "@/hooks/useMonthSessions";
 import { formatLocalDate } from "@/lib/date-utils";
 import { AnimatePresence, motion } from "framer-motion";
 
+// Route resolver based on session type (handles legacy untyped sessions)
+const getSessionRoute = (id: string, sessionType?: string): string => {
+  if (sessionType === 'running') return `/student/run/${id}`;
+  if (sessionType === 'hybrid') return `/student/hybrid/${id}`;
+  return `/student/session/${id}/preview`;
+};
+
 const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
   const { user } = useAuth();
@@ -69,6 +86,8 @@ const StudentWeek = () => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
+  const [calendarMode, setCalendarMode] = useState<"week" | "month">("week");
+  const [monthNavDir, setMonthNavDir] = useState<'left' | 'right' | null>(null);
   // Calendar filters (scope + session type)
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
   const [typeFilter, setTypeFilter] = useState<CategoryKey | null>(null);
@@ -77,9 +96,20 @@ const StudentWeek = () => {
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [swapTargetDay, setSwapTargetDay] = useState<number | null>(null);
+  const [swapSourceDate, setSwapSourceDate] = useState<Date | null>(null);
+  const [swapTargetDate, setSwapTargetDate] = useState<Date | null>(null);
   const [freeSessionOpen, setFreeSessionOpen] = useState(false);
   const [freeSessionDate, setFreeSessionDate] = useState<Date>(new Date());
   const [builderOpen, setBuilderOpen] = useState(false);
+  const [sessionChooserOpen, setSessionChooserOpen] = useState(false);
+  const [sessionChooserDate, setSessionChooserDate] = useState<Date>(new Date());
+  const [runSessionOpen, setRunSessionOpen] = useState(false);
+  const [runSessionDate, setRunSessionDate] = useState<Date>(new Date());
+  const [hybridOpen, setHybridOpen] = useState(false);
+  const [hybridDate, setHybridDate] = useState<Date>(new Date());
+  const [multiSessionOpen, setMultiSessionOpen] = useState(false);
+  const [multiSessionDate, setMultiSessionDate] = useState<Date>(new Date());
+  const [raceGoalSheetOpen, setRaceGoalSheetOpen] = useState(false);
   const [builderDate, setBuilderDate] = useState<Date>(new Date());
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicateSession, setDuplicateSession] = useState<{ id: string; name: string } | null>(null);
@@ -124,7 +154,7 @@ const StudentWeek = () => {
   const weekSessions = currentWeek?.sessions || [];
 
   const DEFAULT_SESSIONS = useMemo(() => {
-    const map: Record<number, { name: string; sessionId: string; exerciseCount: number; muscleGroups: string[] }> = {};
+    const map: Record<number, { name: string; sessionId: string; exerciseCount: number; muscleGroups: string[]; session_type?: string }> = {};
     for (const session of weekSessions) {
       const muscleGroups = session.sections
         .flatMap(s => s.exercises.map(e => e.exercise?.muscle_group))
@@ -136,6 +166,7 @@ const StudentWeek = () => {
         sessionId: session.id,
         exerciseCount,
         muscleGroups: uniqueMuscles,
+        session_type: session.session_type ?? undefined,
       };
     }
     return map;
@@ -175,6 +206,51 @@ const StudentWeek = () => {
     getExternalForDay,
     freeSessions,
   } = useWeekData(studentId, weekStart);
+
+  const { data: raceGoal, refetch: refetchRaceGoal } = useQuery({
+    queryKey: ["race-goal", studentId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("race_goals")
+        .select("*")
+        .eq("student_id", studentId!)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!studentId,
+  });
+
+  // Weekly running volume (sum of totalBlocksKm across this week's running sessions)
+  const weekKeyStart = formatLocalDate(weekStart);
+  const weekKeyEndDate = useMemo(() => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + 6);
+    return formatLocalDate(d);
+  }, [weekStart]);
+
+  const { data: weeklyRunKm = 0 } = useQuery({
+    queryKey: ["week-running-km", studentId, weekKeyStart],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("sessions")
+        .select("run_blocks")
+        .eq("created_by", studentId!)
+        .eq("is_free_session", true)
+        .eq("session_type", "running")
+        .eq("is_deleted", false)
+        .gte("free_session_date", weekKeyStart)
+        .lte("free_session_date", weekKeyEndDate);
+      return (data || []).reduce((acc: number, row: any) => {
+        const blocks = (row.run_blocks || []) as RunBlock[];
+        return acc + totalBlocksKm(blocks);
+      }, 0);
+    },
+    enabled: !!studentId,
+    staleTime: 30 * 1000,
+  });
 
   const fetchFreeSessions = useCallback(async () => {
     queryClient.invalidateQueries({ queryKey: ['week-free-sessions'] });
@@ -307,11 +383,15 @@ const StudentWeek = () => {
     // 1) Date-bound items (free sessions / externals / completed)
     monthSummaries.forEach((s, key) => {
       const m = ensure(key);
-      if (s.free > 0) m.hasSession = true;
+      if (s.free > 0) {
+        m.hasSession = true;
+        m.sessionCount = (m.sessionCount ?? 0) + s.free;
+      }
       if (s.external > 0) m.hasExternal = true;
       if (s.completed > 0) {
         m.hasSession = true;
         m.isCompleted = true;
+        // completed is a superset of free — don't double-count
       }
     });
 
@@ -349,6 +429,7 @@ const StudentWeek = () => {
             const key = formatLocalDate(d);
             const m = ensure(key);
             m.hasSession = true;
+            m.sessionCount = (m.sessionCount ?? 0) + 1;
           }
         }
         cursor.setDate(cursor.getDate() + 7);
@@ -482,15 +563,43 @@ const StudentWeek = () => {
   const handleSelectDate = (date: Date) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
+    if (swapMode && swapSourceDate !== null) {
+      if (d.toDateString() === swapSourceDate.toDateString()) {
+        setSwapMode(false);
+        setSwapSourceDay(null);
+        setSwapSourceDate(null);
+        return;
+      }
+      const targetDayIndex = (d.getDay() + 6) % 7;
+      setSelectedDate(d);
+      setDisplayMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+      setSwapTargetDay(targetDayIndex);
+      setSwapTargetDate(d);
+      setSwapModalOpen(true);
+      return;
+    }
     setSelectedDate(d);
     setDisplayMonth(new Date(d.getFullYear(), d.getMonth(), 1));
   };
 
   const handlePrevMonth = () => {
+    setMonthNavDir('left');
     setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1));
   };
   const handleNextMonth = () => {
+    setMonthNavDir('right');
     setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1));
+  };
+
+  const handlePrevWeek = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 7);
+    handleSelectDate(d);
+  };
+  const handleNextWeek = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 7);
+    handleSelectDate(d);
   };
 
   const handleDayClickInSwapMode = (dayIndex: number) => {
@@ -513,8 +622,8 @@ const StudentWeek = () => {
       sessionId: sourceSession.sessionId,
       originalDay: swapSourceDay + 1,
       newDay: swapTargetDay + 1,
-      originalDate: dates[swapSourceDay].date,
-      newDate: dates[swapTargetDay].date,
+      originalDate: swapSourceDate!,
+      newDate: swapTargetDate!,
       reason: reason || undefined,
     });
     if (result) {
@@ -523,6 +632,8 @@ const StudentWeek = () => {
     setSwapMode(false);
     setSwapSourceDay(null);
     setSwapTargetDay(null);
+    setSwapSourceDate(null);
+    setSwapTargetDate(null);
     setSwapModalOpen(false);
   };
 
@@ -608,42 +719,20 @@ const StudentWeek = () => {
   const handleJoinCoach = async (code: string) => {
     if (!user) return;
     const upper = code.toUpperCase();
-    const { data: tokenData } = await supabase
-      .from("coach_invite_tokens")
-      .select("id, coach_id, token, uses_count, max_uses, expires_at")
-      .eq("token", upper)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (!tokenData) { toast.error(t('auth:token_invalid', "Code invalide ou expiré")); return; }
-    if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) { toast.error(t('auth:token_invalid')); return; }
-    if (tokenData.max_uses !== null && tokenData.uses_count >= tokenData.max_uses) { toast.error(t('auth:token_invalid')); return; }
-
-    const { data: existing } = await supabase
-      .from("coach_students")
-      .select("id")
-      .eq("coach_id", tokenData.coach_id)
-      .eq("student_id", user.id)
-      .eq("status", "active")
-      .maybeSingle();
-
-    if (existing) { toast.info(t('auth:token_join_already')); return; }
-
-    const { error } = await supabase.from("coach_students").insert({
-      coach_id: tokenData.coach_id,
-      student_id: user.id,
-      status: "active",
-    });
-
-    if (error) { toast.error(t('auth:error_generic')); return; }
-
-    await supabase
-      .from("coach_invite_tokens")
-      .update({ uses_count: tokenData.uses_count + 1 })
-      .eq("id", tokenData.id);
-
-    toast.success(t('auth:token_join_success'));
-    window.location.reload();
+    const { data, error } = await supabase.rpc("redeem_coach_invite_token", { _token: upper });
+    const status = (data as any)?.status;
+    if (error || !status || status === "invalid" || status === "expired" || status === "maxed") {
+      toast.error(t('auth:token_invalid', "Code invalide ou expiré"));
+      return;
+    }
+    if (status === "already_linked") {
+      toast.info(t('auth:token_join_already'));
+      return;
+    }
+    if (status === "success") {
+      toast.success(t('auth:token_join_success'));
+      window.location.reload();
+    }
   };
 
   const weekLabel =
@@ -687,7 +776,7 @@ const StudentWeek = () => {
   return (
     <div className="animate-fade-in max-w-2xl mx-auto relative pb-32 md:pb-0">
       {refreshing && (
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full animate-pulse">
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium px-3 py-1.5 rounded-full">
           <RefreshCw className="h-3 w-3 animate-spin" />
           {t('common:refreshing', 'Mise à jour…')}
         </div>
@@ -723,6 +812,20 @@ const StudentWeek = () => {
             Semaine
           </Button>
         )}
+        {/* Always visible: add a free/extra session for the selected day */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setSessionChooserDate(selectedDate);
+            setSessionChooserOpen(true);
+          }}
+          className="h-8 px-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          aria-label="Ajouter une séance"
+        >
+          <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={2} />
+          Séance
+        </Button>
       </header>
 
       {/* No-program onboarding banner */}
@@ -744,15 +847,47 @@ const StudentWeek = () => {
         selectedType={typeFilter}
         onTypeChange={setTypeFilter}
       />
-      <MonthGrid
-        monthAnchor={displayMonth}
-        selectedDate={selectedDate}
-        markers={filteredMarkers}
-        onSelectDate={handleSelectDate}
-        onPrevMonth={handlePrevMonth}
-        onNextMonth={handleNextMonth}
-        onJumpToday={handleJumpToday}
-      />
+      <div className="flex justify-end px-3 pt-1">
+        <button
+          type="button"
+          onClick={() => setCalendarMode((m) => (m === "week" ? "month" : "week"))}
+          className="text-[11px] text-muted-foreground underline hover:text-foreground transition-colors"
+        >
+          {calendarMode === "week" ? "Vue mois" : "Vue semaine"}
+        </button>
+      </div>
+      {calendarMode === "week" ? (
+        <WeekStrip
+          monthAnchor={displayMonth}
+          selectedDate={selectedDate}
+          markers={filteredMarkers}
+          onSelectDate={handleSelectDate}
+          onPrevMonth={handlePrevWeek}
+          onNextMonth={handleNextWeek}
+          onJumpToday={handleJumpToday}
+        />
+      ) : (
+        <MonthGrid
+          monthAnchor={displayMonth}
+          selectedDate={selectedDate}
+          markers={filteredMarkers}
+          onSelectDate={handleSelectDate}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          onJumpToday={handleJumpToday}
+          direction={monthNavDir}
+          swapMode={swapMode}
+        />
+      )}
+
+      <div className="mt-3">
+        <RaceGoalCard
+          raceGoal={raceGoal as any}
+          weeklyKm={weeklyRunKm}
+          onSetGoal={() => setRaceGoalSheetOpen(true)}
+          onEditGoal={() => setRaceGoalSheetOpen(true)}
+        />
+      </div>
 
       {/* Selected day summary line */}
       <div className="px-4 pt-3 pb-2 flex items-baseline justify-between gap-3">
@@ -809,7 +944,7 @@ const StudentWeek = () => {
           <Button
             variant="ghost" size="icon"
             className="h-7 w-7 text-warning hover:text-warning"
-            onClick={() => { setSwapMode(false); setSwapSourceDay(null); }}
+            onClick={() => { setSwapMode(false); setSwapSourceDay(null); setSwapSourceDate(null); setSwapTargetDate(null); }}
             aria-label={t('common:cancel')}
           >
             <X className="w-4 h-4" strokeWidth={1.5} />
@@ -847,20 +982,51 @@ const StudentWeek = () => {
           const handleClick = () => {
             if (swapMode) { handleDayClickInSwapMode(day.dayIndex); return; }
             if (isSessionDay && sessionInfo) {
-              navigate(`/student/session/${sessionInfo.sessionId}/preview`);
-            } else if (dayFreeSessions.length > 0) {
-              navigate(`/student/session/${dayFreeSessions[0].id}/preview`);
+              navigate(getSessionRoute(sessionInfo.sessionId, sessionInfo.session_type));
+            } else if (dayFreeSessions.length === 1) {
+              navigate(getSessionRoute(dayFreeSessions[0].id, dayFreeSessions[0].session_type));
+            } else if (dayFreeSessions.length > 1) {
+              // Multi-session day — handled by stacked cards below; row click is a no-op
             } else if (!day.isPast) {
-              // Rest day on current/future date → open builder directly
               setBuilderDate(day.date);
               setBuilderOpen(true);
             }
           };
 
+          // Flattened list of all sessions for the day (used for multi-session stacked cards)
+          const allDaySessions: Array<{
+            id: string;
+            name: string;
+            meta: string;
+            isCompleted: boolean;
+            sessionType?: string;
+          }> = [];
+          if (isSessionDay && sessionInfo) {
+            allDaySessions.push({
+              id: sessionInfo.sessionId,
+              name: sessionInfo.name,
+              meta: [
+                `${sessionInfo.exerciseCount} ex.`,
+                ...(sessionInfo.muscleGroups.slice(0, 2)),
+              ].join(' · '),
+            isCompleted: sessionCompleted,
+            sessionType: sessionInfo.session_type,
+          });
+          }
+          dayFreeSessions.forEach(fs => {
+            allDaySessions.push({
+              id: fs.id,
+              name: fs.name,
+              meta: `${fs.exerciseCount} ex.`,
+              isCompleted: isSessionCompleted(fs.id),
+              sessionType: fs.session_type,
+            });
+          });
+          const isMultiSession = allDaySessions.length > 1;
+
           // Pick what to show as session name/meta
           let sessionName: string | null = null;
           let sessionMeta: string | null = null;
-          let isAI = false;
           if (isSessionDay && sessionInfo) {
             sessionName = sessionInfo.name;
             const parts: string[] = [`${sessionInfo.exerciseCount} ex.`];
@@ -872,14 +1038,19 @@ const StudentWeek = () => {
             const fs = dayFreeSessions[0];
             sessionName = fs.name;
             sessionMeta = `${fs.exerciseCount} ex.`;
-            isAI = true;
+          }
+          // For multi-session days, the row stays compact (label + menu) and the
+          // session details live in the stacked cards below.
+          if (isMultiSession) {
+            sessionName = null;
+            sessionMeta = null;
           }
 
           // Action menu (kept feature parity with previous version)
           const hasMenu = !swapMode && (isSessionDay || !day.isPast);
           const actionMenu = hasMenu ? (
             <>
-              <DropdownMenuItem onClick={() => { setBuilderDate(day.date); setBuilderOpen(true); }}>
+              <DropdownMenuItem onClick={() => { setSessionChooserDate(day.date); setSessionChooserOpen(true); }}>
                 <Dumbbell className="w-4 h-4 mr-2" />{t('session:builder_title')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
@@ -890,7 +1061,7 @@ const StudentWeek = () => {
                   <DropdownMenuItem onClick={() => { setDuplicateSession({ id: sessionInfo.sessionId, name: sessionInfo.name }); setDuplicateOpen(true); }}>
                     <Copy className="w-4 h-4 mr-2" />{t('session:duplicate_title')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setSwapMode(true); setSwapSourceDay(day.dayIndex); }}>
+                  <DropdownMenuItem onClick={() => { setSwapMode(true); setSwapSourceDay(day.dayIndex); setSwapSourceDate(dates[day.dayIndex].date); }}>
                     <ArrowLeftRight className="w-4 h-4 mr-2" />{t('calendar:swap_session')}
                   </DropdownMenuItem>
                 </>
@@ -930,22 +1101,77 @@ const StudentWeek = () => {
                   ))}
                 </div>
               )}
-              {isSessionDay && dayFreeSessions.length > 0 && (
+              {isMultiSession ? (
+                <div className="space-y-1.5 pb-1">
+                  {allDaySessions.map((s) => {
+                    const sessionIcon = s.sessionType === 'running'
+                      ? <Activity className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+                      : s.sessionType === 'hybrid'
+                        ? <Zap className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+                        : <Dumbbell className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(getSessionRoute(s.id, s.sessionType));
+                        }}
+                        className={cn(
+                          "w-full text-left flex items-center gap-2.5 px-3 py-2.5 rounded-md border transition-colors",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                          s.isCompleted
+                            ? "bg-success-bg/40 border-success/20 text-muted-foreground"
+                            : day.isToday
+                              ? "bg-primary/5 border-primary/15 hover:bg-primary/10 active:bg-primary/15"
+                              : "bg-bg-tinted border-border hover:bg-card active:bg-card"
+                        )}
+                      >
+                        <span className={cn(
+                          s.isCompleted ? "text-success" : day.isToday ? "text-primary" : "text-muted-foreground"
+                        )}>
+                          {s.isCompleted
+                            ? <Check className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
+                            : sessionIcon}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className={cn(
+                            "text-[13px] font-semibold truncate leading-tight",
+                            s.isCompleted ? "text-muted-foreground line-through" : "text-foreground"
+                          )}>
+                            {s.name}
+                          </p>
+                          <p className="text-[10px] text-muted-subtle mt-0.5 truncate">{s.meta}</p>
+                        </div>
+                        {!s.isCompleted && (
+                          <ChevronRight className="w-3.5 h-3.5 text-muted-subtle flex-shrink-0" strokeWidth={2} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : isSessionDay && dayFreeSessions.length > 0 && (
                 <div className="space-y-1 mt-1 pt-1 border-t border-border">
                   {dayFreeSessions.map(fs => (
                     <button
                       key={fs.id}
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); navigate(`/student/session/${fs.id}/preview`); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(getSessionRoute(fs.id, fs.session_type));
+                      }}
                       className="flex items-center justify-between w-full text-left py-1"
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className="text-xs font-semibold text-foreground truncate">{fs.name}</span>
-                        <span className="inline-flex items-center gap-0.5 bg-bg-tinted text-muted-foreground text-[8px] font-bold uppercase px-1 py-[1px] rounded-xs">
-                          <Bot className="w-2 h-2" strokeWidth={2} />IA
-                        </span>
                       </div>
-                      <span className="text-[10px] tabular-nums text-muted-subtle ml-2">{fs.exerciseCount} ex.</span>
+                      <span className="text-[10px] tabular-nums text-muted-subtle ml-2">
+                        {fs.session_type === "running"
+                          ? <span className="text-sky-600 dark:text-sky-400">Course</span>
+                          : fs.session_type === "hybrid"
+                          ? <span className="text-orange-600 dark:text-orange-400">Hybride</span>
+                          : `${fs.exerciseCount} ex.`}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -956,7 +1182,7 @@ const StudentWeek = () => {
           // On rest days, expose the same action ("add a session") through both
           // the row click and the menu so creating a session on a week without
           // a program is intuitive.
-          const restDayClickable = state === "rest" && !day.isPast && !swapMode;
+          const restDayClickable = state === "rest" && !day.isPast;
           const rowOnClick = state === "rest"
             ? (restDayClickable ? handleClick : undefined)
             : handleClick;
@@ -970,11 +1196,10 @@ const StudentWeek = () => {
               isLast={isLast}
               sessionName={sessionName}
               sessionMeta={sessionMeta}
-              isAI={isAI}
               onClick={rowOnClick}
               actionMenu={actionMenu}
             >
-              {(dayExternals.length > 0 || (isSessionDay && dayFreeSessions.length > 0)) ? extras : null}
+              {(dayExternals.length > 0 || isMultiSession || (isSessionDay && dayFreeSessions.length > 0)) ? extras : null}
             </ProgDayRow>
           );
         })()}
@@ -997,13 +1222,13 @@ const StudentWeek = () => {
       {swapSourceDay !== null && swapTargetDay !== null && (
         <SessionSwapModal
           open={swapModalOpen}
-          onClose={() => { setSwapModalOpen(false); setSwapMode(false); setSwapSourceDay(null); setSwapTargetDay(null); }}
+          onClose={() => { setSwapModalOpen(false); setSwapMode(false); setSwapSourceDay(null); setSwapTargetDay(null); setSwapSourceDate(null); setSwapTargetDate(null); }}
           onConfirm={handleSwapConfirm}
           sessionName={effectiveSessions[swapSourceDay]?.name || "Session"}
           fromDayIndex={swapSourceDay}
           toDayIndex={swapTargetDay}
-          fromDate={dates[swapSourceDay].date}
-          toDate={dates[swapTargetDay].date}
+          fromDate={swapSourceDate ?? dates[swapSourceDay].date}
+          toDate={swapTargetDate ?? dates[swapTargetDay].date}
           isMutualSwap={targetHasSession}
           targetSessionName={targetHasSession ? effectiveSessions[swapTargetDay]?.name : undefined}
         />
@@ -1038,6 +1263,126 @@ const StudentWeek = () => {
         date={builderDate}
         onCreated={() => fetchFreeSessions()}
       />
+
+      <SessionTypeChooser
+        open={sessionChooserOpen}
+        onClose={() => setSessionChooserOpen(false)}
+        date={sessionChooserDate}
+        onChooseStrength={(d) => {
+          setSessionChooserOpen(false);
+          setFreeSessionDate(d);
+          setFreeSessionOpen(true);
+        }}
+        onChooseRun={(d) => {
+          setSessionChooserOpen(false);
+          setRunSessionDate(d);
+          setRunSessionOpen(true);
+        }}
+        onChooseHybrid={(d) => {
+          setSessionChooserOpen(false);
+          setHybridDate(d);
+          setHybridOpen(true);
+        }}
+      />
+
+      <RunBlockEditor
+        open={runSessionOpen}
+        onClose={() => setRunSessionOpen(false)}
+        date={runSessionDate}
+        onSave={async (name, blocks) => {
+          await supabase.from("sessions").insert([{
+            name,
+            day_of_week: runSessionDate.getDay() === 0 ? 7 : runSessionDate.getDay(),
+            is_free_session: true,
+            created_by: user!.id,
+            free_session_date: formatLocalDate(runSessionDate),
+            session_type: "running",
+            run_blocks: blocks as unknown as never,
+          }]);
+          queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+          queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
+        }}
+      />
+
+      <HybridSessionBuilder
+        open={hybridOpen}
+        onClose={() => setHybridOpen(false)}
+        date={hybridDate}
+        onSave={async (name, blocks) => {
+          await supabase.from("sessions").insert([{
+            name,
+            day_of_week: hybridDate.getDay() === 0 ? 7 : hybridDate.getDay(),
+            is_free_session: true,
+            created_by: user!.id,
+            free_session_date: formatLocalDate(hybridDate),
+            session_type: "hybrid",
+            hybrid_blocks: blocks as unknown as never,
+          }]);
+          queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+          queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
+        }}
+      />
+
+      <Sheet open={multiSessionOpen} onOpenChange={(v) => !v && setMultiSessionOpen(false)}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[60dvh]">
+          <SheetHeader className="pb-3">
+            <SheetTitle className="text-sm font-semibold">
+              {multiSessionDate.toLocaleDateString("fr", {
+                weekday: "long", day: "numeric", month: "long"
+              })}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-2 pb-4">
+            {freeSessions
+              .filter(fs => fs.date === formatLocalDate(multiSessionDate))
+              .map(fs => (
+                <button
+                  key={fs.id}
+                  onClick={() => {
+                    setMultiSessionOpen(false);
+                    navigate(
+                      fs.session_type === "running"
+                        ? `/student/run/${fs.id}`
+                        : fs.session_type === "hybrid"
+                        ? `/student/hybrid/${fs.id}`
+                        : `/student/session/${fs.id}/preview`
+                    );
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/30 transition-all text-left"
+                >
+                  <span className="text-xl">
+                    {fs.session_type === "hybrid"
+                      ? "🔥"
+                      : fs.session_type === "running"
+                      ? "🏃"
+                      : "💪"}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{fs.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {fs.session_type === "running"
+                        ? "Course à pied"
+                        : fs.session_type === "hybrid"
+                        ? "Hybride"
+                        : `${fs.exerciseCount} exercices`}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            <button
+              onClick={() => {
+                setMultiSessionOpen(false);
+                setSessionChooserDate(multiSessionDate);
+                setSessionChooserOpen(true);
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed border-border hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all text-left"
+            >
+              <span className="text-xl">➕</span>
+              <p className="font-semibold text-sm">Ajouter une séance</p>
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {duplicateSession && (
         <DuplicateSessionModal
@@ -1074,6 +1419,16 @@ const StudentWeek = () => {
       <FirstStepsChecklist />
       <OnboardingTooltip stepKey="welcome_seen" title={t('common:onboarding_welcome_title')} description={t('common:onboarding_welcome_desc')} position="center" />
       <OnboardingTooltip stepKey="program_seen" title={t('common:onboarding_program_title')} description={t('common:onboarding_program_desc')} position="bottom" />
+
+      {studentId && (
+        <RaceGoalSetupSheet
+          open={raceGoalSheetOpen}
+          onClose={() => setRaceGoalSheetOpen(false)}
+          existingGoal={raceGoal as any}
+          studentId={studentId}
+          onSaved={() => { setRaceGoalSheetOpen(false); refetchRaceGoal(); }}
+        />
+      )}
     </div>
   );
 };

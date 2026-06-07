@@ -14,7 +14,7 @@ const AdminLayout = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[100dvh] flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -22,7 +22,7 @@ const AdminLayout = () => {
 
   if (!profile?.is_admin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[100dvh] flex items-center justify-center">
         <div className="text-center space-y-2">
           <Shield className="w-12 h-12 text-muted-foreground mx-auto" />
           <h1 className="text-xl font-bold">{t("not_authorized")}</h1>
@@ -50,7 +50,7 @@ const AdminLayout = () => {
   const mobileOverflowItems = navItems.slice(4);
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-[100dvh] bg-background flex">
       <aside className="hidden md:flex flex-col w-[220px] lg:w-[260px] border-r border-border bg-secondary/50 p-4 shrink-0">
         <div className="flex items-center gap-3 mb-8 px-2">
           <Logo variant="compact" />
@@ -92,7 +92,7 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-h-screen min-w-0">
+      <div className="flex-1 flex flex-col min-h-[100dvh] min-w-0">
         <header className="md:hidden flex items-center justify-between p-3 border-b border-border bg-background">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-destructive" />

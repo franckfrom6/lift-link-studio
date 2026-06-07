@@ -41,26 +41,13 @@ const JoinRedirect = () => {
       }
 
       // Token-based join
-      const { data: tokenData, error: tokenError } = await supabase
-        .from("coach_invite_tokens")
-        .select("id, coach_id, token, is_active, max_uses, uses_count, expires_at")
-        .eq("token", code.toUpperCase())
-        .eq("is_active", true)
-        .maybeSingle();
+      const upper = code.toUpperCase();
 
-      if (tokenError || !tokenData) {
-        setNotFound(true);
-        return;
-      }
+      // Server-side validation (RLS-safe RPC)
+      const { data: coachId, error: lookupError } = await supabase
+        .rpc("lookup_coach_invite_token", { _token: upper });
 
-      // Check expiry
-      if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) {
-        setNotFound(true);
-        return;
-      }
-
-      // Check max uses
-      if (tokenData.max_uses !== null && tokenData.uses_count >= tokenData.max_uses) {
+      if (lookupError || !coachId) {
         setNotFound(true);
         return;
       }
@@ -68,55 +55,30 @@ const JoinRedirect = () => {
       // Check if user is logged in
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        // Redirect to auth with token param so they can sign up/login first
-        navigate(`/auth?token=${code.toUpperCase()}`, { replace: true });
+        navigate(`/auth?token=${upper}`, { replace: true });
         return;
       }
 
-      // User is logged in — join the coach
       setProcessing(true);
-      await joinCoachViaToken(user.id, tokenData);
+      await joinCoachViaToken(upper);
     };
     resolve();
   }, [code]);
 
-  const joinCoachViaToken = async (userId: string, tokenData: any) => {
+  const joinCoachViaToken = async (token: string) => {
     try {
-      // Check if already linked
-      const { data: existing } = await supabase
-        .from("coach_students")
-        .select("id")
-        .eq("coach_id", tokenData.coach_id)
-        .eq("student_id", userId)
-        .eq("status", "active")
-        .maybeSingle();
-
-      if (existing) {
+      const { data, error } = await supabase.rpc("redeem_coach_invite_token", { _token: token });
+      const status = (data as any)?.status;
+      if (error || !status || status === "invalid" || status === "expired" || status === "maxed") {
+        toast.error("Code invalide ou expiré");
+        navigate("/student", { replace: true });
+        return;
+      }
+      if (status === "already_linked") {
         toast.info("Vous êtes déjà associé à ce coach");
-        navigate("/student", { replace: true });
-        return;
+      } else if (status === "success") {
+        toast.success("Vous avez rejoint le coach !");
       }
-
-      // Create association
-      const { error: insertError } = await supabase.from("coach_students").insert({
-        coach_id: tokenData.coach_id,
-        student_id: userId,
-        status: "active",
-      });
-
-      if (insertError) {
-        toast.error("Erreur lors de l'association");
-        navigate("/student", { replace: true });
-        return;
-      }
-
-      // Increment uses_count
-      await supabase
-        .from("coach_invite_tokens")
-        .update({ uses_count: tokenData.uses_count + 1 })
-        .eq("id", tokenData.id);
-
-      toast.success("Vous avez rejoint le coach !");
       navigate("/student", { replace: true });
     } catch {
       toast.error("Erreur");
@@ -128,7 +90,7 @@ const JoinRedirect = () => {
   if (inviteId) return <Navigate to={`/auth?invite=${inviteId}`} replace />;
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-[100dvh] flex items-center justify-center">
       <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
     </div>
   );

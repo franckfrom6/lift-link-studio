@@ -5,12 +5,14 @@ import { useLocation } from "react-router-dom";
 import { usePlan, useFeatureAccess } from "@/providers/PlanProvider";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Message {
   id?: string;
   role: "user" | "assistant";
   content: string;
   context_page?: string;
+  suggestions?: string[];
 }
 
 interface UseAIChatOptions {
@@ -23,6 +25,7 @@ export function useAIChat(options?: UseAIChatOptions) {
   const { currentPlan } = usePlan();
   const { isEnabled } = useFeatureAccess("ai_chat");
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -100,13 +103,56 @@ export function useAIChat(options?: UseAIChatOptions) {
         }
         if (parsed.error === "plan_required") toast.error(t("plan_required"));
         else if (parsed.error === "rate_limited") toast.error(t("rate_limited"));
+        else if (
+          parsed.error === "AI not configured" ||
+          parsed.message?.includes("AI not configured") ||
+          parsed.message?.includes("not configured")
+        ) {
+          toast.error("VOLT IA n'est pas encore configuré sur ce projet. Contactez le support.");
+        }
         else toast.error(t("error"));
         setIsLoading(false);
         return;
       }
 
-      const assistantContent = data?.text || data?.message || data?.result?.text || data?.result?.message || JSON.stringify(data);
-      const assistantMsg: Message = { role: "assistant", content: assistantContent };
+      const rawAssistantContent =
+        data?.text || data?.message || data?.result?.text || data?.result?.message || JSON.stringify(data);
+      // If VOLT created a session, immediately refresh the calendar
+      const toolResults: any[] = data?.result?.tool_results || [];
+      const sessionCreated = toolResults.some(
+        (tr: any) => tr.tool === "create_free_session" && tr.success === true
+      );
+      if (sessionCreated) {
+        queryClient.invalidateQueries({ queryKey: ["week-free-sessions"] });
+        queryClient.invalidateQueries({ queryKey: ["month-sessions"] });
+      }
+      const rawSuggestions =
+        data?.suggestions ?? data?.result?.suggestions ?? [];
+      let suggestions: string[] = Array.isArray(rawSuggestions)
+        ? rawSuggestions.map((s: unknown) => String(s)).filter(Boolean)
+        : [];
+      let assistantContent = rawAssistantContent;
+      if (suggestions.length === 0 && typeof assistantContent === "string") {
+        const m = assistantContent.match(/<suggestions>([\s\S]*?)<\/suggestions>/);
+        if (m) {
+          try {
+            const parsed = JSON.parse(m[1]);
+            if (Array.isArray(parsed)) {
+              suggestions = parsed.map((s: unknown) => String(s)).filter(Boolean);
+            }
+          } catch { /* ignore */ }
+        }
+      }
+      if (typeof assistantContent === "string") {
+        assistantContent = assistantContent
+          .replace(/<suggestions>[\s\S]*?<\/suggestions>/g, "")
+          .trim();
+      }
+      const assistantMsg: Message = {
+        role: "assistant",
+        content: assistantContent,
+        suggestions: suggestions.length > 0 ? suggestions : undefined,
+      };
       setMessages(prev => [...prev, assistantMsg]);
 
       const { error: saveError } = await supabase.from("ai_chat_messages").insert({
@@ -117,7 +163,7 @@ export function useAIChat(options?: UseAIChatOptions) {
       });
       if (saveError) console.error("Error saving assistant message:", saveError);
     } catch (e) {
-      console.error(e);
+      console.error("VOLT AI error details:", e);
       toast.error(t("error"));
     } finally {
       setIsLoading(false);

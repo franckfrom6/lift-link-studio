@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, X, Check, Plus, ArrowLeftRight, Timer, Route, Dumbbell, SkipForward, Star, Play } from "lucide-react";
 import NumericInput from "./NumericInput";
 import DurationInput from "./DurationInput";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import CircularRestTimer from "./CircularRestTimer";
-import LinearRestTimer from "./LinearRestTimer";
 import { ExerciseVideoEmbed } from "./ExerciseVideoEmbed";
 import RPESelector from "./RPESelector";
 import CoachInstructionsButton from "./CoachInstructionsButton";
@@ -57,6 +55,8 @@ interface EnhancedExerciseCardProps {
   sessionExerciseId?: string;
   completedSessionId?: string;
   onActivate?: () => void;
+  onSetValidated?: (restSeconds: number) => void;
+  onRestStart?: (seconds: number) => void;
 }
 
 const EnhancedExerciseCard = ({
@@ -71,6 +71,8 @@ const EnhancedExerciseCard = ({
   sessionExerciseId,
   completedSessionId,
   onActivate,
+  onSetValidated,
+  onRestStart,
 }: EnhancedExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const { t } = useTranslation('exercises');
@@ -80,7 +82,6 @@ const EnhancedExerciseCard = ({
       ? completedSets.findIndex(s => s.reps === 0 && (s.durationSeconds || 0) === 0)
       : completedSets.length < targetSets ? completedSets.length : -1
   );
-  const [showTimer, setShowTimer] = useState(false);
   const [allDone, setAllDone] = useState(
     completedSets.length >= targetSets && completedSets.every(s => 
       trackingType === "duration" ? (s.durationSeconds || 0) > 0 : s.reps > 0
@@ -90,6 +91,11 @@ const EnhancedExerciseCard = ({
   const [justCompletedSet, setJustCompletedSet] = useState<number | null>(null);
   const [prDetected, setPrDetected] = useState<number | null>(null);
   const [showVideo, setShowVideo] = useState(false);
+  const [readyForNext, setReadyForNext] = useState(false);
+
+  useEffect(() => {
+    if (isActive) setExpanded(true);
+  }, [isActive]);
 
   const initialCompletedSets = useMemo<EnhancedCompletedSet[]>(() => (
     Array.from({ length: targetSets }, (_, i) => ({
@@ -102,12 +108,44 @@ const EnhancedExerciseCard = ({
     }))
   ), [suggestedWeight, targetSets, trackingType]);
 
-  const visibleCompletedSets = completedSets.length > 0 ? completedSets : initialCompletedSets;
+  // Always show at least `targetSets` rows. If the parent's completedSets is
+  // shorter than the expected count (e.g. only validated sets came back from
+  // DB), pad with placeholder pending rows so they never disappear from the UI
+  // — including after the rest timer completes.
+  const visibleCompletedSets = useMemo<EnhancedCompletedSet[]>(() => {
+    const base = completedSets.length > 0 ? completedSets : initialCompletedSets;
+    if (base.length >= targetSets) return base;
+    const padded = [...base];
+    for (let i = base.length; i < targetSets; i++) {
+      padded.push({
+        setNumber: i + 1,
+        weight: trackingType === "weight_reps" ? (suggestedWeight || 0) : 0,
+        reps: 0,
+        isFailure: false,
+        rpeActual: null,
+        durationSeconds: 0,
+      });
+    }
+    return padded;
+  }, [completedSets, initialCompletedSets, targetSets, suggestedWeight, trackingType]);
 
+  // One-shot initialization: push the initial placeholder rows up to the parent
+  // exactly once, and only while the parent has no sets yet. Guarded so it
+  // cannot fire later (e.g. mid-exercise after a re-render) and overwrite
+  // validated sets back to all-zero.
+  const initializedRef = useRef(false);
   useEffect(() => {
-    if (!isActive || completedSets.length > 0 || initialCompletedSets.length === 0) return;
+    if (initializedRef.current) return;
+    if (!isActive) return;
+    if (completedSets.length > 0) {
+      // Parent already has sets — consider us initialized; never reset later.
+      initializedRef.current = true;
+      return;
+    }
+    if (initialCompletedSets.length === 0) return;
+    initializedRef.current = true;
     onCompletedSetsChange(initialCompletedSets);
-  }, [completedSets.length, initialCompletedSets, isActive, onCompletedSetsChange]);
+  }, [isActive, completedSets.length, initialCompletedSets, onCompletedSetsChange]);
 
   const updateSet = (idx: number, field: keyof EnhancedCompletedSet, value: any) => {
     const updated = [...visibleCompletedSets];
@@ -142,11 +180,18 @@ const EnhancedExerciseCard = ({
         updated[idx + 1] = { ...updated[idx + 1], weight: updated[idx].weight };
         onCompletedSetsChange(updated);
       }
-      setShowTimer(true);
+      if (restSeconds > 0) {
+        onSetValidated?.(restSeconds);
+        onRestStart?.(restSeconds);
+      }
     } else {
       setAllDone(true);
       setCurrentSetIdx(-1);
-      onAllSetsComplete();
+      if (restSeconds > 0) {
+        onSetValidated?.(restSeconds);
+        onRestStart?.(restSeconds);
+      }
+      setReadyForNext(true);
     }
   };
 
@@ -159,6 +204,7 @@ const EnhancedExerciseCard = ({
     if (allDone) {
       setAllDone(false);
       setCurrentSetIdx(visibleCompletedSets.length);
+      setReadyForNext(false);
     }
   };
 
@@ -591,8 +637,8 @@ const EnhancedExerciseCard = ({
             <p className={cn("font-bold truncate", isActive ? "text-base" : "text-sm font-semibold")}>{name}</p>
           )}
           {isSubstituted && (
-            <span className="bg-warning/10 text-warning px-1 py-0.5 rounded text-[9px] font-bold shrink-0">
-              {t('modified')}
+            <span className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md text-[11px] font-bold shrink-0">
+              Modifié ↔
             </span>
           )}
         </div>
@@ -610,7 +656,7 @@ const EnhancedExerciseCard = ({
             {onSkipExercise && (
               <button
                 onClick={(e) => { e.stopPropagation(); onSkipExercise?.(); }}
-                className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-warning hover:bg-warning/10 transition-colors"
+                className="h-11 w-11 rounded-lg flex items-center justify-center text-muted-foreground hover:text-warning hover:bg-warning/10 transition-colors"
               >
                 <SkipForward className="w-3.5 h-3.5" strokeWidth={1.5} />
               </button>
@@ -618,7 +664,7 @@ const EnhancedExerciseCard = ({
             {onSwapExercise && (
               <button
                 onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}
-                className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                className="h-11 w-11 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
               >
                 <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
               </button>
@@ -646,7 +692,7 @@ const EnhancedExerciseCard = ({
   );
 
   // ── ADVANCED MODE: Sage header (mirrors SessionPreview ExerciseCard) ──
-  const hasAnyVideo = !!(videoUrl || videoUrlMale || videoUrlFemale || exerciseVideoUrl);
+  const hasAnyVideo = !!(videoUrl || videoUrlMale || videoUrlFemale || exerciseVideoUrl || videoSearchQuery || name);
   const renderAdvancedHeader = () => (
     <div className={cn("p-3.5 flex flex-col gap-2.5", isActive && "p-4")}>
       <div className="flex items-start gap-2.5">
@@ -678,8 +724,8 @@ const EnhancedExerciseCard = ({
               </p>
             )}
             {isSubstituted && (
-              <span className="bg-bg-tinted text-foreground border border-border px-1.5 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider shrink-0">
-                {t('modified')}
+              <span className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md text-[11px] font-bold shrink-0">
+                Modifié ↔
               </span>
             )}
           </div>
@@ -688,7 +734,7 @@ const EnhancedExerciseCard = ({
           {onSkipExercise && !allDone && isActive && (
             <button
               onClick={(e) => { e.stopPropagation(); onSkipExercise?.(); }}
-              className="h-8 w-8 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-bg-tinted transition-colors"
+              className="h-11 w-11 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-bg-tinted transition-colors"
               title={t('skip_btn', 'Passer') as string}
             >
               <SkipForward className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -697,7 +743,7 @@ const EnhancedExerciseCard = ({
           {onSwapExercise && !allDone && (
             <button
               onClick={(e) => { e.stopPropagation(); onSwapExercise?.(); }}
-              className="h-8 w-8 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-bg-tinted transition-colors"
+              className="h-11 w-11 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-bg-tinted transition-colors"
             >
               <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.5} />
             </button>
@@ -715,7 +761,7 @@ const EnhancedExerciseCard = ({
             onClick={() => setExpanded(!expanded)}
             animate={{ rotate: expanded ? 180 : 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="h-8 w-8 flex items-center justify-center"
+            className="h-11 w-11 flex items-center justify-center"
           >
             <ChevronDown className="w-4 h-4 text-muted-subtle shrink-0" strokeWidth={1.5} />
           </motion.button>
@@ -778,34 +824,52 @@ const EnhancedExerciseCard = ({
                 </div>
               )}
 
-              <AnimatePresence>
-                {showTimer && isActive && (
-                  isAdvanced ? (
-                    <CircularRestTimer
-                      key={currentSetIdx}
-                      initialSeconds={restSeconds}
-                      onComplete={() => setShowTimer(false)}
-                    />
-                  ) : (
-                    <LinearRestTimer
-                      key={currentSetIdx}
-                      initialSeconds={restSeconds}
-                      onComplete={() => setShowTimer(false)}
-                    />
-                  )
-                )}
-              </AnimatePresence>
-
               {isActive && visibleCompletedSets.length > 0 && (
                 <div className="space-y-2">
+                  {previousSets && previousSets.length > 0 && trackingType === "weight_reps" && (
+                    <div className="flex items-center gap-2 py-1.5 px-2 bg-primary/5 border border-primary/15 rounded-lg">
+                      <span className="text-[11px] text-muted-foreground">Dernière fois :</span>
+                      <span className="text-[11px] font-semibold text-primary tabular-nums">
+                        {previousSets[0].weight} kg × {previousSets[0].reps} reps
+                      </span>
+                      <button
+                        type="button"
+                        className="ml-auto text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded"
+                        onClick={() => {
+                          const updated = visibleCompletedSets.map((s, i) => ({
+                            ...s,
+                            weight: previousSets[i]?.weight || previousSets[0].weight,
+                          }));
+                          onCompletedSetsChange(updated);
+                        }}
+                      >
+                        Reprendre
+                      </button>
+                    </div>
+                  )}
                   <div className="overflow-x-auto -mx-3 px-3">
                     {renderSetHeader()}
                     {visibleCompletedSets.map((set, i) => renderSetRow(set, i))}
-                    {!allDone && (
+                    {isActive && (
                       <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={addSet}>
                         <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
                         {t('add_set')}
                       </Button>
+                    )}
+                    {allDone && readyForNext && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="pt-1"
+                      >
+                        <Button
+                          className="w-full h-12 font-semibold"
+                          onClick={() => { setReadyForNext(false); onAllSetsComplete(); }}
+                        >
+                          {t('next_exercise', { defaultValue: 'Exercice suivant →' })}
+                        </Button>
+                      </motion.div>
                     )}
                   </div>
 
@@ -854,7 +918,7 @@ const EnhancedExerciseCard = ({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setShowVideo(true); }}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-lg transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary/80 hover:text-primary bg-primary/8 hover:bg-primary/15 border border-primary/20 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <Play className="w-3 h-3" strokeWidth={2} />
                     {t('show_demo', { defaultValue: '📹 Voir la démo' })}

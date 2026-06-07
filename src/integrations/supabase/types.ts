@@ -498,7 +498,10 @@ export type Database = {
           completed_at: string | null
           created_at: string
           duration: number | null
+          global_rpe: number | null
           id: string
+          notes_for_coach: string | null
+          sensation_tag: string | null
           session_id: string
           started_at: string
           student_id: string
@@ -508,7 +511,10 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           duration?: number | null
+          global_rpe?: number | null
           id?: string
+          notes_for_coach?: string | null
+          sensation_tag?: string | null
           session_id: string
           started_at?: string
           student_id: string
@@ -518,7 +524,10 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           duration?: number | null
+          global_rpe?: number | null
           id?: string
+          notes_for_coach?: string | null
+          sensation_tag?: string | null
           session_id?: string
           started_at?: string
           student_id?: string
@@ -639,6 +648,93 @@ export type Database = {
           student_id?: string
           water_goal_ml?: number | null
           water_ml?: number | null
+        }
+        Relationships: []
+      }
+      email_send_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message_id: string | null
+          metadata: Json | null
+          recipient_email: string
+          status: string
+          template_name: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          metadata?: Json | null
+          recipient_email: string
+          status: string
+          template_name: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          metadata?: Json | null
+          recipient_email?: string
+          status?: string
+          template_name?: string
+        }
+        Relationships: []
+      }
+      email_send_state: {
+        Row: {
+          auth_email_ttl_minutes: number
+          batch_size: number
+          id: number
+          retry_after_until: string | null
+          send_delay_ms: number
+          transactional_email_ttl_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          auth_email_ttl_minutes?: number
+          batch_size?: number
+          id?: number
+          retry_after_until?: string | null
+          send_delay_ms?: number
+          transactional_email_ttl_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          auth_email_ttl_minutes?: number
+          batch_size?: number
+          id?: number
+          retry_after_until?: string | null
+          send_delay_ms?: number
+          transactional_email_ttl_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_unsubscribe_tokens: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          token?: string
+          used_at?: string | null
         }
         Relationships: []
       }
@@ -920,6 +1016,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      hybrid_block_executions: {
+        Row: {
+          block_id: string
+          completed_session_id: string
+          created_at: string
+          id: string
+          log_data: Json | null
+          skip_reason: string | null
+          status: string
+        }
+        Insert: {
+          block_id: string
+          completed_session_id: string
+          created_at?: string
+          id?: string
+          log_data?: Json | null
+          skip_reason?: string | null
+          status: string
+        }
+        Update: {
+          block_id?: string
+          completed_session_id?: string
+          created_at?: string
+          id?: string
+          log_data?: Json | null
+          skip_reason?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hybrid_block_executions_completed_session_id_fkey"
+            columns: ["completed_session_id"]
+            isOneToOne: false
+            referencedRelation: "completed_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       impersonation_audit: {
         Row: {
@@ -1604,6 +1738,45 @@ export type Database = {
         }
         Relationships: []
       }
+      race_goals: {
+        Row: {
+          created_at: string
+          current_easy_pace_s_per_km: number | null
+          current_weekly_km: number | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          race_type: string
+          student_id: string
+          target_date: string
+          target_time_min: number | null
+        }
+        Insert: {
+          created_at?: string
+          current_easy_pace_s_per_km?: number | null
+          current_weekly_km?: number | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          race_type: string
+          student_id: string
+          target_date: string
+          target_time_min?: number | null
+        }
+        Update: {
+          created_at?: string
+          current_easy_pace_s_per_km?: number | null
+          current_weekly_km?: number | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          race_type?: string
+          student_id?: string
+          target_date?: string
+          target_time_min?: number | null
+        }
+        Relationships: []
+      }
       recommendation_templates: {
         Row: {
           category: string
@@ -1701,6 +1874,7 @@ export type Database = {
           sets: number
           sort_order: number
           suggested_weight: number | null
+          superset_group: number | null
           tempo: string | null
           video_search_query: string | null
           video_url: string | null
@@ -1720,6 +1894,7 @@ export type Database = {
           sets?: number
           sort_order: number
           suggested_weight?: number | null
+          superset_group?: number | null
           tempo?: string | null
           video_search_query?: string | null
           video_url?: string | null
@@ -1739,6 +1914,7 @@ export type Database = {
           sets?: number
           sort_order?: number
           suggested_weight?: number | null
+          superset_group?: number | null
           tempo?: string | null
           video_search_query?: string | null
           video_url?: string | null
@@ -1925,11 +2101,14 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           free_session_date: string | null
+          hybrid_blocks: Json | null
           id: string
           is_deleted: boolean | null
           is_free_session: boolean
           name: string
           notes: string | null
+          run_blocks: Json | null
+          session_type: string
           week_id: string | null
         }
         Insert: {
@@ -1939,11 +2118,14 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           free_session_date?: string | null
+          hybrid_blocks?: Json | null
           id?: string
           is_deleted?: boolean | null
           is_free_session?: boolean
           name: string
           notes?: string | null
+          run_blocks?: Json | null
+          session_type?: string
           week_id?: string | null
         }
         Update: {
@@ -1953,11 +2135,14 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           free_session_date?: string | null
+          hybrid_blocks?: Json | null
           id?: string
           is_deleted?: boolean | null
           is_free_session?: boolean
           name?: string
           notes?: string | null
+          run_blocks?: Json | null
+          session_type?: string
           week_id?: string | null
         }
         Relationships: [
@@ -2156,6 +2341,30 @@ export type Database = {
         }
         Relationships: []
       }
+      suppressed_emails: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          metadata: Json | null
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          metadata?: Json | null
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string
+        }
+        Relationships: []
+      }
       ticket_messages: {
         Row: {
           attachment_urls: string[] | null
@@ -2338,6 +2547,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_email: {
+        Args: { message_id: number; queue_name: string }
+        Returns: boolean
+      }
+      enqueue_email: {
+        Args: { payload: Json; queue_name: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2346,6 +2563,25 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      lookup_coach_invite_token: { Args: { _token: string }; Returns: string }
+      move_to_dlq: {
+        Args: {
+          dlq_name: string
+          message_id: number
+          payload: Json
+          source_queue: string
+        }
+        Returns: number
+      }
+      read_email_batch: {
+        Args: { batch_size: number; queue_name: string; vt: number }
+        Returns: {
+          message: Json
+          msg_id: number
+          read_ct: number
+        }[]
+      }
+      redeem_coach_invite_token: { Args: { _token: string }; Returns: Json }
       session_is_completed: { Args: { _session_id: string }; Returns: boolean }
     }
     Enums: {

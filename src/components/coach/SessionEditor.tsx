@@ -7,6 +7,8 @@ import { useState } from "react";
 import ExercisePicker from "./ExercisePicker";
 import SessionSectionEditor from "./SessionSectionEditor";
 import { useTranslation } from "react-i18next";
+import BiSetToggle from "./BiSetToggle";
+import { toggleBiSet, isLinkedToNext } from "@/lib/superset-utils";
 
 interface SessionEditorProps {
   session: SessionData;
@@ -91,6 +93,10 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
     onUpdate({ ...session, exercises: exs });
   };
 
+  const toggleSupersetAt = (index: number) => {
+    onUpdate({ ...session, exercises: toggleBiSet(session.exercises, index) });
+  };
+
   const allExerciseIds = [
     ...session.exercises.map(e => e.exercise.id),
     ...(session.sections || []).flatMap(s => s.exercises.map(e => e.exercise.id)),
@@ -146,16 +152,23 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
                 </p>
               )}
               {session.exercises.map((exItem, i) => (
-                <SessionExerciseCard
-                  key={exItem.id}
-                  item={exItem}
-                  index={i}
-                  total={session.exercises.length}
-                  onUpdate={(u) => updateExercise(i, u)}
-                  onRemove={() => removeExercise(i)}
-                  onMoveUp={() => moveExercise(i, -1)}
-                  onMoveDown={() => moveExercise(i, 1)}
-                />
+                <div key={exItem.id} className="space-y-2">
+                  <SessionExerciseCard
+                    item={exItem}
+                    index={i}
+                    total={session.exercises.length}
+                    onUpdate={(u) => updateExercise(i, u)}
+                    onRemove={() => removeExercise(i)}
+                    onMoveUp={() => moveExercise(i, -1)}
+                    onMoveDown={() => moveExercise(i, 1)}
+                  />
+                  {i < session.exercises.length - 1 && (
+                    <BiSetToggle
+                      linked={isLinkedToNext(session.exercises, i)}
+                      onToggle={() => toggleSupersetAt(i)}
+                    />
+                  )}
+                </div>
               ))}
             </div>
           )}

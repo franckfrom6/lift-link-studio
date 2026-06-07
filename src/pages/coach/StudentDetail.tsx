@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -8,7 +9,17 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye, MessageSquare, Pencil, Zap, UtensilsCrossed } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardList, Target, BarChart3, ArrowLeftRight, Activity, Bot, BookOpen, Eye, MessageSquare, Pencil, Zap, UtensilsCrossed, UserMinus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import AIAdaptationView from "@/components/coach/AIAdaptationView";
 import ExternalSessionForm from "@/components/student/ExternalSessionForm";
 import SwapBadge from "@/components/student/SwapBadge";
@@ -21,6 +32,7 @@ import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
 import CoachFeedbackView from "@/components/coach/CoachFeedbackView";
 import StudentDisplayModeBanner from "@/components/coach/StudentDisplayModeBanner";
+import { SENSATION_CONFIG, SensationTag, formatDuration } from "@/types/hybrid";
 
 interface StudentProfile {
   user_id: string;
@@ -66,9 +78,44 @@ const StudentDetail = () => {
   const [deletedSessionCount, setDeletedSessionCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [coachFormOpen, setCoachFormOpen] = useState(false);
+  const [unlinkOpen, setUnlinkOpen] = useState(false);
   
 
   const { swaps, loading: swapsLoading } = useCoachStudentSwaps(studentId);
+
+  const { data: hybridExecutions } = useQuery({
+    queryKey: ["hybrid-executions", studentId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("completed_sessions")
+        .select(
+          `id, completed_at, duration, global_rpe, sensation_tag, notes_for_coach,
+           session:sessions!inner(name, session_type, hybrid_blocks),
+           block_executions:hybrid_block_executions(block_id, status, skip_reason, log_data)`,
+        )
+        .eq("student_id", studentId!)
+        .eq("session.session_type", "hybrid")
+        .order("completed_at", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+    enabled: !!studentId,
+  });
+
+  const handleUnlink = async () => {
+    if (!studentId || !user) return;
+    const { error } = await supabase
+      .from("coach_students")
+      .update({ status: "inactive" })
+      .eq("coach_id", user.id)
+      .eq("student_id", studentId);
+    if (error) {
+      toast.error("Erreur lors de la dissociation");
+      return;
+    }
+    toast.success("Athlète dissocié avec succès");
+    navigate("/coach/students");
+  };
 
   useEffect(() => {
     if (!studentId || !user) return;
@@ -257,8 +304,8 @@ const StudentDetail = () => {
                 size="sm"
                 variant="outline"
                 className="h-7 text-xs gap-1"
-                onClick={() => {
-                  startImpersonation({ id: student.user_id, fullName: student.full_name });
+                onClick={async () => {
+                  await startImpersonation({ id: student.user_id, fullName: student.full_name });
                   navigate("/student");
                 }}
               >
@@ -272,6 +319,14 @@ const StudentDetail = () => {
                   {recentSwaps.length} swap{recentSwaps.length > 1 ? "s" : ""}
                 </Badge>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setUnlinkOpen(true)}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs h-8 px-2"
+              >
+                Dissocier
+              </Button>
             </div>
           </div>
         </div>
@@ -472,6 +527,72 @@ const StudentDetail = () => {
         )}
       </div>
 
+      {/* Recent hybrid sessions */}
+      {hybridExecutions && hybridExecutions.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="font-bold flex items-center gap-2">
+            <span className="text-base">🔥</span>
+            Séances hybrides récentes
+          </h2>
+          <div className="space-y-2">
+            {hybridExecutions.map((exec: any) => {
+              const skipped = (exec.block_executions || []).filter(
+                (b: any) => b.status === "skipped",
+              ).length;
+              const sensation = exec.sensation_tag
+                ? SENSATION_CONFIG[exec.sensation_tag as SensationTag]
+                : null;
+              const date = exec.completed_at
+                ? new Date(exec.completed_at).toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "short",
+                  })
+                : "";
+              return (
+                <div
+                  key={exec.id}
+                  className="rounded-xl border bg-card p-3 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-xs text-muted-foreground">{date}</div>
+                      <div className="font-semibold truncate">
+                        {exec.session?.name || "Séance hybride"}
+                      </div>
+                      <div className="text-xs text-muted-foreground tabular-nums">
+                        {formatDuration(exec.duration ?? 0)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {sensation && (
+                        <span className="text-xl" title={sensation.label}>
+                          {sensation.emoji}
+                        </span>
+                      )}
+                      {exec.global_rpe != null && (
+                        <Badge variant="secondary" className="tabular-nums">
+                          RPE {exec.global_rpe}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {skipped > 0 && (
+                    <div className="inline-flex items-center text-xs px-2 py-1 rounded-md bg-orange-500/15 text-orange-600 font-medium">
+                      ⚠️ {skipped} bloc{skipped > 1 ? "s" : ""} passé{skipped > 1 ? "s" : ""}
+                    </div>
+                  )}
+                  {exec.notes_for_coach && (
+                    <blockquote className="text-xs italic text-muted-foreground border-l-2 border-border pl-2">
+                      {exec.notes_for_coach}
+                    </blockquote>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Nutrition plan shortcut */}
       <div className="space-y-3">
         <h2 className="font-bold flex items-center gap-2">
@@ -533,6 +654,26 @@ const StudentDetail = () => {
         date={new Date()}
         addedBy="coach"
       />
+
+      <AlertDialog open={unlinkOpen} onOpenChange={setUnlinkOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Dissocier cet athlète ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {student?.full_name} ne sera plus lié à votre compte coach. Il conservera son historique et ses données. Cette action peut être annulée en le réinvitant.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUnlink}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Dissocier
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

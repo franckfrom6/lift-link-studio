@@ -15,7 +15,7 @@ serve(async (req) => {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-  const email = "test-solo@f6gym.app";
+  const email = "test-solo@6way.app";
   const password = "Test1234!";
 
   // Check if user already exists

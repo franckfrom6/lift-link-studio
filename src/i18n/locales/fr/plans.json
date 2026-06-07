@@ -49,6 +49,8 @@
   "feature_desc_client_progress_photos": "Suivre les progrès des clients en photos.",
   "feature_desc_progress_photos": "Suivre ta progression en photos.",
   "feature_desc_ai_week_optimizer": "L'IA optimise ton planning de la semaine.",
+  "feature_desc_clients": "Nombre d'athlètes que vous pouvez coacher.",
+  "feature_desc_program_creation": "Création de programmes personnalisés.",
   "admin_title": "Panneau d'administration",
   "admin_users": "Utilisateurs",
   "admin_plans": "Plans",

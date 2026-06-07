@@ -18,9 +18,19 @@ const MUSCLE_GROUPS_FR = [
   "Pectoraux", "Dos", "Épaules", "Biceps", "Triceps", "Jambes",
   "Fessiers", "Abdominaux", "Mollets", "Avant-bras", "Trapèzes", "Full Body",
 ];
-const EQUIPMENT_FR = [
-  "Barre", "Haltères", "Machine", "Câbles", "Poids de corps", "Kettlebell",
-  "Élastique", "TRX", "Medecine Ball", "Smith Machine", "Banc", "Aucun",
+const EQUIPMENT_FR: { value: string; tKey: string; fallback: string }[] = [
+  { value: "Barre", tKey: "exercises:equipment.barbell", fallback: "Barbell" },
+  { value: "Haltères", tKey: "exercises:equipment.dumbbell", fallback: "Dumbbells" },
+  { value: "Machine", tKey: "exercises:equipment.machine", fallback: "Machine" },
+  { value: "Câbles", tKey: "exercises:equipment.cable", fallback: "Cable" },
+  { value: "Poids de corps", tKey: "exercises:equipment.bodyweight", fallback: "Bodyweight" },
+  { value: "Kettlebell", tKey: "exercises:equipment.kettlebell", fallback: "Kettlebell" },
+  { value: "Élastique", tKey: "exercises:equipment.resistance_band", fallback: "Resistance band" },
+  { value: "TRX", tKey: "exercises:equipment.trx", fallback: "TRX" },
+  { value: "Medecine Ball", tKey: "exercises:equipment.medicine_ball", fallback: "Medicine Ball" },
+  { value: "Smith Machine", tKey: "exercises:equipment.smith_machine", fallback: "Smith Machine" },
+  { value: "Banc", tKey: "exercises:equipment.bench", fallback: "Bench" },
+  { value: "Aucun", tKey: "exercises:equipment.none", fallback: "None" },
 ];
 const TYPES = ["compound", "isolation", "warmup", "stretching", "cardio"];
 const TRACKING_TYPES = ["weight_reps", "reps_only", "duration", "distance"];
@@ -111,7 +121,7 @@ const EditExerciseModal = ({ open, onClose, exercise }: EditExerciseModalProps) 
           <Label>{t("custom_equipment")} *</Label>
           <Select value={form.equipment} onValueChange={v => setForm(f => ({ ...f, equipment: v }))}>
             <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{EQUIPMENT_FR.map(eq => <SelectItem key={eq} value={eq}>{eq}</SelectItem>)}</SelectContent>
+            <SelectContent>{EQUIPMENT_FR.map(eq => <SelectItem key={eq.value} value={eq.value}>{t(eq.tKey, eq.fallback)}</SelectItem>)}</SelectContent>
           </Select>
         </div>
       </div>

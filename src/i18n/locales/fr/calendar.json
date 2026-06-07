@@ -42,10 +42,10 @@
   "muscles_involved": "Muscles sollicités",
   "notes_optional": "Notes (optionnel)",
   "notes_placeholder": "Ex: Beaucoup de squats aujourd'hui",
-  "intensity_light": "Light",
-  "intensity_moderate": "Modéré",
+  "intensity_light": "Légère",
+  "intensity_moderate": "Modérée",
   "intensity_intense": "Intense",
-  "intensity_max": "Max",
+  "intensity_max": "Maximum",
   "added_by_coach": "ajoutée par le coach",
   "submit_activity": "Ajouter l'activité",
   "submit_activity_edit": "Modifier",
@@ -60,18 +60,18 @@
     "arms": "Bras",
     "chest": "Poitrine",
     "legs": "Jambes",
-    "full-body": "Full Body",
+    "full-body": "Corps entier",
     "flexibility": "Souplesse"
   },
   "activity_types": {
     "pilates": "Pilates",
     "hiit": "HIIT",
-    "cycling": "Cycling",
-    "running": "Running",
+    "cycling": "Vélo",
+    "running": "Course à pied",
     "bootcamp": "Bootcamp",
     "swimming": "Natation",
     "yoga": "Yoga",
-    "boxing": "Boxing",
+    "boxing": "Boxe",
     "other": "Autre"
   }
 }

@@ -1,6 +1,6 @@
 {
   "app_name": "6way",
-  "brand_tagline": "Your coaching, structured.",
+  "brand_tagline": "Your coach. Your AI. Your way.",
   "save": "Save",
   "cancel": "Cancel",
   "delete": "Delete",
@@ -109,5 +109,6 @@
   "onboarding_checkin_title": "Weekly check-in",
   "onboarding_checkin_desc": "Each week, report your energy and sleep levels. Helps your coach adjust your program.",
   "onboarding_coach_invite_title": "Invite your athletes",
-  "onboarding_coach_invite_desc": "Copy your invite code and send it to your athletes to connect them to you."
+  "onboarding_coach_invite_desc": "Copy your invite code and send it to your athletes to connect them to you.",
+  "sessions": "Sessions"
 }

@@ -2,6 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, MutationCache } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { bumpPendingCount } from "@/lib/offline-queue";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -22,6 +24,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PricingPage from "./pages/PricingPage";
 import JoinRedirect from "./pages/JoinRedirect";
+import UnsubscribePage from "./pages/UnsubscribePage";
 
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -52,6 +55,8 @@ import StudentProgress from "./pages/student/StudentProgress";
 import StudentProfile from "./pages/student/StudentProfile";
 import LiveSession from "./pages/student/LiveSession";
 import SessionPreview from "./pages/student/SessionPreview";
+import RunningLiveSession from "./pages/student/RunningLiveSession";
+import HybridLiveSession from "./pages/student/HybridLiveSession";
 import AthleteProgramEditor from "./pages/student/AthleteProgramEditor";
 import StudentNutrition from "./pages/student/StudentNutrition";
 import StudentRecommendations from "./pages/student/StudentRecommendations";
@@ -93,8 +98,8 @@ const queryClient = new QueryClient({
   mutationCache,
   defaultOptions: {
     queries: {
-      staleTime: 30 * 1000,
-      gcTime: 5 * 60 * 1000,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 60 * 60 * 1000,
       retry: 2,
       refetchOnWindowFocus: false,
       networkMode: "offlineFirst",
@@ -106,8 +111,37 @@ const queryClient = new QueryClient({
   },
 });
 
+const persister = typeof window !== "undefined"
+  ? createSyncStoragePersister({
+      storage: window.localStorage,
+      key: "f6gym-query-cache",
+      throttleTime: 1000,
+    })
+  : undefined;
+
+const PERSISTED_QUERY_KEYS = new Set([
+  "student-program",
+  "week-free-sessions",
+  "week-external-sessions",
+  "week-checkin",
+  "exercises",
+  "student-profile",
+]);
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider
+    client={queryClient}
+    persistOptions={{
+      persister: persister!,
+      maxAge: 24 * 60 * 60 * 1000,
+      dehydrateOptions: {
+        shouldDehydrateQuery: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === "string" && PERSISTED_QUERY_KEYS.has(key);
+        },
+      },
+    }}
+  >
     <ThemeProvider>
       <TooltipProvider>
         <Toaster />
@@ -128,6 +162,7 @@ const App = () => (
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/join/:code" element={<JoinRedirect />} />
                 <Route path="/onboarding" element={<OnboardingPage />} />
+                <Route path="/unsubscribe" element={<UnsubscribePage />} />
 
                 <Route path="/admin" element={<AuthGuard requireAdmin><AdminLayout /></AuthGuard>}>
                   <Route index element={<AdminDashboard />} />
@@ -159,6 +194,8 @@ const App = () => (
                   <Route index element={<StudentWeek />} />
                   <Route path="session/:sessionId/preview" element={<SessionPreview />} />
                   <Route path="session/:sessionId" element={<LiveSession />} />
+                  <Route path="run/:sessionId" element={<RunningLiveSession />} />
+                  <Route path="hybrid/:sessionId" element={<HybridLiveSession />} />
                   <Route path="program/edit" element={<AthleteProgramEditor />} />
                   <Route path="progress" element={<StudentProgress />} />
                   <Route path="profile" element={<StudentProfile />} />
@@ -194,7 +231,7 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
-  </QueryClientProvider>
+  </PersistQueryClientProvider>
 );
 
 export default App;
