@@ -178,8 +178,11 @@ Deno.serve(async (req) => {
     // (currently UI disables button during sync, so race is unlikely).
     const encAccess = bytea(conn.access_token_enc);
     const encRefresh = bytea(conn.refresh_token_enc);
-    let accessToken: string = encAccess ? await decryptToken(encAccess) : conn.access_token;
-    let refreshTokenPlain: string = encRefresh ? await decryptToken(encRefresh) : conn.refresh_token;
+    if (!encAccess || !encRefresh) {
+      return json({ error: "Reconnexion Strava nécessaire" }, 401);
+    }
+    let accessToken: string = await decryptToken(encAccess);
+    let refreshTokenPlain: string = await decryptToken(encRefresh);
     const expiresAt = new Date(conn.token_expires_at).getTime();
     const fiveMinFromNow = Date.now() + 5 * 60 * 1000;
     if (expiresAt < fiveMinFromNow) {
@@ -198,8 +201,6 @@ Deno.serve(async (req) => {
       const { error: updErr } = await admin
         .from("strava_connections")
         .update({
-          access_token: null,
-          refresh_token: null,
           access_token_enc: accessEnc,
           refresh_token_enc: refreshEnc,
           token_expires_at: new Date(refreshed.data.expires_at * 1000).toISOString(),
@@ -207,18 +208,6 @@ Deno.serve(async (req) => {
         })
         .eq("user_id", userId);
       if (updErr) console.error("token persist error:", updErr);
-    } else if (!encAccess && conn.access_token) {
-      // Backfill encryption for legacy plaintext rows
-      try {
-        const accessEnc = await encryptToken(conn.access_token);
-        const refreshEnc = await encryptToken(conn.refresh_token);
-        await admin.from("strava_connections").update({
-          access_token: null,
-          refresh_token: null,
-          access_token_enc: accessEnc,
-          refresh_token_enc: refreshEnc,
-        }).eq("user_id", userId);
-      } catch (e) { console.error("backfill encrypt failed:", e); }
     }
 
     // 3. Sync window
