@@ -1060,7 +1060,7 @@ const StudentWeek = () => {
                   <DropdownMenuItem onClick={() => { setDuplicateSession({ id: sessionInfo.sessionId, name: sessionInfo.name }); setDuplicateOpen(true); }}>
                     <Copy className="w-4 h-4 mr-2" />{t('session:duplicate_title')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setSwapMode(true); setSwapSourceDay(day.dayIndex); }}>
+                  <DropdownMenuItem onClick={() => { setSwapMode(true); setSwapSourceDay(day.dayIndex); setSwapSourceDate(dates[day.dayIndex].date); }}>
                     <ArrowLeftRight className="w-4 h-4 mr-2" />{t('calendar:swap_session')}
                   </DropdownMenuItem>
                 </>
