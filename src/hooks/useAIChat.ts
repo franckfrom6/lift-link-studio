@@ -19,6 +19,12 @@ interface UseAIChatOptions {
   onMessageSent?: () => void;
 }
 
+export interface ChatAttachment {
+  name: string;
+  type: string;
+  base64: string;
+}
+
 export function useAIChat(options?: UseAIChatOptions) {
   const { t } = useTranslation("ai_chat");
   const { user, profile, role } = useAuth();
@@ -60,21 +66,22 @@ export function useAIChat(options?: UseAIChatOptions) {
     return ctx.join("\n");
   }, [role, currentPlan, location.pathname, profile]);
 
-  const sendMessage = useCallback(async (text: string) => {
-    if (!user || !text.trim()) return;
+  const sendMessage = useCallback(async (text: string, file?: ChatAttachment) => {
+    if (!user || (!text.trim() && !file)) return;
 
     if (!isEnabled) {
       toast.error(t("plan_required"));
       return;
     }
 
-    const userMsg: Message = { role: "user", content: text, context_page: location.pathname };
+    const displayText = text.trim() || (file ? `📎 ${file.name}` : "");
+    const userMsg: Message = { role: "user", content: displayText, context_page: location.pathname };
     setMessages(prev => [...prev, userMsg]);
 
     const { error: insertError } = await supabase.from("ai_chat_messages").insert({
       user_id: user.id,
       role: "user",
-      content: text,
+      content: displayText,
       context_page: location.pathname,
     });
     if (insertError) console.error("Error saving user message:", insertError);
@@ -89,6 +96,7 @@ export function useAIChat(options?: UseAIChatOptions) {
           payload: {
             messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
             context: buildContext(),
+            attachment: file,
           },
           lang: "fr",
         },
