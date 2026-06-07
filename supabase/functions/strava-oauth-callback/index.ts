@@ -106,8 +106,6 @@ Deno.serve(async (req) => {
       .upsert({
         user_id: userId,
         strava_athlete_id: athlete?.id ?? 0,
-        access_token: null,
-        refresh_token: null,
         access_token_enc: accessEnc,
         refresh_token_enc: refreshEnc,
         token_expires_at: new Date(expires_at * 1000).toISOString(),
