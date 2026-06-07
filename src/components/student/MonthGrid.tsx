@@ -31,6 +31,8 @@ interface MonthGridProps {
   onJumpToday?: () => void;
   /** Animation direction for the slide transition between months */
   direction?: "left" | "right" | null;
+  /** When true, the calendar is in "pick a target day" swap mode */
+  swapMode?: boolean;
 }
 
 const DAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
@@ -50,6 +52,7 @@ const MonthGrid = ({
   onNextMonth,
   onJumpToday,
   direction = null,
+  swapMode = false,
 }: MonthGridProps) => {
   const touchStartX = useRef<number>(0);
   const today = useMemo(() => {
