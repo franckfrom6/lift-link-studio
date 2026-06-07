@@ -1,0 +1,287 @@
+## Fix VOLT AI — Route chat via Lovable Gateway + Fix Error Parsing
+
+### Problème
+VOLT AI est cassé car l'action `chat` dans `supabase/functions/ai-coach/index.ts` appelle
+`api.anthropic.com` directement et requiert un secret `ANTHROPIC_API_KEY` qui **n'est pas
+configuré** dans Supabase.
+
+Toutes les autres actions AI fonctionnent déjà via la Lovable gateway (`LOVABLE_API_KEY`
+est déjà configuré et opérationnel).
+
+---
+
+### Fichier 1 : `supabase/functions/ai-coach/index.ts`
+
+#### Modification A — Étendre `callLovableAI` pour supporter l'historique multi-tour et retourner le nom de l'outil
+
+Ajoute un paramètre optionnel `history` à la fonction `callLovableAI` :
+
+```typescript
+async function callLovableAI(
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  tools?: any[],
+  toolChoice?: any,
+  history?: Array<{ role: string; content: string }>   // NOUVEAU
+)
+```
+
+Dans le body de la fonction, remplace la construction des messages :
+
+```typescript
+// AVANT
+messages: [
+  { role: "system", content: systemPrompt },
+  { role: "user", content: userPrompt },
+],
+
+// APRÈS
+messages: [
+  { role: "system", content: systemPrompt },
+  ...(history || []),
+  { role: "user", content: userPrompt },
+],
+```
+
+Dans le `return` final de `callLovableAI`, ajoute `toolName` et `rawContent` :
+
+```typescript
+return {
+  error: false,
+  result,
+  toolName: toolCall?.function?.name || null,   // NOUVEAU
+  rawContent: content,                           // NOUVEAU (texte brut même quand outil appelé)
+  inputTokens: usage.prompt_tokens || null,
+  outputTokens: usage.completion_tokens || null,
+  durationMs,
+};
+```
+
+---
+
+#### Modification B — Remplacer le bloc Anthropic direct par un appel `callLovableAI`
+
+Localise ce bloc (environ ligne 1206) :
+
+```typescript
+// 7. Call AI - special handling for chat (multi-turn with tools)
+let aiResult;
+if (action === "chat") {
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!ANTHROPIC_API_KEY) {
+    return jsonResp({ error: "Anthropic API key not configured" }, 500);
+  }
+  // ... très long bloc voltPrompt / Anthropic fetch / parsing ...
+} else {
+  aiResult = await callLovableAI(LOVABLE_API_KEY, model, built.system, built.user, built.tools, built.toolChoice);
+}
+```
+
+Remplace tout ce bloc `if (action === "chat") { ... } else { ... }` par :
+
+```typescript
+// 7. Call AI — toutes les actions passent par la Lovable gateway (LOVABLE_API_KEY)
+let aiResult;
+{
+  const chatHistory = action === "chat" ? (built.messages || []) : undefined;
+  aiResult = await callLovableAI(
+    LOVABLE_API_KEY,
+    model,
+    built.system,
+    built.user,
+    built.tools,
+    built.toolChoice ?? (action === "chat" ? { type: "auto" } : undefined),
+    chatHistory
+  );
+}
+
+// 7b. Pour chat : exécuter l'outil si l'IA en a appelé un, puis normaliser le résultat
+if (action === "chat" && !aiResult.error) {
+  const toolName = (aiResult as any).toolName;
+  const toolArgs = aiResult.result;
+  const rawContent: string = (aiResult as any).rawContent || "";
+  let toolResults: any[] = [];
+
+  // --- Exécution de create_free_session ---
+  if (toolName === "create_free_session" && toolArgs) {
+    try {
+      const exercisesFlat = [
+        ...(toolArgs.sections?.flatMap((s: any) => s.exercises || []) || []),
+        ...(toolArgs.exercises || []),
+      ];
+      const exerciseNames = [...new Set<string>(exercisesFlat.map((e: any) => e.name).filter(Boolean))];
+      let exerciseMap: Record<string, string> = {};
+      if (exerciseNames.length > 0) {
+        const { data: exRows } = await serviceClient
+          .from("exercises")
+          .select("id, name")
+          .in("name", exerciseNames);
+        (exRows || []).forEach((ex: any) => { exerciseMap[ex.name] = ex.id; });
+      }
+
+      const { data: session, error: sessionErr } = await serviceClient
+        .from("free_sessions")
+        .insert({ user_id: userId, name: toolArgs.name, date: toolArgs.date, day_of_week: toolArgs.day_of_week })
+        .select("id")
+        .single();
+      if (sessionErr) throw sessionErr;
+      const sessionId = session.id;
+
+      const sectionsToCreate = toolArgs.sections?.length
+        ? toolArgs.sections
+        : toolArgs.exercises?.length
+        ? [{ name: "Séance", exercises: toolArgs.exercises }]
+        : [];
+
+      let sectionOrder = 0;
+      for (const sec of sectionsToCreate) {
+        const { data: sectionRow, error: secErr } = await serviceClient
+          .from("free_session_sections")
+          .insert({
+            free_session_id: sessionId,
+            name: sec.name,
+            icon: sec.icon || null,
+            duration_estimate: sec.duration_estimate || null,
+            order_index: sectionOrder++,
+          })
+          .select("id")
+          .single();
+        if (secErr) throw secErr;
+
+        let exOrder = 0;
+        for (const ex of (sec.exercises || [])) {
+          await serviceClient.from("free_session_exercises").insert({
+            free_session_section_id: sectionRow.id,
+            exercise_id: exerciseMap[ex.name] || null,
+            name: ex.name,
+            sets: ex.sets,
+            reps_min: ex.reps_min,
+            reps_max: ex.reps_max,
+            rest_seconds: ex.rest_seconds,
+            coach_notes: ex.coach_notes || null,
+            order_index: exOrder++,
+          });
+        }
+      }
+      toolResults.push({ tool: "create_free_session", success: true, session_id: sessionId });
+    } catch (e: any) {
+      console.error("Error creating free session:", e);
+      toolResults.push({ tool: "create_free_session", success: false, error: e.message });
+    }
+  }
+
+  // --- Normaliser le résultat texte ---
+  let assistantText = "";
+  let suggestions: string[] = [];
+
+  if (toolName) {
+    // L'IA a utilisé un outil : priorité au texte brut de la réponse (rawContent),
+    // sinon message générique
+    const base = rawContent || (toolResults[0]?.success
+      ? `Séance "${toolArgs?.name || ""}" créée avec succès dans ton agenda ! 💪`
+      : "Désolé, la création a échoué. Réessaie.");
+    const sugMatch = base.match(/<suggestions>([\s\S]*?)<\/suggestions>/);
+    if (sugMatch) {
+      try {
+        const p = JSON.parse(sugMatch[1].trim());
+        if (Array.isArray(p)) suggestions = p.map(String);
+      } catch { /* ignore */ }
+    }
+    assistantText = base.replace(/<suggestions>[\s\S]*?<\/suggestions>/, "").trim();
+  } else {
+    // Réponse texte pure
+    const raw = typeof aiResult.result?.text === "string"
+      ? aiResult.result.text
+      : rawContent || JSON.stringify(aiResult.result);
+    const sugMatch = raw.match(/<suggestions>([\s\S]*?)<\/suggestions>/);
+    if (sugMatch) {
+      try {
+        const p = JSON.parse(sugMatch[1].trim());
+        if (Array.isArray(p)) suggestions = p.map(String);
+      } catch { /* ignore */ }
+    }
+    assistantText = raw.replace(/<suggestions>[\s\S]*?<\/suggestions>/, "").trim();
+  }
+
+  aiResult = {
+    ...aiResult,
+    result: {
+      message: assistantText,
+      text: assistantText,
+      suggestions,
+      tool_results: toolResults,
+    },
+  };
+}
+```
+
+---
+
+### Fichier 2 : `src/hooks/useAIChat.ts`
+
+#### Modification — Corriger le parsing de `fnError`
+
+`supabase.functions.invoke()` retourne une erreur de type `FunctionsHttpError`, **pas une
+chaîne JSON**. Il faut lire le body via `context.json()`.
+
+Remplace ce bloc (environ ligne 97) :
+
+```typescript
+if (fnError) {
+  let parsed: any = {};
+  try {
+    parsed = typeof fnError === "string" ? JSON.parse(fnError) : fnError;
+  } catch {
+    parsed = { message: fnError.message || String(fnError) };
+  }
+  if (parsed.error === "plan_required") toast.error(t("plan_required"));
+  else if (parsed.error === "rate_limited") toast.error(t("rate_limited"));
+  else if (
+    parsed.error === "AI not configured" ||
+    parsed.message?.includes("AI not configured") ||
+    parsed.message?.includes("not configured")
+  ) {
+    toast.error("VOLT IA n'est pas encore configuré sur ce projet. Contactez le support.");
+  }
+  else toast.error(t("error"));
+  setIsLoading(false);
+  return;
+}
+```
+
+Par ce bloc corrigé :
+
+```typescript
+if (fnError) {
+  let parsed: any = {};
+  try {
+    const body = await (fnError as any).context?.json?.();
+    parsed = body || {};
+  } catch {
+    parsed = { message: (fnError as any).message || String(fnError) };
+  }
+  if (parsed.error === "plan_required") toast.error(t("plan_required"));
+  else if (parsed.error === "rate_limited") toast.error(t("rate_limited"));
+  else if (
+    parsed.error === "AI not configured" ||
+    parsed.error === "Anthropic API key not configured" ||
+    parsed.message?.includes("not configured")
+  ) {
+    toast.error("VOLT IA n'est pas encore configuré sur ce projet. Contactez le support.");
+  }
+  else toast.error(t("error"));
+  setIsLoading(false);
+  return;
+}
+```
+
+---
+
+### Contraintes importantes
+- Ne touche à aucune autre action (generate_program, recovery_recommendation, etc.)
+- Ne supprime aucun outil défini dans `buildChat` (create_free_session, create_nutrition_plan, create_running_program, create_program_for_student)
+- Ne modifie pas le format de retour pour les actions non-chat
+- `MODEL_FOR_ACTION.chat` garde sa valeur actuelle — il sera désormais utilisé via la Lovable gateway
+- Aucun nouveau secret Supabase n'est nécessaire : `LOVABLE_API_KEY` est déjà configuré
