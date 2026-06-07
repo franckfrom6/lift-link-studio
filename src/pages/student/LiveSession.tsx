@@ -352,6 +352,17 @@ const LiveSession = () => {
     completedSetsRef.current = completedSets;
   }, [completedSets]);
 
+  const trackingTypeMap = useMemo(() => {
+    if (!selectedSession) return {};
+    const map: Record<string, string> = {};
+    selectedSession.sections.forEach((section: any, sIdx: number) => {
+      section.exercises.forEach((ex: any, eIdx: number) => {
+        map[`${sIdx}-${eIdx}`] = (ex.exercise as any)?.tracking_type || "weight_reps";
+      });
+    });
+    return map;
+  }, [selectedSession]);
+
   const countValidatedSets = useCallback((key: string) => {
     const arr = completedSetsRef.current[key] || [];
     const tType = trackingTypeMap[key] || "weight_reps";
@@ -386,17 +397,6 @@ const LiveSession = () => {
     },
     [supersetPartnerMap, countValidatedSets, setActiveExercise],
   );
-
-  const trackingTypeMap = useMemo(() => {
-    if (!selectedSession) return {};
-    const map: Record<string, string> = {};
-    selectedSession.sections.forEach((section: any, sIdx: number) => {
-      section.exercises.forEach((ex: any, eIdx: number) => {
-        map[`${sIdx}-${eIdx}`] = (ex.exercise as any)?.tracking_type || "weight_reps";
-      });
-    });
-    return map;
-  }, [selectedSession]);
 
   const mappedSections = useMemo<ProgramSection[]>(() => {
     if (!selectedSession) return [];
