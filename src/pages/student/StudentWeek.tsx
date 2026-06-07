@@ -563,6 +563,21 @@ const StudentWeek = () => {
   const handleSelectDate = (date: Date) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
+    if (swapMode && swapSourceDate !== null) {
+      if (d.toDateString() === swapSourceDate.toDateString()) {
+        setSwapMode(false);
+        setSwapSourceDay(null);
+        setSwapSourceDate(null);
+        return;
+      }
+      const targetDayIndex = (d.getDay() + 6) % 7;
+      setSelectedDate(d);
+      setDisplayMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+      setSwapTargetDay(targetDayIndex);
+      setSwapTargetDate(d);
+      setSwapModalOpen(true);
+      return;
+    }
     setSelectedDate(d);
     setDisplayMonth(new Date(d.getFullYear(), d.getMonth(), 1));
   };
