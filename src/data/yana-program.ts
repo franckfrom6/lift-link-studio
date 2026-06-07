@@ -21,6 +21,7 @@ export interface ProgramExerciseDetail {
   videoUrlFemale?: string;
   videoUrlMale?: string;
   exerciseVideoUrl?: string;
+  supersetGroup?: number | null;
 }
 
 export interface FullProgram {

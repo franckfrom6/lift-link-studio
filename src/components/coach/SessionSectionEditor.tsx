@@ -6,6 +6,8 @@ import SessionExerciseCard from "./SessionExerciseCard";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import BiSetToggle from "./BiSetToggle";
+import { toggleBiSet, isLinkedToNext } from "@/lib/superset-utils";
 
 interface SessionSectionEditorProps {
   section: SessionSectionData;
@@ -35,6 +37,10 @@ const SessionSectionEditor = ({ section, onUpdate, onRemove, onAddExercise }: Se
     [exs[index], exs[target]] = [exs[target], exs[index]];
     exs.forEach((e, i) => (e.sortOrder = i));
     onUpdate({ ...section, exercises: exs });
+  };
+
+  const toggleSupersetAt = (index: number) => {
+    onUpdate({ ...section, exercises: toggleBiSet(section.exercises, index) });
   };
 
   return (
@@ -83,16 +89,23 @@ const SessionSectionEditor = ({ section, onUpdate, onRemove, onAddExercise }: Se
       {!collapsed && (
         <div className="p-2.5 space-y-2">
           {section.exercises.map((exItem, i) => (
-            <SessionExerciseCard
-              key={exItem.id}
-              item={exItem}
-              index={i}
-              total={section.exercises.length}
-              onUpdate={(u) => updateExercise(i, u)}
-              onRemove={() => removeExercise(i)}
-              onMoveUp={() => moveExercise(i, -1)}
-              onMoveDown={() => moveExercise(i, 1)}
-            />
+            <div key={exItem.id} className="space-y-2">
+              <SessionExerciseCard
+                item={exItem}
+                index={i}
+                total={section.exercises.length}
+                onUpdate={(u) => updateExercise(i, u)}
+                onRemove={() => removeExercise(i)}
+                onMoveUp={() => moveExercise(i, -1)}
+                onMoveDown={() => moveExercise(i, 1)}
+              />
+              {i < section.exercises.length - 1 && (
+                <BiSetToggle
+                  linked={isLinkedToNext(section.exercises, i)}
+                  onToggle={() => toggleSupersetAt(i)}
+                />
+              )}
+            </div>
           ))}
           <Button variant="ghost" size="sm" className="w-full text-muted-foreground text-xs" onClick={onAddExercise}>
             <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />

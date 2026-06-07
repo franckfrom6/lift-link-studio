@@ -1874,6 +1874,7 @@ export type Database = {
           sets: number
           sort_order: number
           suggested_weight: number | null
+          superset_group: number | null
           tempo: string | null
           video_search_query: string | null
           video_url: string | null
@@ -1893,6 +1894,7 @@ export type Database = {
           sets?: number
           sort_order: number
           suggested_weight?: number | null
+          superset_group?: number | null
           tempo?: string | null
           video_search_query?: string | null
           video_url?: string | null
@@ -1912,6 +1914,7 @@ export type Database = {
           sets?: number
           sort_order?: number
           suggested_weight?: number | null
+          superset_group?: number | null
           tempo?: string | null
           video_search_query?: string | null
           video_url?: string | null
