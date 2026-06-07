@@ -55,7 +55,7 @@ export function useExerciseDetail(exerciseId: string | undefined, studentId: str
   return useQuery({
     queryKey: ["exercise-detail", exerciseId, studentId],
     enabled: !!exerciseId && !!studentId,
-    queryFn: async (): Promise<ExerciseDetailData> => {
+    queryFn: async (): Promise<ExerciseDetailData | null> => {
       // 1. Exercise meta
       const { data: exercise, error: exErr } = await supabase
         .from("exercises")
@@ -63,7 +63,7 @@ export function useExerciseDetail(exerciseId: string | undefined, studentId: str
         .eq("id", exerciseId!)
         .maybeSingle();
       if (exErr) throw exErr;
-      if (!exercise) throw new Error("Exercice introuvable");
+      if (!exercise) return null;
 
       // 2. Find all session_exercises matching this exercise
       const { data: sxsFiltered, error: sxsFilteredErr } = await supabase
