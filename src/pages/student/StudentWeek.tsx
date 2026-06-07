@@ -96,6 +96,8 @@ const StudentWeek = () => {
   const [swapSourceDay, setSwapSourceDay] = useState<number | null>(null);
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [swapTargetDay, setSwapTargetDay] = useState<number | null>(null);
+  const [swapSourceDate, setSwapSourceDate] = useState<Date | null>(null);
+  const [swapTargetDate, setSwapTargetDate] = useState<Date | null>(null);
   const [freeSessionOpen, setFreeSessionOpen] = useState(false);
   const [freeSessionDate, setFreeSessionDate] = useState<Date>(new Date());
   const [builderOpen, setBuilderOpen] = useState(false);
