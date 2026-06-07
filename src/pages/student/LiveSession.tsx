@@ -1164,7 +1164,6 @@ const LiveSession = () => {
                   const isSkipped = skippedExercises.has(key);
                   const biSetLink = supersetPartnerMap[key];
                   const showBiSetHeader = !!biSetLink && biSetLink.isFirst;
-                  const showBiSetTail = !!biSetLink && !biSetLink.isFirst;
 
                   return (
                   <div key={key} className={cn(biSetLink && "relative")}>
