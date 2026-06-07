@@ -979,7 +979,6 @@ const StudentWeek = () => {
             name: string;
             meta: string;
             isCompleted: boolean;
-            isAI: boolean;
             sessionType?: string;
           }> = [];
           if (isSessionDay && sessionInfo) {
@@ -1000,7 +999,6 @@ const StudentWeek = () => {
               name: fs.name,
               meta: `${fs.exerciseCount} ex.`,
               isCompleted: isSessionCompleted(fs.id),
-              isAI: true,
               sessionType: fs.session_type,
             });
           });
@@ -1128,11 +1126,6 @@ const StudentWeek = () => {
                           </p>
                           <p className="text-[10px] text-muted-subtle mt-0.5 truncate">{s.meta}</p>
                         </div>
-                        {s.isAI && (
-                          <span className="inline-flex items-center gap-0.5 bg-bg-tinted text-muted-foreground text-[8px] font-bold uppercase px-1.5 py-[1px] rounded-xs flex-shrink-0">
-                            <Bot className="w-2 h-2" strokeWidth={2} />IA
-                          </span>
-                        )}
                         {!s.isCompleted && (
                           <ChevronRight className="w-3.5 h-3.5 text-muted-subtle flex-shrink-0" strokeWidth={2} />
                         )}
