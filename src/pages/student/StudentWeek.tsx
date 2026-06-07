@@ -1221,13 +1221,13 @@ const StudentWeek = () => {
       {swapSourceDay !== null && swapTargetDay !== null && (
         <SessionSwapModal
           open={swapModalOpen}
-          onClose={() => { setSwapModalOpen(false); setSwapMode(false); setSwapSourceDay(null); setSwapTargetDay(null); }}
+          onClose={() => { setSwapModalOpen(false); setSwapMode(false); setSwapSourceDay(null); setSwapTargetDay(null); setSwapSourceDate(null); setSwapTargetDate(null); }}
           onConfirm={handleSwapConfirm}
           sessionName={effectiveSessions[swapSourceDay]?.name || "Session"}
           fromDayIndex={swapSourceDay}
           toDayIndex={swapTargetDay}
-          fromDate={dates[swapSourceDay].date}
-          toDate={dates[swapTargetDay].date}
+          fromDate={swapSourceDate ?? dates[swapSourceDay].date}
+          toDate={swapTargetDate ?? dates[swapTargetDay].date}
           isMutualSwap={targetHasSession}
           targetSessionName={targetHasSession ? effectiveSessions[swapTargetDay]?.name : undefined}
         />
