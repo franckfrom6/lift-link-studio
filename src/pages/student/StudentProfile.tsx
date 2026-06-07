@@ -257,7 +257,7 @@ const StudentProfile = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `f6gym-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `6way-export-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Export téléchargé");
@@ -385,7 +385,7 @@ const StudentProfile = () => {
           Se déconnecter
         </button>
         <div className="t-caption tabular text-[9px] text-muted-foreground/70 text-center mt-3.5 normal-case tracking-normal">
-          F6GYM · {APP_VERSION}
+          6way · {APP_VERSION}
         </div>
       </div>
 

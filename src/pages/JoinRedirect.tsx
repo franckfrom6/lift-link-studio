@@ -20,9 +20,9 @@ const JoinRedirect = () => {
     const resolve = async () => {
       if (!code) { setNotFound(true); return; }
 
-      // Check if it's a legacy f6gym- invite
-      if (code.startsWith("f6gym-")) {
-        const shortHex = code.replace(/^f6gym-/i, '');
+      // Check if it's a legacy invite (f6gym- or 6way- prefix)
+      if (code.startsWith("6way-") || code.startsWith("f6gym-")) {
+        const shortHex = code.replace(/^(6way-|f6gym-)/i, '');
         if (!shortHex || shortHex.length < 6) { setNotFound(true); return; }
 
         const { data, error } = await supabase

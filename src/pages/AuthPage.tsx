@@ -51,7 +51,7 @@ const AuthPage = () => {
   // Store invite token for use during onboarding
   useEffect(() => {
     if (inviteToken) {
-      localStorage.setItem("f6gym-invite", inviteToken);
+      localStorage.setItem("6way-invite", inviteToken);
     }
   }, [inviteToken]);
 

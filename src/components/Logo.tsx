@@ -7,10 +7,10 @@ interface LogoProps {
 }
 
 /**
- * F6GYM Logo
- * - Light theme : "F" et "GYM" en noir, "6" en bleu Klein (#1A3CFF — primary)
- * - Dark theme  : "F" et "GYM" en blanc, "6" en orange (#FF6A1A — primary)
- * Le badge "F6" du variant compact/header utilise la couleur primary du thème,
+ * 6way Logo
+ * - Light theme : "way" en noir, "6" en bleu Klein (#1A3CFF — primary)
+ * - Dark theme  : "way" en blanc, "6" en orange (#FF6A1A — primary)
+ * Le badge "6w" du variant compact/header utilise la couleur primary du thème,
  * avec un foreground contrasté.
  */
 const useIsDark = () => {
@@ -43,7 +43,7 @@ const Logo = ({ variant = "header", className = "" }: LogoProps) => {
 
   if (variant === "compact") {
     return (
-      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" className={className} aria-label="F6GYM">
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" className={className} aria-label="6way">
         <rect width="44" height="44" rx="10" fill={accent} />
         <text
           x="22"
@@ -56,7 +56,7 @@ const Logo = ({ variant = "header", className = "" }: LogoProps) => {
           fontSize="20"
           letterSpacing="-1"
         >
-          F6
+          6w
         </text>
       </svg>
     );
@@ -64,7 +64,7 @@ const Logo = ({ variant = "header", className = "" }: LogoProps) => {
 
   if (variant === "full") {
     return (
-      <div className={`flex flex-col items-center ${className}`} aria-label="F6GYM Coaching">
+      <div className={`flex flex-col items-center ${className}`} aria-label="6way">
         <div
           style={{
             fontSize: 46,
@@ -74,9 +74,8 @@ const Logo = ({ variant = "header", className = "" }: LogoProps) => {
             fontFamily: "Inter,sans-serif",
           }}
         >
-          <span style={{ color: textColor }}>F</span>
           <span style={{ color: accent }}>6</span>
-          <span style={{ color: textColor }}>GYM</span>
+          <span style={{ color: textColor }}>way</span>
         </div>
         <span
           style={{
@@ -102,7 +101,7 @@ const Logo = ({ variant = "header", className = "" }: LogoProps) => {
   const textSize = isHeader ? 20 : 16;
 
   return (
-    <div className={`flex items-center gap-2 ${className}`} aria-label="F6GYM">
+    <div className={`flex items-center gap-2 ${className}`} aria-label="6way">
       <svg width={badgeSize} height={badgeSize} viewBox={`0 0 ${badgeSize} ${badgeSize}`} fill="none">
         <rect width={badgeSize} height={badgeSize} rx={badgeRadius} fill={accent} />
         <text
@@ -116,7 +115,7 @@ const Logo = ({ variant = "header", className = "" }: LogoProps) => {
           fontSize={badgeFontSize}
           letterSpacing="-0.5"
         >
-          F6
+          6w
         </text>
       </svg>
       <span
@@ -128,9 +127,8 @@ const Logo = ({ variant = "header", className = "" }: LogoProps) => {
           fontFamily: "Inter,sans-serif",
         }}
       >
-        <span style={{ color: textColor }}>F</span>
         <span style={{ color: accent }}>6</span>
-        <span style={{ color: textColor }}>GYM</span>
+        <span style={{ color: textColor }}>way</span>
       </span>
     </div>
   );

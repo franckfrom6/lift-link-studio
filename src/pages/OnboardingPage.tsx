@@ -18,7 +18,7 @@ const OnboardingPage = () => {
   const { user, profile, refreshProfile } = useAuth();
 
   // Check if this is an invite flow (student)
-  const inviteToken = localStorage.getItem("f6gym-invite");
+  const inviteToken = localStorage.getItem("6way-invite");
   const isInviteFlow = !!inviteToken;
 
   const [step, setStep] = useState<"role" | "profile">(
@@ -83,7 +83,7 @@ const OnboardingPage = () => {
 
       // Clean up invite token
       if (inviteToken) {
-        localStorage.removeItem("f6gym-invite");
+        localStorage.removeItem("6way-invite");
       }
 
       await refreshProfile();

@@ -16,7 +16,7 @@
 import { get, set, del } from "idb-keyval";
 import { onlineManager } from "@tanstack/react-query";
 
-const PENDING_KEY = "f6gym:nutrition:pending-count";
+const PENDING_KEY = "6way:nutrition:pending-count";
 
 export async function readPendingCount(): Promise<number> {
   const v = (await get(PENDING_KEY)) as number | undefined;
