@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Trash2, Zap, ArrowUp } from "lucide-react";
+import { X, Trash2, Zap, ArrowUp, Paperclip, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import ReactMarkdown from "react-markdown";
-import { useAIChat } from "@/hooks/useAIChat";
+import { useAIChat, type ChatAttachment } from "@/hooks/useAIChat";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
+import SessionCreatedCard, {
+  type SessionCreatedCardSession,
+} from "@/components/ai/SessionCreatedCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,11 +27,59 @@ interface AISidebarProps {
   onClose: () => void;
 }
 
-const STARTER_SUGGESTIONS = [
-  "Créer une séance",
-  "Analyser ma semaine",
-  "Conseil nutrition",
+const STARTER_SUGGESTIONS: Array<{ label: string; action: "send" | "pick-file" }> = [
+  { label: "Crée une séance full body 45 min", action: "send" },
+  { label: "Analyse ma semaine d'entraînement", action: "send" },
+  { label: "Génère un plan course pour une 10km", action: "send" },
+  { label: "Analyse une photo de plan d'entraînement", action: "pick-file" },
 ];
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const res = reader.result as string;
+      const idx = res.indexOf(",");
+      resolve(idx >= 0 ? res.slice(idx + 1) : res);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+interface ParsedSessionCard {
+  sessions: SessionCreatedCardSession[];
+  cleanedContent: string;
+}
+
+function tryParseSessionAction(content: string): ParsedSessionCard | null {
+  if (!content) return null;
+  // Match fenced ```json ... ``` or raw {...}
+  const fenced = content.match(/```(?:json)?\s*(\{[\s\S]*?"action"\s*:\s*"sessions_created"[\s\S]*?\})\s*```/);
+  const raw = !fenced
+    ? content.match(/(\{[^{}]*"action"\s*:\s*"sessions_created"[\s\S]*?\})/)
+    : null;
+  const jsonStr = fenced?.[1] || raw?.[1];
+  if (!jsonStr) return null;
+  try {
+    const parsed = JSON.parse(jsonStr);
+    if (parsed?.action !== "sessions_created" || !Array.isArray(parsed.sessions)) return null;
+    const sessions: SessionCreatedCardSession[] = parsed.sessions
+      .filter((s: any) => s && typeof s === "object")
+      .map((s: any) => ({
+        name: String(s.name || "Séance"),
+        date: String(s.date || ""),
+        exerciseCount: typeof s.exerciseCount === "number" ? s.exerciseCount : undefined,
+      }));
+    if (sessions.length === 0) return null;
+    const cleanedContent = content.replace(fenced?.[0] || raw?.[0] || "", "").trim();
+    return { sessions, cleanedContent };
+  } catch {
+    return null;
+  }
+}
 
 const AISidebar = ({ open, onClose }: AISidebarProps) => {
   const { t } = useTranslation(["ai_chat", "common"]);
@@ -36,7 +88,9 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [input, setInput] = useState("");
+  const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
 
   const {
     messages,
@@ -81,15 +135,46 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
 
   const handleSend = () => {
     const text = input.trim();
-    if (!text || isLoading) return;
-    sendMessage(text);
+    if ((!text && !attachment) || isLoading) return;
+    sendMessage(text, attachment || undefined);
     setInput("");
+    setAttachment(null);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
   const handleSuggestion = (s: string) => {
     if (isLoading) return;
     sendMessage(s);
+  };
+
+  const handleStarter = (item: { label: string; action: "send" | "pick-file" }) => {
+    if (isLoading) return;
+    if (item.action === "pick-file") {
+      fileInputRef.current?.click();
+      return;
+    }
+    sendMessage(item.label);
+  };
+
+  const handleFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > MAX_FILE_BYTES) {
+      toast.error("Fichier trop volumineux (max 5 Mo).");
+      return;
+    }
+    try {
+      const base64 = await fileToBase64(file);
+      setAttachment({
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        base64,
+      });
+    } catch (err) {
+      console.error("File read error:", err);
+      toast.error("Impossible de lire le fichier.");
+    }
   };
 
   const firstName = profile?.full_name?.split(" ")[0] || "";
@@ -202,27 +287,29 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           {messages.length === 0 && !isLoading && (
-            <div className="flex flex-col items-center justify-center text-center py-12 px-4">
-              <Zap
-                className="w-12 h-12 text-primary mb-4"
-                strokeWidth={1}
-              />
+            <div className="flex flex-col items-center text-center py-8 px-2">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Zap className="w-7 h-7 text-primary" strokeWidth={1.5} />
+              </div>
               <p className="font-bold text-lg">
-                Salut {firstName} 👋
+                Bonjour {firstName || "👋"} — que puis-je faire pour toi ?
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 Je suis VOLT, ton coach IA.
               </p>
-              <div className="flex flex-wrap justify-center gap-2 mt-6">
-                {STARTER_SUGGESTIONS.map((s) => (
+              <div className="flex flex-col gap-2 mt-6 w-full">
+                {STARTER_SUGGESTIONS.map((item) => (
                   <button
-                    key={s}
-                    onClick={() => handleSuggestion(s)}
+                    key={item.label}
+                    onClick={() => handleStarter(item)}
                     disabled={isLoading || !isEnabled}
-                    className="min-h-[44px] flex items-center border border-primary/30 bg-primary/5 text-primary rounded-full px-4 py-2 text-sm font-medium active:bg-primary/15 transition-colors disabled:opacity-50"
+                    className="text-xs px-3 py-2 rounded-full border border-border bg-secondary hover:bg-card text-foreground font-medium transition-colors cursor-pointer disabled:opacity-50 text-left flex items-center gap-2"
                     style={{ WebkitTapHighlightColor: "transparent" }}
                   >
-                    {s}
+                    {item.action === "pick-file" && (
+                      <ImagePlus className="w-3.5 h-3.5 text-primary shrink-0" strokeWidth={2} />
+                    )}
+                    <span className="truncate">{item.label}</span>
                   </button>
                 ))}
               </div>
@@ -241,6 +328,7 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
               );
             }
             const withAvatar = showAvatarAt(i);
+            const parsedCard = tryParseSessionAction(msg.content);
             return (
               <div key={i} className="flex justify-start items-end gap-2">
                 {withAvatar ? (
@@ -253,11 +341,24 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
                 ) : (
                   <div className="w-7 h-7 shrink-0" />
                 )}
-                <div className="max-w-[80%] bg-secondary text-secondary-foreground rounded-2xl rounded-bl-sm px-4 py-2.5 text-[15px] leading-relaxed break-words">
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                {parsedCard ? (
+                  <div className="max-w-[85%] space-y-2 flex-1">
+                    {parsedCard.cleanedContent && (
+                      <div className="bg-secondary text-secondary-foreground rounded-2xl rounded-bl-sm px-4 py-2.5 text-[15px] leading-relaxed break-words">
+                        <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1">
+                          <ReactMarkdown>{parsedCard.cleanedContent}</ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+                    <SessionCreatedCard sessions={parsedCard.sessions} />
                   </div>
-                </div>
+                ) : (
+                  <div className="max-w-[80%] bg-secondary text-secondary-foreground rounded-2xl rounded-bl-sm px-4 py-2.5 text-[15px] leading-relaxed break-words">
+                    <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1">
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -320,7 +421,37 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
               {t("ai_chat:plan_required")}
             </p>
           ) : (
-            <div className="flex items-end gap-2">
+            <div className="space-y-2">
+              {attachment && (
+                <div className="flex items-center gap-2 text-xs bg-secondary border border-border rounded-full px-3 py-1.5 w-fit max-w-full">
+                  <Paperclip className="w-3 h-3 shrink-0" strokeWidth={2} />
+                  <span className="truncate font-medium">{attachment.name}</span>
+                  <button
+                    onClick={() => setAttachment(null)}
+                    aria-label="Retirer le fichier"
+                    className="shrink-0 hover:text-primary transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              <div className="flex items-end gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.fit,.pdf,.txt"
+                onChange={handleFilePick}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                aria-label="Joindre un fichier"
+                className="w-11 h-11 rounded-full bg-secondary text-foreground border border-border flex items-center justify-center shrink-0 disabled:opacity-40 active:opacity-80 transition-opacity"
+                style={{ WebkitTapHighlightColor: "transparent" }}
+              >
+                <Paperclip className="w-5 h-5" strokeWidth={1.5} />
+              </button>
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -343,13 +474,14 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
               />
               <button
                 onClick={handleSend}
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || (!input.trim() && !attachment)}
                 aria-label="Send"
                 className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 disabled:opacity-40 active:opacity-80 transition-opacity"
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <ArrowUp className="w-5 h-5" strokeWidth={2} />
               </button>
+              </div>
             </div>
           )}
         </div>
