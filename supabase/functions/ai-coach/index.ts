@@ -1205,175 +1205,136 @@ serve(async (req) => {
     const built = ACTION_BUILDERS[action](payload || {}, lang || "fr");
     const model = MODEL_FOR_ACTION[action] || "google/gemini-2.5-flash-lite";
 
-    // 7. Call AI - special handling for chat (multi-turn with tools)
+    // 7. Call AI — toutes les actions passent par la Lovable gateway (LOVABLE_API_KEY)
     let aiResult;
-    if (action === "chat") {
-      const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-      if (!ANTHROPIC_API_KEY) {
-        return jsonResp({ error: "Anthropic API key not configured" }, 500);
-      }
-
-      // VOLT structured-coaching system prompt
-      const voltPrompt = `You are VOLT, an elite sports coach AI inside the 6way app. Your role is to guide athletes through structured check-ins and coaching conversations.
-
-Rules:
-- Ask ONE question at a time. Never ask two questions in one message.
-- Keep every message under 3 sentences.
-- Be direct and motivating — no filler phrases.
-- When your question has predictable answers, always end your message with:
-  <suggestions>["answer 1", "answer 2", "answer 3"]</suggestions>
-- Use suggestions for: goals, session types, muscle groups, intensity levels, how the athlete feels, recovery status, equipment available.
-- Do NOT use suggestions for: open feedback, injury descriptions, custom goals, anything requiring a personal free-text answer.
-- After 3-4 exchanges, summarize what you understood and propose an action (create a session, adjust the program, log a note for the coach).
-- Always respond in the same language the user writes in (French or English).
-- Never mention that you are an AI or that you use suggestions.`;
-
-      // Preserve dynamic user/session/nutrition/coach context built by buildChat
-      // by appending it after the VOLT directives.
-      const contextBlock = built.system.includes("CONTEXTE UTILISATEUR")
-        ? "\n\n" + built.system.split("DATE ACTUELLE")[0].split("CONTEXTE UTILISATEUR")[1]
-        : "";
-      const dynamicContext = [
-        built.system.match(/INTELLIGENCE SÉANCE[\s\S]*?(?=\n[A-ZÉ]{3,}|$)/)?.[0],
-        built.system.match(/INTELLIGENCE NUTRITION[\s\S]*?(?=\n[A-ZÉ]{3,}|$)/)?.[0],
-        built.system.match(/CONTEXTE COACH[\s\S]*?(?=\n[A-ZÉ]{3,}|$)/)?.[0],
-      ].filter(Boolean).join("\n\n");
-      const today = new Date();
-      const todayStr = today.toISOString().split("T")[0];
-      const systemPrompt = voltPrompt
-        + `\n\nCURRENT DATE: ${todayStr} (year ${today.getFullYear()}). Always use the current year for dates.`
-        + (contextBlock ? `\n\nUSER CONTEXT:${contextBlock}` : "")
-        + (dynamicContext ? `\n\n${dynamicContext}` : "");
-
-      // Build Claude messages (user/assistant only, no system role)
-      const priorMsgs = (built.messages || []).filter(
-        (m: any) => m.role === "user" || m.role === "assistant"
+    {
+      const chatHistory = action === "chat"
+        ? ((built.messages || []) as Array<{ role: string; content: any }>).filter(
+            (m: any) => m.role === "user" || m.role === "assistant"
+          )
+        : undefined;
+      aiResult = await callLovableAI(
+        LOVABLE_API_KEY,
+        model,
+        built.system,
+        built.user,
+        built.tools,
+        built.toolChoice ?? (action === "chat" ? { type: "auto" } : undefined),
+        chatHistory
       );
+    }
 
-      // Handle optional attachment: image (vision), pdf/txt (decoded text), fit (note)
-      const attachment = payload?.attachment as
-        | { name: string; type: string; base64: string }
-        | undefined;
+    // 7b. Pour chat : exécuter l'outil si l'IA en a appelé un, puis normaliser le résultat
+    if (action === "chat" && !aiResult.error) {
+      const toolName = (aiResult as any).toolName;
+      const toolArgs = aiResult.result;
+      const rawContent: string = (aiResult as any).rawContent || "";
+      let toolResults: any[] = [];
 
-      let lastUserContent: any = built.user;
-      let attachmentNote = "";
-
-      if (attachment && attachment.base64) {
-        const isImage = (attachment.type || "").startsWith("image/");
-        const lowerName = (attachment.name || "").toLowerCase();
-
-        if (isImage) {
-          lastUserContent = [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: attachment.type,
-                data: attachment.base64,
-              },
-            },
-            {
-              type: "text",
-              text:
-                (built.user && built.user.trim()) ||
-                "Analyse ce plan d'entraînement et crée les séances correspondantes dans mon calendrier.",
-            },
+      if (toolName === "create_free_session" && toolArgs) {
+        try {
+          const exercisesFlat = [
+            ...(toolArgs.sections?.flatMap((s: any) => s.exercises || []) || []),
+            ...(toolArgs.exercises || []),
           ];
-        } else if (lowerName.endsWith(".pdf")) {
-          // Claude supports PDF as document blocks
-          lastUserContent = [
-            {
-              type: "document",
-              source: {
-                type: "base64",
-                media_type: "application/pdf",
-                data: attachment.base64,
-              },
-            },
-            {
-              type: "text",
-              text:
-                (built.user && built.user.trim()) ||
-                `Analyse ce document (${attachment.name}) et propose les séances à créer dans mon calendrier.`,
-            },
-          ];
-        } else if (lowerName.endsWith(".txt") || (attachment.type || "").startsWith("text/")) {
-          let decoded = "";
-          try {
-            decoded = new TextDecoder().decode(
-              Uint8Array.from(atob(attachment.base64), (c) => c.charCodeAt(0))
-            );
-          } catch (e) {
-            console.warn("Failed to decode text attachment:", e);
+          const exerciseNames = [...new Set<string>(exercisesFlat.map((e: any) => e.name).filter(Boolean))];
+          let exerciseMap: Record<string, string> = {};
+          if (exerciseNames.length > 0) {
+            const { data: exRows } = await serviceClient
+              .from("exercises")
+              .select("id, name")
+              .in("name", exerciseNames);
+            (exRows || []).forEach((ex: any) => { exerciseMap[ex.name] = ex.id; });
           }
-          const truncated = decoded.slice(0, 20000);
-          attachmentNote = `\n\nFICHIER JOINT (${attachment.name}) :\n\`\`\`\n${truncated}\n\`\`\``;
-          lastUserContent = (built.user || "") + attachmentNote;
-        } else if (lowerName.endsWith(".fit")) {
-          attachmentNote = `\n\n(Fichier FIT joint : ${attachment.name} — données brutes non décodées. Demande à l'utilisateur les infos clés (sport, durée, distance, intensité) si nécessaire.)`;
-          lastUserContent = (built.user || "") + attachmentNote;
-        } else {
-          attachmentNote = `\n\n(Fichier joint : ${attachment.name}, type ${attachment.type} — non lisible directement.)`;
-          lastUserContent = (built.user || "") + attachmentNote;
+
+          const { data: session, error: sessionErr } = await serviceClient
+            .from("free_sessions")
+            .insert({ user_id: userId, name: toolArgs.name, date: toolArgs.date, day_of_week: toolArgs.day_of_week })
+            .select("id")
+            .single();
+          if (sessionErr) throw sessionErr;
+          const sessionId = session.id;
+
+          const sectionsToCreate = toolArgs.sections?.length
+            ? toolArgs.sections
+            : toolArgs.exercises?.length
+            ? [{ name: "Séance", exercises: toolArgs.exercises }]
+            : [];
+
+          let sectionOrder = 0;
+          for (const sec of sectionsToCreate) {
+            const { data: sectionRow, error: secErr } = await serviceClient
+              .from("free_session_sections")
+              .insert({
+                free_session_id: sessionId,
+                name: sec.name,
+                icon: sec.icon || null,
+                duration_estimate: sec.duration_estimate || null,
+                order_index: sectionOrder++,
+              })
+              .select("id")
+              .single();
+            if (secErr) throw secErr;
+
+            let exOrder = 0;
+            for (const ex of (sec.exercises || [])) {
+              await serviceClient.from("free_session_exercises").insert({
+                free_session_section_id: sectionRow.id,
+                exercise_id: exerciseMap[ex.name] || null,
+                name: ex.name,
+                sets: ex.sets,
+                reps_min: ex.reps_min,
+                reps_max: ex.reps_max,
+                rest_seconds: ex.rest_seconds,
+                coach_notes: ex.coach_notes || null,
+                order_index: exOrder++,
+              });
+            }
+          }
+          toolResults.push({ tool: "create_free_session", success: true, session_id: sessionId });
+        } catch (e: any) {
+          console.error("Error creating free session:", e);
+          toolResults.push({ tool: "create_free_session", success: false, error: e.message });
         }
       }
 
-      const conversationHistory = [
-        ...priorMsgs,
-        { role: "user", content: lastUserContent },
-      ];
-
-      const start = Date.now();
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-opus-4-5",
-          max_tokens: 1024,
-          system: systemPrompt,
-          messages: conversationHistory,
-        }),
-      });
-      const durationMs = Date.now() - start;
-
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error("Anthropic error:", response.status, errText);
-        aiResult = { error: true, status: response.status, durationMs, errText };
+      let assistantText = "";
+      let suggestions: string[] = [];
+      if (toolName) {
+        const base = rawContent || (toolResults[0]?.success
+          ? `Séance "${toolArgs?.name || ""}" créée avec succès dans ton agenda ! 💪`
+          : "Désolé, la création a échoué. Réessaie.");
+        const sugMatch = base.match(/<suggestions>([\s\S]*?)<\/suggestions>/);
+        if (sugMatch) {
+          try {
+            const p = JSON.parse(sugMatch[1].trim());
+            if (Array.isArray(p)) suggestions = p.map(String);
+          } catch { /* ignore */ }
+        }
+        assistantText = base.replace(/<suggestions>[\s\S]*?<\/suggestions>/, "").trim();
       } else {
-        const data = await response.json();
-        const assistantMessage =
-          (data.content || []).map((c: any) => c.text || "").join("").trim();
-
-        const suggestionsMatch = assistantMessage.match(/<suggestions>([\s\S]*?)<\/suggestions>/);
-        let suggestions: string[] = [];
-        if (suggestionsMatch) {
+        const raw = typeof aiResult.result?.text === "string"
+          ? aiResult.result.text
+          : rawContent || JSON.stringify(aiResult.result);
+        const sugMatch = raw.match(/<suggestions>([\s\S]*?)<\/suggestions>/);
+        if (sugMatch) {
           try {
-            const parsed = JSON.parse(suggestionsMatch[1].trim());
-            if (Array.isArray(parsed)) suggestions = parsed.map((s) => String(s));
-          } catch (e) {
-            console.warn("Failed to parse suggestions JSON:", e);
-          }
+            const p = JSON.parse(sugMatch[1].trim());
+            if (Array.isArray(p)) suggestions = p.map(String);
+          } catch { /* ignore */ }
         }
-        const cleanMessage = assistantMessage
-          .replace(/<suggestions>[\s\S]*?<\/suggestions>/, "")
-          .trim();
-
-        const usage = data.usage || {};
-        aiResult = {
-          error: false,
-          result: { message: cleanMessage, text: cleanMessage, suggestions },
-          inputTokens: usage.input_tokens || null,
-          outputTokens: usage.output_tokens || null,
-          durationMs,
-        };
+        assistantText = raw.replace(/<suggestions>[\s\S]*?<\/suggestions>/, "").trim();
       }
-    } else {
-      aiResult = await callLovableAI(LOVABLE_API_KEY, model, built.system, built.user, built.tools, built.toolChoice);
+
+      aiResult = {
+        ...aiResult,
+        result: {
+          message: assistantText,
+          text: assistantText,
+          suggestions,
+          tool_results: toolResults,
+        },
+      };
     }
 
     if (aiResult.error) {
