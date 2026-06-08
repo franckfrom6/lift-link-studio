@@ -338,6 +338,8 @@ const ExerciseParamsForm = ({
 const SessionPreview = () => {
   const navigate = useNavigate();
   const { sessionId } = useParams<{ sessionId: string }>();
+  const [searchParams] = useSearchParams();
+  const wantsEdit = searchParams.get("edit") === "1";
   const { program, loading: programLoading } = useStudentProgram();
   const [freeSession, setFreeSession] = useState<any>(null);
   const [freeLoading, setFreeLoading] = useState(false);
