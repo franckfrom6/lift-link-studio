@@ -16,6 +16,7 @@ import ProgressionTimeline, { ProgressionPhase } from "@/components/student/Prog
 import WorkoutStatsBar from "@/components/student/WorkoutStatsBar";
 import NextExercisePreview from "@/components/student/NextExercisePreview";
 import ShareSessionButton from "@/components/student/ShareSessionButton";
+import BiSetToggle from "@/components/coach/BiSetToggle";
 import { Clock, Plus, CloudOff, Loader2 } from "lucide-react";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import { Button } from "@/components/ui/button";
