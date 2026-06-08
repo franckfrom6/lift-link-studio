@@ -80,7 +80,7 @@ async function callLovableAI(
   apiKey: string,
   model: string,
   systemPrompt: string,
-  userPrompt: string,
+  userPrompt: any,
   tools?: any[],
   toolChoice?: any,
   history?: Array<{ role: string; content: any }>
