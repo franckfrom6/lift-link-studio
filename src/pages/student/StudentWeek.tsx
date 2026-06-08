@@ -1074,6 +1074,16 @@ const StudentWeek = () => {
                   <Trash2 className="w-4 h-4 mr-2" />{t('session:delete_session')}
                 </DropdownMenuItem>
               )}
+              {dayFreeSessions[0]
+                && !isSessionCompleted(dayFreeSessions[0].id)
+                && dayFreeSessions[0].session_type !== "running"
+                && dayFreeSessions[0].session_type !== "hybrid" && (
+                <DropdownMenuItem
+                  onClick={() => navigate(`/student/session/${dayFreeSessions[0].id}/preview?edit=1`)}
+                >
+                  <Pencil className="w-4 h-4 mr-2" />{t('session:edit_session')}
+                </DropdownMenuItem>
+              )}
               {dayFreeSessions[0] && !isSessionCompleted(dayFreeSessions[0].id) && (
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
