@@ -1,0 +1,106 @@
+## Point d'entrée "Modifier" depuis le calendrier + ouverture directe en mode édition
+
+### Contexte
+Le mode édition existe désormais dans `SessionPreview.tsx` (prompt P7), déclenché par le
+bouton crayon. MAIS :
+1. Le menu 3 points du calendrier (`src/pages/student/StudentWeek.tsx`) n'a AUCUNE entrée
+   "Modifier" — on ne peut pas atteindre l'édition depuis là.
+2. On ne peut pas ouvrir la preview directement en mode édition.
+
+On corrige les deux : une entrée "Modifier la séance" dans le menu 3 points (pour les
+séances libres standard) qui ouvre la preview avec `?edit=1`, et `SessionPreview` lit ce
+paramètre pour démarrer directement en mode édition.
+
+---
+
+### Fichier 1 : `src/pages/student/SessionPreview.tsx`
+
+#### Lire le paramètre d'URL `?edit=1`
+
+Importer `useSearchParams` :
+
+```typescript
+import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
+```
+
+Dans le composant, récupérer le paramètre :
+
+```typescript
+const [searchParams] = useSearchParams();
+const wantsEdit = searchParams.get("edit") === "1";
+```
+
+Initialiser `editMode` à partir de ce paramètre dès que la séance est résolue ET qu'il
+s'agit bien d'une séance libre :
+
+```typescript
+useEffect(() => {
+  if (session && wantsEdit && session.is_free_session) {
+    setEditMode(true);
+  }
+}, [session, wantsEdit]);
+```
+
+(Le state `editMode` et `isFreeSession` viennent déjà du prompt P7.)
+
+---
+
+### Fichier 2 : `src/pages/student/StudentWeek.tsx`
+
+#### Ajouter l'icône Pencil aux imports lucide-react
+
+```typescript
+import { /* ...icônes existantes... */, Pencil } from "lucide-react";
+```
+
+#### Ajouter une entrée "Modifier" dans le menu d'action (`actionMenu`)
+
+Localise le bloc des séances libres dans `actionMenu` (vers la ligne ~1077) :
+
+```tsx
+{dayFreeSessions[0] && !isSessionCompleted(dayFreeSessions[0].id) && (
+  <DropdownMenuItem
+    className="text-destructive focus:text-destructive"
+    onClick={() => { setDeleteTarget({ id: dayFreeSessions[0].id, name: dayFreeSessions[0].name, isFreeSession: true }); setDeleteDialogOpen(true); }}
+  >
+    <Trash2 className="w-4 h-4 mr-2" />{t('session:delete_session')}
+  </DropdownMenuItem>
+)}
+```
+
+JUSTE AVANT cet item de suppression, ajoute l'item "Modifier" (uniquement pour les séances
+libres de type musculation — pas running ni hybrid, qui ont leurs propres écrans) :
+
+```tsx
+{dayFreeSessions[0]
+  && !isSessionCompleted(dayFreeSessions[0].id)
+  && dayFreeSessions[0].session_type !== "running"
+  && dayFreeSessions[0].session_type !== "hybrid" && (
+  <DropdownMenuItem
+    onClick={() => navigate(`/student/session/${dayFreeSessions[0].id}/preview?edit=1`)}
+  >
+    <Pencil className="w-4 h-4 mr-2" />{t('session:edit_session', { defaultValue: 'Modifier la séance' })}
+  </DropdownMenuItem>
+)}
+```
+
+---
+
+### Comportement attendu
+- Menu 3 points du calendrier sur une séance **libre** (musculation) non terminée →
+  nouvelle entrée "Modifier la séance" (icône crayon)
+- Clic → ouvre la preview directement en **mode édition** (le bouton crayon du header est
+  déjà actif, les cartes montrent 🗑 + "Tap pour modifier", le bouton "Ajouter un
+  exercice" est visible)
+- Les séances de programme (coach), running et hybrid : pas d'entrée "Modifier"
+- Une séance déjà terminée : pas d'entrée "Modifier"
+- Le bouton crayon dans la preview continue de fonctionner indépendamment
+
+### Contraintes
+- Ne pas modifier la logique de navigation existante (`getSessionRoute`, duplicate, swap,
+  delete)
+- Ne pas ajouter "Modifier" pour les séances de programme (elles restent read-only côté
+  athlète — édition réservée au coach)
+- Si la clé i18n `session:edit_session` n'existe pas, le `defaultValue` "Modifier la
+  séance" sera utilisé — ajoute la clé aux fichiers de traduction fr/en si tu veux la
+  centraliser
