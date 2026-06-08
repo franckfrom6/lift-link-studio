@@ -177,7 +177,7 @@ export function useAIChat(options?: UseAIChatOptions) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isEnabled, messages, buildContext, location.pathname, t, options]);
+  }, [user, isEnabled, messages, buildContext, location.pathname, t, options, queryClient]);
 
   const clearHistory = useCallback(async () => {
     if (!user) return;

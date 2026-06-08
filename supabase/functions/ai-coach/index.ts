@@ -5,6 +5,7 @@ const allowedOrigins = [
   "https://lift-link-studio.lovable.app",
   "https://fit.from6agency.com",
   "https://id-preview--0363201d-a29c-474b-ab98-106ca7fb6ee7.lovable.app",
+  "https://0363201d-a29c-474b-ab98-106ca7fb6ee7.lovableproject.com",
   "http://localhost:5173",
 ];
 
@@ -80,7 +81,7 @@ async function callLovableAI(
   apiKey: string,
   model: string,
   systemPrompt: string,
-  userPrompt: string,
+  userPrompt: any,
   tools?: any[],
   toolChoice?: any,
   history?: Array<{ role: string; content: any }>
@@ -144,6 +145,43 @@ async function callLovableAI(
     outputTokens: usage.completion_tokens || null,
     durationMs,
   };
+}
+
+async function describeChatImage(apiKey: string, attachment: any) {
+  if (!attachment?.base64 || !attachment?.type?.startsWith("image/")) return "";
+  const cleaned = String(attachment.base64).replace(/^data:[^,]+,/, "").replace(/\s/g, "");
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Analyse cette image de façon concise pour un coach sportif. Si elle contient une séance, extrais: nom éventuel, date/jour, sections, exercices, séries, répétitions, durées, charges, repos et notes visibles. Réponds en français, sans inventer.",
+            },
+            {
+              type: "image_url",
+              image_url: { url: `data:${attachment.type};base64,${cleaned}` },
+            },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error("AI image analysis error:", response.status, errText);
+    return "";
+  }
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "";
 }
 
 // ── Action handlers ──────────────────────────────────────────────
@@ -677,6 +715,8 @@ async function fetchNutritionContext(serviceClient: any, userId: string) {
 function buildChat(payload: any, lang: string) {
   const l = lang === "fr" ? "Réponds en français." : "Respond in English.";
   const contextBlock = payload.context ? `\n\nCONTEXTE UTILISATEUR :\n${payload.context}` : "";
+  const imageAnalysisBlock = payload._imageAnalysis ? `\n\nANALYSE IMAGE IMPORTÉE :\n${payload._imageAnalysis}` : "";
+  const attachment = payload.attachment;
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
   const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
@@ -765,8 +805,10 @@ IMPORTANT : Utilise TOUJOURS l'année ${today.getFullYear()} pour les dates. Ne 
 
 CAPACITÉS IMPORTANTES :
 - Tu PEUX créer des séances de musculation libres directement dans l'agenda de l'athlète en utilisant l'outil create_free_session.
+- Tu PEUX lire une image/screenshot importé : quand une ANALYSE IMAGE est fournie et contient une séance, utilise-la comme source fiable pour créer la séance.
 - Tu PEUX créer des plans de nutrition sportive sur 7 jours en utilisant l'outil create_nutrition_plan.
 - Quand l'utilisateur te demande de créer/ajouter une séance, utilise TOUJOURS l'outil create_free_session. Ne dis JAMAIS que tu ne peux pas le faire.
+- Quand l'utilisateur demande de créer une séance à partir d'une image/screenshot/photo, utilise TOUJOURS l'outil create_free_session avec les exercices extraits. Ne dis JAMAIS que tu ne peux pas voir l'image si une ANALYSE IMAGE est présente.
 - Quand l'utilisateur te demande un plan de nutrition/repas/alimentation, utilise TOUJOURS l'outil create_nutrition_plan. Ne dis JAMAIS que tu ne peux pas le faire.
 - Pour la préparation course à pied, utilise l'outil create_running_program.
 - Quand l'athlète parle de préparer un 5k, 10k, semi-marathon, marathon ou trail, propose-lui de créer un plan de préparation personnalisé.
@@ -839,11 +881,17 @@ FORMAT DE RÉPONSE :
 4. Message motivation ⚡
 5. Ajouter en fin : "Pour tout objectif médical ou pathologie, consulte un professionnel de santé."
 
-${l}${contextBlock}`;
+${l}${contextBlock}${imageAnalysisBlock}`;
   
   // Build messages array for multi-turn conversation
   const messages = payload.messages || [];
   const lastUserMsg = messages.length > 0 ? messages[messages.length - 1].content : "";
+  const hasImageAttachment = Boolean(
+    attachment?.base64 && typeof attachment.base64 === "string" && attachment?.type?.startsWith("image/")
+  );
+  const userContent = hasImageAttachment
+    ? `${lastUserMsg || "Analyse l'image jointe."}\n\nImage jointe : ${attachment.name || "image"}. Utilise l'ANALYSE IMAGE IMPORTÉE ci-dessus pour répondre et, si l'utilisateur demande une création de séance, appelle create_free_session.`
+    : lastUserMsg;
   
   const tools = [
     {
@@ -1049,7 +1097,7 @@ ${l}${contextBlock}`;
     },
   ];
 
-  return { system, user: lastUserMsg, messages: messages.slice(0, -1), tools };
+  return { system, user: userContent, messages: messages.slice(0, -1), tools };
 }
 
 // Fetch coach context: list of active athletes (id + display name) when caller is a coach
@@ -1198,9 +1246,11 @@ serve(async (req) => {
       const sessionCtx = await fetchSessionContext(serviceClient, userId);
       const nutritionCtx = await fetchNutritionContext(serviceClient, userId);
       const coachCtx = await fetchCoachContext(serviceClient, userId);
+      const imageAnalysis = await describeChatImage(LOVABLE_API_KEY, payload?.attachment);
       (payload || {})._sessionContext = sessionCtx;
       (payload || {})._nutritionContext = nutritionCtx;
       (payload || {})._coachContext = coachCtx;
+      (payload || {})._imageAnalysis = imageAnalysis;
     }
     const built = ACTION_BUILDERS[action](payload || {}, lang || "fr");
     const model = MODEL_FOR_ACTION[action] || "google/gemini-2.5-flash-lite";
