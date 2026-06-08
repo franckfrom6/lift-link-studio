@@ -1324,7 +1324,7 @@ const LiveSession = () => {
                         exerciseVideoUrl={ex.exerciseVideoUrl || null}
                         isActive={isActive}
                         completedSets={sets}
-                        onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
+                        onCompletedSetsChange={(newSets) => setCompletedSetsSync(prev => ({ ...prev, [key]: newSets }))}
                         onAllSetsComplete={() => handleExerciseComplete(key)}
                         onSetValidated={(rest) => handleSupersetAwareRest(key, rest)}
                         onRestStart={(secs) => handleSupersetAwareRest(key, secs)}
