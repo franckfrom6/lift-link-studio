@@ -70,7 +70,21 @@ const sumVolume = (sections: any[]): number => {
 };
 
 // ────────── building blocks ──────────
-const ExerciseCard = ({ ex, idx, onPreviewVideo }: { ex: any; idx: number; onPreviewVideo: (ex: any) => void }) => {
+const ExerciseCard = ({
+  ex,
+  idx,
+  onPreviewVideo,
+  editMode = false,
+  onEdit,
+  onDelete,
+}: {
+  ex: any;
+  idx: number;
+  onPreviewVideo: (ex: any) => void;
+  editMode?: boolean;
+  onEdit?: (ex: any) => void;
+  onDelete?: (id: string) => void;
+}) => {
   const exData = ex.exercise || {};
   const hasVideo = !!(ex.video_url || exData.video_url_male || exData.video_url_female);
   const time = isTimeTracking(ex);
@@ -78,12 +92,31 @@ const ExerciseCard = ({ ex, idx, onPreviewVideo }: { ex: any; idx: number; onPre
   const w = Number(ex.suggested_weight) || 0;
 
   return (
-    <div className="bg-card border border-border rounded-md p-3.5 flex flex-col gap-2.5">
+    <div
+      className={cn(
+        "relative bg-card border border-border rounded-md p-3.5 flex flex-col gap-2.5",
+        editMode && "cursor-pointer hover:border-foreground/40 transition-colors",
+      )}
+      onClick={editMode ? () => onEdit?.(ex) : undefined}
+    >
+      {editMode && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.(ex.id);
+          }}
+          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive hover:text-destructive-foreground transition-colors z-10"
+          aria-label="Supprimer l'exercice"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
       <div className="flex items-start gap-2.5">
         <ExerciseNumber idx={idx} />
-        <VideoThumb hasVideo={hasVideo} onClick={() => onPreviewVideo(ex)} />
+        {!editMode && <VideoThumb hasVideo={hasVideo} onClick={() => onPreviewVideo(ex)} />}
         <div className="flex-1 min-w-0">
-          {exData.id ? (
+          {exData.id && !editMode ? (
             <Link
               to={`/student/exercise/${exData.id}`}
               onClick={(e) => e.stopPropagation()}
@@ -115,6 +148,11 @@ const ExerciseCard = ({ ex, idx, onPreviewVideo }: { ex: any; idx: number; onPre
             <Timer className="w-2.5 h-2.5" />
             {ex.rest_seconds}s
           </StatBadge>
+        )}
+        {editMode && (
+          <span className="text-[10px] uppercase tracking-[0.1em] font-semibold text-primary ml-auto self-center">
+            Tap pour modifier →
+          </span>
         )}
       </div>
     </div>
@@ -162,16 +200,139 @@ const WarmupCard = ({ section }: { section: any }) => (
   </div>
 );
 
-const BlockSection = ({ section, startIdx, onPreviewVideo }: { section: any; startIdx: number; onPreviewVideo: (ex: any) => void }) => (
+const BlockSection = ({
+  section,
+  startIdx,
+  onPreviewVideo,
+  editMode,
+  onEdit,
+  onDelete,
+}: {
+  section: any;
+  startIdx: number;
+  onPreviewVideo: (ex: any) => void;
+  editMode?: boolean;
+  onEdit?: (ex: any) => void;
+  onDelete?: (id: string) => void;
+}) => (
   <div className="mb-5">
     <SectionLabel label={section.name} right={`${section.exercises.length} exos`} />
     <div className="px-4 flex flex-col gap-2">
       {section.exercises.map((ex: any, i: number) => (
-        <ExerciseCard key={ex.id} ex={ex} idx={startIdx + i + 1} onPreviewVideo={onPreviewVideo} />
+        <ExerciseCard
+          key={ex.id}
+          ex={ex}
+          idx={startIdx + i + 1}
+          onPreviewVideo={onPreviewVideo}
+          editMode={editMode}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       ))}
     </div>
   </div>
 );
+
+// ────────── exercise params form ──────────
+const ExerciseParamsForm = ({
+  ex,
+  onSave,
+  onCancel,
+}: {
+  ex: any;
+  onSave: (updated: any) => void;
+  onCancel: () => void;
+}) => {
+  const [sets, setSets] = useState(String(ex.sets ?? 3));
+  const [repsMin, setRepsMin] = useState(String(ex.reps_min ?? 8));
+  const [repsMax, setRepsMax] = useState(String(ex.reps_max ?? 12));
+  const [rest, setRest] = useState(String(ex.rest_seconds ?? 60));
+  const [weightEnabled, setWeightEnabled] = useState(!!ex.suggested_weight);
+  const [weight, setWeight] = useState(String(ex.suggested_weight || ""));
+
+  return (
+    <div className="flex flex-col gap-4 mt-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Séries</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={sets}
+            onChange={(e) => setSets(e.target.value)}
+            className="h-11 text-center text-base font-semibold"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Repos (sec)</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={rest}
+            onChange={(e) => setRest(e.target.value)}
+            className="h-11 text-center text-base font-semibold"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Reps min</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={repsMin}
+            onChange={(e) => setRepsMin(e.target.value)}
+            className="h-11 text-center text-base font-semibold"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Reps max</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={repsMax}
+            onChange={(e) => setRepsMax(e.target.value)}
+            className="h-11 text-center text-base font-semibold"
+          />
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground">Charge (kg)</Label>
+        <Switch checked={weightEnabled} onCheckedChange={setWeightEnabled} />
+      </div>
+      {weightEnabled && (
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
+          placeholder="Ex : 80"
+          className="h-11 text-center text-base font-semibold"
+        />
+      )}
+      <div className="flex gap-2 mt-2">
+        <Button variant="outline" className="flex-1" onClick={onCancel}>
+          Annuler
+        </Button>
+        <Button
+          className="flex-1"
+          onClick={() =>
+            onSave({
+              ...ex,
+              sets: parseInt(sets) || 3,
+              reps_min: parseInt(repsMin) || 8,
+              reps_max: parseInt(repsMax) || 12,
+              rest_seconds: parseInt(rest) || 60,
+              suggested_weight: weightEnabled ? parseFloat(weight) || null : null,
+            })
+          }
+        >
+          Sauvegarder
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 // ────────── page ──────────
 const SessionPreview = () => {
