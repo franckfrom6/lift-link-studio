@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ const SessionBuilderModal = ({ open, onClose, date, onCreated }: SessionBuilderM
   const [pickerOpen, setPickerOpen] = useState(false);
   const [substituteTargetId, setSubstituteTargetId] = useState<string | null>(null);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const startingRef = useRef(false);
 
   // Check for draft on open
   useEffect(() => {
@@ -76,11 +77,17 @@ const SessionBuilderModal = ({ open, onClose, date, onCreated }: SessionBuilderM
   };
 
   const handleStartSession = async () => {
-    const sessionId = await saveAndStart(date);
-    if (sessionId) {
-      onCreated?.();
-      onClose();
-      navigate(`/student/session/${sessionId}`);
+    if (startingRef.current) return;
+    startingRef.current = true;
+    try {
+      const sessionId = await saveAndStart(date);
+      if (sessionId) {
+        onCreated?.();
+        onClose();
+        navigate(`/student/session/${sessionId}`);
+      }
+    } finally {
+      startingRef.current = false;
     }
   };
 

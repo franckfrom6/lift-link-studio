@@ -71,7 +71,6 @@ export function useSessionBuilder() {
       const dbEquipment = [...new Set(equipment.map(e => EQUIPMENT_TO_DB[e]))];
 
       if (muscleGroups.length === 0) {
-        setLoading(false);
         return;
       }
 
@@ -90,7 +89,6 @@ export function useSessionBuilder() {
 
       if (!allExercises || allExercises.length === 0) {
         toast.error(t("builder_no_exercises"));
-        setLoading(false);
         return;
       }
 

@@ -130,6 +130,9 @@ const LiveSession = () => {
   const nextPreviewRef = useRef<HTMLDivElement | null>(null);
   const shareBtnRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const mountedRef = useRef(true);
+  const isHydratingRef = useRef(false);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -356,9 +359,21 @@ const LiveSession = () => {
   // Latest completedSets in a ref so the rest-gating callback can read it
   // synchronously without recreating itself on every change.
   const completedSetsRef = useRef(completedSets);
-  useEffect(() => {
-    completedSetsRef.current = completedSets;
-  }, [completedSets]);
+
+  // Wrapper qui met à jour ref et state de façon synchrone pour éviter
+  // un frame stale dans les callbacks (notamment bi-set).
+  const setCompletedSetsSync = useCallback(
+    (updater: React.SetStateAction<Record<string, EnhancedCompletedSet[]>>) => {
+      setCompletedSets(prev => {
+        const next = typeof updater === "function"
+          ? (updater as (p: Record<string, EnhancedCompletedSet[]>) => Record<string, EnhancedCompletedSet[]>)(prev)
+          : updater;
+        completedSetsRef.current = next;
+        return next;
+      });
+    },
+    [],
+  );
 
   const trackingTypeMap = useMemo(() => {
     if (!selectedSession) return {};
@@ -513,6 +528,8 @@ const LiveSession = () => {
     if (Object.keys(sessionExerciseIdMap).length === 0) return;
 
     const hydrateOrCreate = async () => {
+      if (isHydratingRef.current) return;
+      isHydratingRef.current = true;
       try {
         // 1. Look up an existing in-progress session (completed_at IS NULL)
         const { data: existing, error: lookupError } = await supabase
@@ -585,7 +602,7 @@ const LiveSession = () => {
             for (const k of Object.keys(grouped)) {
               grouped[k].sort((a, b) => a.setNumber - b.setNumber);
             }
-            setCompletedSets(grouped);
+            setCompletedSetsSync(grouped);
             setHasStartedWorkout(true);
 
             // Position activeExerciseKey on first non-finished, non-skipped exercise
@@ -627,6 +644,8 @@ const LiveSession = () => {
       } catch (e) {
         console.error("Error hydrating/creating completed session:", e);
         toast.error(t("session:session_create_failed"));
+      } finally {
+        isHydratingRef.current = false;
       }
     };
     hydrateOrCreate();
@@ -641,6 +660,7 @@ const LiveSession = () => {
     const sets = completedSets[key] || [];
     const sessionExId = sessionExerciseIdMap[key];
     if (!sessionExId) return false;
+
     const rows = sets.filter(s => s.reps > 0).map(s => ({
       completed_session_id: completedSessionId,
       session_exercise_id: sessionExId,
@@ -649,17 +669,31 @@ const LiveSession = () => {
       reps: s.reps,
       rpe_actual: s.rpeActual,
       is_failure: s.isFailure,
+      duration_seconds: (s as any).durationSeconds || null,
     }));
-    // Delete existing rows then re-insert to handle updates
-    const { error: delError } = await supabase.from("completed_sets")
+
+    if (rows.length === 0) {
+      const { error } = await supabase.from("completed_sets")
+        .delete()
+        .eq("completed_session_id", completedSessionId)
+        .eq("session_exercise_id", sessionExId);
+      if (error) { console.error("Error clearing sets:", error); return false; }
+      return true;
+    }
+
+    // Upsert atomique — pas de fenêtre où les séries sont perdues
+    const { error: upsertError } = await supabase.from("completed_sets")
+      .upsert(rows, { onConflict: "completed_session_id,session_exercise_id,set_number" });
+    if (upsertError) { console.error("Error upserting sets:", upsertError); return false; }
+
+    // Supprimer les séries dont le set_number n'existe plus (réduction du nb de séries)
+    const newSetNumbers = rows.map(r => r.set_number);
+    await supabase.from("completed_sets")
       .delete()
       .eq("completed_session_id", completedSessionId)
-      .eq("session_exercise_id", sessionExId);
-    if (delError) { console.error("Error deleting sets:", delError); return false; }
-    if (rows.length > 0) {
-      const { error } = await supabase.from("completed_sets").insert(rows);
-      if (error) { console.error("Error saving sets:", error); return false; }
-    }
+      .eq("session_exercise_id", sessionExId)
+      .not("set_number", "in", `(${newSetNumbers.join(",")})`);
+
     return true;
   };
 
@@ -670,6 +704,7 @@ const LiveSession = () => {
     if (Object.keys(sessionExerciseIdMap).length === 0) return;
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(async () => {
+      if (!mountedRef.current || sessionDone) return;
       setSaveStatus("saving");
       let allOk = true;
       for (const key of Object.keys(completedSets)) {
@@ -678,6 +713,7 @@ const LiveSession = () => {
           if (!ok) allOk = false;
         }
       }
+      if (!mountedRef.current) return;
       if (allOk) {
         setSaveStatus("saved");
       } else {
@@ -685,6 +721,7 @@ const LiveSession = () => {
         toast.error(t("session:save_failed"));
         setSaveStatus("error");
         await new Promise(r => setTimeout(r, 3000));
+        if (!mountedRef.current) return;
         setSaveStatus("saving");
         let retryOk = true;
         for (const key of Object.keys(completedSets)) {
@@ -693,6 +730,7 @@ const LiveSession = () => {
             if (!ok) retryOk = false;
           }
         }
+        if (!mountedRef.current) return;
         if (retryOk) {
           setSaveStatus("saved");
         } else {
@@ -702,7 +740,7 @@ const LiveSession = () => {
       }
     }, 2000);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
-  }, [completedSets, completedSessionId, sessionExerciseIdMap]);
+  }, [completedSets, completedSessionId, sessionExerciseIdMap, sessionDone]);
 
   // Find next exercise key from current
   const getNextExerciseKey = useCallback((fromKey: string): string | null => {
@@ -891,7 +929,7 @@ const LiveSession = () => {
     const [sIdx, eIdx] = swapTargetKey.split("-").map(Number);
     const originalName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || t("session:exercise_fallback", "Exercise");
     setSubstitutions(prev => [...prev.filter(s => s.key !== swapTargetKey), { key: swapTargetKey, originalName, newName: alternative.name, newEquipment: alternative.equipment }]);
-    setCompletedSets(prev => { const u = { ...prev }; delete u[swapTargetKey]; return u; });
+    setCompletedSetsSync(prev => { const u = { ...prev }; delete u[swapTargetKey]; return u; });
 
     setSwapSelectedName(alternative.name);
     toast.success(`✓ ${alternative.name} sélectionné`);
@@ -1286,7 +1324,7 @@ const LiveSession = () => {
                         exerciseVideoUrl={ex.exerciseVideoUrl || null}
                         isActive={isActive}
                         completedSets={sets}
-                        onCompletedSetsChange={(newSets) => setCompletedSets(prev => ({ ...prev, [key]: newSets }))}
+                        onCompletedSetsChange={(newSets) => setCompletedSetsSync(prev => ({ ...prev, [key]: newSets }))}
                         onAllSetsComplete={() => handleExerciseComplete(key)}
                         onSetValidated={(rest) => handleSupersetAwareRest(key, rest)}
                         onRestStart={(secs) => handleSupersetAwareRest(key, secs)}
@@ -1360,8 +1398,11 @@ const LiveSession = () => {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Reprendre la séance</AlertDialogCancel>
-                <AlertDialogAction onClick={() => finishSession()}>
-                  Terminer
+                <AlertDialogAction
+                  onClick={() => { if (!isSaving) finishSession(); }}
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Sauvegarde…" : "Terminer"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -1434,7 +1475,7 @@ const LiveSession = () => {
           <LinearRestTimer
             key={`global-${globalRestSeconds}-${activeExerciseKey}`}
             initialSeconds={globalRestSeconds}
-            storageKey={`rest_${activeExerciseKey}`}
+            storageKey={`rest_${selectedSessionId}_${activeExerciseKey}`}
             onComplete={() => setGlobalRestSeconds(null)}
           />
         </div>
