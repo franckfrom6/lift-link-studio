@@ -1246,9 +1246,11 @@ serve(async (req) => {
       const sessionCtx = await fetchSessionContext(serviceClient, userId);
       const nutritionCtx = await fetchNutritionContext(serviceClient, userId);
       const coachCtx = await fetchCoachContext(serviceClient, userId);
+      const imageAnalysis = await describeChatImage(LOVABLE_API_KEY, payload?.attachment);
       (payload || {})._sessionContext = sessionCtx;
       (payload || {})._nutritionContext = nutritionCtx;
       (payload || {})._coachContext = coachCtx;
+      (payload || {})._imageAnalysis = imageAnalysis;
     }
     const built = ACTION_BUILDERS[action](payload || {}, lang || "fr");
     const model = MODEL_FOR_ACTION[action] || "google/gemini-2.5-flash-lite";
