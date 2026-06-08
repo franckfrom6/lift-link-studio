@@ -246,39 +246,45 @@ const LiveSession = () => {
     }
     setFreeSessionLoading(true);
     const fetchFree = async () => {
-      const { data } = await supabase
-        .from("sessions")
-        .select(`
-          id, name, day_of_week, notes, is_free_session, created_by,
-          session_sections(id, name, sort_order, notes, duration_estimate, icon),
-          session_exercises(
-            id, sort_order, sets, reps_min, reps_max, rest_seconds, tempo,
-            rpe_target, suggested_weight, coach_notes, video_url, video_search_query,
-            section_id, is_archived, superset_group,
-            exercise:exercises(id, name, name_en, muscle_group, equipment, type, tracking_type, video_url_female, video_url_male)
-          )
-        `)
-        .eq("id", selectedSessionId)
-        .maybeSingle();
-      if (data) {
-        const activeExercises = (data.session_exercises || []).filter((e: any) => !e.is_archived);
-        const sections = (data.session_sections || [])
-          .sort((a: any, b: any) => a.sort_order - b.sort_order)
-          .map((sec: any) => ({
-            ...sec,
-            exercises: activeExercises
-              .filter((e: any) => e.section_id === sec.id)
-              .sort((a: any, b: any) => a.sort_order - b.sort_order),
-          }));
-        const unsectioned = activeExercises
-          .filter((e: any) => !e.section_id)
-          .sort((a: any, b: any) => a.sort_order - b.sort_order);
-        if (unsectioned.length > 0) {
-          sections.push({ id: "default", name: t("session:exercises_section", "Exercises"), sort_order: 999, notes: null, duration_estimate: null, icon: null, exercises: unsectioned });
+      try {
+        const { data, error } = await supabase
+          .from("sessions")
+          .select(`
+            id, name, day_of_week, notes, is_free_session, created_by,
+            session_sections(id, name, sort_order, notes, duration_estimate, icon),
+            session_exercises(
+              id, sort_order, sets, reps_min, reps_max, rest_seconds, tempo,
+              rpe_target, suggested_weight, coach_notes, video_url, video_search_query,
+              section_id, is_archived, superset_group,
+              exercise:exercises(id, name, name_en, muscle_group, equipment, type, tracking_type, video_url_female, video_url_male)
+            )
+          `)
+          .eq("id", selectedSessionId)
+          .maybeSingle();
+        if (error) throw error;
+        if (data) {
+          const activeExercises = (data.session_exercises || []).filter((e: any) => !e.is_archived);
+          const sections = (data.session_sections || [])
+            .sort((a: any, b: any) => a.sort_order - b.sort_order)
+            .map((sec: any) => ({
+              ...sec,
+              exercises: activeExercises
+                .filter((e: any) => e.section_id === sec.id)
+                .sort((a: any, b: any) => a.sort_order - b.sort_order),
+            }));
+          const unsectioned = activeExercises
+            .filter((e: any) => !e.section_id)
+            .sort((a: any, b: any) => a.sort_order - b.sort_order);
+          if (unsectioned.length > 0) {
+            sections.push({ id: "default", name: t("session:exercises_section", "Exercises"), sort_order: 999, notes: null, duration_estimate: null, icon: null, exercises: unsectioned });
+          }
+          setFreeSession({ ...data, sections });
         }
-        setFreeSession({ ...data, sections });
+      } catch (err) {
+        console.error("[LiveSession] fetchFree error:", err);
+      } finally {
+        setFreeSessionLoading(false);
       }
-      setFreeSessionLoading(false);
     };
     fetchFree();
   }, [programLoading, programSession, selectedSessionId]);
@@ -661,6 +667,7 @@ const LiveSession = () => {
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!completedSessionId || Object.keys(completedSets).length === 0) return;
+    if (Object.keys(sessionExerciseIdMap).length === 0) return;
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(async () => {
       setSaveStatus("saving");
@@ -695,7 +702,7 @@ const LiveSession = () => {
       }
     }, 2000);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
-  }, [completedSets, completedSessionId]);
+  }, [completedSets, completedSessionId, sessionExerciseIdMap]);
 
   // Find next exercise key from current
   const getNextExerciseKey = useCallback((fromKey: string): string | null => {
@@ -1039,7 +1046,7 @@ const LiveSession = () => {
     ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
 
-  if (programLoading || freeSessionLoading || !selectedSession) {
+  if (programLoading || freeSessionLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
