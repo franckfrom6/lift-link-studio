@@ -700,6 +700,7 @@ const LiveSession = () => {
     if (Object.keys(sessionExerciseIdMap).length === 0) return;
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(async () => {
+      if (!mountedRef.current || sessionDone) return;
       setSaveStatus("saving");
       let allOk = true;
       for (const key of Object.keys(completedSets)) {
@@ -708,6 +709,7 @@ const LiveSession = () => {
           if (!ok) allOk = false;
         }
       }
+      if (!mountedRef.current) return;
       if (allOk) {
         setSaveStatus("saved");
       } else {
@@ -715,6 +717,7 @@ const LiveSession = () => {
         toast.error(t("session:save_failed"));
         setSaveStatus("error");
         await new Promise(r => setTimeout(r, 3000));
+        if (!mountedRef.current) return;
         setSaveStatus("saving");
         let retryOk = true;
         for (const key of Object.keys(completedSets)) {
@@ -723,6 +726,7 @@ const LiveSession = () => {
             if (!ok) retryOk = false;
           }
         }
+        if (!mountedRef.current) return;
         if (retryOk) {
           setSaveStatus("saved");
         } else {
@@ -732,7 +736,7 @@ const LiveSession = () => {
       }
     }, 2000);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
-  }, [completedSets, completedSessionId, sessionExerciseIdMap]);
+  }, [completedSets, completedSessionId, sessionExerciseIdMap, sessionDone]);
 
   // Find next exercise key from current
   const getNextExerciseKey = useCallback((fromKey: string): string | null => {
