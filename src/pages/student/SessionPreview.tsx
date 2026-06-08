@@ -410,6 +410,12 @@ const SessionPreview = () => {
     if (session) setLocalSections(session.sections || []);
   }, [session]);
 
+  useEffect(() => {
+    if (session && wantsEdit && session.is_free_session) {
+      setEditMode(true);
+    }
+  }, [session, wantsEdit]);
+
   const isFreeSession = !!session?.is_free_session;
 
   const { warmupSection, blockSections, totalExercises, durationMin, volumeT, weekInfo } = useMemo(() => {
