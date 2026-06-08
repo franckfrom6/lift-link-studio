@@ -1067,12 +1067,21 @@ const StudentWeek = () => {
                 </>
               )}
               {isSessionDay && sessionInfo && !sessionCompleted && (
+                <>
+                {sessionInfo.session_type !== "running" && sessionInfo.session_type !== "hybrid" && (
+                  <DropdownMenuItem
+                    onClick={() => navigate(`/student/session/${sessionInfo.sessionId}/preview?edit=1`)}
+                  >
+                    <Pencil className="w-4 h-4 mr-2" />{t('session:edit_session', { defaultValue: 'Modifier la séance' })}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   onClick={() => { setDeleteTarget({ id: sessionInfo.sessionId, name: sessionInfo.name, isFreeSession: false }); setDeleteDialogOpen(true); }}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />{t('session:delete_session')}
                 </DropdownMenuItem>
+                </>
               )}
               {dayFreeSessions[0]
                 && !isSessionCompleted(dayFreeSessions[0].id)

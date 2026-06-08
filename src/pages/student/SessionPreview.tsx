@@ -348,6 +348,7 @@ const SessionPreview = () => {
   const [editingEx, setEditingEx] = useState<any | null>(null);
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
   const [localSections, setLocalSections] = useState<any[]>([]);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   // Resolve session: program-bound first, then fallback to free/standalone
   const programSession = useMemo(() => {
@@ -410,13 +411,28 @@ const SessionPreview = () => {
     if (session) setLocalSections(session.sections || []);
   }, [session]);
 
+  const isFreeSession = !!session?.is_free_session;
+  const canEdit = !!session && !isCompleted;
+
   useEffect(() => {
-    if (session && wantsEdit && session.is_free_session) {
+    if (session && wantsEdit && canEdit) {
       setEditMode(true);
     }
-  }, [session, wantsEdit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, wantsEdit, isCompleted]);
 
-  const isFreeSession = !!session?.is_free_session;
+  useEffect(() => {
+    if (!session?.id) return;
+    (async () => {
+      const { count } = await supabase
+        .from("completed_sessions")
+        .select("id", { count: "exact", head: true })
+        .eq("session_id", session.id)
+        .not("completed_at", "is", null);
+      setIsCompleted((count || 0) > 0);
+    })();
+  }, [session?.id]);
+
 
   const { warmupSection, blockSections, totalExercises, durationMin, volumeT, weekInfo } = useMemo(() => {
     if (!session) {
@@ -567,7 +583,7 @@ const SessionPreview = () => {
               {session.name}
             </div>
           </div>
-          {isFreeSession ? (
+          {canEdit ? (
             <button
               type="button"
               onClick={() => setEditMode((m) => !m)}
@@ -635,7 +651,7 @@ const SessionPreview = () => {
           return block;
         })}
 
-        {editMode && isFreeSession && (
+        {editMode && canEdit && (
           <div className="px-4 mb-5">
             <button
               type="button"
