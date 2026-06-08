@@ -528,6 +528,8 @@ const LiveSession = () => {
     if (Object.keys(sessionExerciseIdMap).length === 0) return;
 
     const hydrateOrCreate = async () => {
+      if (isHydratingRef.current) return;
+      isHydratingRef.current = true;
       try {
         // 1. Look up an existing in-progress session (completed_at IS NULL)
         const { data: existing, error: lookupError } = await supabase
@@ -642,6 +644,8 @@ const LiveSession = () => {
       } catch (e) {
         console.error("Error hydrating/creating completed session:", e);
         toast.error(t("session:session_create_failed"));
+      } finally {
+        isHydratingRef.current = false;
       }
     };
     hydrateOrCreate();
