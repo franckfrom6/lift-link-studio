@@ -1,0 +1,151 @@
+## Lier deux exercices en bi-set pendant une séance en cours (LiveSession)
+
+### Contexte
+Dans `src/pages/student/LiveSession.tsx`, l'AFFICHAGE des bi-sets fonctionne DÉJÀ :
+- `superset_group` est récupéré dans la requête (ligne ~255)
+- `supersetPartnerMap` calcule les paires (lignes ~327-346)
+- Le header "↕ Bi-set", le connecteur visuel vertical et le repos partagé
+  (`handleSupersetAwareRest`) sont déjà branchés (lignes ~1165-1188, ~380-399)
+
+Ce qui MANQUE : un bouton pour LIER / DÉLIER deux exercices consécutifs en plein milieu
+de la séance. C'est ce qu'on ajoute ici.
+
+NE PAS recréer la logique d'affichage ou de repos partagé — elle existe déjà.
+
+---
+
+### Fichier unique : `src/pages/student/LiveSession.tsx`
+
+#### 1. Importer le composant BiSetToggle existant
+
+En haut du fichier, avec les autres imports de composants :
+
+```typescript
+import BiSetToggle from "@/components/coach/BiSetToggle";
+```
+
+#### 2. Ajouter le handler de toggle
+
+Place cette fonction à côté des autres handlers (par ex. juste après `handleAddExercise`,
+vers la ligne ~969). Elle lie/délie l'exercice `eIdx` avec l'exercice `eIdx + 1` de la
+même section, persiste en base, et met à jour l'état local.
+
+```typescript
+const handleToggleBiSet = async (sIdx: number, eIdx: number) => {
+  if (!selectedSession) return;
+  const keyA = `${sIdx}-${eIdx}`;
+  const keyB = `${sIdx}-${eIdx + 1}`;
+  const seIdA = sessionExerciseIdMap[keyA];
+  const seIdB = sessionExerciseIdMap[keyB];
+  if (!seIdA || !seIdB) return;
+
+  // État actuel : déjà liés si keyA est le premier d'une paire bi-set
+  const alreadyLinked = supersetPartnerMap[keyA]?.isFirst === true;
+
+  let newGroup: number | null;
+  if (alreadyLinked) {
+    newGroup = null;
+  } else {
+    // Trouver le prochain numéro de groupe libre DANS CETTE SECTION
+    const used = new Set<number>();
+    (selectedSession.sections[sIdx]?.exercises || []).forEach((e: any) => {
+      const g = e.superset_group ?? e.supersetGroup;
+      if (typeof g === "number") used.add(g);
+    });
+    let g = 1;
+    while (used.has(g)) g++;
+    newGroup = g;
+  }
+
+  // Mise à jour optimiste de l'état local (free session uniquement)
+  const applyLocal = (session: any) => ({
+    ...session,
+    sections: session.sections.map((sec: any, si: number) => {
+      if (si !== sIdx) return sec;
+      return {
+        ...sec,
+        exercises: sec.exercises.map((e: any, ei: number) =>
+          ei === eIdx || ei === eIdx + 1 ? { ...e, superset_group: newGroup } : e,
+        ),
+      };
+    }),
+  });
+
+  const previousFree = freeSession;
+  if (freeSession) {
+    setFreeSession((prev: any) => applyLocal(prev));
+  }
+
+  // Persistance en base : les deux exercices reçoivent le même groupe (ou null)
+  const { error } = await supabase
+    .from("session_exercises")
+    .update({ superset_group: newGroup })
+    .in("id", [seIdA, seIdB]);
+
+  if (error) {
+    console.error("Error toggling bi-set:", error);
+    toast.error(t("common:error"));
+    if (previousFree) setFreeSession(previousFree); // rollback
+    return;
+  }
+
+  // Pour une séance de programme, l'état vient de dbProgram → on invalide pour refetch
+  if (programSession) {
+    queryClient.invalidateQueries({ queryKey: ["student-program"] });
+  }
+
+  toast.success(
+    newGroup === null
+      ? t("session:biset_unlinked", { defaultValue: "Bi-set délié" })
+      : t("session:biset_linked", { defaultValue: "Exercices liés en bi-set ⚡" }),
+  );
+};
+```
+
+#### 3. Afficher le bouton BiSetToggle entre deux exercices consécutifs
+
+Dans le rendu des exercices, localise la FIN du wrapper de carte exercice. C'est le
+`</div>` qui ferme `<div key={key} className={cn(biSetLink && "relative")}>` (vers la
+ligne ~1236, juste avant `);` qui clôt le `return` interne du map).
+
+Juste AVANT ce `</div>` de fermeture, ajoute le toggle (sauf pour le dernier exercice de
+la section) :
+
+```tsx
+                    </div>
+                    {/* Bouton lier/délier bi-set avec l'exercice suivant */}
+                    {eIdx < section.exercises.length - 1 && !isSkipped && (
+                      <div className="my-1">
+                        <BiSetToggle
+                          linked={supersetPartnerMap[key]?.isFirst === true}
+                          onToggle={() => handleToggleBiSet(sIdx, eIdx)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  );
+```
+
+Note : la première `</div>` ci-dessus est le `</div>` EXISTANT qui ferme la carte
+exercice (celui contenant `EnhancedExerciseCard`). On insère le bloc BiSetToggle entre ce
+`</div>` et le `</div>` qui ferme le wrapper externe `<div key={key}>`.
+
+---
+
+### Comportement attendu
+- Entre chaque paire d'exercices consécutifs d'une même section apparaît un bouton
+  `+ Bi-set` (ou `Bi-set` si déjà liés)
+- Cliquer lie les deux exercices : `superset_group` identique en base + l'affichage
+  bi-set existant (header ↕, connecteur, repos partagé) s'active automatiquement
+- Recliquer délie (remet `superset_group` à null sur les deux)
+- Fonctionne aussi bien sur une séance libre que sur une séance de programme
+
+### Contraintes
+- NE PAS modifier `supersetPartnerMap`, `handleSupersetAwareRest`, ni le rendu du header
+  bi-set / connecteur — ils fonctionnent déjà et réagissent automatiquement au changement
+  de `superset_group`
+- NE PAS toucher à la logique de sauvegarde des séries (`saveSetsForExercise`,
+  `completedSets`)
+- Aucune migration SQL : la colonne `superset_group` existe déjà sur `session_exercises`
+- Le bouton ne s'affiche pas sous un exercice skippé ni après le dernier exercice d'une
+  section

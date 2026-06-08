@@ -1,0 +1,537 @@
+====================================================================
+PROMPT P2 — FUSION DES DOUBLONS DU CATALOGUE D'EXERCICES (6way)
+À coller dans Lovable — exécuter UNIQUEMENT APRÈS P1 appliqué
+====================================================================
+
+Crée une nouvelle Supabase edge function `fuse-duplicate-exercises` (TypeScript/Deno).
+
+Cette fonction fusionne les exercices par défaut en double dans `public.exercises`.
+Elle repointe les FK, purge les orphelins, supprime les perdants, et vérifie l'intégrité finale.
+
+**Prérequis :** la fonction P1 `normalize-exercises-catalog` doit avoir été exécutée avec dry_run=false avant d'appeler celle-ci.
+
+---
+
+## Pattern de base
+
+Même structure que `create-test-accounts/index.ts` :
+- Client admin `SUPABASE_SERVICE_ROLE_KEY`
+- corsHeaders `"*"`, gestion OPTIONS
+- JSON body en entrée
+
+---
+
+## Interface d'appel
+
+```ts
+{
+  dry_run: boolean;    // défaut true
+  confirm?: string;    // "APPLIQUER_FUSIONS" pour autoriser les écritures
+}
+```
+
+---
+
+## Périmètre FK — 4 tables à repointer
+
+Pour chaque fusion (perdant → survivant), repointer dans cet ordre :
+1. `session_exercises` (colonne `exercise_id`)
+2. `exercise_favorites` (colonne `exercise_id`) — contrainte UNIQUE probable → `ON CONFLICT DO NOTHING`
+3. `skipped_exercises` (colonne `exercise_id`) — contrainte UNIQUE probable → `ON CONFLICT DO NOTHING`
+4. `exercise_video_requests` (colonne `exercise_id`)
+
+Après le repointage avec ON CONFLICT DO NOTHING, supprimer les lignes du perdant qui n'ont pas pu être repointées (orphelines) :
+```sql
+DELETE FROM exercise_favorites WHERE exercise_id = <id_perdant>;
+DELETE FROM skipped_exercises WHERE exercise_id = <id_perdant>;
+```
+
+Seulement ensuite : `DELETE FROM exercises WHERE id = <id_perdant>`.
+
+**Vérification préalable au premier appel :** avant tout dry-run, exécuter cette requête et inclure son résultat dans la réponse pour confirmer qu'aucune autre table ne référence exercises.id :
+```sql
+SELECT tc.table_name, kcu.column_name
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu
+  ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.referential_constraints rc
+  ON tc.constraint_name = rc.constraint_name
+JOIN information_schema.table_constraints tc2
+  ON rc.unique_constraint_name = tc2.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY'
+  AND tc2.table_name = 'exercises';
+```
+
+---
+
+## Catalogue des fusions
+
+### Groupe A — ID connus directement
+
+Pour ces fusions, les id sont fournis. Pas de résolution par nom nécessaire.
+
+```ts
+const FUSIONS_CONNUES = [
+  {
+    cluster: "bulgarian_split_squat",
+    survivant: "e0000001-0000-0000-0000-000000000006",
+    perdants: [
+      "90b8f3ec-b05d-44ff-bc95-6eaba4f758c4",  // Fentes bulgares
+      "2ba7e5ed-7e32-4a11-baa1-f6a0a5d9f91d",  // Squat bulgare
+    ],
+    type_final: "compound",
+    muscle_group_final: null,  // inchangé
+  },
+  {
+    cluster: "crunch",
+    survivant: "8f9e82d8-157e-4ef5-9d31-df229b99bce1",
+    perdants: ["b245dd62-816e-43b9-8b5a-ee5f2a8beeae"],  // Crunch classique
+    type_final: "isolation",
+    muscle_group_final: null,
+  },
+  {
+    cluster: "glute_bridge",
+    survivant: "e0000001-0000-0000-0000-000000000003",
+    perdants: ["ed1ace1e-3495-4409-98c3-4a5ea1c4e934"],  // Pont fessier au sol
+    type_final: "isolation",
+    muscle_group_final: null,
+  },
+  {
+    cluster: "hamstring_stretch",
+    survivant: "e0000001-0000-0000-0000-000000000012",
+    perdants: ["e41477a9-efe8-4b16-b553-860d85b5ff34"],  // Étirement ischio-jambiers
+    type_final: "stretching",  // corrigé (était isolation)
+    muscle_group_final: null,
+  },
+  {
+    cluster: "leg_press",
+    survivant: "7247da35-f864-4538-9ed4-56a43f8d2ad5",
+    perdants: ["3881a508-b70d-4029-adc8-6c19787c320b"],  // Leg press
+    type_final: "compound",
+    muscle_group_final: null,
+  },
+  {
+    cluster: "push_ups",
+    survivant: "a3b01f18-88e9-488c-a9f4-1d0cc24ada2b",  // Pompes
+    perdants: ["5cb853d0-b567-47a3-98eb-711c15c9211b"],  // Push-ups
+    type_final: "compound",
+    muscle_group_final: null,
+  },
+];
+```
+
+### Groupe B — ID à résoudre par nom (relecture visuelle)
+
+Pour chaque entrée, résoudre les id via requête SQL avant d'afficher le dry-run :
+
+```sql
+SELECT id, name, name_en, muscle_group, equipment, type,
+  (SELECT COUNT(*) FROM session_exercises WHERE exercise_id = e.id) +
+  (SELECT COUNT(*) FROM exercise_favorites WHERE exercise_id = e.id) +
+  (SELECT COUNT(*) FROM skipped_exercises WHERE exercise_id = e.id) +
+  (SELECT COUNT(*) FROM exercise_video_requests WHERE exercise_id = e.id) AS total_refs
+FROM exercises e
+WHERE is_default = true AND created_by IS NULL
+  AND (
+    lower(trim(coalesce(name_en, ''))) IN (<liste_des_noms_en_lowercase>) OR
+    lower(trim(name)) IN (<liste_des_noms_fr_lowercase>)
+  );
+```
+
+Catalogue des fusions visuelles (survivant = le plus de refs, sauf indication) :
+
+```ts
+const FUSIONS_VISUELLES = [
+  // Format : { cluster, survivant_name_fr, survivant_name_en, perdants_names, muscle_group_final, type_final }
+
+  // --- Fessiers ---
+  {
+    cluster: "hip_thrust_barre",
+    survivant_name_fr: "Hip thrust",
+    survivant_name_en: "Hip Thrust",
+    perdants: ["Hip Thrust barre", "Barbell Hip Thrust"],
+    muscle_group_final: "Fessiers",
+    type_final: "compound",
+    equipment_final: "Barre",
+  },
+
+  // --- Abdominaux ---
+  {
+    cluster: "plank",
+    survivant_name_fr: "Planche",
+    survivant_name_en: "Plank",
+    perdants: ["Planche frontale", "Front Plank"],
+    muscle_group_final: "Abdominaux",
+    type_final: "isolation",
+  },
+
+  // --- Triceps ---
+  {
+    cluster: "skull_crusher",
+    survivant_name_fr: "Skull Crusher",
+    survivant_name_en: "Skull Crusher",
+    perdants: ["Skull crushers"],
+    muscle_group_final: "Triceps",
+    type_final: "isolation",
+  },
+
+  // --- Dos ---
+  {
+    cluster: "childs_pose",
+    survivant_name_fr: "Posture de l'enfant",
+    survivant_name_en: "Child's Pose",
+    perdants: ["Child's Pose"],  // doublon EN pur
+    muscle_group_final: "Dos",
+    type_final: "stretching",
+  },
+  {
+    cluster: "pull_up",
+    survivant_name_fr: "Tractions",
+    survivant_name_en: "Pull-Up",
+    perdants: ["Tractions pronation", "Pull-ups"],
+    muscle_group_final: "Dos",
+    type_final: "compound",
+  },
+  {
+    cluster: "deadlift",
+    survivant_name_fr: "Soulevé de terre",
+    survivant_name_en: "Deadlift",
+    perdants: ["Deadlift conventionnel", "Conventional Deadlift"],
+    muscle_group_final: "Dos",
+    type_final: "compound",
+  },
+
+  // --- Jambes ---
+  {
+    cluster: "lateral_lunge",
+    survivant_name_fr: "Fente latérale",
+    survivant_name_en: "Lateral Lunge",
+    perdants: ["Fentes latérales", "Lateral Lunges"],
+    muscle_group_final: "Jambes",
+    type_final: "compound",
+  },
+  {
+    cluster: "rdl_barre",
+    survivant_name_fr: "RDL Barre",
+    survivant_name_en: "Romanian Deadlift",
+    perdants: ["Soulevé de terre roumain barre"],
+    muscle_group_final: "Jambes",
+    type_final: "compound",
+  },
+  {
+    cluster: "rdl_halteres",
+    survivant_name_fr: "RDL Haltères",
+    survivant_name_en: "Romanian Deadlift (Dumbbell)",
+    perdants: ["Soulevé de terre roumain haltères"],
+    muscle_group_final: "Jambes",
+    type_final: "compound",
+  },
+  {
+    cluster: "goblet_squat",
+    survivant_name_fr: "Goblet Squat",
+    survivant_name_en: "Goblet Squat",
+    perdants: ["Kettlebell goblet squat"],
+    muscle_group_final: "Jambes",
+    type_final: "compound",
+  },
+  {
+    cluster: "step_up",
+    survivant_name_fr: "Step-Up",
+    survivant_name_en: "Step-Up",
+    perdants: ["Step-up haltères", "Dumbbell Step-ups"],
+    muscle_group_final: "Jambes",
+    type_final: "compound",
+  },
+  {
+    cluster: "squat_triplon",  // ⚠️ À VALIDER arbitrage #4
+    survivant_name_fr: "Squat",
+    survivant_name_en: "Squat",
+    perdants: ["Back Squat", "Squat Barre", "Barbell Back Squat"],
+    muscle_group_final: "Jambes",
+    type_final: "compound",
+    flag: "ARBITRAGE_4_A_VALIDER",
+  },
+  {
+    cluster: "lunges",  // ⚠️ À VALIDER arbitrage #5
+    survivant_name_fr: "Fentes",
+    survivant_name_en: "Lunges",
+    perdants: ["Fentes avant haltères", "Dumbbell Forward Lunges"],
+    muscle_group_final: "Jambes",
+    type_final: "compound",
+    flag: "ARBITRAGE_5_A_VALIDER",
+  },
+  {
+    cluster: "leg_curl_generique",  // ⚠️ À VALIDER arbitrage #3 — RENOMMER avant fusion
+    // Logique spéciale : renommer le survivant générique en "Leg curl allongé",
+    // puis fusionner l'autre entrée "Leg curl allongé" (0 ref) dans lui.
+    survivant_name_fr: "Leg curl",  // sera renommé → "Leg curl allongé"
+    survivant_name_en: "Leg Curl",
+    perdants: ["Leg curl allongé"],  // 0 ref → fusionner dans le survivant renommé
+    muscle_group_final: "Jambes",
+    type_final: "isolation",
+    rename_survivant_to: "Leg curl allongé",
+    flag: "ARBITRAGE_3_A_VALIDER",
+  },
+
+  // --- Pectoraux ---
+  {
+    cluster: "chest_stretch",  // ⚠️ À VALIDER arbitrage #6
+    survivant_name_fr: "Étirement pectoraux",
+    survivant_name_en: "Chest Stretch",
+    perdants: ["Étirement pectoraux mur", "Wall Chest Stretch"],
+    muscle_group_final: "Pectoraux",
+    type_final: "stretching",
+    flag: "ARBITRAGE_6_A_VALIDER",
+  },
+  {
+    cluster: "incline_bench_halteres",
+    survivant_name_fr: "Développé incliné haltères",
+    survivant_name_en: "Incline Dumbbell Press",
+    perdants: ["Développé incliné", "Incline Bench Press"],
+    muscle_group_final: "Pectoraux",
+    type_final: "compound",
+  },
+  {
+    cluster: "chest_fly",
+    survivant_name_fr: "Écarté couché",
+    survivant_name_en: "Dumbbell Fly",
+    perdants: ["Écarté couché haltères", "Dumbbell Flyes"],
+    muscle_group_final: "Pectoraux",
+    type_final: "isolation",
+  },
+
+  // --- Épaules ---
+  {
+    cluster: "overhead_press_barre",
+    survivant_name_fr: "Développé militaire",
+    survivant_name_en: "Overhead Press",
+    perdants: ["Développé militaire barre", "Barbell Overhead Press"],
+    muscle_group_final: "Épaules",
+    type_final: "compound",
+  },
+  {
+    cluster: "face_pull",
+    survivant_name_fr: "Face Pull",
+    survivant_name_en: "Face Pull",
+    perdants: ["Face pull câble", "Cable Face Pull"],
+    muscle_group_final: "Épaules",
+    type_final: "isolation",
+  },
+  {
+    cluster: "reverse_fly",
+    survivant_name_fr: "Oiseau",
+    survivant_name_en: "Reverse Fly",
+    perdants: ["Oiseau haltères", "Dumbbell Reverse Flyes"],
+    muscle_group_final: "Épaules",
+    type_final: "isolation",
+  },
+  {
+    cluster: "banded_pull_apart",
+    survivant_name_fr: "Banded Pull Apart",
+    survivant_name_en: "Band Pull Apart",
+    perdants: ["Band pull-apart", "Band Pull Apart"],
+    muscle_group_final: "Épaules",
+    type_final: "isolation",
+  },
+
+  // --- Cross-group ---
+  {
+    cluster: "calf_raise",  // ⚠️ À VALIDER arbitrage #7
+    survivant_name_fr: "Mollets debout machine",
+    survivant_name_en: "Calf Raise (Machine)",
+    perdants: ["Mollets debout"],
+    muscle_group_final: "Mollets",
+    type_final: "isolation",
+    flag: "ARBITRAGE_7_A_VALIDER",
+  },
+  {
+    cluster: "treadmill",  // ⚠️ À VALIDER arbitrage #8 — survivant = le plus référencé des deux
+    survivant_name_fr: null,  // à résoudre dynamiquement (le plus de refs)
+    survivant_name_en: "Treadmill Running",
+    perdants: ["Course sur tapis"],  // l'autre
+    muscle_group_final: "Cardio",
+    type_final: "cardio",
+    flag: "ARBITRAGE_8_A_VALIDER",
+    dynamic_survivant: true,  // choisir dynamiquement le plus référencé
+  },
+
+  // --- Full Body ---
+  {
+    cluster: "worlds_greatest_stretch",
+    survivant_name_fr: "World's Greatest Stretch",
+    survivant_name_en: "World's Greatest Stretch",
+    perdants: ["World greatest stretch"],
+    muscle_group_final: "Full Body",
+    type_final: "warmup",
+  },
+];
+```
+
+---
+
+## Corrections de type sur exos distincts (Phase 3)
+
+Après les fusions, appliquer ces corrections sur des exos distincts conservés :
+
+```sql
+-- Hip thrust machine : isolation → compound
+UPDATE exercises
+SET type = 'compound'
+WHERE is_default = true AND created_by IS NULL
+  AND (lower(name) LIKE '%hip thrust%machine%' OR lower(name_en) LIKE '%hip thrust%machine%')
+  AND type = 'isolation';
+
+-- Face pull élastique : compound → isolation
+UPDATE exercises
+SET type = 'isolation'
+WHERE is_default = true AND created_by IS NULL
+  AND (lower(name) LIKE '%face pull%élastique%' OR lower(name_en) LIKE '%face pull%elastic%' OR lower(name_en) LIKE '%face pull%band%')
+  AND type = 'compound';
+```
+
+---
+
+## Comportement dry_run=true
+
+**Étape 1 — Vérification FK :** exécuter la requête de détection des FK sur `exercises` (voir section "Périmètre FK") et inclure le résultat.
+
+**Étape 2 — Résolution des id :** pour chaque fusion du Groupe B, résoudre les id par SELECT et construire la liste `{ cluster, survivant_id, survivant_name, perdants: [{id, name, total_refs}] }`.
+
+Pour les clusters marqués `dynamic_survivant: true` (treadmill), choisir comme survivant l'entrée avec le plus de refs total.
+
+**Étape 3 — Rapport :** retourner :
+
+```json
+{
+  "mode": "DRY_RUN — aucune écriture",
+  "fk_autres_tables": [...],  // résultat de la vérification FK
+  "fusions": [
+    {
+      "cluster": "crunch",
+      "survivant": { "id": "...", "name": "Crunch", "total_refs": 42 },
+      "perdants": [
+        { "id": "...", "name": "Crunch classique", "total_refs": 0,
+          "fk_a_repointer": { "session_exercises": 0, "exercise_favorites": 0, "skipped_exercises": 0, "exercise_video_requests": 0 }
+        }
+      ],
+      "type_final": "isolation",
+      "muscle_group_final": "Abdominaux",
+      "statut": "CONFIRMÉ"
+    },
+    {
+      "cluster": "squat_triplon",
+      "flag": "ARBITRAGE_4_A_VALIDER",
+      "survivant": { ... },
+      "perdants": [...],
+      "statut": "⚠️ À VALIDER — inclus par défaut, retirer du body si non souhaité"
+    }
+    // ... tous les clusters
+  ],
+  "total_exercices_a_supprimer": N,
+  "total_refs_a_repointer": N,
+  "next_step": "Relancer avec { dry_run: false, confirm: 'APPLIQUER_FUSIONS' } pour appliquer."
+}
+```
+
+Les clusters marqués `flag` sont inclus dans le dry-run avec un warning — ils sont appliqués par défaut sauf si l'appelant les exclut via un paramètre `skip_clusters: string[]`.
+
+---
+
+## Comportement dry_run=false
+
+Guard :
+```ts
+if (!body.dry_run && body.confirm !== "APPLIQUER_FUSIONS") {
+  return new Response(JSON.stringify({ error: "confirm manquant ou invalide" }), { status: 400 });
+}
+```
+
+Pour chaque fusion (dans l'ordre : Groupe A d'abord, Groupe B ensuite) :
+
+```ts
+// Pour chaque perdant d'une fusion :
+// 1. Repointer session_exercises
+await admin.rpc('exec_sql', `
+  UPDATE session_exercises SET exercise_id = '${survivant_id}'
+  WHERE exercise_id = '${perdant_id}'
+`);
+
+// 2. Repointer exercise_favorites (ON CONFLICT DO NOTHING)
+await admin.rpc('exec_sql', `
+  UPDATE exercise_favorites SET exercise_id = '${survivant_id}'
+  WHERE exercise_id = '${perdant_id}'
+  ON CONFLICT (user_id, exercise_id) DO NOTHING
+`);
+// Purger les orphelins restants
+await admin.rpc('exec_sql', `DELETE FROM exercise_favorites WHERE exercise_id = '${perdant_id}'`);
+
+// 3. Repointer skipped_exercises (ON CONFLICT DO NOTHING)
+await admin.rpc('exec_sql', `
+  UPDATE skipped_exercises SET exercise_id = '${survivant_id}'
+  WHERE exercise_id = '${perdant_id}'
+  ON CONFLICT (user_id, exercise_id) DO NOTHING
+`);
+await admin.rpc('exec_sql', `DELETE FROM skipped_exercises WHERE exercise_id = '${perdant_id}'`);
+
+// 4. Repointer exercise_video_requests
+await admin.rpc('exec_sql', `
+  UPDATE exercise_video_requests SET exercise_id = '${survivant_id}'
+  WHERE exercise_id = '${perdant_id}'
+`);
+
+// 5. Appliquer type_final et muscle_group_final sur le survivant si différent
+await admin.rpc('exec_sql', `
+  UPDATE exercises
+  SET type = '${type_final}', muscle_group = '${muscle_group_final}'
+  WHERE id = '${survivant_id}'
+`);
+
+// 6. Renommer si cluster leg_curl_generique
+// (renommer survivant avant la fusion)
+
+// 7. DELETE le perdant
+await admin.rpc('exec_sql', `DELETE FROM exercises WHERE id = '${perdant_id}'`);
+```
+
+**Idempotence :** avant chaque DELETE, vérifier que l'id existe encore (`SELECT id FROM exercises WHERE id = perdant_id`) — si absent (déjà supprimé lors d'un run précédent), passer au suivant sans erreur.
+
+---
+
+## Sanity checks post-fusions (inclure dans la réponse)
+
+```sql
+-- 1. Aucun doublon exact résiduel
+SELECT lower(trim(coalesce(name_en, name))) as key, COUNT(*) as nb
+FROM exercises
+WHERE is_default = true AND created_by IS NULL
+GROUP BY key HAVING COUNT(*) > 1;
+-- → doit retourner 0 lignes
+
+-- 2. Aucune FK orpheline
+SELECT COUNT(*) FROM session_exercises WHERE exercise_id NOT IN (SELECT id FROM exercises);
+SELECT COUNT(*) FROM exercise_favorites WHERE exercise_id NOT IN (SELECT id FROM exercises);
+SELECT COUNT(*) FROM skipped_exercises WHERE exercise_id NOT IN (SELECT id FROM exercises);
+SELECT COUNT(*) FROM exercise_video_requests WHERE exercise_id NOT IN (SELECT id FROM exercises);
+-- → tous doivent retourner 0
+
+-- 3. Comptage final
+SELECT COUNT(*) as total_default_exercises
+FROM exercises WHERE is_default = true AND created_by IS NULL;
+-- → attendu ≈ 177 (200 − ~23 supprimés)
+
+-- 4. Aucune valeur EN résiduelle
+SELECT muscle_group, COUNT(*) FROM exercises
+WHERE is_default = true AND created_by IS NULL
+  AND muscle_group IN ('glutes','legs','abs','chest','shoulders','arms','back')
+GROUP BY muscle_group;
+-- → doit retourner 0 lignes (P1 doit avoir été appliqué)
+```
+
+Retourner le résultat de chaque check dans `"sanity_checks"` de la réponse.
+
+---
+
+## Ne pas créer de UI
+
+Invoquée uniquement via `supabase.functions.invoke("fuse-duplicate-exercises", { body: {...} })`.
+Aucune page/bouton frontend.

@@ -1,0 +1,148 @@
+## Fix — Spinner infini + "Sauvegarde échouée" en boucle dans LiveSession
+
+### Symptôme
+L'app reste bloquée sur "Reprise de séance… / Chargement de ta progression" avec un toast
+"Sauvegarde échouée, nouvelle tentative…" qui se répète.
+
+### Causes (3 bugs liés)
+
+**Bug 1** : `fetchFree` (la fonction async dans le useEffect qui charge les séances libres)
+n'a pas de try/catch. Si le réseau tombe ou Supabase renvoie une erreur, le bloc
+`catch` n'existe pas → `setFreeSessionLoading(false)` n'est jamais appelé → spinner infini.
+
+**Bug 2** : La condition de garde à la ligne ~975 est :
+```typescript
+if (programLoading || freeSessionLoading || !selectedSession) {
+  return <spinner "Reprise de séance…" />
+}
+```
+Le `|| !selectedSession` fait que quand le loading est terminé (les deux flags = false)
+mais que la séance est introuvable (réseau KO, séance supprimée), le spinner s'affiche
+indéfiniment. L'écran "Séance introuvable" positionné juste en dessous à la ligne ~997
+est **inaccessible** — la condition précédente le court-circuite toujours.
+
+**Bug 3** : L'auto-save se déclenche si `completedSessionId` est non-null (restauré
+depuis le backup localStorage) même quand `sessionExerciseIdMap` est vide (séance non
+chargée). `saveSetsForExercise` retourne false pour chaque exercice → toast
+"Sauvegarde échouée" → retry → nouveau toast → boucle.
+
+---
+
+### Fichier à modifier : `src/pages/student/LiveSession.tsx`
+
+#### Fix 1 — Entourer `fetchFree` d'un try/catch
+
+Localise le useEffect qui appelle `fetchFree` (vers la ligne 239). Remplace :
+
+```typescript
+const fetchFree = async () => {
+  const { data } = await supabase
+    .from("sessions")
+    .select(`...`)
+    .eq("id", selectedSessionId)
+    .maybeSingle();
+  if (data) {
+    // ... traitement data ...
+    setFreeSession({ ...data, sections });
+  }
+  setFreeSessionLoading(false);
+};
+fetchFree();
+```
+
+Par :
+
+```typescript
+const fetchFree = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("sessions")
+      .select(`...`)
+      .eq("id", selectedSessionId)
+      .maybeSingle();
+    if (error) throw error;
+    if (data) {
+      // ... traitement data identique ...
+      setFreeSession({ ...data, sections });
+    }
+  } catch (err) {
+    console.error("[LiveSession] fetchFree error:", err);
+  } finally {
+    setFreeSessionLoading(false);  // TOUJOURS appelé, même en cas d'erreur
+  }
+};
+fetchFree();
+```
+
+#### Fix 2 — Corriger la condition de garde du spinner
+
+Localise (vers la ligne 975) :
+
+```typescript
+if (programLoading || freeSessionLoading || !selectedSession) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="text-center space-y-1">
+        <p className="font-semibold text-sm">Reprise de séance…</p>
+        <p className="text-xs text-muted-foreground">Chargement de ta progression</p>
+      </div>
+    </div>
+  );
+}
+```
+
+Retire `|| !selectedSession` de cette condition :
+
+```typescript
+if (programLoading || freeSessionLoading) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="text-center space-y-1">
+        <p className="font-semibold text-sm">Reprise de séance…</p>
+        <p className="text-xs text-muted-foreground">Chargement de ta progression</p>
+      </div>
+    </div>
+  );
+}
+```
+
+Ainsi, une fois le chargement terminé et la séance introuvable, le flux tombe sur
+l'écran "Séance introuvable" existant (qui est déjà correctement écrit plus bas).
+
+#### Fix 3 — Protéger l'auto-save contre un sessionExerciseIdMap vide
+
+Localise le useEffect d'auto-save (vers la ligne 660) :
+
+```typescript
+useEffect(() => {
+  if (!completedSessionId || Object.keys(completedSets).length === 0) return;
+  // ...
+}, [completedSets, completedSessionId]);
+```
+
+Ajoute une garde supplémentaire sur `sessionExerciseIdMap` :
+
+```typescript
+useEffect(() => {
+  if (!completedSessionId || Object.keys(completedSets).length === 0) return;
+  if (Object.keys(sessionExerciseIdMap).length === 0) return; // séance pas encore chargée
+  // ... reste inchangé ...
+}, [completedSets, completedSessionId, sessionExerciseIdMap]);
+```
+
+---
+
+### Résultat attendu
+
+| Scénario | Avant | Après |
+|----------|-------|-------|
+| Réseau KO pendant le chargement | Spinner infini | Loading se termine → écran "Séance introuvable" |
+| Séance supprimée / introuvable | Spinner infini | Écran "Séance introuvable" avec bouton Retour |
+| backup localStorage + séance non chargée | Toast "Sauvegarde échouée" en boucle | Toast ne se déclenche pas tant que la séance n'est pas chargée |
+
+### Contraintes
+- Ne pas modifier la logique de chargement de `programSession` (useStudentProgram)
+- Ne pas toucher à l'écran "Séance introuvable" existant — il est correct, juste inaccessible
+- Ne pas changer le comportement normal (séance chargée avec succès) — aucun impact visible

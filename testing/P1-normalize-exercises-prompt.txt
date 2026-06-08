@@ -1,0 +1,190 @@
+====================================================================
+PROMPT P1 — NORMALISATION DU CATALOGUE D'EXERCICES (6way)
+À coller dans Lovable — exécuter AVANT P2
+====================================================================
+
+Crée une nouvelle Supabase edge function `normalize-exercises-catalog` (TypeScript/Deno).
+
+Cette fonction est une opération d'administration one-shot pour normaliser les valeurs catégorielles de la table `public.exercises`. Elle ne touche que les exercices par défaut (`is_default = true AND created_by IS NULL`), jamais les exos custom des coachs.
+
+---
+
+## Structure de la fonction
+
+Pattern identique à `create-test-accounts/index.ts` existant :
+- Import `serve` depuis deno std
+- Import `createClient` depuis esm.sh supabase-js
+- corsHeaders simples (`"Access-Control-Allow-Origin": "*"`)
+- Client admin avec `SUPABASE_SERVICE_ROLE_KEY` (jamais le JWT user)
+
+---
+
+## Interface d'appel (JSON body)
+
+```ts
+{
+  dry_run: boolean;   // défaut true — si true, aucune écriture
+  confirm?: string;   // doit valoir exactement "APPLIQUER_NORMALISATION" pour autoriser dry_run=false
+}
+```
+
+---
+
+## Périmètre strict
+
+Toutes les UPDATE portent la clause :
+```sql
+WHERE is_default = true AND created_by IS NULL
+```
+
+---
+
+## Mappings à appliquer (3 champs)
+
+### A. muscle_group
+
+Normaliser ces valeurs anglaises vers le FR canonique :
+
+| de (valeur source) | vers (valeur cible) |
+|--------------------|---------------------|
+| glutes             | Fessiers            |
+| legs               | Jambes              |
+| abs                | Abdominaux          |
+| chest              | Pectoraux           |
+| shoulders          | Épaules             |
+| arms               | Bras                |
+| back               | Dos                 |
+
+NE PAS toucher : Jambes, Abdominaux, Dos, Cardio, Fessiers, Épaules, Full Body, Pectoraux,
+Triceps, Biceps, Mollets, Trapèzes, Bras — déjà normalisés.
+
+### B. equipment
+
+| de (valeur source) | vers (valeur cible) | note         |
+|--------------------|---------------------|--------------|
+| bodyweight         | Poids de corps      |              |
+| Aucun              | Poids de corps      | ⚠️ validé   |
+| dumbbells          | Haltères            |              |
+| barbell            | Barre               |              |
+| cable              | Câbles              |              |
+| machine            | Machine             |              |
+| resistance_band    | Élastique           |              |
+| fitness_ball       | Ballon de gym       |              |
+| Médecine Ball      | Médecine ball       | casse seule  |
+
+NE PAS toucher : Barre, Haltères, Câbles, Machine, Élastique, Kettlebell, Médecine ball,
+Ballon de gym, Poids de corps — déjà normalisés.
+
+### C. public_cible
+
+| de              | vers   |
+|-----------------|--------|
+| all             | mixte  |
+| women_focused   | femme  |
+
+NE PAS toucher : mixte, femme — déjà normalisés.
+
+---
+
+## Comportement dry_run=true (défaut)
+
+Construire le rapport SANS exécuter aucun UPDATE.
+
+Pour chaque mapping de chaque champ, compter via SELECT les lignes affectées :
+```sql
+SELECT <champ>, COUNT(*) as nb
+FROM exercises
+WHERE is_default = true AND created_by IS NULL
+  AND <champ> IN (<valeurs_source>)
+GROUP BY <champ>
+```
+
+Retourner :
+```json
+{
+  "mode": "DRY_RUN — aucune écriture",
+  "muscle_group": [
+    { "from": "glutes", "to": "Fessiers", "rows": 12 },
+    ...
+  ],
+  "equipment": [
+    { "from": "bodyweight", "to": "Poids de corps", "rows": 36 },
+    { "from": "Aucun", "to": "Poids de corps", "rows": 26, "flag": "⚠️ Aucun→Poids de corps (validé)" },
+    ...
+  ],
+  "public_cible": [
+    { "from": "all", "to": "mixte", "rows": N },
+    { "from": "women_focused", "to": "femme", "rows": N }
+  ],
+  "total_rows_to_update": N,
+  "valeurs_inconnues": {
+    "muscle_group": ["valeur_non_mappée_1", ...],
+    "equipment": [...],
+    "public_cible": [...]
+  },
+  "next_step": "Relancer avec { dry_run: false, confirm: 'APPLIQUER_NORMALISATION' } pour appliquer."
+}
+```
+
+Le champ `valeurs_inconnues` liste les valeurs présentes dans le périmètre mais absentes des mappings — pour traitement manuel ultérieur.
+
+---
+
+## Comportement dry_run=false
+
+**Guard obligatoire :**
+```ts
+if (!body.dry_run && body.confirm !== "APPLIQUER_NORMALISATION") {
+  return new Response(JSON.stringify({ error: "confirm manquant ou invalide" }), { status: 400 });
+}
+```
+
+Exécuter UN UPDATE idempotent par valeur source, dans une transaction si possible (ou séquentiellement avec gestion d'erreur) :
+
+```sql
+-- Exemple muscle_group
+UPDATE exercises
+SET muscle_group = 'Fessiers'
+WHERE is_default = true AND created_by IS NULL AND muscle_group = 'glutes';
+
+UPDATE exercises
+SET muscle_group = 'Jambes'
+WHERE is_default = true AND created_by IS NULL AND muscle_group = 'legs';
+
+-- ... (idem pour chaque valeur source de chaque champ)
+```
+
+**Idempotence garantie :** `WHERE champ = 'valeur_source'` — si la valeur a déjà été normalisée, le UPDATE touche 0 lignes sans erreur.
+
+Retourner le même format JSON que dry_run=true avec les comptages réels touchés, plus :
+```json
+{ "applied": true, "timestamp": "ISO8601" }
+```
+
+---
+
+## Sanity check post-apply (inclure dans la réponse dry_run=false)
+
+Après les UPDATE, vérifier et inclure dans la réponse :
+```sql
+-- Aucune valeur EN résiduelle
+SELECT muscle_group, COUNT(*) FROM exercises
+WHERE is_default = true AND created_by IS NULL
+  AND muscle_group IN ('glutes','legs','abs','chest','shoulders','arms','back')
+GROUP BY muscle_group;
+-- → doit retourner 0 lignes
+
+-- public_cible propre
+SELECT public_cible, COUNT(*) FROM exercises
+WHERE is_default = true AND created_by IS NULL
+GROUP BY public_cible;
+-- → doit retourner uniquement {mixte, femme, null}
+```
+
+Si des valeurs EN résiduelles subsistent, les signaler dans `"anomalies"` sans lever d'erreur (pour investigation).
+
+---
+
+## Ne pas créer de UI
+
+Cette fonction est invoquée uniquement via `supabase.functions.invoke("normalize-exercises-catalog", { body: {...} })` depuis la console ou un script admin. Aucun bouton/page frontend n'est nécessaire.

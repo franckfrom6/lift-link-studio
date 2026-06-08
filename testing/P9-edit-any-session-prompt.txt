@@ -1,0 +1,171 @@
+## Autoriser l'édition de N'IMPORTE QUELLE séance (programme + libre) avant démarrage
+
+### Contexte
+Les prompts P7 et P8 ont ajouté un mode édition dans `SessionPreview.tsx`, mais
+UNIQUEMENT pour les séances libres (`is_free_session === true`). On veut maintenant
+pouvoir éditer aussi les séances de PROGRAMME (créées par le coach).
+
+Modèle de données vérifié :
+- Chaque athlète possède sa PROPRE copie du programme (programs.student_id unique).
+  → Éditer une séance n'affecte AUCUN autre athlète.
+- MAIS la RLS actuelle ne permet à l'athlète de modifier `session_exercises` que pour ses
+  séances libres. Sur les séances de programme il est en lecture seule.
+
+Il faut donc 3 changements : (1) une migration RLS, (2) relâcher le gate dans la preview,
+(3) ajouter "Modifier" au menu 3 points pour les séances de programme.
+
+Garde-fou important : l'édition reste INTERDITE sur une séance déjà terminée (présence
+d'une ligne `completed_sessions` pour cette séance), pour ne pas corrompre l'historique.
+
+---
+
+### Partie 1 : Migration RLS (Supabase)
+
+Crée une nouvelle migration qui autorise l'athlète à gérer (INSERT/UPDATE/DELETE) les
+`session_exercises` de SES séances de programme NON terminées :
+
+```sql
+-- Autorise l'athlète à modifier les exercices de ses propres séances de programme,
+-- tant que la séance n'a pas été complétée (pas de ligne completed_sessions).
+CREATE POLICY "athlete_can_manage_own_program_session_exercises"
+  ON public.session_exercises
+  FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM sessions s
+      JOIN program_weeks pw ON pw.id = s.week_id
+      JOIN programs p ON p.id = pw.program_id
+      WHERE s.id = session_exercises.session_id
+        AND p.student_id = auth.uid()
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM completed_sessions cs
+      WHERE cs.session_id = session_exercises.session_id
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM sessions s
+      JOIN program_weeks pw ON pw.id = s.week_id
+      JOIN programs p ON p.id = pw.program_id
+      WHERE s.id = session_exercises.session_id
+        AND p.student_id = auth.uid()
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM completed_sessions cs
+      WHERE cs.session_id = session_exercises.session_id
+    )
+  );
+```
+
+Note : les policies existantes (lecture athlète, gestion coach, gestion séances libres)
+restent inchangées — les policies permissives se cumulent en OR.
+
+---
+
+### Partie 2 : `src/pages/student/SessionPreview.tsx`
+
+Le mode édition (prompt P7) est aujourd'hui conditionné à `isFreeSession`. On le relâche
+pour autoriser toute séance NON terminée.
+
+#### a) Déterminer si la séance est terminée
+
+Ajoute une requête pour savoir si la séance a déjà été complétée :
+
+```typescript
+const [isCompleted, setIsCompleted] = useState(false);
+
+useEffect(() => {
+  if (!session?.id) return;
+  (async () => {
+    const { count } = await supabase
+      .from("completed_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("session_id", session.id)
+      .not("completed_at", "is", null);
+    setIsCompleted((count || 0) > 0);
+  })();
+}, [session?.id]);
+```
+
+#### b) Remplacer le gate `isFreeSession` par `canEdit`
+
+Définis :
+
+```typescript
+const canEdit = !!session && !isCompleted;
+```
+
+Puis remplace TOUS les usages de `isFreeSession` qui gardaient le mode édition par
+`canEdit` :
+- L'affichage du bouton crayon dans le header (afficher pour toute séance éditable)
+- La condition `editMode && isFreeSession` dans le rendu des blocs → `editMode && canEdit`
+- La condition du bouton "Ajouter un exercice" → `editMode && canEdit`
+- L'init via `?edit=1` (prompt P8) : `if (session && wantsEdit && canEdit) setEditMode(true);`
+
+Le reste de la logique d'édition (sheet paramètres, suppression, ajout, persistance)
+reste identique — elle écrit déjà dans `session_exercises` et fonctionnera grâce à la
+nouvelle RLS.
+
+#### c) Bouton "Plus d'options" pour les séances déjà terminées
+
+Si `!canEdit` (séance terminée), garde l'ancien bouton `MoreHorizontal` non éditable.
+
+---
+
+### Partie 3 : `src/pages/student/StudentWeek.tsx` — menu 3 points
+
+Ajoute une entrée "Modifier" pour les séances de PROGRAMME non terminées (en plus de
+l'entrée déjà ajoutée pour les séances libres par le prompt P8).
+
+Localise le bloc des séances de programme dans `actionMenu` (vers la ligne ~1069) :
+
+```tsx
+{isSessionDay && sessionInfo && !sessionCompleted && (
+  <DropdownMenuItem
+    className="text-destructive focus:text-destructive"
+    onClick={() => { setDeleteTarget({ id: sessionInfo.sessionId, name: sessionInfo.name, isFreeSession: false }); setDeleteDialogOpen(true); }}
+  >
+    <Trash2 className="w-4 h-4 mr-2" />{t('session:delete_session')}
+  </DropdownMenuItem>
+)}
+```
+
+JUSTE AVANT cet item de suppression, ajoute l'item "Modifier" (pour les séances de type
+musculation — pas running ni hybrid) :
+
+```tsx
+{isSessionDay && sessionInfo && !sessionCompleted
+  && sessionInfo.session_type !== "running"
+  && sessionInfo.session_type !== "hybrid" && (
+  <DropdownMenuItem
+    onClick={() => navigate(`/student/session/${sessionInfo.sessionId}/preview?edit=1`)}
+  >
+    <Pencil className="w-4 h-4 mr-2" />{t('session:edit_session', { defaultValue: 'Modifier la séance' })}
+  </DropdownMenuItem>
+)}
+```
+
+(Si `Pencil` n'est pas déjà importé depuis lucide-react, l'ajouter.)
+
+---
+
+### Comportement attendu
+- Menu 3 points sur une séance de programme (musculation) NON terminée → entrée
+  "Modifier la séance"
+- Menu 3 points sur une séance libre NON terminée → entrée "Modifier" (déjà via P8)
+- Clic → preview en mode édition, modifications persistées en base (RLS l'autorise
+  désormais sur les séances de programme de l'athlète)
+- Séance running / hybrid : pas d'entrée "Modifier" (écrans dédiés)
+- Séance déjà terminée : pas d'édition possible (RLS bloque + UI masque le crayon)
+- Les modifications n'impactent QUE la copie de l'athlète, jamais celle d'un autre athlète
+  ni le template du coach
+
+### Contraintes
+- Ne pas supprimer ni modifier les policies RLS existantes — uniquement AJOUTER la nouvelle
+- Ne pas autoriser l'édition d'une séance terminée (garde-fou RLS + UI)
+- Ne pas modifier la logique de duplication / déplacement / suppression du calendrier
+- L'édition reste réservée à l'athlète propriétaire (programs.student_id = auth.uid())
