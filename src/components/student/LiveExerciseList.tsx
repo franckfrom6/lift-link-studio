@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import ExerciseEditSheet from "./ExerciseEditSheet";
+import BiSetToggle from "@/components/coach/BiSetToggle";
+import { toggleBiSet, isLinkedToNext } from "@/lib/superset-utils";
 
 interface LiveExerciseListProps {
   exercises: LiveExercise[];
