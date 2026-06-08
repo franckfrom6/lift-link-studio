@@ -1398,8 +1398,11 @@ const LiveSession = () => {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Reprendre la séance</AlertDialogCancel>
-                <AlertDialogAction onClick={() => finishSession()}>
-                  Terminer
+                <AlertDialogAction
+                  onClick={() => { if (!isSaving) finishSession(); }}
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Sauvegarde…" : "Terminer"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
