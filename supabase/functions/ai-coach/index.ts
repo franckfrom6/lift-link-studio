@@ -5,6 +5,7 @@ const allowedOrigins = [
   "https://lift-link-studio.lovable.app",
   "https://fit.from6agency.com",
   "https://id-preview--0363201d-a29c-474b-ab98-106ca7fb6ee7.lovable.app",
+  "https://0363201d-a29c-474b-ab98-106ca7fb6ee7.lovableproject.com",
   "http://localhost:5173",
 ];
 
