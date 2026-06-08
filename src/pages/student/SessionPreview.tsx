@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, Loader2, X } from "lucide-react";
+import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, Loader2, X, Pencil, Trash2, Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Meta, SectionLabel, VideoThumb, StatBadge, ExerciseNumber } from "@/components/student/SageAtoms";
 import { ExerciseVideoEmbed } from "@/components/student/ExerciseVideoEmbed";
+import ExercisePicker from "@/components/coach/ExercisePicker";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 /**
  * SessionPreview — Sage variant
@@ -65,7 +70,21 @@ const sumVolume = (sections: any[]): number => {
 };
 
 // ────────── building blocks ──────────
-const ExerciseCard = ({ ex, idx, onPreviewVideo }: { ex: any; idx: number; onPreviewVideo: (ex: any) => void }) => {
+const ExerciseCard = ({
+  ex,
+  idx,
+  onPreviewVideo,
+  editMode = false,
+  onEdit,
+  onDelete,
+}: {
+  ex: any;
+  idx: number;
+  onPreviewVideo: (ex: any) => void;
+  editMode?: boolean;
+  onEdit?: (ex: any) => void;
+  onDelete?: (id: string) => void;
+}) => {
   const exData = ex.exercise || {};
   const hasVideo = !!(ex.video_url || exData.video_url_male || exData.video_url_female);
   const time = isTimeTracking(ex);
@@ -73,12 +92,31 @@ const ExerciseCard = ({ ex, idx, onPreviewVideo }: { ex: any; idx: number; onPre
   const w = Number(ex.suggested_weight) || 0;
 
   return (
-    <div className="bg-card border border-border rounded-md p-3.5 flex flex-col gap-2.5">
+    <div
+      className={cn(
+        "relative bg-card border border-border rounded-md p-3.5 flex flex-col gap-2.5",
+        editMode && "cursor-pointer hover:border-foreground/40 transition-colors",
+      )}
+      onClick={editMode ? () => onEdit?.(ex) : undefined}
+    >
+      {editMode && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.(ex.id);
+          }}
+          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive hover:text-destructive-foreground transition-colors z-10"
+          aria-label="Supprimer l'exercice"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
       <div className="flex items-start gap-2.5">
         <ExerciseNumber idx={idx} />
-        <VideoThumb hasVideo={hasVideo} onClick={() => onPreviewVideo(ex)} />
+        {!editMode && <VideoThumb hasVideo={hasVideo} onClick={() => onPreviewVideo(ex)} />}
         <div className="flex-1 min-w-0">
-          {exData.id ? (
+          {exData.id && !editMode ? (
             <Link
               to={`/student/exercise/${exData.id}`}
               onClick={(e) => e.stopPropagation()}
@@ -110,6 +148,11 @@ const ExerciseCard = ({ ex, idx, onPreviewVideo }: { ex: any; idx: number; onPre
             <Timer className="w-2.5 h-2.5" />
             {ex.rest_seconds}s
           </StatBadge>
+        )}
+        {editMode && (
+          <span className="text-[10px] uppercase tracking-[0.1em] font-semibold text-primary ml-auto self-center">
+            Tap pour modifier →
+          </span>
         )}
       </div>
     </div>
@@ -157,16 +200,139 @@ const WarmupCard = ({ section }: { section: any }) => (
   </div>
 );
 
-const BlockSection = ({ section, startIdx, onPreviewVideo }: { section: any; startIdx: number; onPreviewVideo: (ex: any) => void }) => (
+const BlockSection = ({
+  section,
+  startIdx,
+  onPreviewVideo,
+  editMode,
+  onEdit,
+  onDelete,
+}: {
+  section: any;
+  startIdx: number;
+  onPreviewVideo: (ex: any) => void;
+  editMode?: boolean;
+  onEdit?: (ex: any) => void;
+  onDelete?: (id: string) => void;
+}) => (
   <div className="mb-5">
     <SectionLabel label={section.name} right={`${section.exercises.length} exos`} />
     <div className="px-4 flex flex-col gap-2">
       {section.exercises.map((ex: any, i: number) => (
-        <ExerciseCard key={ex.id} ex={ex} idx={startIdx + i + 1} onPreviewVideo={onPreviewVideo} />
+        <ExerciseCard
+          key={ex.id}
+          ex={ex}
+          idx={startIdx + i + 1}
+          onPreviewVideo={onPreviewVideo}
+          editMode={editMode}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       ))}
     </div>
   </div>
 );
+
+// ────────── exercise params form ──────────
+const ExerciseParamsForm = ({
+  ex,
+  onSave,
+  onCancel,
+}: {
+  ex: any;
+  onSave: (updated: any) => void;
+  onCancel: () => void;
+}) => {
+  const [sets, setSets] = useState(String(ex.sets ?? 3));
+  const [repsMin, setRepsMin] = useState(String(ex.reps_min ?? 8));
+  const [repsMax, setRepsMax] = useState(String(ex.reps_max ?? 12));
+  const [rest, setRest] = useState(String(ex.rest_seconds ?? 60));
+  const [weightEnabled, setWeightEnabled] = useState(!!ex.suggested_weight);
+  const [weight, setWeight] = useState(String(ex.suggested_weight || ""));
+
+  return (
+    <div className="flex flex-col gap-4 mt-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Séries</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={sets}
+            onChange={(e) => setSets(e.target.value)}
+            className="h-11 text-center text-base font-semibold"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Repos (sec)</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={rest}
+            onChange={(e) => setRest(e.target.value)}
+            className="h-11 text-center text-base font-semibold"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Reps min</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={repsMin}
+            onChange={(e) => setRepsMin(e.target.value)}
+            className="h-11 text-center text-base font-semibold"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Reps max</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={repsMax}
+            onChange={(e) => setRepsMax(e.target.value)}
+            className="h-11 text-center text-base font-semibold"
+          />
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground">Charge (kg)</Label>
+        <Switch checked={weightEnabled} onCheckedChange={setWeightEnabled} />
+      </div>
+      {weightEnabled && (
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
+          placeholder="Ex : 80"
+          className="h-11 text-center text-base font-semibold"
+        />
+      )}
+      <div className="flex gap-2 mt-2">
+        <Button variant="outline" className="flex-1" onClick={onCancel}>
+          Annuler
+        </Button>
+        <Button
+          className="flex-1"
+          onClick={() =>
+            onSave({
+              ...ex,
+              sets: parseInt(sets) || 3,
+              reps_min: parseInt(repsMin) || 8,
+              reps_max: parseInt(repsMax) || 12,
+              rest_seconds: parseInt(rest) || 60,
+              suggested_weight: weightEnabled ? parseFloat(weight) || null : null,
+            })
+          }
+        >
+          Sauvegarder
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 // ────────── page ──────────
 const SessionPreview = () => {
@@ -176,6 +342,10 @@ const SessionPreview = () => {
   const [freeSession, setFreeSession] = useState<any>(null);
   const [freeLoading, setFreeLoading] = useState(false);
   const [videoEx, setVideoEx] = useState<any | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editingEx, setEditingEx] = useState<any | null>(null);
+  const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
+  const [localSections, setLocalSections] = useState<any[]>([]);
 
   // Resolve session: program-bound first, then fallback to free/standalone
   const programSession = useMemo(() => {
@@ -234,11 +404,17 @@ const SessionPreview = () => {
   const session = programSession || freeSession;
   const loading = programLoading || freeLoading;
 
+  useEffect(() => {
+    if (session) setLocalSections(session.sections || []);
+  }, [session]);
+
+  const isFreeSession = !!session?.is_free_session;
+
   const { warmupSection, blockSections, totalExercises, durationMin, volumeT, weekInfo } = useMemo(() => {
     if (!session) {
       return { warmupSection: null as any, blockSections: [] as any[], totalExercises: 0, durationMin: 0, volumeT: 0, weekInfo: null as any };
     }
-    const allSections = session.sections || [];
+    const allSections = localSections.length > 0 ? localSections : (session.sections || []);
     const warmup = allSections.find(isWarmupSection) || null;
     const blocks = allSections.filter((s: any) => !isWarmupSection(s));
     const total = blocks.reduce((sum: number, s: any) => sum + (s.exercises?.length || 0), 0);
@@ -259,7 +435,80 @@ const SessionPreview = () => {
       volumeT: vol,
       weekInfo: wInfo,
     };
-  }, [session, program?.weeks]);
+  }, [session, localSections, program?.weeks]);
+
+  const handleDeleteExercise = useCallback(async (exerciseRowId: string) => {
+    setLocalSections((prev) =>
+      prev.map((sec) => ({
+        ...sec,
+        exercises: sec.exercises.filter((e: any) => e.id !== exerciseRowId),
+      })),
+    );
+    await supabase.from("session_exercises").delete().eq("id", exerciseRowId);
+  }, []);
+
+  const handleSaveExercise = useCallback(async (updated: any) => {
+    setLocalSections((prev) =>
+      prev.map((sec) => ({
+        ...sec,
+        exercises: sec.exercises.map((e: any) => (e.id === updated.id ? updated : e)),
+      })),
+    );
+    await supabase
+      .from("session_exercises")
+      .update({
+        sets: updated.sets,
+        reps_min: updated.reps_min,
+        reps_max: updated.reps_max,
+        rest_seconds: updated.rest_seconds,
+        suggested_weight: updated.suggested_weight,
+      })
+      .eq("id", updated.id);
+    setEditingEx(null);
+  }, []);
+
+  const handleAddExercise = useCallback(
+    async (exercise: any) => {
+      if (!session?.id) return;
+      const nonWarmup = localSections.filter((s: any) => !isWarmupSection(s));
+      const targetSec = nonWarmup[nonWarmup.length - 1] || localSections[localSections.length - 1];
+      const sectionId = targetSec?.id && targetSec.id !== "default" ? targetSec.id : null;
+      const sortOrder = targetSec?.exercises?.length || 0;
+
+      const { data: newRow, error } = await supabase
+        .from("session_exercises")
+        .insert({
+          session_id: session.id,
+          exercise_id: exercise.id,
+          section_id: sectionId,
+          sort_order: sortOrder,
+          sets: exercise.type === "compound" ? 4 : 3,
+          reps_min: exercise.type === "compound" ? 8 : 12,
+          reps_max: exercise.type === "compound" ? 10 : 15,
+          rest_seconds: exercise.type === "compound" ? 90 : 60,
+        })
+        .select(
+          `id, sort_order, sets, reps_min, reps_max, rest_seconds, tempo,
+           rpe_target, suggested_weight, coach_notes, video_url, video_search_query,
+           section_id, is_archived, superset_group,
+           exercise:exercises(id, name, name_en, muscle_group, equipment, type, tracking_type, video_url_female, video_url_male)`,
+        )
+        .single();
+
+      if (error || !newRow) return;
+
+      setLocalSections((prev) =>
+        prev.map((sec: any) => {
+          if ((sectionId && sec.id === sectionId) || (!sectionId && sec.id === targetSec?.id)) {
+            return { ...sec, exercises: [...sec.exercises, newRow] };
+          }
+          return sec;
+        }),
+      );
+      setExercisePickerOpen(false);
+    },
+    [session?.id, localSections],
+  );
 
   const handleStart = () => {
     if (!sessionId) return;
@@ -310,12 +559,28 @@ const SessionPreview = () => {
               {session.name}
             </div>
           </div>
-          <button
-            className="w-11 h-11 rounded-sm border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Plus d'options"
-          >
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
+          {isFreeSession ? (
+            <button
+              type="button"
+              onClick={() => setEditMode((m) => !m)}
+              className={cn(
+                "w-11 h-11 rounded-sm border flex items-center justify-center transition-colors",
+                editMode
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card border-border text-muted-foreground hover:text-foreground",
+              )}
+              aria-label={editMode ? "Terminer l'édition" : "Modifier la séance"}
+            >
+              {editMode ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+            </button>
+          ) : (
+            <button
+              className="w-11 h-11 rounded-sm border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Plus d'options"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -347,10 +612,33 @@ const SessionPreview = () => {
 
         {/* Blocks */}
         {blockSections.map((section: any) => {
-          const block = <BlockSection key={section.id} section={section} startIdx={runningIdx} onPreviewVideo={setVideoEx} />;
+          const block = (
+            <BlockSection
+              key={section.id}
+              section={section}
+              startIdx={runningIdx}
+              onPreviewVideo={setVideoEx}
+              editMode={editMode}
+              onEdit={setEditingEx}
+              onDelete={handleDeleteExercise}
+            />
+          );
           runningIdx += section.exercises?.length || 0;
           return block;
         })}
+
+        {editMode && isFreeSession && (
+          <div className="px-4 mb-5">
+            <button
+              type="button"
+              onClick={() => setExercisePickerOpen(true)}
+              className="w-full h-11 rounded-md border border-dashed border-border text-muted-foreground text-sm flex items-center justify-center gap-2 hover:text-foreground hover:border-foreground/30 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Ajouter un exercice
+            </button>
+          </div>
+        )}
 
         <div className="h-4" />
       </div>
@@ -402,6 +690,35 @@ const SessionPreview = () => {
           </div>
         </div>
       )}
+
+      {/* Sheet édition exercice */}
+      <Sheet
+        open={!!editingEx}
+        onOpenChange={(open) => {
+          if (!open) setEditingEx(null);
+        }}
+      >
+        <SheetContent side="bottom" className="rounded-t-lg max-h-[85dvh] overflow-y-auto">
+          {editingEx && (
+            <>
+              <SheetHeader>
+                <SheetTitle>{editingEx.exercise?.name || "Exercice"}</SheetTitle>
+              </SheetHeader>
+              <ExerciseParamsForm
+                ex={editingEx}
+                onSave={handleSaveExercise}
+                onCancel={() => setEditingEx(null)}
+              />
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <ExercisePicker
+        open={exercisePickerOpen}
+        onClose={() => setExercisePickerOpen(false)}
+        onSelect={handleAddExercise}
+      />
     </div>
   );
 };
