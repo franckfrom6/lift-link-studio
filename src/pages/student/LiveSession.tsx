@@ -33,6 +33,7 @@ import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { AnimatePresence, motion } from "framer-motion";
 import confetti from "canvas-confetti";
+import { isLinkedToNext } from "@/lib/superset-utils";
 
 interface Substitution {
   key: string;
