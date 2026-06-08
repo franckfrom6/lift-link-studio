@@ -35,18 +35,51 @@ const STARTER_SUGGESTIONS: Array<{ label: string; action: "send" | "pick-file" }
 ];
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_SOURCE_BYTES = 15 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 1600;
 
-function fileToBase64(file: File): Promise<string> {
+function readFileAsDataUrl(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      const res = reader.result as string;
-      const idx = res.indexOf(",");
-      resolve(idx >= 0 ? res.slice(idx + 1) : res);
-    };
+    reader.onload = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+function stripDataUrl(dataUrl: string): string {
+  const idx = dataUrl.indexOf(",");
+  return idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl;
+}
+
+async function imageToCompressedBase64(file: File): Promise<{ base64: string; type: string }> {
+  const originalDataUrl = await readFileAsDataUrl(file);
+  const image = new Image();
+  const loaded = new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = reject;
+  });
+  image.src = originalDataUrl;
+  await loaded;
+
+  const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(image.width, image.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(image.width * scale));
+  canvas.height = Math.max(1, Math.round(image.height * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return { base64: stripDataUrl(originalDataUrl), type: file.type || "image/jpeg" };
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", 0.78)
+  );
+  if (!blob) return { base64: stripDataUrl(originalDataUrl), type: file.type || "image/jpeg" };
+  return { base64: stripDataUrl(await readFileAsDataUrl(blob)), type: "image/jpeg" };
+}
+
+async function fileToAttachmentPayload(file: File): Promise<{ base64: string; type: string }> {
+  if (file.type.startsWith("image/")) return imageToCompressedBase64(file);
+  return { base64: stripDataUrl(await readFileAsDataUrl(file)), type: file.type || "application/octet-stream" };
 }
 
 interface ParsedSessionCard {
@@ -160,15 +193,15 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (file.size > MAX_FILE_BYTES) {
+    if (file.size > (file.type.startsWith("image/") ? MAX_IMAGE_SOURCE_BYTES : MAX_FILE_BYTES)) {
       toast.error("Fichier trop volumineux (max 5 Mo).");
       return;
     }
     try {
-      const base64 = await fileToBase64(file);
+      const { base64, type } = await fileToAttachmentPayload(file);
       setAttachment({
         name: file.name,
-        type: file.type || "application/octet-stream",
+        type,
         base64,
       });
     } catch (err) {
