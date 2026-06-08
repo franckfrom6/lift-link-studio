@@ -659,17 +659,21 @@ const LiveSession = () => {
     if (!completedSessionId) return false;
     const sets = completedSets[key] || [];
     const sessionExId = sessionExerciseIdMap[key];
-    if (!sessionExId) return false;
-
-    const rows = sets.filter(s => s.reps > 0).map(s => ({
+    if (!sessionExId) {
+      // Exercise no longer in session (session may have been edited) — skip gracefully
+      console.warn("[LiveSession] saveSetsForExercise: key not in map, skipping", key);
+      return true;
+    }
+    // Include duration-based exercises (reps may be 0 but durationSeconds > 0)
+    const rows = sets.filter(s => s.reps > 0 || (s.durationSeconds || 0) > 0).map(s => ({
       completed_session_id: completedSessionId,
       session_exercise_id: sessionExId,
       set_number: s.setNumber,
       weight: s.weight || null,
       reps: s.reps,
-      rpe_actual: s.rpeActual,
-      is_failure: s.isFailure,
-      duration_seconds: (s as any).durationSeconds || null,
+      rpe_actual: s.rpeActual ?? null,
+      is_failure: s.isFailure ?? false,
+      duration_seconds: s.durationSeconds || null,
     }));
 
     if (rows.length === 0) {
