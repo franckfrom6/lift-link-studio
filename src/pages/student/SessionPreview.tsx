@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, Loader2, X, Pencil, Trash2, Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
@@ -338,6 +338,8 @@ const ExerciseParamsForm = ({
 const SessionPreview = () => {
   const navigate = useNavigate();
   const { sessionId } = useParams<{ sessionId: string }>();
+  const [searchParams] = useSearchParams();
+  const wantsEdit = searchParams.get("edit") === "1";
   const { program, loading: programLoading } = useStudentProgram();
   const [freeSession, setFreeSession] = useState<any>(null);
   const [freeLoading, setFreeLoading] = useState(false);
@@ -407,6 +409,12 @@ const SessionPreview = () => {
   useEffect(() => {
     if (session) setLocalSections(session.sections || []);
   }, [session]);
+
+  useEffect(() => {
+    if (session && wantsEdit && session.is_free_session) {
+      setEditMode(true);
+    }
+  }, [session, wantsEdit]);
 
   const isFreeSession = !!session?.is_free_session;
 
