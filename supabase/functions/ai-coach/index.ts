@@ -677,6 +677,7 @@ async function fetchNutritionContext(serviceClient: any, userId: string) {
 function buildChat(payload: any, lang: string) {
   const l = lang === "fr" ? "Réponds en français." : "Respond in English.";
   const contextBlock = payload.context ? `\n\nCONTEXTE UTILISATEUR :\n${payload.context}` : "";
+  const attachment = payload.attachment;
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
   const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
@@ -844,6 +845,24 @@ ${l}${contextBlock}`;
   // Build messages array for multi-turn conversation
   const messages = payload.messages || [];
   const lastUserMsg = messages.length > 0 ? messages[messages.length - 1].content : "";
+  const hasImageAttachment = Boolean(
+    attachment?.base64 && typeof attachment.base64 === "string" && attachment?.type?.startsWith("image/")
+  );
+  const cleanedImageBase64 = hasImageAttachment
+    ? attachment.base64.replace(/^data:[^,]+,/, "").replace(/\s/g, "")
+    : "";
+  const userContent = hasImageAttachment
+    ? [
+        {
+          type: "text",
+          text: `${lastUserMsg || "Analyse l'image jointe."}\n\nImage jointe : ${attachment.name || "image"}. Si elle contient un plan ou une séance d'entraînement, extrais les exercices, séries, répétitions, charges/notes visibles puis crée la séance avec create_free_session.`,
+        },
+        {
+          type: "image_url",
+          image_url: { url: `data:${attachment.type};base64,${cleanedImageBase64}` },
+        },
+      ]
+    : lastUserMsg;
   
   const tools = [
     {
@@ -1049,7 +1068,7 @@ ${l}${contextBlock}`;
     },
   ];
 
-  return { system, user: lastUserMsg, messages: messages.slice(0, -1), tools };
+  return { system, user: userContent, messages: messages.slice(0, -1), tools };
 }
 
 // Fetch coach context: list of active athletes (id + display name) when caller is a coach
