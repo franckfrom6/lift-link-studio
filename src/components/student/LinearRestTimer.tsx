@@ -4,7 +4,7 @@ import { Pause, Play, RotateCcw, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { unlockAudio } from "@/lib/audioUnlock";
+import { unlockAudio, getSharedAudioContext } from "@/lib/audioUnlock";
 
 interface LinearRestTimerProps {
   initialSeconds: number;
@@ -53,10 +53,8 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true, storage
   }, []);
 
   const warmAudio = () => {
-    if (!audioCtxRef.current) {
-      try { audioCtxRef.current = new AudioContext(); } catch {}
-    }
-    audioCtxRef.current?.resume().catch(() => {});
+    unlockAudio();
+    audioCtxRef.current = getSharedAudioContext();
   };
 
   useEffect(() => {
@@ -90,7 +88,8 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true, storage
         endTimeRef.current = null;
         if (storageKey) localStorage.removeItem(storageKey);
         try {
-          const ctx = audioCtxRef.current ?? new AudioContext();
+          unlockAudio();
+          const ctx = getSharedAudioContext() ?? audioCtxRef.current ?? new AudioContext();
           audioCtxRef.current = ctx;
           ctx.resume().then(() => {
             const osc = ctx.createOscillator();
@@ -136,11 +135,17 @@ const LinearRestTimer = ({ initialSeconds, onComplete, autoStart = true, storage
   const adjust = (delta: number) => {
     unlockAudio();
     warmAudio();
-    endTimeRef.current = null;
-    if (storageKey) localStorage.removeItem(storageKey);
+    const newSeconds = Math.max(5, seconds + delta);
     const newTotal = Math.max(10, totalSeconds + delta);
+    if (running) {
+      endTimeRef.current = Date.now() + newSeconds * 1000;
+      if (storageKey) localStorage.setItem(storageKey, String(endTimeRef.current));
+    } else {
+      endTimeRef.current = null;
+      if (storageKey) localStorage.removeItem(storageKey);
+    }
     setTotalSeconds(newTotal);
-    setSeconds(s => Math.max(0, s + delta));
+    setSeconds(newSeconds);
   };
 
   const progress = totalSeconds > 0 ? (totalSeconds - seconds) / totalSeconds : 1;
