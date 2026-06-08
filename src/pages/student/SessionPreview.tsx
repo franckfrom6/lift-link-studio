@@ -342,6 +342,10 @@ const SessionPreview = () => {
   const [freeSession, setFreeSession] = useState<any>(null);
   const [freeLoading, setFreeLoading] = useState(false);
   const [videoEx, setVideoEx] = useState<any | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editingEx, setEditingEx] = useState<any | null>(null);
+  const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
+  const [localSections, setLocalSections] = useState<any[]>([]);
 
   // Resolve session: program-bound first, then fallback to free/standalone
   const programSession = useMemo(() => {
@@ -400,11 +404,17 @@ const SessionPreview = () => {
   const session = programSession || freeSession;
   const loading = programLoading || freeLoading;
 
+  useEffect(() => {
+    if (session) setLocalSections(session.sections || []);
+  }, [session]);
+
+  const isFreeSession = !!session?.is_free_session;
+
   const { warmupSection, blockSections, totalExercises, durationMin, volumeT, weekInfo } = useMemo(() => {
     if (!session) {
       return { warmupSection: null as any, blockSections: [] as any[], totalExercises: 0, durationMin: 0, volumeT: 0, weekInfo: null as any };
     }
-    const allSections = session.sections || [];
+    const allSections = localSections.length > 0 ? localSections : (session.sections || []);
     const warmup = allSections.find(isWarmupSection) || null;
     const blocks = allSections.filter((s: any) => !isWarmupSection(s));
     const total = blocks.reduce((sum: number, s: any) => sum + (s.exercises?.length || 0), 0);
@@ -425,7 +435,80 @@ const SessionPreview = () => {
       volumeT: vol,
       weekInfo: wInfo,
     };
-  }, [session, program?.weeks]);
+  }, [session, localSections, program?.weeks]);
+
+  const handleDeleteExercise = useCallback(async (exerciseRowId: string) => {
+    setLocalSections((prev) =>
+      prev.map((sec) => ({
+        ...sec,
+        exercises: sec.exercises.filter((e: any) => e.id !== exerciseRowId),
+      })),
+    );
+    await supabase.from("session_exercises").delete().eq("id", exerciseRowId);
+  }, []);
+
+  const handleSaveExercise = useCallback(async (updated: any) => {
+    setLocalSections((prev) =>
+      prev.map((sec) => ({
+        ...sec,
+        exercises: sec.exercises.map((e: any) => (e.id === updated.id ? updated : e)),
+      })),
+    );
+    await supabase
+      .from("session_exercises")
+      .update({
+        sets: updated.sets,
+        reps_min: updated.reps_min,
+        reps_max: updated.reps_max,
+        rest_seconds: updated.rest_seconds,
+        suggested_weight: updated.suggested_weight,
+      })
+      .eq("id", updated.id);
+    setEditingEx(null);
+  }, []);
+
+  const handleAddExercise = useCallback(
+    async (exercise: any) => {
+      if (!session?.id) return;
+      const nonWarmup = localSections.filter((s: any) => !isWarmupSection(s));
+      const targetSec = nonWarmup[nonWarmup.length - 1] || localSections[localSections.length - 1];
+      const sectionId = targetSec?.id && targetSec.id !== "default" ? targetSec.id : null;
+      const sortOrder = targetSec?.exercises?.length || 0;
+
+      const { data: newRow, error } = await supabase
+        .from("session_exercises")
+        .insert({
+          session_id: session.id,
+          exercise_id: exercise.id,
+          section_id: sectionId,
+          sort_order: sortOrder,
+          sets: exercise.type === "compound" ? 4 : 3,
+          reps_min: exercise.type === "compound" ? 8 : 12,
+          reps_max: exercise.type === "compound" ? 10 : 15,
+          rest_seconds: exercise.type === "compound" ? 90 : 60,
+        })
+        .select(
+          `id, sort_order, sets, reps_min, reps_max, rest_seconds, tempo,
+           rpe_target, suggested_weight, coach_notes, video_url, video_search_query,
+           section_id, is_archived, superset_group,
+           exercise:exercises(id, name, name_en, muscle_group, equipment, type, tracking_type, video_url_female, video_url_male)`,
+        )
+        .single();
+
+      if (error || !newRow) return;
+
+      setLocalSections((prev) =>
+        prev.map((sec: any) => {
+          if ((sectionId && sec.id === sectionId) || (!sectionId && sec.id === targetSec?.id)) {
+            return { ...sec, exercises: [...sec.exercises, newRow] };
+          }
+          return sec;
+        }),
+      );
+      setExercisePickerOpen(false);
+    },
+    [session?.id, localSections],
+  );
 
   const handleStart = () => {
     if (!sessionId) return;
@@ -476,12 +559,28 @@ const SessionPreview = () => {
               {session.name}
             </div>
           </div>
-          <button
-            className="w-11 h-11 rounded-sm border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Plus d'options"
-          >
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
+          {isFreeSession ? (
+            <button
+              type="button"
+              onClick={() => setEditMode((m) => !m)}
+              className={cn(
+                "w-11 h-11 rounded-sm border flex items-center justify-center transition-colors",
+                editMode
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card border-border text-muted-foreground hover:text-foreground",
+              )}
+              aria-label={editMode ? "Terminer l'édition" : "Modifier la séance"}
+            >
+              {editMode ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+            </button>
+          ) : (
+            <button
+              className="w-11 h-11 rounded-sm border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Plus d'options"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -513,10 +612,33 @@ const SessionPreview = () => {
 
         {/* Blocks */}
         {blockSections.map((section: any) => {
-          const block = <BlockSection key={section.id} section={section} startIdx={runningIdx} onPreviewVideo={setVideoEx} />;
+          const block = (
+            <BlockSection
+              key={section.id}
+              section={section}
+              startIdx={runningIdx}
+              onPreviewVideo={setVideoEx}
+              editMode={editMode}
+              onEdit={setEditingEx}
+              onDelete={handleDeleteExercise}
+            />
+          );
           runningIdx += section.exercises?.length || 0;
           return block;
         })}
+
+        {editMode && isFreeSession && (
+          <div className="px-4 mb-5">
+            <button
+              type="button"
+              onClick={() => setExercisePickerOpen(true)}
+              className="w-full h-11 rounded-md border border-dashed border-border text-muted-foreground text-sm flex items-center justify-center gap-2 hover:text-foreground hover:border-foreground/30 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Ajouter un exercice
+            </button>
+          </div>
+        )}
 
         <div className="h-4" />
       </div>
@@ -568,6 +690,35 @@ const SessionPreview = () => {
           </div>
         </div>
       )}
+
+      {/* Sheet édition exercice */}
+      <Sheet
+        open={!!editingEx}
+        onOpenChange={(open) => {
+          if (!open) setEditingEx(null);
+        }}
+      >
+        <SheetContent side="bottom" className="rounded-t-lg max-h-[85dvh] overflow-y-auto">
+          {editingEx && (
+            <>
+              <SheetHeader>
+                <SheetTitle>{editingEx.exercise?.name || "Exercice"}</SheetTitle>
+              </SheetHeader>
+              <ExerciseParamsForm
+                ex={editingEx}
+                onSave={handleSaveExercise}
+                onCancel={() => setEditingEx(null)}
+              />
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <ExercisePicker
+        open={exercisePickerOpen}
+        onClose={() => setExercisePickerOpen(false)}
+        onSelect={handleAddExercise}
+      />
     </div>
   );
 };
