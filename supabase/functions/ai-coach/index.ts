@@ -1247,9 +1247,25 @@ serve(async (req) => {
             (exRows || []).forEach((ex: any) => { exerciseMap[ex.name] = ex.id; });
           }
 
+          // Resolve day_of_week from date if missing (1=Mon..7=Sun)
+          let dow = toolArgs.day_of_week as number | undefined;
+          if ((!dow || dow < 1 || dow > 7) && toolArgs.date) {
+            const d = new Date(`${toolArgs.date}T00:00:00`);
+            const js = d.getDay(); // 0=Sun..6=Sat
+            dow = js === 0 ? 7 : js;
+          }
+          if (!dow) dow = 1;
+
           const { data: session, error: sessionErr } = await serviceClient
-            .from("free_sessions")
-            .insert({ user_id: userId, name: toolArgs.name, date: toolArgs.date, day_of_week: toolArgs.day_of_week })
+            .from("sessions")
+            .insert({
+              name: toolArgs.name,
+              day_of_week: dow,
+              is_free_session: true,
+              free_session_date: toolArgs.date,
+              created_by: userId,
+              session_type: "strength",
+            })
             .select("id")
             .single();
           if (sessionErr) throw sessionErr;
@@ -1262,15 +1278,16 @@ serve(async (req) => {
             : [];
 
           let sectionOrder = 0;
+          let skippedExercises: string[] = [];
           for (const sec of sectionsToCreate) {
             const { data: sectionRow, error: secErr } = await serviceClient
-              .from("free_session_sections")
+              .from("session_sections")
               .insert({
-                free_session_id: sessionId,
+                session_id: sessionId,
                 name: sec.name,
                 icon: sec.icon || null,
                 duration_estimate: sec.duration_estimate || null,
-                order_index: sectionOrder++,
+                sort_order: sectionOrder++,
               })
               .select("id")
               .single();
@@ -1278,20 +1295,30 @@ serve(async (req) => {
 
             let exOrder = 0;
             for (const ex of (sec.exercises || [])) {
-              await serviceClient.from("free_session_exercises").insert({
-                free_session_section_id: sectionRow.id,
-                exercise_id: exerciseMap[ex.name] || null,
-                name: ex.name,
-                sets: ex.sets,
-                reps_min: ex.reps_min,
-                reps_max: ex.reps_max,
-                rest_seconds: ex.rest_seconds,
+              const exerciseId = exerciseMap[ex.name];
+              if (!exerciseId) {
+                skippedExercises.push(ex.name);
+                continue;
+              }
+              await serviceClient.from("session_exercises").insert({
+                session_id: sessionId,
+                section_id: sectionRow.id,
+                exercise_id: exerciseId,
+                sort_order: exOrder++,
+                sets: ex.sets ?? 3,
+                reps_min: ex.reps_min ?? 8,
+                reps_max: ex.reps_max ?? 12,
+                rest_seconds: ex.rest_seconds ?? 90,
                 coach_notes: ex.coach_notes || null,
-                order_index: exOrder++,
               });
             }
           }
-          toolResults.push({ tool: "create_free_session", success: true, session_id: sessionId });
+          toolResults.push({
+            tool: "create_free_session",
+            success: true,
+            session_id: sessionId,
+            skipped_exercises: skippedExercises,
+          });
         } catch (e: any) {
           console.error("Error creating free session:", e);
           toolResults.push({ tool: "create_free_session", success: false, error: e.message });
