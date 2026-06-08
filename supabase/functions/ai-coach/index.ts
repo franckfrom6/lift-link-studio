@@ -82,12 +82,14 @@ async function callLovableAI(
   systemPrompt: string,
   userPrompt: string,
   tools?: any[],
-  toolChoice?: any
+  toolChoice?: any,
+  history?: Array<{ role: string; content: any }>
 ) {
   const body: any = {
     model,
     messages: [
       { role: "system", content: systemPrompt },
+      ...(history || []),
       { role: "user", content: userPrompt },
     ],
   };
@@ -136,6 +138,8 @@ async function callLovableAI(
   return {
     error: false,
     result,
+    toolName: toolCall?.function?.name || null,
+    rawContent: content,
     inputTokens: usage.prompt_tokens || null,
     outputTokens: usage.completion_tokens || null,
     durationMs,
