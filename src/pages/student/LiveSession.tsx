@@ -656,6 +656,7 @@ const LiveSession = () => {
     const sets = completedSets[key] || [];
     const sessionExId = sessionExerciseIdMap[key];
     if (!sessionExId) return false;
+
     const rows = sets.filter(s => s.reps > 0).map(s => ({
       completed_session_id: completedSessionId,
       session_exercise_id: sessionExId,
@@ -664,17 +665,31 @@ const LiveSession = () => {
       reps: s.reps,
       rpe_actual: s.rpeActual,
       is_failure: s.isFailure,
+      duration_seconds: (s as any).durationSeconds || null,
     }));
-    // Delete existing rows then re-insert to handle updates
-    const { error: delError } = await supabase.from("completed_sets")
+
+    if (rows.length === 0) {
+      const { error } = await supabase.from("completed_sets")
+        .delete()
+        .eq("completed_session_id", completedSessionId)
+        .eq("session_exercise_id", sessionExId);
+      if (error) { console.error("Error clearing sets:", error); return false; }
+      return true;
+    }
+
+    // Upsert atomique — pas de fenêtre où les séries sont perdues
+    const { error: upsertError } = await supabase.from("completed_sets")
+      .upsert(rows, { onConflict: "completed_session_id,session_exercise_id,set_number" });
+    if (upsertError) { console.error("Error upserting sets:", upsertError); return false; }
+
+    // Supprimer les séries dont le set_number n'existe plus (réduction du nb de séries)
+    const newSetNumbers = rows.map(r => r.set_number);
+    await supabase.from("completed_sets")
       .delete()
       .eq("completed_session_id", completedSessionId)
-      .eq("session_exercise_id", sessionExId);
-    if (delError) { console.error("Error deleting sets:", delError); return false; }
-    if (rows.length > 0) {
-      const { error } = await supabase.from("completed_sets").insert(rows);
-      if (error) { console.error("Error saving sets:", error); return false; }
-    }
+      .eq("session_exercise_id", sessionExId)
+      .not("set_number", "in", `(${newSetNumbers.join(",")})`);
+
     return true;
   };
 
