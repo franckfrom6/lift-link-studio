@@ -147,6 +147,43 @@ async function callLovableAI(
   };
 }
 
+async function describeChatImage(apiKey: string, attachment: any) {
+  if (!attachment?.base64 || !attachment?.type?.startsWith("image/")) return "";
+  const cleaned = String(attachment.base64).replace(/^data:[^,]+,/, "").replace(/\s/g, "");
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Analyse cette image de façon concise pour un coach sportif. Si elle contient une séance, extrais: nom éventuel, date/jour, sections, exercices, séries, répétitions, durées, charges, repos et notes visibles. Réponds en français, sans inventer.",
+            },
+            {
+              type: "image_url",
+              image_url: { url: `data:${attachment.type};base64,${cleaned}` },
+            },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error("AI image analysis error:", response.status, errText);
+    return "";
+  }
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
 // ── Action handlers ──────────────────────────────────────────────
 
 function buildGenerateProgram(payload: any, lang: string) {
