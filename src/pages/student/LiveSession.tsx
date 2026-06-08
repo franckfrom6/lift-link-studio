@@ -602,7 +602,7 @@ const LiveSession = () => {
             for (const k of Object.keys(grouped)) {
               grouped[k].sort((a, b) => a.setNumber - b.setNumber);
             }
-            setCompletedSets(grouped);
+            setCompletedSetsSync(grouped);
             setHasStartedWorkout(true);
 
             // Position activeExerciseKey on first non-finished, non-skipped exercise
