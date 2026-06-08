@@ -130,6 +130,9 @@ const LiveSession = () => {
   const nextPreviewRef = useRef<HTMLDivElement | null>(null);
   const shareBtnRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const mountedRef = useRef(true);
+  const isHydratingRef = useRef(false);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -356,9 +359,21 @@ const LiveSession = () => {
   // Latest completedSets in a ref so the rest-gating callback can read it
   // synchronously without recreating itself on every change.
   const completedSetsRef = useRef(completedSets);
-  useEffect(() => {
-    completedSetsRef.current = completedSets;
-  }, [completedSets]);
+
+  // Wrapper qui met à jour ref et state de façon synchrone pour éviter
+  // un frame stale dans les callbacks (notamment bi-set).
+  const setCompletedSetsSync = useCallback(
+    (updater: React.SetStateAction<Record<string, EnhancedCompletedSet[]>>) => {
+      setCompletedSets(prev => {
+        const next = typeof updater === "function"
+          ? (updater as (p: Record<string, EnhancedCompletedSet[]>) => Record<string, EnhancedCompletedSet[]>)(prev)
+          : updater;
+        completedSetsRef.current = next;
+        return next;
+      });
+    },
+    [],
+  );
 
   const trackingTypeMap = useMemo(() => {
     if (!selectedSession) return {};
