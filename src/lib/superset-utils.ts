@@ -1,4 +1,4 @@
-import { SessionExerciseData } from "@/types/coach";
+type WithSupersetGroup = { supersetGroup?: number | null };
 
 /**
  * Toggle a bi-set (superset) link between two adjacent exercises in a list.
@@ -6,10 +6,10 @@ import { SessionExerciseData } from "@/types/coach";
  * - If the two are already linked together, both are unlinked (group = null).
  * - Otherwise, both are assigned the next free group integer for that list.
  */
-export function toggleBiSet(
-  exercises: SessionExerciseData[],
+export function toggleBiSet<T extends WithSupersetGroup>(
+  exercises: T[],
   index: number,
-): SessionExerciseData[] {
+): T[] {
   const a = exercises[index];
   const b = exercises[index + 1];
   if (!a || !b) return exercises;
@@ -20,7 +20,7 @@ export function toggleBiSet(
   if (alreadyLinked) {
     return exercises.map((e, i) =>
       i === index || i === index + 1 ? { ...e, supersetGroup: null } : e,
-    );
+    ) as T[];
   }
 
   const used = new Set<number>();
@@ -32,11 +32,11 @@ export function toggleBiSet(
 
   return exercises.map((e, i) =>
     i === index || i === index + 1 ? { ...e, supersetGroup: g } : e,
-  );
+  ) as T[];
 }
 
-export function isLinkedToNext(
-  exercises: SessionExerciseData[],
+export function isLinkedToNext<T extends WithSupersetGroup>(
+  exercises: T[],
   index: number,
 ): boolean {
   const a = exercises[index];

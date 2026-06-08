@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import ExerciseEditSheet from "./ExerciseEditSheet";
+import BiSetToggle from "@/components/coach/BiSetToggle";
+import { toggleBiSet, isLinkedToNext } from "@/lib/superset-utils";
 
 interface LiveExerciseListProps {
   exercises: LiveExercise[];
@@ -55,68 +57,75 @@ const LiveExerciseList = ({ exercises, onChange, onAddExercise, onSubstitute }: 
   return (
     <div className="space-y-2">
       {exercises.map((ex, idx) => (
-        <div
-          key={ex.id}
-          className="relative overflow-hidden rounded-lg"
-        >
-          {/* Delete background */}
-          {swipedId === ex.id && (
-            <button
-              onClick={() => deleteExercise(ex.id)}
-              className="absolute inset-y-0 right-0 w-20 bg-destructive flex items-center justify-center text-destructive-foreground text-xs font-semibold z-0"
-            >
-              {t("common:delete", "Suppr.")}
-            </button>
-          )}
-
-          <div
-            className={cn(
-              "relative z-10 bg-card border border-border rounded-lg p-3 transition-transform cursor-pointer active:bg-accent/50",
-              swipedId === ex.id && "-translate-x-20"
+        <div key={ex.id}>
+          <div className="relative overflow-hidden rounded-lg">
+            {/* Delete background */}
+            {swipedId === ex.id && (
+              <button
+                onClick={() => deleteExercise(ex.id)}
+                className="absolute inset-y-0 right-0 w-20 bg-destructive flex items-center justify-center text-destructive-foreground text-xs font-semibold z-0"
+              >
+                {t("common:delete", "Suppr.")}
+              </button>
             )}
-            onClick={() => setEditingId(ex.id)}
-            onTouchStart={e => handleTouchStart(ex.id, e.touches[0].clientX)}
-            onTouchEnd={e => handleTouchEnd(ex.id, e.changedTouches[0].clientX)}
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-11 flex items-center justify-center shrink-0" aria-hidden="true">
-                <GripVertical className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {idx + 1}. {getExerciseName({ name: ex.name, name_en: ex.nameEn })}
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                  <span className="text-[10px] text-muted-foreground">
-                    {ex.sets}×{ex.repsMin === ex.repsMax ? ex.repsMin : `${ex.repsMin}-${ex.repsMax}`}
-                  </span>
-                  {ex.weightEnabled && ex.weightKg && (
-                    <Badge variant="secondary" className="text-[9px] px-1 py-0">
-                      {ex.weightKg}kg
-                    </Badge>
-                  )}
-                  {!ex.weightEnabled && (
-                    <Badge variant="outline" className="text-[9px] px-1 py-0">
-                      {t("session:builder_bodyweight")}
-                    </Badge>
-                  )}
-                  {isAdvanced && ex.tempo && (
-                    <Badge variant="outline" className="text-[9px] px-1 py-0">
-                      {ex.tempo}
-                    </Badge>
-                  )}
-                  {isAdvanced && ex.rpeTarget && (
-                    <Badge variant="outline" className="text-[9px] px-1 py-0">
-                      RPE {ex.rpeTarget}
-                    </Badge>
-                  )}
+
+            <div
+              className={cn(
+                "relative z-10 bg-card border border-border rounded-lg p-3 transition-transform cursor-pointer active:bg-accent/50",
+                swipedId === ex.id && "-translate-x-20"
+              )}
+              onClick={() => setEditingId(ex.id)}
+              onTouchStart={e => handleTouchStart(ex.id, e.touches[0].clientX)}
+              onTouchEnd={e => handleTouchEnd(ex.id, e.changedTouches[0].clientX)}
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-11 flex items-center justify-center shrink-0" aria-hidden="true">
+                  <GripVertical className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
                 </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {idx + 1}. {getExerciseName({ name: ex.name, name_en: ex.nameEn })}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <span className="text-[10px] text-muted-foreground">
+                      {ex.sets}×{ex.repsMin === ex.repsMax ? ex.repsMin : `${ex.repsMin}-${ex.repsMax}`}
+                    </span>
+                    {ex.weightEnabled && ex.weightKg && (
+                      <Badge variant="secondary" className="text-[9px] px-1 py-0">
+                        {ex.weightKg}kg
+                      </Badge>
+                    )}
+                    {!ex.weightEnabled && (
+                      <Badge variant="outline" className="text-[9px] px-1 py-0">
+                        {t("session:builder_bodyweight")}
+                      </Badge>
+                    )}
+                    {isAdvanced && ex.tempo && (
+                      <Badge variant="outline" className="text-[9px] px-1 py-0">
+                        {ex.tempo}
+                      </Badge>
+                    )}
+                    {isAdvanced && ex.rpeTarget && (
+                      <Badge variant="outline" className="text-[9px] px-1 py-0">
+                        RPE {ex.rpeTarget}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <span className="text-[10px] text-muted-foreground shrink-0">
+                  {ex.restSeconds}s
+                </span>
               </div>
-              <span className="text-[10px] text-muted-foreground shrink-0">
-                {ex.restSeconds}s
-              </span>
             </div>
           </div>
+
+          {/* BiSetToggle entre cet exercice et le suivant */}
+          {idx < exercises.length - 1 && (
+            <BiSetToggle
+              linked={isLinkedToNext(exercises, idx)}
+              onToggle={() => onChange(toggleBiSet(exercises, idx))}
+            />
+          )}
         </div>
       ))}
 

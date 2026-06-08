@@ -138,6 +138,7 @@ const SessionBuilderModal = ({ open, onClose, date, onCreated }: SessionBuilderM
           tempo: ex.tempo ?? null,
           rpe_target: ex.rpeTarget ?? null,
           coach_notes: ex.note ?? null,
+          superset_group: ex.supersetGroup ?? null,
         }));
         await supabase.from("session_exercises").insert(exerciseRows);
       }

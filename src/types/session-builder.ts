@@ -28,6 +28,7 @@ export interface LiveExercise {
   rpeTarget?: string;
   note?: string;
   order: number;
+  supersetGroup?: number | null;
 }
 
 export interface SessionBuilderState {

@@ -245,6 +245,7 @@ export function useSessionBuilder() {
         tempo: ex.tempo ?? null,
         rpe_target: ex.rpeTarget ?? null,
         coach_notes: ex.note ?? null,
+        superset_group: ex.supersetGroup ?? null,
       }));
 
       const { error: exError } = await supabase.from("session_exercises").insert(exerciseRows);
