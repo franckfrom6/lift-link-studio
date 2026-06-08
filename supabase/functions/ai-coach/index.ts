@@ -715,6 +715,7 @@ async function fetchNutritionContext(serviceClient: any, userId: string) {
 function buildChat(payload: any, lang: string) {
   const l = lang === "fr" ? "Réponds en français." : "Respond in English.";
   const contextBlock = payload.context ? `\n\nCONTEXTE UTILISATEUR :\n${payload.context}` : "";
+  const imageAnalysisBlock = payload._imageAnalysis ? `\n\nANALYSE IMAGE IMPORTÉE :\n${payload._imageAnalysis}` : "";
   const attachment = payload.attachment;
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
@@ -880,7 +881,7 @@ FORMAT DE RÉPONSE :
 4. Message motivation ⚡
 5. Ajouter en fin : "Pour tout objectif médical ou pathologie, consulte un professionnel de santé."
 
-${l}${contextBlock}`;
+${l}${contextBlock}${imageAnalysisBlock}`;
   
   // Build messages array for multi-turn conversation
   const messages = payload.messages || [];
@@ -888,20 +889,8 @@ ${l}${contextBlock}`;
   const hasImageAttachment = Boolean(
     attachment?.base64 && typeof attachment.base64 === "string" && attachment?.type?.startsWith("image/")
   );
-  const cleanedImageBase64 = hasImageAttachment
-    ? attachment.base64.replace(/^data:[^,]+,/, "").replace(/\s/g, "")
-    : "";
   const userContent = hasImageAttachment
-    ? [
-        {
-          type: "text",
-          text: `${lastUserMsg || "Analyse l'image jointe."}\n\nImage jointe : ${attachment.name || "image"}. Si elle contient un plan ou une séance d'entraînement, extrais les exercices, séries, répétitions, charges/notes visibles puis crée la séance avec create_free_session.`,
-        },
-        {
-          type: "image_url",
-          image_url: { url: `data:${attachment.type};base64,${cleanedImageBase64}` },
-        },
-      ]
+    ? `${lastUserMsg || "Analyse l'image jointe."}\n\nImage jointe : ${attachment.name || "image"}. Utilise l'ANALYSE IMAGE IMPORTÉE ci-dessus pour répondre et, si l'utilisateur demande une création de séance, appelle create_free_session.`
     : lastUserMsg;
   
   const tools = [
