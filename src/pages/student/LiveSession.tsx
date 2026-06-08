@@ -16,6 +16,7 @@ import ProgressionTimeline, { ProgressionPhase } from "@/components/student/Prog
 import WorkoutStatsBar from "@/components/student/WorkoutStatsBar";
 import NextExercisePreview from "@/components/student/NextExercisePreview";
 import ShareSessionButton from "@/components/student/ShareSessionButton";
+import BiSetToggle from "@/components/coach/BiSetToggle";
 import { Clock, Plus, CloudOff, Loader2 } from "lucide-react";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { AnimatePresence, motion } from "framer-motion";
 import confetti from "canvas-confetti";
+import { isLinkedToNext } from "@/lib/superset-utils";
 
 interface Substitution {
   key: string;
@@ -968,6 +970,71 @@ const LiveSession = () => {
     toast.success(t("session:exercise_added", { name: exercise.name, defaultValue: `${exercise.name} ajouté` }));
   };
 
+  const handleToggleBiSet = async (sIdx: number, eIdx: number) => {
+    if (!selectedSession) return;
+    const keyA = `${sIdx}-${eIdx}`;
+    const keyB = `${sIdx}-${eIdx + 1}`;
+    const seIdA = sessionExerciseIdMap[keyA];
+    const seIdB = sessionExerciseIdMap[keyB];
+    if (!seIdA || !seIdB) return;
+
+    const alreadyLinked = supersetPartnerMap[keyA]?.isFirst === true;
+
+    let newGroup: number | null;
+    if (alreadyLinked) {
+      newGroup = null;
+    } else {
+      const used = new Set<number>();
+      (selectedSession.sections[sIdx]?.exercises || []).forEach((e: any) => {
+        const g = e.superset_group ?? e.supersetGroup;
+        if (typeof g === "number") used.add(g);
+      });
+      let g = 1;
+      while (used.has(g)) g++;
+      newGroup = g;
+    }
+
+    const applyLocal = (session: any) => ({
+      ...session,
+      sections: session.sections.map((sec: any, si: number) => {
+        if (si !== sIdx) return sec;
+        return {
+          ...sec,
+          exercises: sec.exercises.map((e: any, ei: number) =>
+            ei === eIdx || ei === eIdx + 1 ? { ...e, superset_group: newGroup } : e,
+          ),
+        };
+      }),
+    });
+
+    const previousFree = freeSession;
+    if (freeSession) {
+      setFreeSession((prev: any) => applyLocal(prev));
+    }
+
+    const { error } = await supabase
+      .from("session_exercises")
+      .update({ superset_group: newGroup })
+      .in("id", [seIdA, seIdB]);
+
+    if (error) {
+      console.error("Error toggling bi-set:", error);
+      toast.error(t("common:error"));
+      if (previousFree) setFreeSession(previousFree);
+      return;
+    }
+
+    if (programSession) {
+      queryClient.invalidateQueries({ queryKey: ["student-program"] });
+    }
+
+    toast.success(
+      newGroup === null
+        ? t("session:biset_unlinked", { defaultValue: "Bi-set délié" })
+        : t("session:biset_linked", { defaultValue: "Exercices liés en bi-set ⚡" }),
+    );
+  };
+
   const swapExerciseOriginalName = swapTargetKey
     ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
@@ -1233,6 +1300,15 @@ const LiveSession = () => {
                         }
                       />
                     </div>
+                    {/* Bouton lier/délier bi-set avec l'exercice suivant */}
+                    {eIdx < section.exercises.length - 1 && !isSkipped && (
+                      <div className="flex justify-center my-1">
+                        <BiSetToggle
+                          linked={isLinkedToNext(section.exercises as any[], eIdx)}
+                          onToggle={() => handleToggleBiSet(sIdx, eIdx)}
+                        />
+                      </div>
+                    )}
                   </div>
                   );
                 })}
