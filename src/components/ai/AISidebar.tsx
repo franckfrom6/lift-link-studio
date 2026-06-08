@@ -193,8 +193,9 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (file.size > (file.type.startsWith("image/") ? MAX_IMAGE_SOURCE_BYTES : MAX_FILE_BYTES)) {
-      toast.error("Fichier trop volumineux (max 5 Mo).");
+    const maxBytes = file.type.startsWith("image/") ? MAX_IMAGE_SOURCE_BYTES : MAX_FILE_BYTES;
+    if (file.size > maxBytes) {
+      toast.error(`Fichier trop volumineux (max ${Math.round(maxBytes / 1024 / 1024)} Mo).`);
       return;
     }
     try {
