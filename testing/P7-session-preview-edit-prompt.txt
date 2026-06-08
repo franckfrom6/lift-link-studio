@@ -1,0 +1,438 @@
+## Édition de séance avant démarrage (SessionPreview — mode édition)
+
+### Contexte
+`src/pages/student/SessionPreview.tsx` est une page de consultation pure : les exercices
+sont affichés mais rien n'est modifiable. Le bouton `MoreHorizontal` n'a aucun handler.
+
+On ajoute un **mode édition** accessible via ce bouton, disponible uniquement pour les
+**séances libres** (`is_free_session === true`). Les séances de programme (créées par un
+coach) restent en lecture seule.
+
+En mode édition, l'athlète peut :
+- Modifier les paramètres de chaque exercice (séries, reps, charge, repos)
+- Supprimer un exercice
+- Ajouter un exercice
+- Les changements sont persistés en base immédiatement (per-exercice)
+
+---
+
+### Fichier unique à modifier : `src/pages/student/SessionPreview.tsx`
+
+#### 1. Imports supplémentaires
+
+```typescript
+import { useState, useCallback } from "react"; // déjà importé — ajouter useCallback si manquant
+import { Pencil, Trash2, Check, Plus } from "lucide-react"; // ajouter aux lucide-react existants
+import { useAuth } from "@/contexts/AuthContext";
+import ExercisePicker from "@/components/coach/ExercisePicker";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+```
+
+#### 2. État local à ajouter dans le composant `SessionPreview`
+
+```typescript
+const { user } = useAuth();
+const [editMode, setEditMode] = useState(false);
+const [editingEx, setEditingEx] = useState<any | null>(null); // exercice en cours d'édition
+const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
+const [localSections, setLocalSections] = useState<any[]>([]); // copie locale mutable
+```
+
+Dès que `session` est résolu, initialiser `localSections` :
+
+```typescript
+useEffect(() => {
+  if (session) setLocalSections(session.sections || []);
+}, [session]);
+```
+
+Dériver `isFreeSession` :
+
+```typescript
+const isFreeSession = !!(session?.is_free_session);
+```
+
+#### 3. Remplacer les données du rendu par `localSections`
+
+Dans le bloc `useMemo` qui calcule `warmupSection`, `blockSections`, etc., remplacer
+`session.sections` par `localSections` :
+
+```typescript
+const allSections = localSections.length > 0 ? localSections : (session?.sections || []);
+```
+
+De même, dans le rendu `{blockSections.map(...)}` et `{warmupSection && ...}`, utiliser
+`blockSections` et `warmupSection` qui viennent déjà de ce memo — ça fonctionnera
+automatiquement.
+
+#### 4. Handlers d'édition
+
+```typescript
+// Supprimer un exercice (optimistic + DB)
+const handleDeleteExercise = useCallback(async (exerciseRowId: string) => {
+  setLocalSections(prev => prev.map(sec => ({
+    ...sec,
+    exercises: sec.exercises.filter((e: any) => e.id !== exerciseRowId),
+  })));
+  await supabase.from("session_exercises").delete().eq("id", exerciseRowId);
+}, []);
+
+// Sauvegarder les modifications d'un exercice
+const handleSaveExercise = useCallback(async (updated: any) => {
+  setLocalSections(prev => prev.map(sec => ({
+    ...sec,
+    exercises: sec.exercises.map((e: any) => e.id === updated.id ? updated : e),
+  })));
+  await supabase.from("session_exercises").update({
+    sets: updated.sets,
+    reps_min: updated.reps_min,
+    reps_max: updated.reps_max,
+    rest_seconds: updated.rest_seconds,
+    suggested_weight: updated.suggested_weight,
+  }).eq("id", updated.id);
+  setEditingEx(null);
+}, []);
+
+// Ajouter un exercice via ExercisePicker
+const handleAddExercise = useCallback(async (exercise: any) => {
+  if (!session?.id) return;
+  // Trouver la section cible (dernière section non-échauffement)
+  const targetSec = localSections.findLast((s: any) => !isWarmupSection(s)) || localSections[localSections.length - 1];
+  const sectionId = targetSec?.id && targetSec.id !== "default" ? targetSec.id : null;
+  const sortOrder = targetSec?.exercises?.length || 0;
+
+  const { data: newRow, error } = await supabase.from("session_exercises").insert({
+    session_id: session.id,
+    exercise_id: exercise.id,
+    section_id: sectionId,
+    sort_order: sortOrder,
+    sets: exercise.type === "compound" ? 4 : 3,
+    reps_min: exercise.type === "compound" ? 8 : 12,
+    reps_max: exercise.type === "compound" ? 10 : 15,
+    rest_seconds: exercise.type === "compound" ? 90 : 60,
+  }).select(`
+    id, sort_order, sets, reps_min, reps_max, rest_seconds, tempo,
+    rpe_target, suggested_weight, coach_notes, video_url, video_search_query,
+    section_id, is_archived, superset_group,
+    exercise:exercises(id, name, name_en, muscle_group, equipment, type, tracking_type, video_url_female, video_url_male)
+  `).single();
+
+  if (error || !newRow) return;
+
+  setLocalSections(prev => prev.map((sec: any) => {
+    if ((sectionId && sec.id === sectionId) || (!sectionId && sec.id === targetSec?.id)) {
+      return { ...sec, exercises: [...sec.exercises, newRow] };
+    }
+    return sec;
+  }));
+  setExercisePickerOpen(false);
+}, [session?.id, localSections]);
+```
+
+#### 5. Modifier le bouton `MoreHorizontal` dans le header
+
+Remplacer le bouton vide par :
+
+```tsx
+{isFreeSession ? (
+  <button
+    onClick={() => setEditMode(m => !m)}
+    className={cn(
+      "w-11 h-11 rounded-sm border border-border flex items-center justify-center transition-colors",
+      editMode
+        ? "bg-primary text-primary-foreground border-primary"
+        : "bg-card text-muted-foreground hover:text-foreground"
+    )}
+    aria-label={editMode ? "Terminer l'édition" : "Modifier la séance"}
+  >
+    {editMode ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+  </button>
+) : (
+  <button
+    className="w-11 h-11 rounded-sm border border-border bg-card flex items-center justify-center text-muted-foreground"
+    aria-label="Plus d'options"
+  >
+    <MoreHorizontal className="w-4 h-4" />
+  </button>
+)}
+```
+
+#### 6. Modifier le composant `ExerciseCard` pour afficher les contrôles d'édition
+
+Ajouter deux props à `ExerciseCard` : `editMode` et `onEdit` et `onDelete`.
+
+```tsx
+const ExerciseCard = ({
+  ex, idx, onPreviewVideo, editMode = false, onEdit, onDelete,
+}: {
+  ex: any;
+  idx: number;
+  onPreviewVideo: (ex: any) => void;
+  editMode?: boolean;
+  onEdit?: (ex: any) => void;
+  onDelete?: (id: string) => void;
+}) => {
+  // ... garder tout le rendu existant identique ...
+
+  return (
+    <div className="bg-card border border-border rounded-md p-3.5 flex flex-col gap-2.5 relative">
+      {/* Bouton supprimer (edit mode uniquement) */}
+      {editMode && (
+        <button
+          onClick={() => onDelete?.(ex.id)}
+          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive hover:text-destructive-foreground transition-colors"
+          aria-label="Supprimer l'exercice"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
+
+      {/* Zone cliquable pour éditer (edit mode) ou preview vidéo (normal) */}
+      <div
+        className={cn("flex items-start gap-2.5", editMode && "cursor-pointer")}
+        onClick={() => editMode ? onEdit?.(ex) : undefined}
+      >
+        <ExerciseNumber idx={idx} />
+        {!editMode && <VideoThumb hasVideo={hasVideo} onClick={() => onPreviewVideo(ex)} />}
+        <div className="flex-1 min-w-0">
+          {exData.id && !editMode ? (
+            <Link
+              to={`/student/exercise/${exData.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="block text-[15px] font-bold text-foreground tracking-tight leading-snug hover:text-primary transition-colors"
+            >
+              {exData.name || "Exercice"}
+            </Link>
+          ) : (
+            <div className="text-[15px] font-bold text-foreground tracking-tight leading-snug">
+              {exData.name || "Exercice"}
+            </div>
+          )}
+          {ex.coach_notes && (
+            <div className="text-xs text-muted-foreground mt-1 leading-snug">{ex.coach_notes}</div>
+          )}
+        </div>
+      </div>
+
+      {/* Badges paramètres — inchangés */}
+      <div className="flex flex-wrap gap-1.5">
+        <StatBadge>{sets} séries</StatBadge>
+        <StatBadge>
+          {repsLabel(ex)} {time ? "sec" : "reps"}
+        </StatBadge>
+        {w > 0 && <StatBadge accent>{w} kg</StatBadge>}
+        {ex.tempo && <StatBadge>tempo {ex.tempo}</StatBadge>}
+        {ex.rpe_target && <StatBadge>RPE {ex.rpe_target}</StatBadge>}
+        {ex.rest_seconds && (
+          <StatBadge>
+            <Timer className="w-2.5 h-2.5" />
+            {ex.rest_seconds}s
+          </StatBadge>
+        )}
+        {editMode && (
+          <span className="text-[10px] text-primary font-medium ml-auto">Tap pour modifier →</span>
+        )}
+      </div>
+    </div>
+  );
+};
+```
+
+#### 7. Passer les nouvelles props dans `BlockSection`
+
+```tsx
+const BlockSection = ({
+  section, startIdx, onPreviewVideo, editMode, onEdit, onDelete,
+}: {
+  section: any; startIdx: number; onPreviewVideo: (ex: any) => void;
+  editMode?: boolean; onEdit?: (ex: any) => void; onDelete?: (id: string) => void;
+}) => (
+  <div className="mb-5">
+    <SectionLabel label={section.name} right={`${section.exercises.length} exos`} />
+    <div className="px-4 flex flex-col gap-2">
+      {section.exercises.map((ex: any, i: number) => (
+        <ExerciseCard
+          key={ex.id} ex={ex} idx={startIdx + i + 1}
+          onPreviewVideo={onPreviewVideo}
+          editMode={editMode}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ))}
+    </div>
+  </div>
+);
+```
+
+Dans le rendu principal, mettre à jour l'appel à `BlockSection` :
+
+```tsx
+{blockSections.map((section: any) => {
+  const block = (
+    <BlockSection
+      key={section.id}
+      section={section}
+      startIdx={runningIdx}
+      onPreviewVideo={setVideoEx}
+      editMode={editMode && isFreeSession}
+      onEdit={setEditingEx}
+      onDelete={handleDeleteExercise}
+    />
+  );
+  runningIdx += section.exercises?.length || 0;
+  return block;
+})}
+```
+
+#### 8. Bouton "Ajouter un exercice" (edit mode seulement)
+
+Juste avant le `<div className="h-4" />` de fin de scroll body :
+
+```tsx
+{editMode && isFreeSession && (
+  <div className="px-4 mb-4">
+    <button
+      onClick={() => setExercisePickerOpen(true)}
+      className="w-full h-11 rounded-md border border-dashed border-border text-muted-foreground text-sm flex items-center justify-center gap-2 hover:text-foreground hover:border-foreground/30 transition-colors"
+    >
+      <Plus className="w-4 h-4" />
+      Ajouter un exercice
+    </button>
+  </div>
+)}
+```
+
+#### 9. Sheet d'édition des paramètres d'un exercice
+
+Ajouter ce Sheet juste avant la fermeture du composant (avant le `</div>` racine) :
+
+```tsx
+{/* Sheet édition exercice */}
+<Sheet open={!!editingEx} onOpenChange={(open) => { if (!open) setEditingEx(null); }}>
+  <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
+    {editingEx && (
+      <>
+        <SheetHeader className="mb-4">
+          <SheetTitle className="text-left text-[15px] font-bold">
+            {editingEx.exercise?.name || "Exercice"}
+          </SheetTitle>
+        </SheetHeader>
+
+        <ExerciseParamsForm
+          ex={editingEx}
+          onSave={handleSaveExercise}
+          onCancel={() => setEditingEx(null)}
+        />
+      </>
+    )}
+  </SheetContent>
+</Sheet>
+```
+
+#### 10. Formulaire inline `ExerciseParamsForm`
+
+À définir comme composant local (au-dessus du composant `SessionPreview`, avec les autres
+blocs helpers) :
+
+```tsx
+const ExerciseParamsForm = ({
+  ex, onSave, onCancel,
+}: { ex: any; onSave: (updated: any) => void; onCancel: () => void }) => {
+  const [sets, setSets] = useState(String(ex.sets ?? 3));
+  const [repsMin, setRepsMin] = useState(String(ex.reps_min ?? 8));
+  const [repsMax, setRepsMax] = useState(String(ex.reps_max ?? 12));
+  const [rest, setRest] = useState(String(ex.rest_seconds ?? 60));
+  const [weightEnabled, setWeightEnabled] = useState(!!(ex.suggested_weight));
+  const [weight, setWeight] = useState(String(ex.suggested_weight || ""));
+
+  return (
+    <div className="space-y-4 pb-6">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Séries</Label>
+          <Input type="number" min={1} max={20} value={sets}
+            onChange={e => setSets(e.target.value)} className="h-11 text-center text-base font-semibold" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Repos (sec)</Label>
+          <Input type="number" min={0} max={600} step={15} value={rest}
+            onChange={e => setRest(e.target.value)} className="h-11 text-center text-base font-semibold" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Reps min</Label>
+          <Input type="number" min={1} max={100} value={repsMin}
+            onChange={e => setRepsMin(e.target.value)} className="h-11 text-center text-base font-semibold" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Reps max</Label>
+          <Input type="number" min={1} max={100} value={repsMax}
+            onChange={e => setRepsMax(e.target.value)} className="h-11 text-center text-base font-semibold" />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium">Charge (kg)</Label>
+        <Switch checked={weightEnabled} onCheckedChange={setWeightEnabled} />
+      </div>
+      {weightEnabled && (
+        <Input type="number" min={0} step={0.5} value={weight}
+          onChange={e => setWeight(e.target.value)}
+          placeholder="Ex : 80" className="h-11 text-center text-base font-semibold" />
+      )}
+
+      <div className="flex gap-3 pt-2">
+        <Button variant="outline" className="flex-1" onClick={onCancel}>Annuler</Button>
+        <Button className="flex-1" onClick={() => onSave({
+          ...ex,
+          sets: parseInt(sets) || 3,
+          reps_min: parseInt(repsMin) || 8,
+          reps_max: parseInt(repsMax) || 12,
+          rest_seconds: parseInt(rest) || 60,
+          suggested_weight: weightEnabled ? (parseFloat(weight) || null) : null,
+        })}>
+          Sauvegarder
+        </Button>
+      </div>
+    </div>
+  );
+};
+```
+
+#### 11. ExercisePicker modal
+
+Juste à côté des autres modals en fin de composant :
+
+```tsx
+<ExercisePicker
+  open={exercisePickerOpen}
+  onClose={() => setExercisePickerOpen(false)}
+  onSelect={handleAddExercise}
+/>
+```
+
+---
+
+### Comportement attendu
+- Sur une **séance de programme** (coach) : bouton `MoreHorizontal` inchangé, pas d'édition
+- Sur une **séance libre** : bouton crayon en haut à droite
+  - Clic → mode édition (bouton vire en ✓ primary)
+  - Chaque carte exercice montre un bouton 🗑 rouge + "Tap pour modifier →"
+  - Taper la carte → bottom sheet avec paramètres (sets, reps, charge, repos)
+  - Bouton "Ajouter un exercice" apparaît en bas de la liste
+  - Recliquer ✓ → quitte le mode édition
+- Toutes les modifications sont persistées en base immédiatement
+- Le bouton "Démarrer la séance" reste visible en permanence (y compris en edit mode)
+
+### Contraintes
+- Ne pas toucher à `WarmupCard` — la section échauffement reste en lecture seule
+- Ne pas changer le comportement de navigation ni du CTA "Démarrer"
+- Le mode édition ne survit pas à un rechargement de page (state local, intentionnel)
+- Pas de drag-to-reorder pour l'instant (hors périmètre)
