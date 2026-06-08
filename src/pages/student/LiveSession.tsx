@@ -929,7 +929,7 @@ const LiveSession = () => {
     const [sIdx, eIdx] = swapTargetKey.split("-").map(Number);
     const originalName = sessionProgram.sections[sIdx]?.exercises[eIdx]?.name || t("session:exercise_fallback", "Exercise");
     setSubstitutions(prev => [...prev.filter(s => s.key !== swapTargetKey), { key: swapTargetKey, originalName, newName: alternative.name, newEquipment: alternative.equipment }]);
-    setCompletedSets(prev => { const u = { ...prev }; delete u[swapTargetKey]; return u; });
+    setCompletedSetsSync(prev => { const u = { ...prev }; delete u[swapTargetKey]; return u; });
 
     setSwapSelectedName(alternative.name);
     toast.success(`✓ ${alternative.name} sélectionné`);
