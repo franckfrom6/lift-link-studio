@@ -969,6 +969,71 @@ const LiveSession = () => {
     toast.success(t("session:exercise_added", { name: exercise.name, defaultValue: `${exercise.name} ajouté` }));
   };
 
+  const handleToggleBiSet = async (sIdx: number, eIdx: number) => {
+    if (!selectedSession) return;
+    const keyA = `${sIdx}-${eIdx}`;
+    const keyB = `${sIdx}-${eIdx + 1}`;
+    const seIdA = sessionExerciseIdMap[keyA];
+    const seIdB = sessionExerciseIdMap[keyB];
+    if (!seIdA || !seIdB) return;
+
+    const alreadyLinked = supersetPartnerMap[keyA]?.isFirst === true;
+
+    let newGroup: number | null;
+    if (alreadyLinked) {
+      newGroup = null;
+    } else {
+      const used = new Set<number>();
+      (selectedSession.sections[sIdx]?.exercises || []).forEach((e: any) => {
+        const g = e.superset_group ?? e.supersetGroup;
+        if (typeof g === "number") used.add(g);
+      });
+      let g = 1;
+      while (used.has(g)) g++;
+      newGroup = g;
+    }
+
+    const applyLocal = (session: any) => ({
+      ...session,
+      sections: session.sections.map((sec: any, si: number) => {
+        if (si !== sIdx) return sec;
+        return {
+          ...sec,
+          exercises: sec.exercises.map((e: any, ei: number) =>
+            ei === eIdx || ei === eIdx + 1 ? { ...e, superset_group: newGroup } : e,
+          ),
+        };
+      }),
+    });
+
+    const previousFree = freeSession;
+    if (freeSession) {
+      setFreeSession((prev: any) => applyLocal(prev));
+    }
+
+    const { error } = await supabase
+      .from("session_exercises")
+      .update({ superset_group: newGroup })
+      .in("id", [seIdA, seIdB]);
+
+    if (error) {
+      console.error("Error toggling bi-set:", error);
+      toast.error(t("common:error"));
+      if (previousFree) setFreeSession(previousFree);
+      return;
+    }
+
+    if (programSession) {
+      queryClient.invalidateQueries({ queryKey: ["student-program"] });
+    }
+
+    toast.success(
+      newGroup === null
+        ? t("session:biset_unlinked", { defaultValue: "Bi-set délié" })
+        : t("session:biset_linked", { defaultValue: "Exercices liés en bi-set ⚡" }),
+    );
+  };
+
   const swapExerciseOriginalName = swapTargetKey
     ? sessionProgram.sections[parseInt(swapTargetKey.split("-")[0])]?.exercises[parseInt(swapTargetKey.split("-")[1])]?.name || ""
     : "";
