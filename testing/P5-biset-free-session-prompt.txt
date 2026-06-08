@@ -1,0 +1,232 @@
+## Ajouter le bi-set dans la séance libre (SessionBuilderModal)
+
+### Contexte
+Le composant `BiSetToggle` et la logique `toggleBiSet` / `isLinkedToNext` existent déjà
+dans l'éditeur de programme coach (`src/components/coach/BiSetToggle.tsx`,
+`src/lib/superset-utils.ts`). La table `session_exercises` possède déjà la colonne
+`superset_group` (integer nullable). Il faut simplement les brancher sur la séance libre.
+
+---
+
+### Fichier 1 : `src/types/session-builder.ts`
+
+Ajoute le champ `supersetGroup` à l'interface `LiveExercise` :
+
+```typescript
+export interface LiveExercise {
+  id: string;
+  exerciseId: string;
+  name: string;
+  nameEn?: string | null;
+  muscleGroup: string;
+  equipment: string;
+  type: string;
+  trackingType: string;
+  sets: number;
+  repsMin: number;
+  repsMax: number;
+  restSeconds: number;
+  weightEnabled: boolean;
+  weightKg?: number;
+  tempo?: string;
+  rpeTarget?: string;
+  note?: string;
+  order: number;
+  supersetGroup?: number | null;   // NOUVEAU
+}
+```
+
+---
+
+### Fichier 2 : `src/lib/superset-utils.ts`
+
+Rends les deux fonctions génériques pour qu'elles acceptent aussi `LiveExercise[]` :
+
+```typescript
+type WithSupersetGroup = { supersetGroup?: number | null };
+
+export function toggleBiSet<T extends WithSupersetGroup>(
+  exercises: T[],
+  index: number,
+): T[] {
+  const a = exercises[index];
+  const b = exercises[index + 1];
+  if (!a || !b) return exercises;
+
+  const alreadyLinked =
+    a.supersetGroup != null && a.supersetGroup === b.supersetGroup;
+
+  if (alreadyLinked) {
+    return exercises.map((e, i) =>
+      i === index || i === index + 1 ? { ...e, supersetGroup: null } : e,
+    );
+  }
+
+  const used = new Set<number>();
+  for (const e of exercises) {
+    if (typeof e.supersetGroup === "number") used.add(e.supersetGroup);
+  }
+  let g = 1;
+  while (used.has(g)) g++;
+
+  return exercises.map((e, i) =>
+    i === index || i === index + 1 ? { ...e, supersetGroup: g } : e,
+  );
+}
+
+export function isLinkedToNext<T extends WithSupersetGroup>(
+  exercises: T[],
+  index: number,
+): boolean {
+  const a = exercises[index];
+  const b = exercises[index + 1];
+  return !!(a && b && a.supersetGroup != null && a.supersetGroup === b.supersetGroup);
+}
+```
+
+---
+
+### Fichier 3 : `src/components/student/LiveExerciseList.tsx`
+
+1. Importe `BiSetToggle` et les utilitaires :
+
+```typescript
+import BiSetToggle from "@/components/coach/BiSetToggle";
+import { toggleBiSet, isLinkedToNext } from "@/lib/superset-utils";
+```
+
+2. Dans le composant `LiveExerciseList`, après chaque carte d'exercice (sauf la dernière),
+   insère un `BiSetToggle` :
+
+```typescript
+// Dans le return, remplace le simple map par :
+{exercises.map((ex, idx) => (
+  <div key={ex.id}>
+    {/* ... carte exercice existante (ne change rien dedans) ... */}
+    <div className="relative overflow-hidden rounded-lg">
+      {/* Delete background */}
+      {swipedId === ex.id && (
+        <button
+          onClick={() => deleteExercise(ex.id)}
+          className="absolute inset-y-0 right-0 w-20 bg-destructive flex items-center justify-center text-destructive-foreground text-xs font-semibold z-0"
+        >
+          {t("common:delete", "Suppr.")}
+        </button>
+      )}
+      <div
+        className={cn(
+          "relative z-10 bg-card border border-border rounded-lg p-3 transition-transform cursor-pointer active:bg-accent/50",
+          swipedId === ex.id && "-translate-x-20"
+        )}
+        onClick={() => setEditingId(ex.id)}
+        onTouchStart={e => handleTouchStart(ex.id, e.touches[0].clientX)}
+        onTouchEnd={e => handleTouchEnd(ex.id, e.changedTouches[0].clientX)}
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-11 flex items-center justify-center shrink-0" aria-hidden="true">
+            <GripVertical className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">
+              {idx + 1}. {getExerciseName({ name: ex.name, name_en: ex.nameEn })}
+            </p>
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <span className="text-[10px] text-muted-foreground">
+                {ex.sets}×{ex.repsMin === ex.repsMax ? ex.repsMin : `${ex.repsMin}-${ex.repsMax}`}
+              </span>
+              {ex.weightEnabled && ex.weightKg && (
+                <Badge variant="secondary" className="text-[9px] px-1 py-0">
+                  {ex.weightKg}kg
+                </Badge>
+              )}
+              {!ex.weightEnabled && (
+                <Badge variant="outline" className="text-[9px] px-1 py-0">
+                  {t("session:builder_bodyweight")}
+                </Badge>
+              )}
+              {isAdvanced && ex.tempo && (
+                <Badge variant="outline" className="text-[9px] px-1 py-0">
+                  {ex.tempo}
+                </Badge>
+              )}
+              {isAdvanced && ex.rpeTarget && (
+                <Badge variant="outline" className="text-[9px] px-1 py-0">
+                  RPE {ex.rpeTarget}
+                </Badge>
+              )}
+            </div>
+          </div>
+          <span className="text-[10px] text-muted-foreground shrink-0">
+            {ex.restSeconds}s
+          </span>
+        </div>
+      </div>
+    </div>
+
+    {/* BiSetToggle entre cet exercice et le suivant */}
+    {idx < exercises.length - 1 && (
+      <BiSetToggle
+        linked={isLinkedToNext(exercises, idx)}
+        onToggle={() => onChange(toggleBiSet(exercises, idx))}
+      />
+    )}
+  </div>
+))}
+```
+
+---
+
+### Fichier 4 : `src/hooks/useSessionBuilder.ts`
+
+Dans la fonction `saveAndStart`, ajoute `superset_group` à chaque ligne exercice :
+
+```typescript
+const exerciseRows = state.exercises.map((ex, i) => ({
+  session_id: session.id,
+  section_id: section?.id ?? null,
+  exercise_id: ex.exerciseId,
+  sort_order: i,
+  sets: ex.sets,
+  reps_min: ex.repsMin,
+  reps_max: ex.repsMax,
+  rest_seconds: ex.restSeconds,
+  suggested_weight: ex.weightEnabled ? (ex.weightKg ?? null) : null,
+  tempo: ex.tempo ?? null,
+  rpe_target: ex.rpeTarget ?? null,
+  coach_notes: ex.note ?? null,
+  superset_group: ex.supersetGroup ?? null,   // NOUVEAU
+}));
+```
+
+---
+
+### Fichier 5 : `src/components/student/SessionBuilderModal.tsx`
+
+Dans la fonction `handleSaveTemplate` (qui insère dans `session_exercises`), ajoute aussi
+`superset_group` :
+
+```typescript
+const exerciseRows = state.exercises.map((ex, i) => ({
+  session_id: session.id,
+  section_id: section?.id ?? null,
+  exercise_id: ex.exerciseId,
+  sort_order: i,
+  sets: ex.sets,
+  reps_min: ex.repsMin,
+  reps_max: ex.repsMax,
+  rest_seconds: ex.restSeconds,
+  suggested_weight: ex.weightEnabled ? (ex.weightKg ?? null) : null,
+  tempo: ex.tempo ?? null,
+  rpe_target: ex.rpeTarget ?? null,
+  coach_notes: ex.note ?? null,
+  superset_group: ex.supersetGroup ?? null,   // NOUVEAU
+}));
+```
+
+---
+
+### Contraintes
+- Ne touche pas à `ExerciseEditSheet`, ni aux autres props de `LiveExerciseListProps`
+- Ne touche pas à la logique de génération de séance (generateSession)
+- Le draft localStorage n'a pas besoin de sérialiser `supersetGroup` — c'est perdu au rechargement, c'est acceptable
+- Aucune migration SQL nécessaire : `superset_group` existe déjà sur `session_exercises`
