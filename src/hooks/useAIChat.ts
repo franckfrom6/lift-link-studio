@@ -105,15 +105,16 @@ export function useAIChat(options?: UseAIChatOptions) {
       if (fnError) {
         let parsed: any = {};
         try {
-          parsed = typeof fnError === "string" ? JSON.parse(fnError) : fnError;
+          const body = await (fnError as any).context?.json?.();
+          parsed = body || {};
         } catch {
-          parsed = { message: fnError.message || String(fnError) };
+          parsed = { message: (fnError as any).message || String(fnError) };
         }
         if (parsed.error === "plan_required") toast.error(t("plan_required"));
         else if (parsed.error === "rate_limited") toast.error(t("rate_limited"));
         else if (
           parsed.error === "AI not configured" ||
-          parsed.message?.includes("AI not configured") ||
+          parsed.error === "Anthropic API key not configured" ||
           parsed.message?.includes("not configured")
         ) {
           toast.error("VOLT IA n'est pas encore configuré sur ce projet. Contactez le support.");
