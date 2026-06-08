@@ -1299,6 +1299,15 @@ const LiveSession = () => {
                         }
                       />
                     </div>
+                    {/* Bouton lier/délier bi-set avec l'exercice suivant */}
+                    {eIdx < section.exercises.length - 1 && !isSkipped && (
+                      <div className="flex justify-center my-1">
+                        <BiSetToggle
+                          linked={isLinkedToNext(section.exercises as any[], eIdx)}
+                          onToggle={() => handleToggleBiSet(sIdx, eIdx)}
+                        />
+                      </div>
+                    )}
                   </div>
                   );
                 })}
