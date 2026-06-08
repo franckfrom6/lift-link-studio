@@ -1,0 +1,186 @@
+## Timer de repos optionnel — toggle en séance + préférence profil
+
+### Contexte
+Le timer de repos (`LinearRestTimer`, état `globalRestSeconds` dans `LiveSession.tsx`)
+se déclenche automatiquement après chaque série validée. L'utilisateur veut pouvoir le
+désactiver complètement, soit pour toute la session (toggle rapide en cours de séance),
+soit par défaut via une préférence de profil.
+
+Il existe déjà `rest_timer_sound` et `auto_start_timer` dans le profil — même pattern.
+
+---
+
+### Partie 1 — Migration Supabase
+
+```sql
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS rest_timer_enabled boolean NOT NULL DEFAULT true;
+```
+
+---
+
+### Partie 2 — `src/pages/student/StudentProfile.tsx`
+
+#### a) Ajouter le state local (même pattern que restSound / autoTimer)
+
+```typescript
+const [restTimerEnabled, setRestTimerEnabled] = useState<boolean>(
+  (profile as any)?.rest_timer_enabled ?? true
+);
+```
+
+Et dans le `useEffect` de sync profil (là où `setRestSound` et `setAutoTimer` sont
+déjà mis à jour) :
+
+```typescript
+setRestTimerEnabled((profile as any).rest_timer_enabled ?? true);
+```
+
+#### b) Ajouter la Row dans la section Préférences
+
+Localise les deux lignes existantes (vers la ligne ~371) :
+
+```tsx
+<Row icon={Volume2} label="Son du timer" toggle={restSound} onToggle={(v) => { setRestSound(v); updateProfile({ rest_timer_sound: v }); }} />
+<Row icon={Play} label="Auto-start timer repos" last toggle={autoTimer} onToggle={(v) => { setAutoTimer(v); updateProfile({ auto_start_timer: v }); }} />
+```
+
+Remplace par (ajoute la nouvelle Row **avant** les deux existantes, sans `last` sur la
+nouvelle, reporte `last` sur la dernière) :
+
+```tsx
+<Row
+  icon={Timer}
+  label="Timer de repos"
+  description="Affiche un minuteur entre les séries"
+  toggle={restTimerEnabled}
+  onToggle={(v) => { setRestTimerEnabled(v); updateProfile({ rest_timer_enabled: v }); }}
+/>
+<Row icon={Volume2} label="Son du timer" toggle={restSound} onToggle={(v) => { setRestSound(v); updateProfile({ rest_timer_sound: v }); }} />
+<Row icon={Play} label="Auto-start timer repos" last toggle={autoTimer} onToggle={(v) => { setAutoTimer(v); updateProfile({ auto_start_timer: v }); }} />
+```
+
+Si `Timer` n'est pas encore importé depuis `lucide-react`, l'ajouter.
+
+---
+
+### Partie 3 — `src/components/student/WorkoutStatsBar.tsx`
+
+#### a) Ajouter les deux props optionnelles à l'interface
+
+```typescript
+restTimerEnabled?: boolean;
+onRestTimerToggle?: () => void;
+```
+
+#### b) Ajouter le bouton dans le header (zone des icônes d'action)
+
+Localise la zone où sont rendus `onProgression` et `onDelete` (icônes à droite du
+titre), et ajoute **en premier** :
+
+```tsx
+{onRestTimerToggle && (
+  <button
+    onClick={onRestTimerToggle}
+    className={cn(
+      "p-1.5 rounded-lg transition-colors",
+      restTimerEnabled
+        ? "text-foreground hover:bg-muted/60"
+        : "text-muted-foreground hover:bg-muted/60"
+    )}
+    title={restTimerEnabled ? "Désactiver le timer" : "Activer le timer"}
+  >
+    {restTimerEnabled
+      ? <Timer className="w-4 h-4" />
+      : <TimerOff className="w-4 h-4" />
+    }
+  </button>
+)}
+```
+
+Importer `Timer` et `TimerOff` depuis `lucide-react` si manquants.
+
+---
+
+### Partie 4 — `src/pages/student/LiveSession.tsx`
+
+#### a) Lire la préférence profil au montage
+
+```typescript
+const { user, profile } = useAuth();
+```
+
+Ajouter l'état local (s'initialise depuis le profil, et peut être overridé pendant la séance) :
+
+```typescript
+const [restTimerEnabled, setRestTimerEnabled] = useState<boolean>(
+  () => (profile as any)?.rest_timer_enabled ?? true
+);
+```
+
+Synchroniser si le profil charge après le montage :
+
+```typescript
+useEffect(() => {
+  if (profile) {
+    setRestTimerEnabled((profile as any).rest_timer_enabled ?? true);
+  }
+}, [profile]);
+```
+
+#### b) Gater `handleSupersetAwareRest`
+
+Localise `handleSupersetAwareRest` (vers la ligne ~403). Entoure CHAQUE appel à
+`setGlobalRestSeconds` d'une garde :
+
+```typescript
+const handleSupersetAwareRest = useCallback(
+  (key: string, restSec: number) => {
+    if (!restTimerEnabled) return;  // ← guard ajouté
+    const link = supersetPartnerMap[key];
+    if (!link) {
+      setGlobalRestSeconds(restSec);
+      return;
+    }
+    const myCount = countValidatedSets(key);
+    const partnerCount = countValidatedSets(link.partnerKey);
+    if (myCount > partnerCount) {
+      setActiveExercise(link.partnerKey);
+    } else {
+      setGlobalRestSeconds(restSec);
+      setActiveExercise(link.firstKey);
+    }
+  },
+  [restTimerEnabled, supersetPartnerMap, countValidatedSets, setActiveExercise],
+);
+```
+
+#### c) Passer les props au WorkoutStatsBar
+
+Localise le `<WorkoutStatsBar ... />` (vers la ligne ~1070) et ajoute :
+
+```tsx
+<WorkoutStatsBar
+  ...
+  restTimerEnabled={restTimerEnabled}
+  onRestTimerToggle={() => setRestTimerEnabled(prev => !prev)}
+/>
+```
+
+---
+
+### Comportement attendu
+
+| Scénario | Résultat |
+|----------|----------|
+| Profil : timer OFF (défaut) | Chaque nouvelle séance démarre sans timer |
+| Profil : timer ON (défaut) | Timer s'affiche normalement après chaque série |
+| Toggle en séance | Icône `Timer` ↔ `TimerOff` dans le header ; timer ne se déclenche plus pour le reste de la séance |
+| Timer actif + toggle OFF | Timer en cours disparaît (`globalRestSeconds` reste, mais aucun nouveau timer ne démarre) |
+| Bi-set | Le timer bi-set est aussi bloqué si timer désactivé |
+
+### Contraintes
+- Le toggle en séance est **local** — il ne modifie PAS la préférence profil en DB
+- Si le profil n'est pas encore chargé, la valeur par défaut est `true` (timer actif)
+- Ne pas supprimer les comportements `rest_timer_sound` et `auto_start_timer` existants
+- Ne pas toucher à `LinearRestTimer.tsx` — seul le déclenchement change
