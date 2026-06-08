@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, Loader2, X } from "lucide-react";
+import { ChevronLeft, MoreHorizontal, Timer, ArrowRight, Loader2, X, Pencil, Trash2, Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Meta, SectionLabel, VideoThumb, StatBadge, ExerciseNumber } from "@/components/student/SageAtoms";
 import { ExerciseVideoEmbed } from "@/components/student/ExerciseVideoEmbed";
+import ExercisePicker from "@/components/coach/ExercisePicker";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 /**
  * SessionPreview — Sage variant
