@@ -1,0 +1,426 @@
+## Batch de corrections — Stabilité mobile, séances et timers (10 bugs)
+
+### Contexte
+Code review complet sur l'app 6way. 10 bugs identifiés et vérifiés, groupés par fichier.
+Aucun changement de comportement visible pour l'utilisateur quand tout va bien — les fixes
+ne touchent que les chemins d'erreur, les timers et la robustesse mobile.
+
+---
+
+## PARTIE 1 — Migration Supabase (NOUVEAU)
+
+Crée une migration qui ajoute une contrainte unique sur `completed_sets` pour permettre
+l'upsert atomique (Fix #1) :
+
+```sql
+-- Contrainte unique pour permettre l'upsert sans DELETE préalable
+ALTER TABLE public.completed_sets
+  ADD CONSTRAINT completed_sets_unique_set
+  UNIQUE (completed_session_id, session_exercise_id, set_number);
+```
+
+---
+
+## PARTIE 2 — `src/pages/student/LiveSession.tsx`
+
+### Fix #1 — Remplacer DELETE+INSERT par upsert atomique (perte de données définitive)
+
+La fonction `saveSetsForExercise` fait DELETE puis INSERT sans transaction. Si l'INSERT
+échoue après le DELETE réussi, les séries de l'athlète sont définitivement perdues.
+
+Remplace la fonction entière (lignes 631-656) :
+
+```typescript
+// AVANT (dangereux)
+const { error: delError } = await supabase.from("completed_sets")
+  .delete()
+  .eq("completed_session_id", completedSessionId)
+  .eq("session_exercise_id", sessionExId);
+if (delError) { console.error("Error deleting sets:", delError); return false; }
+if (rows.length > 0) {
+  const { error } = await supabase.from("completed_sets").insert(rows);
+  if (error) { console.error("Error saving sets:", error); return false; }
+}
+return true;
+```
+
+Par :
+
+```typescript
+// APRÈS — upsert atomique, zéro perte de données
+const saveSetsForExercise = async (key: string): Promise<boolean> => {
+  if (!completedSessionId) return false;
+  const sets = completedSets[key] || [];
+  const sessionExId = sessionExerciseIdMap[key];
+  if (!sessionExId) return false;
+
+  const rows = sets.filter(s => s.reps > 0).map(s => ({
+    completed_session_id: completedSessionId,
+    session_exercise_id: sessionExId,
+    set_number: s.setNumber,
+    weight: s.weight || null,
+    reps: s.reps,
+    rpe_actual: s.rpeActual,
+    is_failure: s.isFailure,
+    duration_seconds: s.durationSeconds || null,
+  }));
+
+  if (rows.length === 0) {
+    // Aucune série valide — effacer proprement
+    const { error } = await supabase.from("completed_sets")
+      .delete()
+      .eq("completed_session_id", completedSessionId)
+      .eq("session_exercise_id", sessionExId);
+    if (error) { console.error("Error clearing sets:", error); return false; }
+    return true;
+  }
+
+  // Upsert : INSERT ou UPDATE si même (completed_session_id, session_exercise_id, set_number)
+  const { error: upsertError } = await supabase.from("completed_sets")
+    .upsert(rows, { onConflict: "completed_session_id,session_exercise_id,set_number" });
+  if (upsertError) { console.error("Error upserting sets:", upsertError); return false; }
+
+  // Supprimer les séries avec set_number qui n'existent plus (ex: athlète a réduit les séries)
+  const newSetNumbers = rows.map(r => r.set_number);
+  await supabase.from("completed_sets")
+    .delete()
+    .eq("completed_session_id", completedSessionId)
+    .eq("session_exercise_id", sessionExId)
+    .not("set_number", "in", `(${newSetNumbers.join(",")})`);
+
+  return true;
+};
+```
+
+---
+
+### Fix #2 — AlertDialogAction "Terminer" peut appeler finishSession() en double
+
+Le bouton "Terminer" dans l'AlertDialog (ligne ~1280) n'a pas de guard `isSaving`.
+
+Remplace :
+```tsx
+<AlertDialogAction onClick={() => finishSession()}>
+  Terminer
+</AlertDialogAction>
+```
+
+Par :
+```tsx
+<AlertDialogAction
+  onClick={() => { if (!isSaving) finishSession(); }}
+  disabled={isSaving}
+>
+  {isSaving ? "Sauvegarde…" : "Terminer"}
+</AlertDialogAction>
+```
+
+---
+
+### Fix #3 — storageKey du rest timer non scopé au sessionId
+
+Le timer stocke sa progression dans `rest_0-0`, `rest_0-1`, etc. sans inclure le sessionId.
+Deux séances avec la même structure d'exercices reprennent le mauvais timer.
+
+Ligne 1354, remplace :
+```tsx
+storageKey={`rest_${activeExerciseKey}`}
+```
+Par :
+```tsx
+storageKey={`rest_${selectedSessionId}_${activeExerciseKey}`}
+```
+
+---
+
+### Fix #7 — Auto-save continue après unmount ou sessionDone=true
+
+Ajoute un `mountedRef` pour protéger tous les setState du timeout d'auto-save.
+
+Juste après les autres `useRef` déclarations, ajoute :
+```typescript
+const mountedRef = useRef(true);
+useEffect(() => () => { mountedRef.current = false; }, []);
+```
+
+Dans l'useEffect d'auto-save (ligne ~660), remplace l'intérieur du setTimeout :
+```typescript
+autoSaveTimerRef.current = setTimeout(async () => {
+  if (!mountedRef.current || sessionDone) return; // NOUVEAU
+  setSaveStatus("saving");
+  // ... reste inchangé ...
+  await new Promise(r => setTimeout(r, 3000));
+  if (!mountedRef.current) return; // NOUVEAU avant la relance
+  // ... retry inchangé ...
+}, 2000);
+```
+
+Ajoute aussi `sessionDone` dans le tableau de dépendances de cet useEffect.
+
+---
+
+### Fix #8 — completedSetsRef stale d'un frame dans le callback bi-set
+
+`completedSetsRef` est mis à jour dans un useEffect (après render), mais
+`handleSupersetAwareRest` y accède synchronement depuis `onSetValidated`.
+
+Remplace le pattern useEffect par une mise à jour synchrone :
+```typescript
+// AVANT
+const completedSetsRef = useRef(completedSets);
+useEffect(() => {
+  completedSetsRef.current = completedSets;
+}, [completedSets]);
+```
+
+Par un setter wrappé qui met à jour le ref AVANT le re-render :
+```typescript
+const completedSetsRef = useRef(completedSets);
+
+// Wrapper qui met à jour ref et state de façon synchrone
+const setCompletedSetsSync = useCallback(
+  (updater: React.SetStateAction<Record<string, EnhancedCompletedSet[]>>) => {
+    setCompletedSets(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      completedSetsRef.current = next;
+      return next;
+    });
+  },
+  [],
+);
+```
+
+Ensuite remplace TOUS les appels `setCompletedSets(` par `setCompletedSetsSync(` dans
+tout le composant (notamment ligne ~1215 `onCompletedSetsChange`).
+Supprime l'ancien useEffect qui mettait à jour `completedSetsRef`.
+
+---
+
+### Fix #10 — hydrateOrCreate peut s'exécuter en double (onglets concurrents)
+
+Ajoute un guard local pour éviter deux exécutions concurrentes dans le même composant :
+
+```typescript
+const isHydratingRef = useRef(false);
+```
+
+En tête de la fonction `hydrateOrCreate` :
+```typescript
+const hydrateOrCreate = async () => {
+  if (isHydratingRef.current) return; // NOUVEAU
+  isHydratingRef.current = true;      // NOUVEAU
+  try {
+    // ... contenu existant inchangé ...
+  } catch (e) {
+    console.error("Error hydrating/creating completed session:", e);
+    toast.error(t("session:session_create_failed"));
+  } finally {
+    isHydratingRef.current = false;   // NOUVEAU
+  }
+};
+```
+
+---
+
+## PARTIE 3 — `src/components/student/LinearRestTimer.tsx`
+
+### Fix #4 — adjust() vide endTimeRef → timer figé après +15s/-15s
+
+Quand `adjust()` est appelé pendant que le timer tourne, il met `endTimeRef.current = null`.
+L'intervalle voit null et fait `return` sans mettre à jour l'affichage → timer figé.
+
+Remplace la fonction `adjust` (lignes 136-144) :
+
+```typescript
+// AVANT
+const adjust = (delta: number) => {
+  unlockAudio();
+  warmAudio();
+  endTimeRef.current = null;
+  if (storageKey) localStorage.removeItem(storageKey);
+  const newTotal = Math.max(10, totalSeconds + delta);
+  setTotalSeconds(newTotal);
+  setSeconds(s => Math.max(0, s + delta));
+};
+```
+
+Par :
+
+```typescript
+// APRÈS — met à jour endTimeRef directement pour que l'intervalle reparte
+const adjust = (delta: number) => {
+  unlockAudio();
+  warmAudio();
+  const newSeconds = Math.max(5, seconds + delta);
+  const newTotal = Math.max(10, totalSeconds + delta);
+  if (running) {
+    // Recalculer l'heure de fin basée sur les secondes restantes ajustées
+    endTimeRef.current = Date.now() + newSeconds * 1000;
+    if (storageKey) localStorage.setItem(storageKey, String(endTimeRef.current));
+  } else {
+    endTimeRef.current = null;
+    if (storageKey) localStorage.removeItem(storageKey);
+  }
+  setTotalSeconds(newTotal);
+  setSeconds(newSeconds);
+};
+```
+
+---
+
+## PARTIE 4 — `src/lib/audioUnlock.ts`
+
+### Fix #5 — Flag unlocked jamais réinitialisé — bip silencieux sur iOS après background
+
+Sur iOS, l'AudioContext peut être suspendu quand l'app passe en background (notification,
+ringer toggle). `unlocked = true` empêche le re-unlock → bip silencieux au second timer.
+
+Remplace le fichier entier :
+
+```typescript
+// Garde une référence au contexte audio partagé
+let audioCtx: AudioContext | null = null;
+
+/**
+ * Appeler lors de n'importe quel geste utilisateur.
+ * Si l'AudioContext est suspendu (iOS background/ringer), tente de le réactiver.
+ * Joue un silence pour débloquer la session audio iOS.
+ */
+export function unlockAudio(): void {
+  try {
+    if (!audioCtx) {
+      audioCtx = new AudioContext();
+    }
+    // Toujours tenter resume() — no-op si déjà running, nécessaire si suspendu
+    audioCtx.resume().catch(() => {});
+
+    // Jouer un silence uniquement si le contexte n'est pas encore running
+    if (audioCtx.state !== "running") {
+      const silence = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+      const el = new Audio(silence);
+      el.volume = 0.001;
+      el.play().catch(() => {});
+    }
+  } catch {}
+}
+
+/** Retourne le contexte audio partagé (utilisé par LinearRestTimer pour le bip). */
+export function getSharedAudioContext(): AudioContext | null {
+  return audioCtx;
+}
+```
+
+Dans `LinearRestTimer.tsx`, remplace l'import et utilise le contexte partagé pour le bip.
+Remplace :
+```typescript
+import { unlockAudio } from "@/lib/audioUnlock";
+// ...
+const ctx = audioCtxRef.current ?? new AudioContext();
+audioCtxRef.current = ctx;
+```
+Par :
+```typescript
+import { unlockAudio, getSharedAudioContext } from "@/lib/audioUnlock";
+// ...
+unlockAudio(); // S'assure que le contexte est running
+const ctx = getSharedAudioContext() ?? audioCtxRef.current ?? new AudioContext();
+audioCtxRef.current = ctx;
+```
+
+Et supprime la déclaration `audioCtxRef` et `warmAudio()` dans LinearRestTimer — ils sont
+maintenant gérés par le module audioUnlock. (Garde `warmAudio()` uniquement si d'autres
+composants l'utilisent, sinon supprime-le.)
+
+---
+
+## PARTIE 5 — `src/components/student/SessionBuilderModal.tsx`
+
+### Fix #6 — Double-tap "Démarrer la séance" crée deux sessions
+
+Il y a une fenêtre de ~16ms entre le clic et le re-render `disabled`. Un double-tap rapide
+lance `saveAndStart()` deux fois.
+
+Localise le bouton "Démarrer la séance" (ligne ~279). Remplace :
+```tsx
+<Button
+  className="w-full gap-2"
+  onClick={handleStartSession}
+  disabled={state.exercises.length === 0 || saving}
+>
+```
+
+Par (ajoute une ref locale qui bloque le second clic) :
+
+```tsx
+const startingRef = useRef(false);
+
+const handleStartSession = async () => {
+  if (startingRef.current) return; // NOUVEAU
+  startingRef.current = true;      // NOUVEAU
+  try {
+    const sessionId = await saveAndStart(date);
+    if (sessionId) {
+      onCreated?.();
+      onClose();
+      navigate(`/student/session/${sessionId}`);
+    }
+  } finally {
+    startingRef.current = false;   // NOUVEAU
+  }
+};
+
+// Le bouton reste inchangé :
+<Button
+  className="w-full gap-2"
+  onClick={handleStartSession}
+  disabled={state.exercises.length === 0 || saving}
+>
+```
+
+---
+
+## PARTIE 6 — `src/hooks/useSessionBuilder.ts`
+
+### Fix #9 — generateSession : early returns redondants masquent les erreurs
+
+Les lignes 74 et 93 appellent `setLoading(false)` avant `return` à l'intérieur du `try`.
+Le `finally` appelle aussi `setLoading(false)`, rendant ces appels redondants et fragiles.
+
+Simplifie en supprimant les `setLoading(false)` redondants dans le corps du `try` :
+
+```typescript
+// AVANT (ligne 73-75)
+if (muscleGroups.length === 0) {
+  setLoading(false); // ← supprimer
+  return;
+}
+
+// AVANT (ligne 91-94)
+if (!allExercises || allExercises.length === 0) {
+  toast.error(t("builder_no_exercises"));
+  setLoading(false); // ← supprimer
+  return;
+}
+```
+
+Le `finally { setLoading(false); }` à la fin du bloc gère tous les cas. Ne touche pas au
+reste de la fonction.
+
+---
+
+### Résumé des fichiers touchés
+
+| Fichier | Fixes |
+|---------|-------|
+| Migration Supabase (nouvelle) | Unique constraint `completed_sets` |
+| `LiveSession.tsx` | #1 upsert, #2 finishSession guard, #3 storageKey, #7 mounted guard, #8 ref sync, #10 hydration guard |
+| `LinearRestTimer.tsx` | #4 adjust() fix, #5 audioCtx partagé |
+| `audioUnlock.ts` | #5 resume() sur iOS |
+| `SessionBuilderModal.tsx` | #6 double-tap guard |
+| `useSessionBuilder.ts` | #9 nettoyage early returns |
+
+### Contraintes
+- Aucun changement de comportement visible quand tout va bien
+- Ne pas modifier les types TypeScript publics des composants (props, exports)
+- Ne pas toucher aux autres hooks ou pages
+- La migration SQL doit être idempotente (IF NOT EXISTS ou CREATE UNIQUE INDEX CONCURRENTLY)
