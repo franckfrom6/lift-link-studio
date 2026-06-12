@@ -485,6 +485,8 @@ const CoachProgramDetail = () => {
 
   const moveSection = async (sessionId: string, sectionId: string, direction: -1 | 1) => {
     if (!program) return;
+    let toPersist: { id: string; sort_order: number }[] = [];
+
     setProgram(prev => {
       if (!prev) return prev;
       return {
@@ -499,14 +501,32 @@ const CoachProgramDetail = () => {
             if (target < 0 || target >= secs.length) return s;
             [secs[idx], secs[target]] = [secs[target], secs[idx]];
             secs.forEach((sec, i) => { sec.sort_order = i; });
-            secs.forEach(sec => {
-              supabase.from("session_sections").update({ sort_order: sec.sort_order }).eq("id", sec.id);
-            });
+            toPersist = secs.map(sec => ({ id: sec.id, sort_order: sec.sort_order }));
             return { ...s, sections: secs };
           }),
         })),
       };
     });
+
+    if (toPersist.length > 0) {
+      void (async () => {
+        try {
+          const results = await Promise.all(
+            toPersist.map(sec =>
+              supabase.from("session_sections").update({ sort_order: sec.sort_order }).eq("id", sec.id)
+            )
+          );
+          const failed = results.find(r => r.error);
+          if (failed?.error) {
+            console.error("[CoachProgramDetail] moveSection persist failed:", failed.error);
+            toast.error("L'ordre n'a pas pu être sauvegardé — réessaie");
+          }
+        } catch (e) {
+          console.error("[CoachProgramDetail] moveSection persist failed:", e);
+          toast.error("L'ordre n'a pas pu être sauvegardé — réessaie");
+        }
+      })();
+    }
   };
 
   const selectSession = (id: string) => {
