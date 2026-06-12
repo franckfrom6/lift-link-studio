@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  Bell, ChevronLeft, ChevronRight, Ruler, Moon, Calendar, Volume2, Play,
+  Bell, ChevronLeft, ChevronRight, Ruler, Moon, Calendar, Volume2, Play, Timer,
   CreditCard, Receipt, Shield, Download, HelpCircle, Mail, FileText,
   type LucideIcon,
 } from "lucide-react";
@@ -135,6 +135,7 @@ const StudentProfile = () => {
   const [weekStart, setWeekStart] = useState<string>((profile as any)?.week_start ?? "monday");
   const [restSound, setRestSound] = useState<boolean>((profile as any)?.rest_timer_sound ?? true);
   const [autoTimer, setAutoTimer] = useState<boolean>((profile as any)?.auto_start_timer ?? true);
+  const [restTimerEnabled, setRestTimerEnabled] = useState<boolean>((profile as any)?.rest_timer_enabled ?? true);
 
   useEffect(() => {
     if (!profile) return;
@@ -142,6 +143,7 @@ const StudentProfile = () => {
     setWeekStart((profile as any).week_start ?? "monday");
     setRestSound((profile as any).rest_timer_sound ?? true);
     setAutoTimer((profile as any).auto_start_timer ?? true);
+    setRestTimerEnabled((profile as any).rest_timer_enabled ?? true);
   }, [profile]);
 
   // Sheets
@@ -368,6 +370,7 @@ const StudentProfile = () => {
         <Row icon={Ruler} label="Unités" value={unitsLabel} onClick={() => setOpenSheet("units")} />
         <Row icon={Moon} label="Apparence" value={themeLabel} onClick={() => setOpenSheet("theme")} />
         <Row icon={Calendar} label="Début de semaine" value={weekLabel} onClick={() => setOpenSheet("week")} />
+        <Row icon={Timer} label="Timer de repos" toggle={restTimerEnabled} onToggle={(v) => { setRestTimerEnabled(v); updateProfile({ rest_timer_enabled: v }); }} />
         <Row icon={Volume2} label="Son du timer" toggle={restSound} onToggle={(v) => { setRestSound(v); updateProfile({ rest_timer_sound: v }); }} />
         <Row icon={Play} label="Auto-start timer repos" last toggle={autoTimer} onToggle={(v) => { setAutoTimer(v); updateProfile({ auto_start_timer: v }); }} />
       </Section>

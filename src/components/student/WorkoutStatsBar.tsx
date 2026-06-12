@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Trash2, TrendingUp, CloudOff, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Trash2, TrendingUp, CloudOff, Loader2, Check, Timer, TimerOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
@@ -22,6 +22,8 @@ interface WorkoutStatsBarProps {
   showDelete?: boolean;
   onDelete?: () => void;
   saveStatus?: SaveStatus;
+  restTimerEnabled?: boolean;
+  onRestTimerToggle?: () => void;
 }
 
 const SaveStatusIndicator = ({ status }: { status: SaveStatus }) => {
@@ -88,6 +90,8 @@ const WorkoutStatsBar = ({
   showDelete,
   onDelete,
   saveStatus = "idle",
+  restTimerEnabled,
+  onRestTimerToggle,
 }: WorkoutStatsBarProps) => {
   const { t } = useTranslation(["session", "common"]);
   const isAdvanced = useIsAdvanced();
@@ -138,6 +142,17 @@ const WorkoutStatsBar = ({
         </div>
 
         <div className="flex items-center gap-1.5">
+          {onRestTimerToggle && (
+            <HeaderBtn
+              onClick={onRestTimerToggle}
+              ariaLabel={restTimerEnabled ? "Désactiver le timer" : "Activer le timer"}
+              active={restTimerEnabled}
+            >
+              {restTimerEnabled
+                ? <Timer className="w-4 h-4" strokeWidth={1.5} />
+                : <TimerOff className="w-4 h-4" strokeWidth={1.5} />}
+            </HeaderBtn>
+          )}
           {isAdvanced && onProgression && (
             <HeaderBtn
               onClick={onProgression}
