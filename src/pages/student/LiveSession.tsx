@@ -1219,7 +1219,12 @@ const LiveSession = () => {
         onDelete={() => setDeleteDialogOpen(true)}
         saveStatus={saveStatus}
         restTimerEnabled={restTimerEnabled}
-        onRestTimerToggle={() => setRestTimerEnabled(prev => !prev)}
+        onRestTimerToggle={() => {
+          setRestTimerEnabled(prev => {
+            if (prev) setGlobalRestSeconds(null); // turning off clears any running timer
+            return !prev;
+          });
+        }}
       />
 
       {/* Content — pb clears WorkoutNav + ShareButton + NextExercisePreview + safe-area.
