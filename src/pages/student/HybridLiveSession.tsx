@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import CardioBlockExecutor from "@/components/hybrid/CardioBlockExecutor";
 import MixedBlockExecutor from "@/components/hybrid/MixedBlockExecutor";
 import StrengthBlockExecutor from "@/components/hybrid/StrengthBlockExecutor";
 import HybridSessionRecap from "@/components/hybrid/HybridSessionRecap";
+import { HybridSessionBuilder } from "@/components/hybrid/HybridSessionBuilder";
 import { cn } from "@/lib/utils";
 
 type Phase = "overview" | "executing" | "done";
@@ -57,6 +58,7 @@ export default function HybridLiveSession() {
 
   const sessionStartRef = useRef<number>(0);
   const [elapsed, setElapsed] = useState(0);
+  const [isEditingSession, setIsEditingSession] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -161,9 +163,17 @@ export default function HybridLiveSession() {
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-bold truncate">
+            <h1 className="flex-1 text-lg font-bold truncate">
               {session.name || "Séance hybride"}
             </h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsEditingSession(true)}
+              aria-label="Modifier la séance"
+            >
+              <Pencil className="h-5 w-5" />
+            </Button>
           </div>
         </div>
 
@@ -241,6 +251,33 @@ export default function HybridLiveSession() {
             </Button>
           </div>
         </div>
+
+        <HybridSessionBuilder
+          open={isEditingSession}
+          onClose={() => setIsEditingSession(false)}
+          date={session.free_session_date ? new Date(session.free_session_date) : new Date()}
+          initialName={session.name ?? ""}
+          initialBlocks={blocks}
+          onSave={async (newName, newBlocks) => {
+            if (!sessionId) return;
+            const { error } = await supabase
+              .from("sessions")
+              .update({
+                name: newName,
+                hybrid_blocks: newBlocks as unknown as never,
+              })
+              .eq("id", sessionId);
+            if (error) {
+              console.error("[HybridLiveSession] update failed:", error);
+              toast.error("Erreur lors de la mise à jour");
+              return;
+            }
+            setSession((prev) =>
+              prev ? { ...prev, name: newName, hybrid_blocks: newBlocks } : prev,
+            );
+            toast.success("Séance mise à jour");
+          }}
+        />
       </div>
     );
   }
