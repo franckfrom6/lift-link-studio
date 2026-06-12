@@ -1,0 +1,94 @@
+## P14 — Fix impersonation : les séances running/hybrid sont enregistrées sur le mauvais compte
+
+### Cause racine
+Quand un coach utilise le mode "Visualiser en tant que" (impersonation), tout le code
+doit écrire avec `effectiveStudentId(user.id)` (l'ID de l'athlète) et non `user.id`
+(l'ID du coach). `LiveSession.tsx` le fait correctement, mais PAS
+`RunningLiveSession.tsx` ni `HybridLiveSession.tsx`.
+
+Conséquence : un coach qui teste une séance running/hybrid en impersonation crée des
+`completed_sessions` rattachées à SON compte coach — historique de l'athlète faussé,
+stats polluées côté coach.
+
+---
+
+### Fichier 1 : `src/pages/student/RunningLiveSession.tsx`
+
+#### a) Importer et utiliser le contexte d'impersonation
+
+```typescript
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+```
+
+Dans le composant :
+
+```typescript
+const { effectiveStudentId } = useImpersonation();
+const studentId = user ? effectiveStudentId(user.id) : null;
+```
+
+#### b) Remplacer les usages directs de `user.id`
+
+Localise les deux écritures (vers les lignes ~195 et ~212) qui font :
+
+```typescript
+student_id: user.id,
+```
+
+Remplace par :
+
+```typescript
+student_id: studentId!,
+```
+
+Vérifie aussi toutes les REQUÊTES de lecture du fichier qui filtrent par
+`.eq("student_id", user.id)` et remplace-les par `.eq("student_id", studentId)`.
+
+---
+
+### Fichier 2 : `src/pages/student/HybridLiveSession.tsx`
+
+Même opération :
+- Importer `useImpersonation`, calculer `studentId`
+- Localiser l'écriture vers la ligne ~304 (`student_id: user.id`) et remplacer par `studentId!`
+- Vérifier les lectures filtrées par `user.id` dans ce fichier
+
+---
+
+### Fichier 3 : `src/hooks/useChangeRequestsCount.ts`
+
+Bug secondaire : le callback realtime capture `user.id` dans sa closure. Après un
+logout/login, l'ancienne subscription invalide la queryKey de l'ANCIEN utilisateur.
+
+Localise le useEffect (vers les lignes ~36-52). Assure-toi que le channel est recréé
+quand `user.id` change (c'est déjà dans les deps) ET que le callback utilise une valeur
+stable :
+
+```typescript
+useEffect(() => {
+  const uid = user?.id;
+  if (!uid) return;
+  const ch = supabase.channel(`change-requests-${uid}`)
+    .on("postgres_changes", { /* ... config existante ... */ },
+      () => qc.invalidateQueries({ queryKey: QK(uid) })   // uid capturé localement, pas user.id
+    )
+    .subscribe();
+  return () => { supabase.removeChannel(ch); };
+}, [user?.id, qc]);
+```
+
+---
+
+### Comportement attendu
+- Coach en impersonation termine une séance running → la séance apparaît dans
+  l'historique de l'ATHLÈTE, pas du coach
+- Idem pour hybrid
+- Aucune régression pour l'athlète connecté normalement (effectiveStudentId(user.id)
+  retourne user.id quand il n'y a pas d'impersonation)
+- Logout/login : plus d'invalidations realtime croisées entre comptes
+
+### Contraintes
+- Pattern identique à LiveSession.tsx (lignes 67-69) — réutilise exactement la même approche
+- Ne pas modifier ImpersonationContext lui-même
+- RLS : les écritures du coach pour le compte de l'athlète passent déjà (policies
+  coach), ne rien changer côté DB

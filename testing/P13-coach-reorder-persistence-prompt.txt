@@ -1,0 +1,164 @@
+## P13 — Fix critique : les réordonnancements coach ne sont JAMAIS sauvegardés
+
+### Cause racine
+Dans `src/pages/coach/CoachProgramDetail.tsx`, les fonctions `moveExercise` (vers la
+ligne ~453) et `moveSection` (vers la ligne ~481) font :
+
+```typescript
+exs.forEach(e => {
+  supabase.from("session_exercises").update({ sort_order: e.sort_order }).eq("id", e.id);
+});
+```
+
+⚠️ En supabase-js v2, le query builder est "lazy" : la requête HTTP n'est envoyée
+QUE lorsqu'on `await` (ou `.then()`) le builder. Sans await, **AUCUNE requête ne part**.
+Résultat : l'UI se met à jour de façon optimiste, le coach croit que c'est sauvegardé,
+mais au refresh l'ordre revient à l'ancien.
+
+---
+
+### Fichier : `src/pages/coach/CoachProgramDetail.tsx`
+
+#### Fix 1 — `moveExercise`
+
+Remplace le bloc forEach non-awaité par un batch awaité avec gestion d'erreur.
+Comme on est dans un callback de `setState`, extrais la persistance hors du setState :
+
+```typescript
+const moveExercise = (sessionId: string, sectionId: string, exerciseId: string, direction: number) => {
+  let toPersist: { id: string; sort_order: number }[] = [];
+  setProgram(prev => {
+    // ... logique de swap existante inchangée ...
+    exs.forEach((e, i) => { e.sort_order = i; });
+    toPersist = exs.map(e => ({ id: e.id, sort_order: e.sort_order }));
+    return { ...sec, exercises: exs };
+    // ... reste inchangé ...
+  });
+  // Persistance APRÈS le setState, awaité, avec erreur visible
+  if (toPersist.length > 0) {
+    void (async () => {
+      const results = await Promise.all(
+        toPersist.map(e =>
+          supabase.from("session_exercises").update({ sort_order: e.sort_order }).eq("id", e.id)
+        )
+      );
+      const failed = results.find(r => r.error);
+      if (failed?.error) {
+        console.error("[CoachProgramDetail] moveExercise persist failed:", failed.error);
+        toast.error("L'ordre n'a pas pu être sauvegardé — réessaie");
+      }
+    })();
+  }
+};
+```
+
+#### Fix 2 — `moveSection`
+
+Même pattern exactement pour les sections :
+
+```typescript
+secs.forEach((sec, i) => { sec.sort_order = i; });
+toPersist = secs.map(sec => ({ id: sec.id, sort_order: sec.sort_order }));
+```
+
+puis après le setState :
+
+```typescript
+const results = await Promise.all(
+  toPersist.map(sec =>
+    supabase.from("session_sections").update({ sort_order: sec.sort_order }).eq("id", sec.id)
+  )
+);
+// même gestion d'erreur avec toast
+```
+
+#### Fix 3 — `addSection` : sort_order robuste aux gaps
+
+Localise `addSection` (vers la ligne ~291). Remplace `sort_order: session?.sections.length || 0` par :
+
+```typescript
+sort_order: (session?.sections?.length
+  ? Math.max(...session.sections.map(s => s.sort_order)) + 1
+  : 0),
+```
+
+#### Fix 4 — `useDebouncedSave` : logguer l'erreur réelle
+
+Localise le helper de save debouncé (vers la ligne ~88-112). Dans le `catch`, remplace
+le toast générique par :
+
+```typescript
+catch (e: any) {
+  console.error("[CoachProgramDetail] save error:", e);
+  toast.error(`Sauvegarde échouée${e?.message ? ` : ${e.message}` : ""}`);
+}
+```
+
+---
+
+### Fichier : `src/components/coach/SessionEditor.tsx`
+
+#### Fix 5 — Recalculer sortOrder + nettoyer sectionId à la suppression de section
+
+Localise `removeSection` (vers les lignes ~40-48). Les exercices déplacés vers la liste
+non-sectionnée gardent un `sectionId` pointant vers la section supprimée, et les
+sections restantes gardent des trous dans `sortOrder`. Remplace par :
+
+```typescript
+const removeSection = (index: number) => {
+  const removed = (session.sections || [])[index];
+  const movedExercises = (removed?.exercises || []).map(ex => ({ ...ex, sectionId: undefined }));
+  onUpdate({
+    ...session,
+    sections: (session.sections || [])
+      .filter((_, i) => i !== index)
+      .map((s, i) => ({ ...s, sortOrder: i })),
+    exercises: [...session.exercises, ...movedExercises],
+  });
+};
+```
+
+(Adapte les noms de champs exacts — `sortOrder` vs `sort_order`, `sectionId` vs
+`section_id` — à ce qui est utilisé dans ce fichier.)
+
+---
+
+### Fichier : `src/components/coach/SessionSectionEditor.tsx`
+
+#### Fix 6 — Recalculer sortOrder à la suppression d'exercice
+
+Localise `removeExercise` (vers la ligne ~29). Remplace :
+
+```typescript
+const removeExercise = (index: number) => {
+  onUpdate({ ...section, exercises: section.exercises.filter((_, i) => i !== index) });
+};
+```
+
+Par :
+
+```typescript
+const removeExercise = (index: number) => {
+  onUpdate({
+    ...section,
+    exercises: section.exercises
+      .filter((_, i) => i !== index)
+      .map((e, i) => ({ ...e, sortOrder: i })),
+  });
+};
+```
+
+(Même remarque sur le nom exact du champ.)
+
+---
+
+### Comportement attendu
+- Réordonner un exercice ou une section dans l'éditeur coach → persiste réellement en DB (vérifiable au refresh)
+- En cas d'échec réseau : toast explicite, pas de fausse confiance
+- Supprimer une section → les exercices déplacés n'ont plus de section_id fantôme, l'ordre des sections restantes est contigu (0,1,2…)
+- Supprimer un exercice d'une section → ordre contigu
+
+### Contraintes
+- Ne pas changer la logique de swap / drag existante — uniquement la persistance et le recalcul
+- Ne pas introduire de refetch complet après chaque move (garde l'optimistic update)
+- Ne pas toucher au superset_group ici (les valeurs existantes sont conservées telles quelles)

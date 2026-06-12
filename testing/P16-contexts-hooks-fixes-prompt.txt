@@ -1,0 +1,141 @@
+## P16 — Contexts & hooks : préférences perdues, historique IA croisé, realtime trop large
+
+### 4 bugs indépendants dans la couche data. Aucun changement d'UI.
+
+---
+
+### Fix 1 — `src/contexts/DisplayModeContext.tsx` : erreur d'update avalée
+
+Localise `toggle` (vers les lignes ~46-60) :
+
+```typescript
+supabase
+  .from("profiles")
+  .update({ display_mode: next } as any)
+  .eq("user_id", user.id)
+  .then();
+```
+
+Le `.then()` sans handler avale toute erreur : si l'update échoue, le mode revient à
+l'ancien au prochain login. Remplace par :
+
+```typescript
+supabase
+  .from("profiles")
+  .update({ display_mode: next } as any)
+  .eq("user_id", user.id)
+  .then(({ error }) => {
+    if (error) console.error("[DisplayMode] persist failed:", error);
+  });
+```
+
+---
+
+### Fix 2 — `src/contexts/OnboardingContext.tsx` : rollback si l'update échoue
+
+Localise `markStepSeen` (vers les lignes ~52-63). L'update est awaité mais sans
+gestion d'erreur : si la DB refuse, l'état local dit "vu" mais les tooltips
+réapparaîtront à la prochaine session. Remplace le corps par :
+
+```typescript
+const markStepSeen = useCallback(
+  async (key: string) => {
+    if (!user) return;
+    const previous = steps;
+    const updated = { ...steps, [key]: true };
+    setSteps(updated);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ onboarding_steps: updated } as any)
+      .eq("user_id", user.id);
+    if (error) {
+      console.error("[Onboarding] markStepSeen failed:", error);
+      setSteps(previous); // rollback — l'étape sera re-proposée
+    }
+  },
+  [user, steps]
+);
+```
+
+---
+
+### Fix 3 — `src/hooks/useAIChat.ts` : réinitialiser l'historique au changement d'utilisateur
+
+`initialLoaded` n'est jamais remis à false quand `user` change. Après un
+logout/login (ou un changement de compte), l'ancien historique de chat reste affiché
+et le nouvel utilisateur ne voit jamais le sien.
+
+Ajoute dans le hook un effet de reset sur le changement d'identité :
+
+```typescript
+const prevUserIdRef = useRef<string | null>(null);
+useEffect(() => {
+  const uid = user?.id ?? null;
+  if (prevUserIdRef.current !== null && prevUserIdRef.current !== uid) {
+    // utilisateur changé → purge l'état du chat
+    setMessages([]);          // adapte au nom réel du state des messages
+    setInitialLoaded(false);  // force le rechargement de l'historique
+  }
+  prevUserIdRef.current = uid;
+}, [user?.id]);
+```
+
+(Adapte les setters aux noms réels du hook — l'important : vider les messages et
+remettre `initialLoaded` à false quand `user.id` change.)
+
+---
+
+### Fix 4 — `src/hooks/useMealPlan.ts` : realtime sans filtre
+
+Localise les subscriptions realtime (vers les lignes ~138-147) sur `meals` et
+`meal_foods`. Elles n'ont AUCUN filtre → chaque modification de repas de N'IMPORTE
+QUEL utilisateur invalide la query et re-fetch le plan (gaspillage réseau notable
+sur mobile).
+
+Si le plan a un id connu (`planId` ou équivalent dans le hook), filtre côté serveur :
+
+```typescript
+.on("postgres_changes",
+  { event: "*", schema: "public", table: "meals", filter: `plan_id=eq.${planId}` },
+  () => { qc.invalidateQueries({ queryKey: PLAN_QK(studentId) }); onRemoteChange?.(); }
+)
+```
+
+Pour `meal_foods` (pas de plan_id direct), garde l'évènement mais ajoute un check
+client avant d'invalider : récupère les ids de meals du cache et n'invalide que si
+`payload.new?.meal_id` (ou `payload.old?.meal_id`) en fait partie — même pattern que
+`isRelevantSessionChild` dans `useStudentProgram.ts` (lignes ~225-230) :
+
+```typescript
+.on("postgres_changes",
+  { event: "*", schema: "public", table: "meal_foods" },
+  (payload) => {
+    const data = qc.getQueryData<any>(PLAN_QK(studentId));
+    const mealIds = data?.meals?.map((m: any) => m.id) || [];
+    const changedMealId = (payload.new as any)?.meal_id || (payload.old as any)?.meal_id;
+    if (!changedMealId || mealIds.includes(changedMealId)) {
+      qc.invalidateQueries({ queryKey: PLAN_QK(studentId) });
+      onRemoteChange?.();
+    }
+  }
+)
+```
+
+(Adapte les noms exacts — `plan_id`, structure du cache — à ce que le hook utilise
+réellement. Si le filtre serveur n'est pas possible faute de colonne, le check client
+suffit.)
+
+---
+
+### Comportement attendu
+- Toggle Simple/Avancé : si la persistance échoue, c'est visible en console (et le
+  localStorage garde au moins le choix local)
+- Tooltips d'onboarding : une étape marquée vue qui échoue en DB est re-proposée
+  (cohérence) au lieu de disparaître jusqu'au prochain device
+- Re-login avec un autre compte → le chat VOLT repart de l'historique du bon compte
+- Plan nutrition : plus de re-fetch quand un AUTRE athlète modifie ses repas
+
+### Contraintes
+- Aucun changement de signature publique des hooks/contexts
+- Pas de nouvelle dépendance
+- Ne pas toucher aux composants consommateurs

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const allowedOrigins = [
   "https://lift-link-studio.lovable.app",
@@ -77,6 +78,136 @@ const MODEL_FOR_ACTION: Record<string, string> = {
   generate_recommendation: "google/gemini-2.5-flash-lite",
 };
 
+// Anthropic (Claude) model tiers — mirrors MODEL_FOR_ACTION:
+// heavy reasoning actions → Opus, lightweight suggestions → Haiku.
+const ANTHROPIC_MODEL_FOR_ACTION: Record<string, string> = {
+  generate_program: "claude-opus-4-8",
+  cycle_report: "claude-opus-4-8",
+  analyze_week: "claude-opus-4-8",
+  optimize_week: "claude-opus-4-8",
+  chat: "claude-opus-4-8",
+  suggest_alternatives: "claude-haiku-4-5",
+  suggest_exercise: "claude-haiku-4-5",
+  estimate_macros: "claude-haiku-4-5",
+  suggest_meal: "claude-haiku-4-5",
+  recovery_recommendation: "claude-haiku-4-5",
+  weekly_insight: "claude-haiku-4-5",
+  generate_recommendation: "claude-haiku-4-5",
+};
+const ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5";
+
+// Convert OpenAI-style tool definitions ({type:"function", function:{name, description, parameters}})
+// to Anthropic tool format ({name, description, input_schema}).
+function toAnthropicTools(tools?: any[]) {
+  if (!tools || tools.length === 0) return undefined;
+  return tools.map((t: any) => ({
+    name: t.function?.name ?? t.name,
+    description: t.function?.description ?? t.description ?? "",
+    input_schema: t.function?.parameters ?? t.input_schema,
+  }));
+}
+
+// Convert OpenAI-style tool_choice to Anthropic tool_choice.
+function toAnthropicToolChoice(toolChoice?: any) {
+  if (!toolChoice) return undefined;
+  if (toolChoice.type === "auto") return { type: "auto" as const };
+  if (toolChoice.type === "function" && toolChoice.function?.name) {
+    return { type: "tool" as const, name: toolChoice.function.name };
+  }
+  return undefined;
+}
+
+// Same contract as callLovableAI: returns { error, result, toolName, rawContent,
+// inputTokens, outputTokens, durationMs }.
+async function callAnthropic(
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: any,
+  tools?: any[],
+  toolChoice?: any,
+  history?: Array<{ role: string; content: any }>
+) {
+  const client = new Anthropic({ apiKey });
+  const anthTools = toAnthropicTools(tools);
+  const anthToolChoice = toAnthropicToolChoice(toolChoice);
+
+  // History: keep user/assistant turns, coerce content to string,
+  // and drop leading assistant turns (first message must be "user").
+  const messages: Array<{ role: "user" | "assistant"; content: string }> = (history || [])
+    .filter((m: any) => m.role === "user" || m.role === "assistant")
+    .map((m: any) => ({
+      role: m.role as "user" | "assistant",
+      content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+    }));
+  while (messages.length > 0 && messages[0].role !== "user") messages.shift();
+  messages.push({
+    role: "user",
+    content: typeof userPrompt === "string" ? userPrompt : JSON.stringify(userPrompt),
+  });
+
+  // Adaptive thinking on Opus, except when a tool is forced
+  // (thinking is incompatible with forced tool_choice).
+  const forcedTool = anthToolChoice?.type === "tool";
+  const params: any = {
+    model,
+    max_tokens: 16000,
+    system: systemPrompt,
+    messages,
+  };
+  if (anthTools) {
+    params.tools = anthTools;
+    if (anthToolChoice) params.tool_choice = anthToolChoice;
+  }
+  if (!forcedTool && model.startsWith("claude-opus")) {
+    params.thinking = { type: "adaptive" };
+  }
+
+  const start = Date.now();
+  try {
+    const response = await client.messages.create(params);
+    const durationMs = Date.now() - start;
+
+    if (response.stop_reason === "refusal") {
+      console.error("Anthropic refusal:", (response as any).stop_details);
+      return { error: true, status: 500, durationMs, errText: "refusal" };
+    }
+
+    const toolUse = (response.content as any[]).find((b) => b.type === "tool_use");
+    const textContent = (response.content as any[])
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("\n");
+
+    let result: any;
+    if (toolUse) {
+      result = toolUse.input;
+    } else if (textContent) {
+      const cleaned = textContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      try {
+        result = JSON.parse(cleaned);
+      } catch {
+        result = { text: textContent };
+      }
+    }
+
+    return {
+      error: false,
+      result,
+      toolName: toolUse?.name || null,
+      rawContent: textContent,
+      inputTokens: response.usage?.input_tokens ?? null,
+      outputTokens: response.usage?.output_tokens ?? null,
+      durationMs,
+    };
+  } catch (e: any) {
+    const durationMs = Date.now() - start;
+    const status = typeof e?.status === "number" ? e.status : 500;
+    console.error("Anthropic API error:", status, e?.message || e);
+    return { error: true, status, durationMs, errText: e?.message || String(e) };
+  }
+}
+
 async function callLovableAI(
   apiKey: string,
   model: string,
@@ -147,9 +278,44 @@ async function callLovableAI(
   };
 }
 
-async function describeChatImage(apiKey: string, attachment: any) {
+const IMAGE_ANALYSIS_PROMPT =
+  "Analyse cette image de façon concise pour un coach sportif. Si elle contient une séance, extrais: nom éventuel, date/jour, sections, exercices, séries, répétitions, durées, charges, repos et notes visibles. Réponds en français, sans inventer.";
+
+async function describeChatImage(apiKey: string | undefined, attachment: any, anthropicKey?: string) {
   if (!attachment?.base64 || !attachment?.type?.startsWith("image/")) return "";
   const cleaned = String(attachment.base64).replace(/^data:[^,]+,/, "").replace(/\s/g, "");
+
+  // Preferred path: Claude vision (native multimodal)
+  if (anthropicKey) {
+    try {
+      const client = new Anthropic({ apiKey: anthropicKey });
+      const resp = await client.messages.create({
+        model: "claude-haiku-4-5",
+        max_tokens: 2048,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: { type: "base64", media_type: attachment.type, data: cleaned },
+              },
+              { type: "text", text: IMAGE_ANALYSIS_PROMPT },
+            ],
+          },
+        ],
+      });
+      return (resp.content as any[])
+        .filter((b) => b.type === "text")
+        .map((b) => b.text)
+        .join("\n");
+    } catch (e) {
+      console.error("Anthropic image analysis error:", e);
+      // fall through to gateway if available
+    }
+  }
+
+  if (!apiKey) return "";
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -164,7 +330,7 @@ async function describeChatImage(apiKey: string, attachment: any) {
           content: [
             {
               type: "text",
-              text: "Analyse cette image de façon concise pour un coach sportif. Si elle contient une séance, extrais: nom éventuel, date/jour, sections, exercices, séries, répétitions, durées, charges, repos et notes visibles. Réponds en français, sans inventer.",
+              text: IMAGE_ANALYSIS_PROMPT,
             },
             {
               type: "image_url",
@@ -1160,8 +1326,11 @@ serve(async (req) => {
     });
   }
 
+  // Provider selection: Claude (Anthropic) direct when ANTHROPIC_API_KEY is set,
+  // otherwise fall back to the Lovable AI gateway.
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) return jsonResp({ error: "AI not configured" }, 500);
+  if (!ANTHROPIC_API_KEY && !LOVABLE_API_KEY) return jsonResp({ error: "AI not configured" }, 500);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -1246,16 +1415,19 @@ serve(async (req) => {
       const sessionCtx = await fetchSessionContext(serviceClient, userId);
       const nutritionCtx = await fetchNutritionContext(serviceClient, userId);
       const coachCtx = await fetchCoachContext(serviceClient, userId);
-      const imageAnalysis = await describeChatImage(LOVABLE_API_KEY, payload?.attachment);
+      const imageAnalysis = await describeChatImage(LOVABLE_API_KEY, payload?.attachment, ANTHROPIC_API_KEY);
       (payload || {})._sessionContext = sessionCtx;
       (payload || {})._nutritionContext = nutritionCtx;
       (payload || {})._coachContext = coachCtx;
       (payload || {})._imageAnalysis = imageAnalysis;
     }
     const built = ACTION_BUILDERS[action](payload || {}, lang || "fr");
-    const model = MODEL_FOR_ACTION[action] || "google/gemini-2.5-flash-lite";
+    const useAnthropic = Boolean(ANTHROPIC_API_KEY);
+    const model = useAnthropic
+      ? (ANTHROPIC_MODEL_FOR_ACTION[action] || ANTHROPIC_DEFAULT_MODEL)
+      : (MODEL_FOR_ACTION[action] || "google/gemini-2.5-flash-lite");
 
-    // 7. Call AI — toutes les actions passent par la Lovable gateway (LOVABLE_API_KEY)
+    // 7. Call AI — Claude direct si ANTHROPIC_API_KEY est configurée, sinon gateway Lovable
     let aiResult;
     {
       const chatHistory = action === "chat"
@@ -1263,15 +1435,26 @@ serve(async (req) => {
             (m: any) => m.role === "user" || m.role === "assistant"
           )
         : undefined;
-      aiResult = await callLovableAI(
-        LOVABLE_API_KEY,
-        model,
-        built.system,
-        built.user,
-        built.tools,
-        built.toolChoice ?? (action === "chat" ? { type: "auto" } : undefined),
-        chatHistory
-      );
+      const toolChoice = built.toolChoice ?? (action === "chat" ? { type: "auto" } : undefined);
+      aiResult = useAnthropic
+        ? await callAnthropic(
+            ANTHROPIC_API_KEY!,
+            model,
+            built.system,
+            built.user,
+            built.tools,
+            toolChoice,
+            chatHistory
+          )
+        : await callLovableAI(
+            LOVABLE_API_KEY!,
+            model,
+            built.system,
+            built.user,
+            built.tools,
+            toolChoice,
+            chatHistory
+          );
     }
 
     // 7b. Pour chat : exécuter l'outil si l'IA en a appelé un, puis normaliser le résultat
@@ -1424,7 +1607,7 @@ serve(async (req) => {
     if (aiResult.error) {
       await serviceClient.from("ai_usage_logs").insert({
         user_id: userId, action, plan: planName, status: "error",
-        error_message: `AI error: ${aiResult.status}`,
+        error_message: `AI error: ${aiResult.status} — ${String((aiResult as any).errText || "").slice(0, 300)}`,
         duration_ms: aiResult.durationMs,
       });
       if (aiResult.status === 429) return jsonResp({ error: "ai_rate_limited" }, 429);
