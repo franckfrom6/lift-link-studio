@@ -34,18 +34,19 @@ export function useChangeRequestsCount() {
   });
 
   useEffect(() => {
-    if (!user?.id) return;
+    const uid = user?.id;
+    if (!uid) return;
     const ch = supabase
-      .channel(`change-requests-${user.id}`)
+      .channel(`change-requests-${uid}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "meal_plan_change_requests",
-          filter: `coach_id=eq.${user.id}`,
+          filter: `coach_id=eq.${uid}`,
         },
-        () => qc.invalidateQueries({ queryKey: QK(user.id) })
+        () => qc.invalidateQueries({ queryKey: QK(uid) })
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };

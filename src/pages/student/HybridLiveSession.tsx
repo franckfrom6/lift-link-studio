@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
   BLOCK_TYPE_COLORS,
   BLOCK_TYPE_ICONS,
@@ -46,6 +47,8 @@ export default function HybridLiveSession() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { effectiveStudentId } = useImpersonation();
+  const studentId = user ? effectiveStudentId(user.id) : null;
   const [session, setSession] = useState<SessionRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<Phase>("overview");
@@ -297,11 +300,11 @@ export default function HybridLiveSession() {
       elapsedSeconds={elapsed}
       onSave={async (globalRpe, sensation, notes) => {
         try {
-          if (!user) throw new Error("not auth");
+          if (!user || !studentId) throw new Error("not auth");
           const { data: cs, error: csErr } = await supabase
             .from("completed_sessions")
             .insert({
-              student_id: user.id,
+              student_id: studentId,
               session_id: sessionId!,
               started_at: new Date(sessionStartRef.current).toISOString(),
               completed_at: new Date().toISOString(),
