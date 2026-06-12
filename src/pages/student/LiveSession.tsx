@@ -108,6 +108,8 @@ const LiveSession = () => {
     if (profile) setRestTimerEnabled((profile as any).rest_timer_enabled ?? true);
   }, [profile]);
   const [completedSessionId, setCompletedSessionId] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [substitutions, setSubstitutions] = useState<Substitution[]>(
     () => _backup?.substitutions ?? []
   );
@@ -731,6 +733,7 @@ const LiveSession = () => {
       if (!mountedRef.current) return;
       if (allOk) {
         setSaveStatus("saved");
+        setLastSavedAt(new Date());
       } else {
         // First failure — toast + retry once after 3s
         toast.error(t("session:save_failed"));
@@ -748,6 +751,7 @@ const LiveSession = () => {
         if (!mountedRef.current) return;
         if (retryOk) {
           setSaveStatus("saved");
+          setLastSavedAt(new Date());
         } else {
           setSaveStatus("error");
           toast.error(t("session:save_failed_final"));
@@ -756,6 +760,36 @@ const LiveSession = () => {
     }, 2000);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
   }, [completedSets, completedSessionId, sessionExerciseIdMap, sessionDone, skippedExercises]);
+
+  // Revert "saved" to "idle" after 3s so the badge fades away
+  useEffect(() => {
+    if (saveStatus !== "saved") return;
+    const t = setTimeout(() => setSaveStatus("idle"), 3000);
+    return () => clearTimeout(t);
+  }, [saveStatus]);
+
+  // Manual retry — re-runs upsert on every exercise with unsaved sets
+  const triggerManualSave = useCallback(async () => {
+    if (!completedSessionId) return;
+    setSaveStatus("saving");
+    let allOk = true;
+    for (const key of Object.keys(completedSets)) {
+      if (!skippedExercises.has(key)) {
+        const ok = await saveSetsForExercise(key);
+        if (!ok) allOk = false;
+      }
+    }
+    if (!mountedRef.current) return;
+    if (allOk) {
+      setSaveStatus("saved");
+      setLastSavedAt(new Date());
+      toast.success(t("session:save_status_saved", { defaultValue: "Enregistré" }));
+    } else {
+      setSaveStatus("error");
+      toast.error(t("session:save_failed"));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedSessionId, completedSets, skippedExercises, sessionExerciseIdMap]);
 
   // Find next exercise key from current
   const getNextExerciseKey = useCallback((fromKey: string): string | null => {
@@ -1212,12 +1246,20 @@ const LiveSession = () => {
         completedExerciseCount={completedCount}
         inProgressExerciseCount={inProgressCount}
         sessionTitle={sessionProgram.title}
-        onBack={() => navigate("/student")}
+        onBack={() => {
+          const hasUnsavedData = Object.values(completedSets).some(s => s.length > 0);
+          if (hasUnsavedData && hasStartedWorkout && !sessionDone) {
+            setShowExitConfirm(true);
+          } else {
+            navigate("/student");
+          }
+        }}
         onProgression={() => setShowProgression(!showProgression)}
         showProgression={showProgression}
         showDelete={!hasStartedWorkout}
         onDelete={() => setDeleteDialogOpen(true)}
         saveStatus={saveStatus}
+        onRetrySave={saveStatus === "error" ? triggerManualSave : undefined}
         restTimerEnabled={restTimerEnabled}
         onRestTimerToggle={() => {
           setRestTimerEnabled(prev => {
@@ -1440,6 +1482,13 @@ const LiveSession = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          {completedCount === 0 && (
+            <p className="text-xs text-center text-muted-foreground mt-2">
+              {t("session:finish_requires_set", {
+                defaultValue: "Enregistre au moins une série pour terminer",
+              })}
+            </p>
+          )}
         </div>
       </div>
 
@@ -1496,6 +1545,46 @@ const LiveSession = () => {
             <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteSession} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {t('session:delete_session_confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("session:exit_confirm_title", { defaultValue: "Quitter la séance ?" })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("session:exit_confirm_desc", {
+                defaultValue:
+                  "Tes séries sont sauvegardées automatiquement. Tu peux reprendre cette séance depuis ton calendrier.",
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+            <AlertDialogCancel>
+              {t("session:exit_confirm_continue", {
+                defaultValue: "Continuer la séance",
+              })}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowExitConfirm(false);
+                navigate("/student");
+              }}
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            >
+              {t("session:exit_confirm_pause", { defaultValue: "Mettre en pause" })}
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={async () => {
+                setShowExitConfirm(false);
+                await handleDeleteSession();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("session:exit_confirm_abandon", { defaultValue: "Abandonner" })}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

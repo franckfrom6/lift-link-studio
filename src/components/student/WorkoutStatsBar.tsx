@@ -22,29 +22,48 @@ interface WorkoutStatsBarProps {
   showDelete?: boolean;
   onDelete?: () => void;
   saveStatus?: SaveStatus;
+  onRetrySave?: () => void;
   restTimerEnabled?: boolean;
   onRestTimerToggle?: () => void;
 }
 
-const SaveStatusIndicator = ({ status }: { status: SaveStatus }) => {
+const SaveStatusIndicator = ({
+  status,
+  onRetry,
+}: {
+  status: SaveStatus;
+  onRetry?: () => void;
+}) => {
   const { t } = useTranslation("session");
   if (status === "idle") return null;
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 text-[10px] font-medium tabular-nums",
-        status === "saving" && "text-muted-subtle",
-        status === "saved" && "text-muted-foreground",
-        status === "error" && "text-destructive"
-      )}
-    >
+  const isError = status === "error";
+  const clickable = isError && !!onRetry;
+  const className = cn(
+    "inline-flex items-center gap-1 text-[10px] font-medium tabular-nums",
+    status === "saving" && "text-muted-subtle",
+    status === "saved" && "text-muted-foreground",
+    isError && "text-destructive",
+    clickable && "cursor-pointer hover:underline"
+  );
+  const content = (
+    <>
       {status === "saving" && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
       {status === "saved" && <Check className="w-2.5 h-2.5" />}
       {status === "error" && <CloudOff className="w-2.5 h-2.5" />}
       {status === "saving" && t("save_status_saving")}
       {status === "saved" && t("save_status_saved")}
-      {status === "error" && t("save_status_error")}
-    </span>
+      {status === "error" &&
+        (clickable
+          ? t("save_status_retry", { defaultValue: "Réessayer" })
+          : t("save_status_error"))}
+    </>
+  );
+  return clickable ? (
+    <button type="button" onClick={onRetry} className={className}>
+      {content}
+    </button>
+  ) : (
+    <span className={className}>{content}</span>
   );
 };
 
@@ -90,6 +109,7 @@ const WorkoutStatsBar = ({
   showDelete,
   onDelete,
   saveStatus = "idle",
+  onRetrySave,
   restTimerEnabled,
   onRestTimerToggle,
 }: WorkoutStatsBarProps) => {
@@ -134,7 +154,7 @@ const WorkoutStatsBar = ({
         <div className="flex-1 min-w-0 text-center">
           <div className="text-[9px] uppercase tracking-[0.12em] font-semibold text-muted-subtle mb-0.5 flex items-center justify-center gap-2">
             <span>{t("session:in_progress", "En cours")}</span>
-            <SaveStatusIndicator status={saveStatus} />
+            <SaveStatusIndicator status={saveStatus} onRetry={onRetrySave} />
           </div>
           <div className="text-sm font-bold text-foreground tracking-tight truncate">
             {sessionTitle}
