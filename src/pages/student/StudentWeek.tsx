@@ -812,21 +812,35 @@ const StudentWeek = () => {
             Semaine
           </Button>
         )}
-        {/* Always visible: add a free/extra session for the selected day */}
+        {/* Desktop: header button. Mobile: floating action button below. */}
         <Button
-          variant="ghost"
+          variant="default"
           size="sm"
           onClick={() => {
             setSessionChooserDate(selectedDate);
             setSessionChooserOpen(true);
           }}
-          className="h-8 px-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
-          aria-label="Ajouter une séance"
+          className="hidden md:flex items-center gap-2"
+          aria-label="Nouvelle séance"
         >
-          <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={2} />
-          Séance
+          <Plus className="w-4 h-4" strokeWidth={2} />
+          Nouvelle séance
         </Button>
       </header>
+
+      {/* Mobile-only FAB — single, obvious entry point to create a session */}
+      <button
+        type="button"
+        onClick={() => {
+          setSessionChooserDate(selectedDate);
+          setSessionChooserOpen(true);
+        }}
+        className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg active:scale-95 transition-transform md:hidden"
+        aria-label="Nouvelle séance"
+      >
+        <Plus className="h-4 w-4" strokeWidth={2} />
+        Séance
+      </button>
 
       {/* No-program onboarding banner */}
       {!hasProgram && (
