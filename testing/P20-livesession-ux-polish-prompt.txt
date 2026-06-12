@@ -1,0 +1,201 @@
+## P20 — UX : Indicateurs d'état et polish pendant la séance
+
+### Contexte
+
+Pendant une séance de musculation (`LiveSession.tsx`), l'athlète n'a aucun retour visuel
+sur le statut de la sauvegarde automatique. Quand ça échoue, un toast "Sauvegarde échouée"
+apparaît et disparaît — sans moyen de retry ou de comprendre quoi s'est passé. De plus,
+appuyer accidentellement sur "Retour" abandonne la séance sans confirmation. Ces deux points
+créent de l'anxiété sur mobile.
+
+---
+
+### Fichier : `src/pages/student/LiveSession.tsx`
+
+#### Fix 1 — Indicateur de sauvegarde discret dans le header
+
+Ajoute les états :
+
+```typescript
+const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+```
+
+Dans `saveSetsForExercise`, au début de la fonction : `setSaveStatus("saving")`.
+Après le upsert réussi : `setSaveStatus("saved"); setLastSavedAt(new Date());`
+Après une erreur : `setSaveStatus("error");`
+
+Après un succès, remets automatiquement à "idle" après 3 secondes :
+```typescript
+useEffect(() => {
+  if (saveStatus === "saved") {
+    const t = setTimeout(() => setSaveStatus("idle"), 3000);
+    return () => clearTimeout(t);
+  }
+}, [saveStatus]);
+```
+
+Dans le header de LiveSession, ajoute un badge de statut à côté du titre :
+
+```tsx
+{saveStatus === "saving" && (
+  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+    <Loader2 className="h-3 w-3 animate-spin" />
+  </span>
+)}
+{saveStatus === "saved" && (
+  <span className="flex items-center gap-1 text-xs text-green-500">
+    <Check className="h-3 w-3" />
+  </span>
+)}
+{saveStatus === "error" && (
+  <span className="flex items-center gap-1 text-xs text-destructive cursor-pointer"
+        onClick={() => triggerManualSave()}>
+    <AlertTriangle className="h-3 w-3" />
+    <span>Retry</span>
+  </span>
+)}
+```
+
+Pour `triggerManualSave`, appelle simplement `saveSetsForExercise` pour l'exercice courant
+ou crée une fonction qui itère sur tous les exercices avec des séries non sauvegardées.
+
+#### Fix 2 — Dialogue de confirmation avant de quitter une séance active
+
+Localise le bouton "Retour" / "Quitter" dans LiveSession (vers le header, ligne ~100-150).
+Ajoute une intercept de navigation :
+
+```typescript
+const [showExitConfirm, setShowExitConfirm] = useState(false);
+const hasUnsavedData = Object.keys(completedSets).length > 0;
+
+const handleBackPress = () => {
+  if (hasUnsavedData && sessionStatus === "active") {
+    setShowExitConfirm(true);
+  } else {
+    navigate(-1);
+  }
+};
+```
+
+Remplace l'`onClick` du bouton retour par `handleBackPress`.
+
+Ajoute le dialogue de confirmation :
+
+```tsx
+<AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Quitter la séance ?</AlertDialogTitle>
+      <AlertDialogDescription>
+        Vos séries sont sauvegardées automatiquement. Vous pouvez reprendre
+        cette séance depuis votre programme.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+      <AlertDialogCancel>Continuer la séance</AlertDialogCancel>
+      <AlertDialogAction
+        variant="outline"
+        onClick={() => navigate("/student")}
+      >
+        Mettre en pause
+      </AlertDialogAction>
+      <AlertDialogAction
+        className="bg-destructive text-destructive-foreground"
+        onClick={() => { handleDeleteSession(); navigate("/student"); }}
+      >
+        Abandonner
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+```
+
+(Adapte `handleDeleteSession` à la fonction existante de suppression de séance.
+`sessionStatus === "active"` : utilise la variable d'état correcte qui indique qu'une
+séance est en cours — probablement `!!completedSessionId`.)
+
+#### Fix 3 — Bouton "Terminer la séance" disabled si aucune série enregistrée
+
+Localise le bouton "Terminer la séance" (vers les dernières lignes de la page).
+Ajoute une condition de disable :
+
+```tsx
+const canFinish = Object.values(completedSets).some(sets => sets.length > 0);
+
+<Button
+  disabled={!canFinish}
+  onClick={handleFinishSession}
+  className="w-full"
+>
+  Terminer la séance
+</Button>
+{!canFinish && (
+  <p className="text-xs text-center text-muted-foreground mt-1">
+    Enregistre au moins une série pour terminer
+  </p>
+)}
+```
+
+---
+
+### Fichier : `src/pages/student/RunningLiveSession.tsx`
+
+#### Fix 4 — Recap visuel avec barres proportionnelles
+
+Dans la phase "done" (vers la ligne ~315), remplace le tableau basique par un recap plus
+visuel. La structure actuelle montre les blocs en tableau ; transforme chaque ligne en
+carte avec une barre de progression :
+
+```tsx
+{/* Recap bloc */}
+{blocks.map((block, i) => {
+  const blockDist = results[block.id]?.distance_km ?? 0;
+  const totalDist = results ? Object.values(results).reduce((s, r) => s + (r.distance_km ?? 0), 0) : 1;
+  const pct = totalDist > 0 ? (blockDist / totalDist) * 100 : 0;
+
+  return (
+    <div key={block.id} className="rounded-lg border p-3 space-y-2">
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-medium">{block.label || `Bloc ${i + 1}`}</span>
+        <span className="text-muted-foreground">{blockDist.toFixed(2)} km</span>
+      </div>
+      {/* Barre proportionnelle */}
+      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full bg-primary transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      {results[block.id]?.duration_seconds && (
+        <p className="text-xs text-muted-foreground">
+          {formatDuration(results[block.id].duration_seconds)} —{" "}
+          allure {formatPace(blockDist, results[block.id].duration_seconds)} /km
+        </p>
+      )}
+    </div>
+  );
+})}
+```
+
+(Adapte les noms exacts — `results`, `blocks`, `block.id` — à ceux utilisés dans le
+fichier. `formatDuration` et `formatPace` : utilise les helpers déjà présents dans le
+fichier ou dans les utils.)
+
+---
+
+### Comportement attendu
+- Header de LiveSession : spinner gris pendant la sauvegarde, check vert 3s après succès,
+  icône alerte rouge (avec "Retry" tapable) en cas d'erreur
+- Bouton Retour pendant une séance active → dialogue de confirmation avec 3 options
+  (Continuer / Mettre en pause / Abandonner)
+- "Terminer la séance" grisé tant qu'aucune série n'est enregistrée
+- Recap de course à pied : cartes avec barres proportionnelles, allure par bloc
+
+### Contraintes
+- Le toast d'erreur existant (`toast.error(t("common:error"))`) peut coexister avec le
+  badge header — les deux rôles sont complémentaires (toast = notification fugace,
+  badge = état persistant)
+- Ne pas modifier la logique d'auto-save ou de upsert — uniquement les indicateurs visuels
+- AlertDialog : utilise le composant Shadcn/UI déjà dans le projet
+- Ne pas ajouter de dépendance externe

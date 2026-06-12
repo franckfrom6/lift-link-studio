@@ -1,0 +1,166 @@
+## P19 — UX : Édition pré-démarrage pour séances Course à pied et Hybride
+
+### Contexte
+
+`RunningLiveSession.tsx` (phase "ready") et `HybridLiveSession.tsx` (phase "overview")
+n'ont aucun bouton "Modifier" — l'athlète ne peut ni corriger un bloc, ni ajuster la durée
+ou l'allure cible avant de commencer. La seule façon d'éditer est de quitter, aller dans
+les paramètres, trouver la séance et passer par un éditeur différent. Objectif : ajouter
+un bouton Edit accessible depuis l'écran de présentation, AVANT que la séance démarre.
+
+---
+
+### Fichier : `src/pages/student/RunningLiveSession.tsx`
+
+#### Fix 1 — Bouton Edit dans le header de la phase "ready"
+
+Localise la phase "ready" (vers la ligne ~257). Dans le header de cette phase, à côté du
+bouton Retour, ajoute un bouton Edit :
+
+```tsx
+{/* Header phase ready */}
+<div className="flex items-center justify-between px-4 pt-safe pb-2">
+  <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+    <ArrowLeft className="h-5 w-5" />
+  </Button>
+  <span className="text-sm font-medium text-muted-foreground">Course à pied</span>
+  {/* AJOUT : bouton Edit */}
+  <Button
+    variant="ghost"
+    size="sm"
+    onClick={() => setIsEditingBlocks(true)}
+  >
+    <Pencil className="h-5 w-5" />
+  </Button>
+</div>
+```
+
+Ajoute l'état : `const [isEditingBlocks, setIsEditingBlocks] = useState(false);`
+
+Ajoute le rendu conditionnel du builder (juste avant le return principal) :
+
+```tsx
+if (isEditingBlocks) {
+  return (
+    <RunBlockEditor
+      sessionId={sessionId}         // ou l'id de la session courante
+      onClose={() => setIsEditingBlocks(false)}
+      onSaved={() => {
+        setIsEditingBlocks(false);
+        refetch?.();                 // recharge les blocs mis à jour
+      }}
+    />
+  );
+}
+```
+
+(Si `RunBlockEditor` n'accepte pas de prop `sessionId` en mode édition, crée un mode
+`editMode={true}` qui charge les blocs existants au lieu de partir d'un nouveau template.
+Adapte les noms exacts des props et du composant d'édition utilisé dans ce fichier.)
+
+#### Fix 2 — Garder le header symétrique quand l'edit n'est pas possible
+
+Si la séance est déjà complétée (cas edge), le bouton Pencil doit être remplacé par un
+spacer invisible pour garder le titre centré :
+
+```tsx
+{canEdit ? (
+  <Button variant="ghost" size="sm" onClick={() => setIsEditingBlocks(true)}>
+    <Pencil className="h-5 w-5" />
+  </Button>
+) : (
+  <div className="w-9" /> {/* spacer invisible */}
+)}
+```
+
+Avec `canEdit = !isCompleted` (récupère le statut de complétion depuis les props ou la
+query existante).
+
+---
+
+### Fichier : `src/pages/student/HybridLiveSession.tsx`
+
+#### Fix 3 — Bouton Edit dans le header de la phase "overview"
+
+Localise la phase "overview" (vers la ligne ~159). Dans le sticky header, ajoute un bouton
+Edit à droite du titre (même pattern que RunningLiveSession) :
+
+```tsx
+{/* Sticky header overview */}
+<div className="sticky top-0 z-10 flex items-center justify-between
+                bg-background/95 backdrop-blur px-4 py-3 border-b">
+  <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+    <ArrowLeft className="h-5 w-5" />
+  </Button>
+  <h1 className="text-sm font-semibold truncate mx-2">{session?.name}</h1>
+  {/* AJOUT : bouton Edit */}
+  {!isCompleted && (
+    <Button variant="ghost" size="icon" onClick={() => setIsEditingSession(true)}>
+      <Pencil className="h-5 w-5" />
+    </Button>
+  )}
+  {isCompleted && <div className="w-9" />}
+</div>
+```
+
+Ajoute `const [isEditingSession, setIsEditingSession] = useState(false);` et le rendu :
+
+```tsx
+{isEditingSession && (
+  <HybridSessionBuilder
+    sessionId={sessionId}
+    editMode={true}
+    onClose={() => setIsEditingSession(false)}
+    onSaved={() => {
+      setIsEditingSession(false);
+      refetch?.();
+    }}
+  />
+)}
+```
+
+(Même remarque : adapte aux noms exacts du builder hybride utilisé dans le projet.)
+
+---
+
+### Fichier : `src/pages/student/SessionPreview.tsx`
+
+#### Fix 4 — Bouton Edit visible dès la preview, pas seulement via query param
+
+Actuellement, le mode édition de la preview musculation est activé via `?edit=1` dans
+l'URL. Le bouton Pencil (vers la ligne ~586) est déjà présent mais peu visible sur mobile.
+Augmente sa tap target :
+
+```tsx
+<Button
+  variant="ghost"
+  size="default"         // était "sm" — plus grand = plus facile sur mobile
+  onClick={toggleEditMode}
+  className="gap-2"
+>
+  {isEditing ? (
+    <><Check className="h-4 w-4" /> Terminer</>
+  ) : (
+    <><Pencil className="h-4 w-4" /> Modifier</>
+  )}
+</Button>
+```
+
+Et affiche le bouton uniquement si `canEdit` (pas complété) — ce qui est probablement
+déjà le cas.
+
+---
+
+### Comportement attendu
+- RunningLiveSession phase "ready" : icône crayon en haut à droite → ouvre l'éditeur de
+  blocs, retour automatique à la phase "ready" après sauvegarde avec les blocs mis à jour
+- HybridLiveSession phase "overview" : même comportement avec le builder hybride
+- Les séances déjà complétées ne montrent pas le bouton Edit (spacer à la place)
+- SessionPreview : bouton "Modifier" avec tap target suffisant sur mobile
+
+### Contraintes
+- Ne pas modifier la logique d'exécution (phases "running" / "executing" / "done") —
+  uniquement la phase de présentation pré-démarrage
+- Ne pas changer les builders existants si `sessionId` + mode édition sont déjà supportés —
+  si ce n'est pas le cas, ajoute la prop `editMode={true}` + chargement des données existantes
+- Conserver le bouton Retour (<) existant — ne pas le supprimer pour faire de la place

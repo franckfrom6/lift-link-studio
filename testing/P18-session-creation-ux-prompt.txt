@@ -1,0 +1,183 @@
+## P18 — UX : Création de séance — consolider les points d'entrée
+
+### Contexte
+
+Deux points d'entrée identiques coexistent dans `StudentWeek.tsx` :
+1. Un bouton header "Créer une séance rapide" (ou "+ Séance") qui ouvre `SessionTypeChooser`
+2. Une option "Ajouter une séance" dans le menu trois-points de chaque jour — qui ouvre le
+   même `SessionTypeChooser`
+
+Sur mobile cela crée une confusion : l'athlète ne sait pas quel bouton utiliser, et le mot
+"rapide" laisse entendre que ce n'est qu'un raccourci musculation alors que le three-dots
+offre les trois types. Objectif : un seul point d'entrée évident pour créer, trois-points
+réservé à la gestion.
+
+---
+
+### Fichier : `src/pages/student/StudentWeek.tsx`
+
+#### Fix 1 — Remplacer le bouton header par un FAB mobile
+
+Localise le bouton "+ Séance" dans le header (vers la ligne ~816). Garde-le sur desktop
+(≥ 768 px) mais sur mobile (<768 px) remplace-le par un FAB flottant positionné en bas
+à droite de l'écran :
+
+```tsx
+{/* FAB mobile uniquement */}
+<button
+  className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full
+             bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground
+             shadow-lg active:scale-95 transition-transform md:hidden"
+  onClick={() => setShowSessionTypeChooser(true)}
+>
+  <Plus className="h-4 w-4" />
+  Séance
+</button>
+
+{/* Bouton header desktop uniquement */}
+<Button
+  className="hidden md:flex items-center gap-2"
+  onClick={() => setShowSessionTypeChooser(true)}
+>
+  <Plus className="h-4 w-4" />
+  Nouvelle séance
+</Button>
+```
+
+(Adapte `setShowSessionTypeChooser` au nom réel du setter de state qui ouvre le chooser.
+Assure-toi que le FAB n'est pas recouvert par la bottom nav — ajuste `bottom-24` si besoin.)
+
+#### Fix 2 — Menu trois-points : séparer "créer" et "gérer"
+
+Localise la liste d'items du menu trois-points d'un jour (vers la ligne ~1051-1105).
+
+**Quand le jour n'a PAS de séance programmée** (pas de `session`) :
+- Garde "Ajouter une séance" (Dumbbell) → ouvre `SessionTypeChooser`
+- Garde "Enregistrer une activité" (Activity) → ouvre l'activity logger
+- Retire tout le reste (pas de gestion sans séance)
+
+**Quand le jour A une séance** :
+- **Supprime** l'item "Ajouter une séance" — le FAB global remplit ce rôle
+- Garde tous les items de gestion : Démarrer, Modifier, Dupliquer, Déplacer, Supprimer
+- Si l'athlète veut ajouter UNE DEUXIÈME séance le même jour, le FAB est là pour ça
+
+Résultat : les trois-points ne font plus qu'une chose — gérer la séance existante.
+
+#### Fix 3 — Activer "Modifier" pour les séances running et hybrid
+
+Dans la condition qui affiche le bouton "Modifier" (vers la ligne ~1071-1077), retire la
+restriction par type :
+
+```typescript
+// Avant
+{session?.session_type !== 'running' && session?.session_type !== 'hybrid' && !isCompleted && (
+  <DropdownMenuItem onClick={handleEdit}>
+    <Pencil className="h-4 w-4 mr-2" /> Modifier
+  </DropdownMenuItem>
+)}
+
+// Après
+{!isCompleted && (
+  <DropdownMenuItem onClick={() => handleEditByType(session)}>
+    <Pencil className="h-4 w-4 mr-2" /> Modifier
+  </DropdownMenuItem>
+)}
+```
+
+Et définis `handleEditByType` :
+
+```typescript
+const handleEditByType = (session: Session) => {
+  const type = session.session_type ?? "strength";
+  if (type === "running") {
+    setRunEditSessionId(session.id);      // ouvre RunBlockEditor en mode édition
+    setShowRunBlockEditor(true);
+  } else if (type === "hybrid") {
+    setHybridEditSessionId(session.id);   // ouvre HybridSessionBuilder en mode édition
+    setShowHybridEditor(true);
+  } else {
+    navigate(`/student/session/${session.id}/preview?edit=1`);
+  }
+};
+```
+
+(Adapte les noms des setters — si `RunBlockEditor` et `HybridSessionBuilder` ont déjà
+une prop `sessionId` pour l'édition, utilise-les. S'ils n'en ont pas encore, cf. P19.)
+
+---
+
+### Fichier : `src/components/student/SessionTypeChooser.tsx`
+
+#### Fix 4 — Redesign mobile-first (liste verticale + sous-titres)
+
+Le chooser affiche actuellement 3 options en grille. Sur mobile, remplace par une liste
+verticale pour que chaque option soit facile à tapper :
+
+```tsx
+<div className="flex flex-col gap-3 p-4">
+  {/* Option 1 — Musculation (en premier, la plus utilisée) */}
+  <button
+    className="flex items-center gap-4 rounded-xl border p-4 text-left
+               hover:border-primary hover:bg-accent active:scale-[0.98] transition-all"
+    onClick={onSelectStrength}
+  >
+    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+      <Dumbbell className="h-5 w-5 text-primary" />
+    </div>
+    <div>
+      <p className="font-semibold">Musculation</p>
+      <p className="text-xs text-muted-foreground">Séries, répétitions, charges</p>
+    </div>
+    <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
+  </button>
+
+  {/* Option 2 — Course à pied */}
+  <button
+    className="flex items-center gap-4 rounded-xl border p-4 text-left
+               hover:border-primary hover:bg-accent active:scale-[0.98] transition-all"
+    onClick={onSelectRunning}
+  >
+    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
+      <Activity className="h-5 w-5 text-blue-500" />
+    </div>
+    <div>
+      <p className="font-semibold">Course à pied</p>
+      <p className="text-xs text-muted-foreground">Blocs d'allure et de distance</p>
+    </div>
+    <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
+  </button>
+
+  {/* Option 3 — Hybride */}
+  <button
+    className="flex items-center gap-4 rounded-xl border p-4 text-left
+               hover:border-primary hover:bg-accent active:scale-[0.98] transition-all"
+    onClick={onSelectHybrid}
+  >
+    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10">
+      <Zap className="h-5 w-5 text-orange-500" />
+    </div>
+    <div>
+      <p className="font-semibold">Hybride</p>
+      <p className="text-xs text-muted-foreground">Mix cardio + musculation</p>
+    </div>
+    <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
+  </button>
+</div>
+```
+
+(Adapte les callbacks `onSelectStrength`, `onSelectRunning`, `onSelectHybrid` aux noms
+réels des props. Garde les mêmes handlers — uniquement le style change.)
+
+---
+
+### Comportement attendu
+- Sur mobile : un seul FAB "Séance +" visible en bas à droite, toujours accessible
+- Menu trois-points d'un jour avec séance : UNIQUEMENT les actions de gestion (pas de "Ajouter")
+- Menu trois-points d'un jour SANS séance : "Ajouter une séance" + "Enregistrer une activité"
+- "Modifier" disponible pour les trois types de séance (sous réserve que P19 soit appliqué)
+- SessionTypeChooser : liste verticale lisible au doigt avec sous-titres clairs
+
+### Contraintes
+- Ne pas changer les callbacks et handlers existants — uniquement la présentation
+- Conserver "Ajouter une activité" (log externe) distinct de "Ajouter une séance"
+- Le FAB ne doit pas masquer la bottom navigation ni les CTAs en bas de page
