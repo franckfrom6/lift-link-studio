@@ -1,5 +1,5 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Dumbbell, Activity, Zap } from "lucide-react";
+import { Dumbbell, Activity, Zap, ChevronRight } from "lucide-react";
 
 interface SessionTypeChooserProps {
   open: boolean;
@@ -32,35 +32,50 @@ const SessionTypeChooser = ({
           <SheetTitle className="text-base">Quelle séance ajouter ?</SheetTitle>
         </SheetHeader>
 
-        <div className="grid grid-cols-3 gap-3 mt-4">
+        <div className="flex flex-col gap-3 mt-4">
           <button
             type="button"
             onClick={() => pick("strength")}
-            className="h-28 rounded-xl border border-border hover:border-primary/40 hover:bg-accent/30 transition-all flex flex-col items-center justify-center gap-1 px-2 text-center"
+            className="flex items-center gap-4 rounded-xl border border-border p-4 text-left hover:border-primary hover:bg-accent active:scale-[0.98] transition-all"
           >
-            <Dumbbell className="w-8 h-8 text-primary" strokeWidth={1.5} aria-hidden />
-            <span className="font-semibold text-sm">Musculation</span>
-            <span className="text-[10px] text-muted-foreground leading-tight">Exercices · Séries</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <Dumbbell className="h-5 w-5 text-primary" strokeWidth={1.75} aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-sm">Musculation</p>
+              <p className="text-xs text-muted-foreground">Séries, répétitions, charges</p>
+            </div>
+            <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
           </button>
 
           <button
             type="button"
             onClick={() => pick("run")}
-            className="h-28 rounded-xl border border-border hover:border-primary/40 hover:bg-accent/30 transition-all flex flex-col items-center justify-center gap-1 px-2 text-center"
+            className="flex items-center gap-4 rounded-xl border border-border p-4 text-left hover:border-primary hover:bg-accent active:scale-[0.98] transition-all"
           >
-            <Activity className="w-8 h-8 text-primary" strokeWidth={1.5} aria-hidden />
-            <span className="font-semibold text-sm">Course à pied</span>
-            <span className="text-[10px] text-muted-foreground leading-tight">Blocs · Allure</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
+              <Activity className="h-5 w-5 text-blue-500" strokeWidth={1.75} aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-sm">Course à pied</p>
+              <p className="text-xs text-muted-foreground">Blocs d'allure et de distance</p>
+            </div>
+            <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
           </button>
 
           <button
             type="button"
             onClick={() => pick("hybrid")}
-            className="h-28 rounded-xl border border-border hover:border-primary/40 hover:bg-accent/30 transition-all flex flex-col items-center justify-center gap-1 px-2 text-center"
+            className="flex items-center gap-4 rounded-xl border border-border p-4 text-left hover:border-primary hover:bg-accent active:scale-[0.98] transition-all"
           >
-            <Zap className="w-8 h-8 text-primary" strokeWidth={1.5} aria-hidden />
-            <span className="font-semibold text-sm">Hybride</span>
-            <span className="text-[10px] text-muted-foreground leading-tight">Cardio · Force · Mixed</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10">
+              <Zap className="h-5 w-5 text-orange-500" strokeWidth={1.75} aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-sm">Hybride</p>
+              <p className="text-xs text-muted-foreground">Mix cardio + musculation</p>
+            </div>
+            <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
           </button>
         </div>
       </SheetContent>
