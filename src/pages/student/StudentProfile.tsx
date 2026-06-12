@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  Bell, ChevronLeft, ChevronRight, Ruler, Moon, Calendar, Volume2, Play,
+  Bell, ChevronLeft, ChevronRight, Ruler, Moon, Calendar, Volume2, Play, Timer,
   CreditCard, Receipt, Shield, Download, HelpCircle, Mail, FileText,
   type LucideIcon,
 } from "lucide-react";
