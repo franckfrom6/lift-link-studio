@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
@@ -35,6 +35,17 @@ export function useAIChat(options?: UseAIChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
+
+  // Reset chat state when the signed-in user changes (logout/login or account switch).
+  const prevUserIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const uid = user?.id ?? null;
+    if (prevUserIdRef.current !== null && prevUserIdRef.current !== uid) {
+      setMessages([]);
+      setInitialLoaded(false);
+    }
+    prevUserIdRef.current = uid;
+  }, [user?.id]);
 
   const loadHistory = useCallback(async () => {
     if (!user || initialLoaded) return;

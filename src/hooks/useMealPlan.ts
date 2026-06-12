@@ -138,12 +138,30 @@ export function useMealPlanRealtime(studentId: string | null, onRemoteChange?: (
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "meals" },
-        () => { qc.invalidateQueries({ queryKey: PLAN_QK(studentId) }); onRemoteChange?.(); }
+        (payload) => {
+          const data = qc.getQueryData<MealPlanRow | null>(PLAN_QK(studentId));
+          const planId = data?.id;
+          const changedPlanId =
+            (payload.new as any)?.plan_id || (payload.old as any)?.plan_id;
+          if (!planId || !changedPlanId || changedPlanId === planId) {
+            qc.invalidateQueries({ queryKey: PLAN_QK(studentId) });
+            onRemoteChange?.();
+          }
+        }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "meal_foods" },
-        () => { qc.invalidateQueries({ queryKey: PLAN_QK(studentId) }); onRemoteChange?.(); }
+        (payload) => {
+          const data = qc.getQueryData<MealPlanRow | null>(PLAN_QK(studentId));
+          const mealIds = data?.meals?.map((m) => m.id) || [];
+          const changedMealId =
+            (payload.new as any)?.meal_id || (payload.old as any)?.meal_id;
+          if (!changedMealId || mealIds.includes(changedMealId)) {
+            qc.invalidateQueries({ queryKey: PLAN_QK(studentId) });
+            onRemoteChange?.();
+          }
+        }
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
