@@ -1549,6 +1549,46 @@ const LiveSession = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("session:exit_confirm_title", { defaultValue: "Quitter la séance ?" })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("session:exit_confirm_desc", {
+                defaultValue:
+                  "Tes séries sont sauvegardées automatiquement. Tu peux reprendre cette séance depuis ton calendrier.",
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+            <AlertDialogCancel>
+              {t("session:exit_confirm_continue", {
+                defaultValue: "Continuer la séance",
+              })}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowExitConfirm(false);
+                navigate("/student");
+              }}
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            >
+              {t("session:exit_confirm_pause", { defaultValue: "Mettre en pause" })}
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={async () => {
+                setShowExitConfirm(false);
+                await handleDeleteSession();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("session:exit_confirm_abandon", { defaultValue: "Abandonner" })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {globalRestSeconds !== null && globalRestSeconds > 0 && (
         <div
           className="fixed left-3 right-3 z-40 rounded-2xl shadow-lg overflow-hidden"
