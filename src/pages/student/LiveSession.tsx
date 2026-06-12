@@ -64,7 +64,7 @@ const LiveSession = () => {
   const { sessionId: selectedSessionId } = useParams<{ sessionId: string }>();
   const queryClient = useQueryClient();
   const { t } = useTranslation(['session', 'common']);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { program: dbProgram, loading: programLoading } = useStudentProgram();
   const isAdvanced = useIsAdvanced();
   const { effectiveStudentId } = useImpersonation();
