@@ -53,7 +53,9 @@ export const DisplayModeProvider: React.FC<{ children: React.ReactNode }> = ({ c
           .from("profiles")
           .update({ display_mode: next } as any)
           .eq("user_id", user.id)
-          .then();
+          .then(({ error }) => {
+            if (error) console.error("[DisplayMode] persist failed:", error);
+          });
       }
       return next;
     });
