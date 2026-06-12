@@ -2244,12 +2244,10 @@ export type Database = {
       }
       strava_connections: {
         Row: {
-          access_token: string | null
           access_token_enc: string | null
           created_at: string
           id: string
           last_sync_at: string | null
-          refresh_token: string | null
           refresh_token_enc: string | null
           scope: string | null
           strava_athlete_id: number
@@ -2259,12 +2257,10 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          access_token?: string | null
           access_token_enc?: string | null
           created_at?: string
           id?: string
           last_sync_at?: string | null
-          refresh_token?: string | null
           refresh_token_enc?: string | null
           scope?: string | null
           strava_athlete_id: number
@@ -2274,12 +2270,10 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          access_token?: string | null
           access_token_enc?: string | null
           created_at?: string
           id?: string
           last_sync_at?: string | null
-          refresh_token?: string | null
           refresh_token_enc?: string | null
           scope?: string | null
           strava_athlete_id?: number
