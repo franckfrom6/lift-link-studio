@@ -52,12 +52,17 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const markStepSeen = useCallback(
     async (key: string) => {
       if (!user) return;
+      const previous = steps;
       const updated = { ...steps, [key]: true };
       setSteps(updated);
-      await supabase
+      const { error } = await supabase
         .from("profiles")
         .update({ onboarding_steps: updated } as any)
         .eq("user_id", user.id);
+      if (error) {
+        console.error("[Onboarding] markStepSeen failed:", error);
+        setSteps(previous);
+      }
     },
     [user, steps]
   );
