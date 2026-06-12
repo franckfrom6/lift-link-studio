@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,6 +76,8 @@ const RunningLiveSession = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { effectiveStudentId } = useImpersonation();
+  const studentId = user ? effectiveStudentId(user.id) : null;
 
   const [loading, setLoading] = useState(true);
   const [sessionName, setSessionName] = useState("");
@@ -188,11 +191,11 @@ const RunningLiveSession = () => {
   };
 
   const handleSaveFinal = async () => {
-    if (!user || !sessionId || !startTime) return;
+    if (!user || !studentId || !sessionId || !startTime) return;
     setSaving(true);
     try {
       await supabase.from("completed_sessions").insert([{
-        student_id: user.id,
+        student_id: studentId,
         session_id: sessionId,
         started_at: startTime.toISOString(),
         completed_at: new Date().toISOString(),
@@ -209,7 +212,7 @@ const RunningLiveSession = () => {
           : null;
 
       await supabase.from("external_sessions").insert([{
-        student_id: user.id,
+        student_id: studentId,
         date: formatLocalDate(new Date()),
         activity_type: "running",
         activity_label: sessionName,
