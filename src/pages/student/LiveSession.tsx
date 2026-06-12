@@ -1246,12 +1246,20 @@ const LiveSession = () => {
         completedExerciseCount={completedCount}
         inProgressExerciseCount={inProgressCount}
         sessionTitle={sessionProgram.title}
-        onBack={() => navigate("/student")}
+        onBack={() => {
+          const hasUnsavedData = Object.values(completedSets).some(s => s.length > 0);
+          if (hasUnsavedData && hasStartedWorkout && !sessionDone) {
+            setShowExitConfirm(true);
+          } else {
+            navigate("/student");
+          }
+        }}
         onProgression={() => setShowProgression(!showProgression)}
         showProgression={showProgression}
         showDelete={!hasStartedWorkout}
         onDelete={() => setDeleteDialogOpen(true)}
         saveStatus={saveStatus}
+        onRetrySave={saveStatus === "error" ? triggerManualSave : undefined}
         restTimerEnabled={restTimerEnabled}
         onRestTimerToggle={() => {
           setRestTimerEnabled(prev => {
