@@ -23,10 +23,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { formatLocalDate } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
+import RunBlockEditor from "@/components/student/RunBlockEditor";
 import {
   RunBlock,
   RUN_BLOCK_COLORS,
@@ -96,6 +97,7 @@ const RunningLiveSession = () => {
 
   const [quitOpen, setQuitOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isEditingBlocks, setIsEditingBlocks] = useState(false);
 
   // Fetch session
   useEffect(() => {
@@ -257,12 +259,22 @@ const RunningLiveSession = () => {
   if (phase === "ready") {
     return (
       <div className="p-4 space-y-4 max-w-xl mx-auto pb-32">
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground min-h-[44px]"
-        >
-          <ArrowLeft className="w-4 h-4" /> Retour
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground min-h-[44px]"
+          >
+            <ArrowLeft className="w-4 h-4" /> Retour
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsEditingBlocks(true)}
+            className="w-11 h-11 inline-flex items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            aria-label="Modifier la séance"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+        </div>
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             Course à pied
@@ -307,6 +319,32 @@ const RunningLiveSession = () => {
             Démarrer la séance
           </Button>
         </div>
+
+        <RunBlockEditor
+          open={isEditingBlocks}
+          onClose={() => setIsEditingBlocks(false)}
+          date={new Date()}
+          sessionName={sessionName}
+          initialBlocks={blocks}
+          onSave={async (newName, newBlocks) => {
+            if (!sessionId) return;
+            const { error } = await supabase
+              .from("sessions")
+              .update({
+                name: newName,
+                run_blocks: newBlocks as unknown as never,
+              })
+              .eq("id", sessionId);
+            if (error) {
+              console.error("[RunningLiveSession] update failed:", error);
+              toast.error("Erreur lors de la mise à jour");
+              return;
+            }
+            setSessionName(newName);
+            setBlocks(newBlocks);
+            toast.success("Séance mise à jour");
+          }}
+        />
       </div>
     );
   }

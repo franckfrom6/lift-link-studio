@@ -35,6 +35,9 @@ interface HybridSessionBuilderProps {
   onClose: () => void;
   date: Date;
   onSave: (name: string, blocks: HybridBlock[]) => Promise<void>;
+  /** Prefill for edit mode — when provided, the builder opens on step 2 */
+  initialName?: string;
+  initialBlocks?: HybridBlock[];
 }
 
 const uid = () =>
@@ -85,6 +88,8 @@ export function HybridSessionBuilder({
   onClose,
   date,
   onSave,
+  initialName,
+  initialBlocks,
 }: HybridSessionBuilderProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState("");
@@ -93,17 +98,18 @@ export function HybridSessionBuilder({
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Reset on close/open
+  // Reset on close/open. Prefill when initialBlocks/initialName provided (edit mode).
   useEffect(() => {
     if (open) {
-      setStep(1);
-      setName("");
-      setBlocks([]);
+      const hasInitial = (initialBlocks?.length ?? 0) > 0 || !!initialName;
+      setStep(hasInitial ? 2 : 1);
+      setName(initialName ?? "");
+      setBlocks(initialBlocks ?? []);
       setExpandedId(null);
       setAddOpen(false);
       setSaving(false);
     }
-  }, [open]);
+  }, [open, initialName, initialBlocks]);
 
   const totalMin = useMemo(
     () => Math.round(estimatedSessionDuration(blocks) / 60),
