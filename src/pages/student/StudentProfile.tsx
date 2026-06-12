@@ -370,6 +370,7 @@ const StudentProfile = () => {
         <Row icon={Ruler} label="Unités" value={unitsLabel} onClick={() => setOpenSheet("units")} />
         <Row icon={Moon} label="Apparence" value={themeLabel} onClick={() => setOpenSheet("theme")} />
         <Row icon={Calendar} label="Début de semaine" value={weekLabel} onClick={() => setOpenSheet("week")} />
+        <Row icon={Timer} label="Timer de repos" toggle={restTimerEnabled} onToggle={(v) => { setRestTimerEnabled(v); updateProfile({ rest_timer_enabled: v }); }} />
         <Row icon={Volume2} label="Son du timer" toggle={restSound} onToggle={(v) => { setRestSound(v); updateProfile({ rest_timer_sound: v }); }} />
         <Row icon={Play} label="Auto-start timer repos" last toggle={autoTimer} onToggle={(v) => { setAutoTimer(v); updateProfile({ auto_start_timer: v }); }} />
       </Section>
