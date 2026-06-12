@@ -1,0 +1,160 @@
+## P15 — LiveSession : écritures silencieusement perdues + auto-save vs skip
+
+### Contexte
+Quatre écritures Supabase dans `src/pages/student/LiveSession.tsx` ne vérifient pas
+leur résultat — en cas d'échec (réseau, RLS), l'état local diverge de la DB sans
+aucun signal. Plus deux bugs de logique (auto-save vs skip, bi-set avec partenaire
+skippé).
+
+---
+
+### Fichier : `src/pages/student/LiveSession.tsx`
+
+#### Fix 1 — `handleConfirmSkip` : vérifier l'insert + rollback
+
+Localise `handleConfirmSkip` (vers la ligne ~840). L'insert `skipped_exercises` n'est
+pas vérifié : si l'insert échoue, l'exo est marqué skippé localement mais pas en DB
+(au refresh il revient). Remplace :
+
+```typescript
+const handleConfirmSkip = async (reason: string | null, reasonDetail: string | null) => {
+  if (!skipTargetKey || !completedSessionId) return;
+  const sessionExId = sessionExerciseIdMap[skipTargetKey];
+  if (sessionExId) {
+    await supabase.from("skipped_exercises").insert({
+      completed_session_id: completedSessionId,
+      session_exercise_id: sessionExId,
+      reason, reason_detail: reasonDetail,
+    });
+  }
+  setSkippedExercises(prev => new Set(prev).add(skipTargetKey));
+  ...
+```
+
+Par :
+
+```typescript
+const handleConfirmSkip = async (reason: string | null, reasonDetail: string | null) => {
+  if (!skipTargetKey || !completedSessionId) return;
+  const sessionExId = sessionExerciseIdMap[skipTargetKey];
+  if (sessionExId) {
+    const { error } = await supabase.from("skipped_exercises").insert({
+      completed_session_id: completedSessionId,
+      session_exercise_id: sessionExId,
+      reason, reason_detail: reasonDetail,
+    });
+    if (error) {
+      console.error("[LiveSession] skip insert failed:", error);
+      toast.error(t("common:error"));
+      return; // ne pas marquer skippé localement si la DB a refusé
+    }
+  }
+  setSkippedExercises(prev => new Set(prev).add(skipTargetKey));
+  ...
+```
+
+(Le reste de la fonction inchangé.)
+
+#### Fix 2 — Cleanup des séries excédentaires : vérifier l'erreur
+
+Dans `saveSetsForExercise`, localise le DELETE final qui supprime les séries dont le
+set_number n'existe plus (vers la ligne ~695) :
+
+```typescript
+await supabase.from("completed_sets")
+  .delete()
+  .eq("completed_session_id", completedSessionId)
+  .eq("session_exercise_id", sessionExId)
+  .not("set_number", "in", `(${newSetNumbers.join(",")})`);
+```
+
+Remplace par :
+
+```typescript
+const { error: cleanupError } = await supabase.from("completed_sets")
+  .delete()
+  .eq("completed_session_id", completedSessionId)
+  .eq("session_exercise_id", sessionExId)
+  .not("set_number", "in", `(${newSetNumbers.join(",")})`);
+if (cleanupError) {
+  console.error("[LiveSession] cleanup extra sets failed:", cleanupError);
+  // non bloquant : l'upsert principal a réussi, on ne fait pas échouer la sauvegarde
+}
+```
+
+#### Fix 3 — `handleDeleteSession` : vérifier le delete des completed_sessions
+
+Localise (vers la ligne ~884) :
+
+```typescript
+await supabase.from("completed_sessions").delete()
+  .eq("student_id", studentId).eq("session_id", selectedSession.id);
+```
+
+Remplace par :
+
+```typescript
+const { error: delCsError } = await supabase.from("completed_sessions").delete()
+  .eq("student_id", studentId).eq("session_id", selectedSession.id);
+if (delCsError) {
+  console.error("[LiveSession] delete completed_sessions failed:", delCsError);
+  toast.error(t("common:error"));
+  return; // ne pas soft-deleter la session si le nettoyage a échoué
+}
+```
+
+#### Fix 4 — Notification coach : logguer l'échec
+
+Localise l'insert `coach_notifications` (vers la ligne ~902). Entoure-le :
+
+```typescript
+const { error: notifError } = await supabase.from("coach_notifications").insert({ ... });
+if (notifError) console.error("[LiveSession] coach notification failed:", notifError);
+```
+
+(Non bloquant — juste tracé.)
+
+#### Fix 5 — Auto-save : réagir aux skips
+
+L'effet d'auto-save lit `skippedExercises` mais ne l'a pas dans ses dépendances. Si
+l'utilisateur skippe un exo pendant que le debounce court, le timer sauvegarde les
+séries de l'exo tout juste skippé. Localise le useEffect d'auto-save et ajoute
+`skippedExercises` aux dépendances :
+
+```typescript
+}, [completedSets, completedSessionId, sessionExerciseIdMap, skippedExercises]);
+```
+
+(Adapte à la liste de deps actuelle — ajoute juste `skippedExercises` et
+`sessionExerciseIdMap` s'ils manquent.)
+
+#### Fix 6 — Bi-set : ignorer un partenaire skippé
+
+Dans `handleSupersetAwareRest` (vers la ligne ~403), si le partenaire du bi-set est
+skippé, il faut se comporter comme un exercice solo (repos direct, pas de bascule vers
+le partenaire). Ajoute en tête de la branche bi-set :
+
+```typescript
+const link = supersetPartnerMap[key];
+if (!link || skippedExercises.has(link.partnerKey)) {
+  setGlobalRestSeconds(restSec);
+  return;
+}
+```
+
+Et ajoute `skippedExercises` aux dépendances du useCallback.
+
+---
+
+### Comportement attendu
+- Skip qui échoue en DB → toast d'erreur, l'exo reste actif (pas de désync)
+- Suppression de séance : si le nettoyage échoue, on n'efface pas la séance à moitié
+- Skip pendant un auto-save en cours → les séries du skippé ne sont pas re-sauvées
+- Bi-set dont un partenaire est skippé → le timer de repos se déclenche normalement
+  sur l'exo restant
+
+### Contraintes
+- Ne pas changer le flux upsert principal de `saveSetsForExercise` (déjà correct)
+- Tous les nouveaux logs préfixés `[LiveSession]`
+- Les erreurs non-bloquantes (cleanup, notification) ne déclenchent PAS de toast —
+  uniquement console.error

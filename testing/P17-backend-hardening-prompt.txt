@@ -1,0 +1,185 @@
+## P17 — Backend Supabase : durcissement edge functions + RLS
+
+### 6 correctifs indépendants côté backend. Aucun changement d'UI.
+
+---
+
+### Fix 1 — `supabase/functions/youtube-search/index.ts` : exiger l'authentification
+
+La fonction est appelable par n'importe qui (CORS *, pas de check JWT) → le quota
+YouTube API peut être épuisé par un tiers. Ajoute en tête de handler (après le
+traitement OPTIONS) :
+
+```typescript
+const authHeader = req.headers.get("authorization");
+if (!authHeader?.startsWith("Bearer ")) {
+  return new Response(JSON.stringify({ error: "Unauthorized" }), {
+    status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+const supabaseAuth = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_ANON_KEY")!,
+  { global: { headers: { Authorization: authHeader } } }
+);
+const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+if (authError || !user) {
+  return new Response(JSON.stringify({ error: "Unauthorized" }), {
+    status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+```
+
+(Importer `createClient` depuis esm.sh comme dans les autres fonctions. Vérifie que
+le client front passe déjà le header Authorization via `supabase.functions.invoke` —
+c'est automatique.)
+
+---
+
+### Fix 2 — `supabase/functions/send-push/index.ts` : même check d'auth
+
+La fonction est aujourd'hui un placeholder (elle logge seulement), mais elle est
+ouverte à tous. Ajoute le MÊME bloc d'authentification que Fix 1, PLUS une
+vérification d'autorisation sur `studentId` :
+
+```typescript
+// Le caller doit être le student lui-même OU son coach actif
+const serviceClient = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+);
+const isSelf = user.id === studentId;
+let isCoach = false;
+if (!isSelf) {
+  const { data: rel } = await serviceClient
+    .from("coach_students")
+    .select("id")
+    .eq("coach_id", user.id)
+    .eq("student_id", studentId)
+    .eq("status", "active")
+    .maybeSingle();
+  isCoach = !!rel;
+}
+if (!isSelf && !isCoach) {
+  return new Response(JSON.stringify({ error: "Forbidden" }), {
+    status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+```
+
+---
+
+### Fix 3 — `supabase/functions/strava-oauth-callback/index.ts` : valider le state
+
+Vers les lignes ~47-56, le state est décodé sans validation stricte des champs.
+Après le décodage, ajoute :
+
+```typescript
+if (!stateObj || typeof stateObj.uid !== "string" || !stateObj.uid) {
+  return new Response("Invalid state parameter", { status: 400 });
+}
+```
+
+(Adapte au nom réel de la variable décodée. L'objectif : refuser explicitement en 400
+un state malformé au lieu de continuer avec un userId vide.)
+
+---
+
+### Fix 4 — `supabase/functions/strava-sync-activities/index.ts` : parse JSON défensif
+
+Vers la ligne ~249 :
+
+```typescript
+const batch: StravaActivity[] = await res.json();
+```
+
+Remplace par :
+
+```typescript
+let batch: StravaActivity[];
+try {
+  batch = await res.json();
+} catch (e) {
+  console.error("[strava-sync] invalid JSON from Strava API:", e);
+  break; // sortir de la boucle de pagination proprement
+}
+if (!Array.isArray(batch)) {
+  console.error("[strava-sync] unexpected response shape:", batch);
+  break;
+}
+```
+
+---
+
+### Fix 5 — `supabase/functions/ai-coach/index.ts` : inserts résilients dans create_free_session
+
+Dans l'exécution du tool `create_free_session` (vers les lignes ~1285-1375), l'insert
+des `session_exercises` (vers la ligne ~1353) peut faire échouer TOUTE la création si
+un seul exercice pose problème. Entoure chaque insert d'exercice individuellement :
+
+```typescript
+try {
+  const { error: exError } = await serviceClient.from("session_exercises").insert({ ... });
+  if (exError) throw exError;
+} catch (e) {
+  console.error("[ai-coach] exercise insert failed, skipping:", e);
+  skippedExercises.push(exerciseName); // la liste skipped existe déjà dans ce flux
+}
+```
+
+Et inclure les exercices skippés dans la réponse à l'utilisateur (le message tool_results)
+pour que VOLT puisse mentionner : "séance créée, N exercices n'ont pas pu être ajoutés".
+
+---
+
+### Fix 6 — Migration RLS : WITH CHECK manquant
+
+La policy UPDATE `athlete_can_soft_delete_sessions`
+(migration `20260314163920_*`) a un `USING` mais pas de `WITH CHECK`. Crée une
+nouvelle migration :
+
+```sql
+-- Ajoute le WITH CHECK manquant à la policy de soft-delete athlète.
+-- (DROP + CREATE car ALTER POLICY ne permet pas d'ajouter WITH CHECK seul partout)
+DROP POLICY IF EXISTS "athlete_can_soft_delete_sessions" ON public.sessions;
+CREATE POLICY "athlete_can_soft_delete_sessions"
+  ON public.sessions
+  FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM program_weeks pw
+      JOIN programs p ON p.id = pw.program_id
+      WHERE pw.id = sessions.week_id AND p.student_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM program_weeks pw
+      JOIN programs p ON p.id = pw.program_id
+      WHERE pw.id = sessions.week_id AND p.student_id = auth.uid()
+    )
+  );
+```
+
+⚠️ IMPORTANT : avant d'écrire la migration, lis la policy EXISTANTE dans
+`supabase/migrations/20260314163920_9ee1d421-f9ce-44ac-8518-628f28723b25.sql` et
+recopie EXACTEMENT sa condition USING actuelle dans les deux clauses — ne pas
+inventer une condition différente.
+
+---
+
+### Comportement attendu
+- youtube-search et send-push : 401 sans token valide ; send-push : 403 si le caller
+  n'est ni le student ni son coach
+- Callback Strava avec state malformé → 400 propre
+- Sync Strava : une réponse API malformée n'explose plus la fonction (Internal Server Error)
+- VOLT : une séance se crée même si 1 exercice sur 6 échoue, et le message le signale
+- RLS sessions : un UPDATE athlète ne peut pas écrire des valeurs qui sortiraient du
+  périmètre de sa propre policy
+
+### Contraintes
+- Ne pas activer verify_jwt dans config.toml (le check se fait dans le code, comme
+  les autres fonctions du projet)
+- Ne pas modifier les autres policies existantes
+- Conserver les comportements actuels pour les appels légitimes (aucune régression front)
