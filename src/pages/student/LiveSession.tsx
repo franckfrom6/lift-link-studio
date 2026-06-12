@@ -403,7 +403,7 @@ const LiveSession = () => {
   const handleSupersetAwareRest = useCallback(
     (key: string, restSec: number) => {
       const link = supersetPartnerMap[key];
-      if (!link) {
+      if (!link || skippedExercises.has(link.partnerKey)) {
         setGlobalRestSeconds(restSec);
         return;
       }
@@ -418,7 +418,7 @@ const LiveSession = () => {
         setActiveExercise(link.firstKey);
       }
     },
-    [supersetPartnerMap, countValidatedSets, setActiveExercise],
+    [supersetPartnerMap, countValidatedSets, setActiveExercise, skippedExercises],
   );
 
   const mappedSections = useMemo<ProgramSection[]>(() => {
@@ -692,11 +692,15 @@ const LiveSession = () => {
 
     // Supprimer les séries dont le set_number n'existe plus (réduction du nb de séries)
     const newSetNumbers = rows.map(r => r.set_number);
-    await supabase.from("completed_sets")
+    const { error: cleanupError } = await supabase.from("completed_sets")
       .delete()
       .eq("completed_session_id", completedSessionId)
       .eq("session_exercise_id", sessionExId)
       .not("set_number", "in", `(${newSetNumbers.join(",")})`);
+    if (cleanupError) {
+      console.error("[LiveSession] cleanup extra sets failed:", cleanupError);
+      // non bloquant : l'upsert principal a réussi
+    }
 
     return true;
   };
@@ -744,7 +748,7 @@ const LiveSession = () => {
       }
     }, 2000);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
-  }, [completedSets, completedSessionId, sessionExerciseIdMap, sessionDone]);
+  }, [completedSets, completedSessionId, sessionExerciseIdMap, sessionDone, skippedExercises]);
 
   // Find next exercise key from current
   const getNextExerciseKey = useCallback((fromKey: string): string | null => {
@@ -840,11 +844,16 @@ const LiveSession = () => {
     if (!skipTargetKey || !completedSessionId) return;
     const sessionExId = sessionExerciseIdMap[skipTargetKey];
     if (sessionExId) {
-      await supabase.from("skipped_exercises").insert({
+      const { error } = await supabase.from("skipped_exercises").insert({
         completed_session_id: completedSessionId,
         session_exercise_id: sessionExId,
         reason, reason_detail: reasonDetail,
       });
+      if (error) {
+        console.error("[LiveSession] skip insert failed:", error);
+        toast.error(t("common:error"));
+        return;
+      }
     }
     setSkippedExercises(prev => new Set(prev).add(skipTargetKey));
     setSkipModalOpen(false);
@@ -881,8 +890,13 @@ const LiveSession = () => {
   const handleDeleteSession = async () => {
     if (!user || !selectedSession || !studentId) return;
     // Delete any completed session records first
-    await supabase.from("completed_sessions").delete()
+    const { error: delCsError } = await supabase.from("completed_sessions").delete()
       .eq("student_id", studentId).eq("session_id", selectedSession.id);
+    if (delCsError) {
+      console.error("[LiveSession] delete completed_sessions failed:", delCsError);
+      toast.error(t("common:error"));
+      return;
+    }
     const sessionName = selectedSession.name;
     const { data: updatedSession, error } = await supabase
       .from("sessions").update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: user.id })
@@ -899,10 +913,11 @@ const LiveSession = () => {
       const { data: profile } = await supabase.from("profiles")
         .select("full_name").eq("user_id", studentId).maybeSingle();
       const athleteName = profile?.full_name || user.email?.split("@")[0] || "Athlète";
-      await supabase.from("coach_notifications").insert({
+      const { error: notifError } = await supabase.from("coach_notifications").insert({
         coach_id: coachRow.coach_id, student_id: studentId,
         message: JSON.stringify({ key: "session_deleted_by_athlete", athlete: athleteName, session: sessionName }),
       });
+      if (notifError) console.error("[LiveSession] coach notification failed:", notifError);
     }
     setDeleteDialogOpen(false);
     navigate("/student");
