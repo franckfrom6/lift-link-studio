@@ -27,7 +27,12 @@ const SessionSectionEditor = ({ section, onUpdate, onRemove, onAddExercise }: Se
   };
 
   const removeExercise = (index: number) => {
-    onUpdate({ ...section, exercises: section.exercises.filter((_, i) => i !== index) });
+    onUpdate({
+      ...section,
+      exercises: section.exercises
+        .filter((_, i) => i !== index)
+        .map((e, i) => ({ ...e, sortOrder: i })),
+    });
   };
 
   const moveExercise = (index: number, direction: -1 | 1) => {
