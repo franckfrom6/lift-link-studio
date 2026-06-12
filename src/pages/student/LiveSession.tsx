@@ -733,6 +733,7 @@ const LiveSession = () => {
       if (!mountedRef.current) return;
       if (allOk) {
         setSaveStatus("saved");
+        setLastSavedAt(new Date());
       } else {
         // First failure — toast + retry once after 3s
         toast.error(t("session:save_failed"));
@@ -750,6 +751,7 @@ const LiveSession = () => {
         if (!mountedRef.current) return;
         if (retryOk) {
           setSaveStatus("saved");
+          setLastSavedAt(new Date());
         } else {
           setSaveStatus("error");
           toast.error(t("session:save_failed_final"));
@@ -758,6 +760,36 @@ const LiveSession = () => {
     }, 2000);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
   }, [completedSets, completedSessionId, sessionExerciseIdMap, sessionDone, skippedExercises]);
+
+  // Revert "saved" to "idle" after 3s so the badge fades away
+  useEffect(() => {
+    if (saveStatus !== "saved") return;
+    const t = setTimeout(() => setSaveStatus("idle"), 3000);
+    return () => clearTimeout(t);
+  }, [saveStatus]);
+
+  // Manual retry — re-runs upsert on every exercise with unsaved sets
+  const triggerManualSave = useCallback(async () => {
+    if (!completedSessionId) return;
+    setSaveStatus("saving");
+    let allOk = true;
+    for (const key of Object.keys(completedSets)) {
+      if (!skippedExercises.has(key)) {
+        const ok = await saveSetsForExercise(key);
+        if (!ok) allOk = false;
+      }
+    }
+    if (!mountedRef.current) return;
+    if (allOk) {
+      setSaveStatus("saved");
+      setLastSavedAt(new Date());
+      toast.success(t("session:save_status_saved", { defaultValue: "Enregistré" }));
+    } else {
+      setSaveStatus("error");
+      toast.error(t("session:save_failed"));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedSessionId, completedSets, skippedExercises, sessionExerciseIdMap]);
 
   // Find next exercise key from current
   const getNextExerciseKey = useCallback((fromKey: string): string | null => {
