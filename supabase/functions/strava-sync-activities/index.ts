@@ -246,7 +246,17 @@ Deno.serve(async (req) => {
         console.error("strava activities error:", res.status, body);
         return json({ error: "Strava API error" }, 500);
       }
-      const batch: StravaActivity[] = await res.json();
+      let batch: StravaActivity[];
+      try {
+        batch = await res.json();
+      } catch (e) {
+        console.error("[strava-sync] invalid JSON from Strava API:", e);
+        break;
+      }
+      if (!Array.isArray(batch)) {
+        console.error("[strava-sync] unexpected response shape:", batch);
+        break;
+      }
       activities.push(...batch);
       if (batch.length < 50) break;
     }
