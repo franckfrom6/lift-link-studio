@@ -39,11 +39,13 @@ const SessionEditor = ({ session, onUpdate, onRemove }: SessionEditorProps) => {
   };
 
   const removeSection = (index: number) => {
-    const removedSection = session.sections?.[index];
-    const movedExercises = removedSection?.exercises || [];
+    const removed = (session.sections || [])[index];
+    const movedExercises = (removed?.exercises || []).map(ex => ({ ...ex, sectionId: undefined }));
     onUpdate({
       ...session,
-      sections: (session.sections || []).filter((_, i) => i !== index),
+      sections: (session.sections || [])
+        .filter((_, i) => i !== index)
+        .map((s, i) => ({ ...s, sortOrder: i })),
       exercises: [...session.exercises, ...movedExercises],
     });
   };
