@@ -108,6 +108,8 @@ const LiveSession = () => {
     if (profile) setRestTimerEnabled((profile as any).rest_timer_enabled ?? true);
   }, [profile]);
   const [completedSessionId, setCompletedSessionId] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [substitutions, setSubstitutions] = useState<Substitution[]>(
     () => _backup?.substitutions ?? []
   );
