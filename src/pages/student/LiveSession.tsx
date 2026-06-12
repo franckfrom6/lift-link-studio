@@ -1482,6 +1482,13 @@ const LiveSession = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          {completedCount === 0 && (
+            <p className="text-xs text-center text-muted-foreground mt-2">
+              {t("session:finish_requires_set", {
+                defaultValue: "Enregistre au moins une série pour terminer",
+              })}
+            </p>
+          )}
         </div>
       </div>
 
