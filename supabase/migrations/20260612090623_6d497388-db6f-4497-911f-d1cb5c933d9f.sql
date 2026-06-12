@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS rest_timer_enabled boolean NOT NULL DEFAULT true;

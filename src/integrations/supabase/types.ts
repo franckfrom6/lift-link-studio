@@ -1524,6 +1524,7 @@ export type Database = {
           onboarding_completed: boolean
           onboarding_steps: Json | null
           push_subscription: string | null
+          rest_timer_enabled: boolean
           rest_timer_sound: boolean
           role: Database["public"]["Enums"]["app_role"] | null
           specialty: string | null
@@ -1557,6 +1558,7 @@ export type Database = {
           onboarding_completed?: boolean
           onboarding_steps?: Json | null
           push_subscription?: string | null
+          rest_timer_enabled?: boolean
           rest_timer_sound?: boolean
           role?: Database["public"]["Enums"]["app_role"] | null
           specialty?: string | null
@@ -1590,6 +1592,7 @@ export type Database = {
           onboarding_completed?: boolean
           onboarding_steps?: Json | null
           push_subscription?: string | null
+          rest_timer_enabled?: boolean
           rest_timer_sound?: boolean
           role?: Database["public"]["Enums"]["app_role"] | null
           specialty?: string | null
