@@ -101,6 +101,12 @@ const LiveSession = () => {
     return remaining > 0 ? remaining : null;
   });
   const [showProgression, setShowProgression] = useState(false);
+  const [restTimerEnabled, setRestTimerEnabled] = useState<boolean>(
+    () => (profile as any)?.rest_timer_enabled ?? true
+  );
+  useEffect(() => {
+    if (profile) setRestTimerEnabled((profile as any).rest_timer_enabled ?? true);
+  }, [profile]);
   const [completedSessionId, setCompletedSessionId] = useState<string | null>(null);
   const [substitutions, setSubstitutions] = useState<Substitution[]>(
     () => _backup?.substitutions ?? []
@@ -402,6 +408,7 @@ const LiveSession = () => {
    */
   const handleSupersetAwareRest = useCallback(
     (key: string, restSec: number) => {
+      if (!restTimerEnabled) return;
       const link = supersetPartnerMap[key];
       if (!link || skippedExercises.has(link.partnerKey)) {
         setGlobalRestSeconds(restSec);
@@ -418,7 +425,7 @@ const LiveSession = () => {
         setActiveExercise(link.firstKey);
       }
     },
-    [supersetPartnerMap, countValidatedSets, setActiveExercise, skippedExercises],
+    [supersetPartnerMap, countValidatedSets, setActiveExercise, skippedExercises, restTimerEnabled],
   );
 
   const mappedSections = useMemo<ProgramSection[]>(() => {
@@ -1211,6 +1218,8 @@ const LiveSession = () => {
         showDelete={!hasStartedWorkout}
         onDelete={() => setDeleteDialogOpen(true)}
         saveStatus={saveStatus}
+        restTimerEnabled={restTimerEnabled}
+        onRestTimerToggle={() => setRestTimerEnabled(prev => !prev)}
       />
 
       {/* Content — pb clears WorkoutNav + ShareButton + NextExercisePreview + safe-area.
