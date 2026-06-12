@@ -812,21 +812,35 @@ const StudentWeek = () => {
             Semaine
           </Button>
         )}
-        {/* Always visible: add a free/extra session for the selected day */}
+        {/* Desktop: header button. Mobile: floating action button below. */}
         <Button
-          variant="ghost"
+          variant="default"
           size="sm"
           onClick={() => {
             setSessionChooserDate(selectedDate);
             setSessionChooserOpen(true);
           }}
-          className="h-8 px-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
-          aria-label="Ajouter une séance"
+          className="hidden md:flex items-center gap-2"
+          aria-label="Nouvelle séance"
         >
-          <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={2} />
-          Séance
+          <Plus className="w-4 h-4" strokeWidth={2} />
+          Nouvelle séance
         </Button>
       </header>
+
+      {/* Mobile-only FAB — single, obvious entry point to create a session */}
+      <button
+        type="button"
+        onClick={() => {
+          setSessionChooserDate(selectedDate);
+          setSessionChooserOpen(true);
+        }}
+        className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg active:scale-95 transition-transform md:hidden"
+        aria-label="Nouvelle séance"
+      >
+        <Plus className="h-4 w-4" strokeWidth={2} />
+        Séance
+      </button>
 
       {/* No-program onboarding banner */}
       {!hasProgram && (
@@ -1046,16 +1060,28 @@ const StudentWeek = () => {
             sessionMeta = null;
           }
 
-          // Action menu (kept feature parity with previous version)
+          // Action menu — split between "no session" (create) and "has session" (manage)
           const hasMenu = !swapMode && (isSessionDay || !day.isPast);
+          const dayHasAnySession = isSessionDay || dayFreeSessions.length > 0;
+          const editRouteFor = (id: string, type?: string) => {
+            if (type === "running") return `/student/run/${id}?edit=1`;
+            if (type === "hybrid") return `/student/hybrid/${id}?edit=1`;
+            return `/student/session/${id}/preview?edit=1`;
+          };
           const actionMenu = hasMenu ? (
             <>
-              <DropdownMenuItem onClick={() => { setSessionChooserDate(day.date); setSessionChooserOpen(true); }}>
-                <Dumbbell className="w-4 h-4 mr-2" />{t('session:builder_title')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
-                <Plus className="w-4 h-4 mr-2" />{t('calendar:log_activity')}
-              </DropdownMenuItem>
+              {/* Empty day → create entrypoints only */}
+              {!dayHasAnySession && (
+                <>
+                  <DropdownMenuItem onClick={() => { setSessionChooserDate(day.date); setSessionChooserOpen(true); }}>
+                    <Dumbbell className="w-4 h-4 mr-2" />{t('session:builder_title')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
+                    <Plus className="w-4 h-4 mr-2" />{t('calendar:log_activity')}
+                  </DropdownMenuItem>
+                </>
+              )}
+              {/* Day with a programmed session → management actions */}
               {isSessionDay && sessionInfo && (
                 <>
                   <DropdownMenuItem onClick={() => { setDuplicateSession({ id: sessionInfo.sessionId, name: sessionInfo.name }); setDuplicateOpen(true); }}>
@@ -1068,38 +1094,34 @@ const StudentWeek = () => {
               )}
               {isSessionDay && sessionInfo && !sessionCompleted && (
                 <>
-                {sessionInfo.session_type !== "running" && sessionInfo.session_type !== "hybrid" && (
                   <DropdownMenuItem
-                    onClick={() => navigate(`/student/session/${sessionInfo.sessionId}/preview?edit=1`)}
+                    onClick={() => navigate(editRouteFor(sessionInfo.sessionId, sessionInfo.session_type))}
                   >
                     <Pencil className="w-4 h-4 mr-2" />{t('session:edit_session', { defaultValue: 'Modifier la séance' })}
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => { setDeleteTarget({ id: sessionInfo.sessionId, name: sessionInfo.name, isFreeSession: false }); setDeleteDialogOpen(true); }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />{t('session:delete_session')}
-                </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => { setDeleteTarget({ id: sessionInfo.sessionId, name: sessionInfo.name, isFreeSession: false }); setDeleteDialogOpen(true); }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />{t('session:delete_session')}
+                  </DropdownMenuItem>
                 </>
               )}
-              {dayFreeSessions[0]
-                && !isSessionCompleted(dayFreeSessions[0].id)
-                && dayFreeSessions[0].session_type !== "running"
-                && dayFreeSessions[0].session_type !== "hybrid" && (
-                <DropdownMenuItem
-                  onClick={() => navigate(`/student/session/${dayFreeSessions[0].id}/preview?edit=1`)}
-                >
-                  <Pencil className="w-4 h-4 mr-2" />{t('session:edit_session')}
-                </DropdownMenuItem>
-              )}
+              {/* Day with a free session → management actions */}
               {dayFreeSessions[0] && !isSessionCompleted(dayFreeSessions[0].id) && (
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => { setDeleteTarget({ id: dayFreeSessions[0].id, name: dayFreeSessions[0].name, isFreeSession: true }); setDeleteDialogOpen(true); }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />{t('session:delete_session')}
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem
+                    onClick={() => navigate(editRouteFor(dayFreeSessions[0].id, dayFreeSessions[0].session_type))}
+                  >
+                    <Pencil className="w-4 h-4 mr-2" />{t('session:edit_session', { defaultValue: 'Modifier la séance' })}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => { setDeleteTarget({ id: dayFreeSessions[0].id, name: dayFreeSessions[0].name, isFreeSession: true }); setDeleteDialogOpen(true); }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />{t('session:delete_session')}
+                  </DropdownMenuItem>
+                </>
               )}
             </>
           ) : null;
