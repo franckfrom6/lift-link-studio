@@ -100,8 +100,9 @@ function useDebouncedSave(delay = 600) {
         await fn();
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
-      } catch {
-        toast.error("Save error");
+      } catch (e: any) {
+        console.error("[CoachProgramDetail] save error:", e);
+        toast.error(`Sauvegarde échouée${e?.message ? ` : ${e.message}` : ""}`);
       } finally {
         setSaving(false);
       }
@@ -291,7 +292,9 @@ const CoachProgramDetail = () => {
   const addSection = async (sessionId: string) => {
     if (!newSectionName.trim()) return;
     const session = program?.weeks.flatMap(w => w.sessions).find(s => s.id === sessionId);
-    const sortOrder = session?.sections.length || 0;
+    const sortOrder = session?.sections?.length
+      ? Math.max(...session.sections.map(s => s.sort_order)) + 1
+      : 0;
 
     const { data, error } = await supabase.from("session_sections").insert({
       session_id: sessionId,
@@ -433,6 +436,8 @@ const CoachProgramDetail = () => {
 
   const moveExercise = async (sectionId: string, exerciseId: string, direction: -1 | 1) => {
     if (!program) return;
+    let toPersist: { id: string; sort_order: number }[] = [];
+
     setProgram(prev => {
       if (!prev) return prev;
       return {
@@ -449,16 +454,33 @@ const CoachProgramDetail = () => {
               if (target < 0 || target >= exs.length) return sec;
               [exs[idx], exs[target]] = [exs[target], exs[idx]];
               exs.forEach((e, i) => { e.sort_order = i; });
-              // Save sort orders
-              exs.forEach(e => {
-                supabase.from("session_exercises").update({ sort_order: e.sort_order }).eq("id", e.id);
-              });
+              toPersist = exs.map(e => ({ id: e.id, sort_order: e.sort_order }));
               return { ...sec, exercises: exs };
             }),
           })),
         })),
       };
     });
+
+    if (toPersist.length > 0) {
+      void (async () => {
+        try {
+          const results = await Promise.all(
+            toPersist.map(e =>
+              supabase.from("session_exercises").update({ sort_order: e.sort_order }).eq("id", e.id)
+            )
+          );
+          const failed = results.find(r => r.error);
+          if (failed?.error) {
+            console.error("[CoachProgramDetail] moveExercise persist failed:", failed.error);
+            toast.error("L'ordre n'a pas pu être sauvegardé — réessaie");
+          }
+        } catch (e) {
+          console.error("[CoachProgramDetail] moveExercise persist failed:", e);
+          toast.error("L'ordre n'a pas pu être sauvegardé — réessaie");
+        }
+      })();
+    }
   };
 
   const moveSection = async (sessionId: string, sectionId: string, direction: -1 | 1) => {
