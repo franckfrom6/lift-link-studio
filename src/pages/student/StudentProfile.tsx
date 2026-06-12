@@ -135,6 +135,7 @@ const StudentProfile = () => {
   const [weekStart, setWeekStart] = useState<string>((profile as any)?.week_start ?? "monday");
   const [restSound, setRestSound] = useState<boolean>((profile as any)?.rest_timer_sound ?? true);
   const [autoTimer, setAutoTimer] = useState<boolean>((profile as any)?.auto_start_timer ?? true);
+  const [restTimerEnabled, setRestTimerEnabled] = useState<boolean>((profile as any)?.rest_timer_enabled ?? true);
 
   useEffect(() => {
     if (!profile) return;
@@ -142,6 +143,7 @@ const StudentProfile = () => {
     setWeekStart((profile as any).week_start ?? "monday");
     setRestSound((profile as any).rest_timer_sound ?? true);
     setAutoTimer((profile as any).auto_start_timer ?? true);
+    setRestTimerEnabled((profile as any).rest_timer_enabled ?? true);
   }, [profile]);
 
   // Sheets
