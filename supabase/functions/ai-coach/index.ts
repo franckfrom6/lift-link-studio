@@ -1350,17 +1350,24 @@ serve(async (req) => {
                 skippedExercises.push(ex.name);
                 continue;
               }
-              await serviceClient.from("session_exercises").insert({
-                session_id: sessionId,
-                section_id: sectionRow.id,
-                exercise_id: exerciseId,
-                sort_order: exOrder++,
-                sets: ex.sets ?? 3,
-                reps_min: ex.reps_min ?? 8,
-                reps_max: ex.reps_max ?? 12,
-                rest_seconds: ex.rest_seconds ?? 90,
-                coach_notes: ex.coach_notes || null,
-              });
+              try {
+                const { error: exError } = await serviceClient.from("session_exercises").insert({
+                  session_id: sessionId,
+                  section_id: sectionRow.id,
+                  exercise_id: exerciseId,
+                  sort_order: exOrder,
+                  sets: ex.sets ?? 3,
+                  reps_min: ex.reps_min ?? 8,
+                  reps_max: ex.reps_max ?? 12,
+                  rest_seconds: ex.rest_seconds ?? 90,
+                  coach_notes: ex.coach_notes || null,
+                });
+                if (exError) throw exError;
+                exOrder++;
+              } catch (e) {
+                console.error("[ai-coach] exercise insert failed, skipping:", ex.name, e);
+                skippedExercises.push(ex.name);
+              }
             }
           }
           toolResults.push({
