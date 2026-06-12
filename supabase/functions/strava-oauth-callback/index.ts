@@ -58,6 +58,9 @@ Deno.serve(async (req) => {
   if (error) {
     return htmlResponse(`Strava a refusé l'accès: ${error}`, returnUrl, false);
   }
+  if (stateRaw && !userId) {
+    return new Response("Invalid state parameter", { status: 400 });
+  }
   if (!code || !userId) {
     return htmlResponse("Paramètres manquants", returnUrl, false);
   }
