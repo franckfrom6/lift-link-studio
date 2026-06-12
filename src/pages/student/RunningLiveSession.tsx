@@ -378,34 +378,46 @@ const RunningLiveSession = () => {
           </div>
         </div>
 
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="w-full text-xs">
-            <thead className="bg-muted/40">
-              <tr>
-                <th className="text-left p-2">Type</th>
-                <th className="text-left p-2">Objectif</th>
-                <th className="text-left p-2 tabular-nums">Réalisé</th>
-                <th className="text-left p-2 tabular-nums">Allure</th>
-                <th className="text-left p-2 tabular-nums">RPE</th>
-              </tr>
-            </thead>
-            <tbody>
-              {blocks.map((b, i) => {
-                const r = blockResults[i];
-                return (
-                  <tr key={b.id} className="border-t border-border">
-                    <td className="p-2">{RUN_BLOCK_LABELS[b.type]}</td>
-                    <td className="p-2">{blockTargetLabel(b)}</td>
-                    <td className="p-2 tabular-nums">
-                      {r?.actual_km ? `${r.actual_km.toFixed(2)} km` : "—"}
-                    </td>
-                    <td className="p-2 tabular-nums">{formatPaceSec(r?.actual_pace_s)}</td>
-                    <td className="p-2 tabular-nums">{r?.perceived_effort ?? "—"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          {blocks.map((b, i) => {
+            const r = blockResults[i];
+            const blockKm = r?.actual_km ?? 0;
+            const pct = totalActualKm > 0 ? (blockKm / totalActualKm) * 100 : 0;
+            return (
+              <div
+                key={b.id}
+                className={cn(
+                  "rounded-lg border p-3 space-y-2",
+                  RUN_BLOCK_COLORS[b.type],
+                )}
+              >
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="font-semibold truncate">
+                    {i + 1}. {RUN_BLOCK_LABELS[b.type]}
+                  </span>
+                  <span className="tabular-nums opacity-80">
+                    {blockKm > 0 ? `${blockKm.toFixed(2)} km` : "—"}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-background/40 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-foreground/70 transition-all"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3 text-xs opacity-80 tabular-nums">
+                  <span>Obj. {blockTargetLabel(b)}</span>
+                  <span className="flex items-center gap-2">
+                    {r?.actual_min ? <span>{r.actual_min.toFixed(1)} min</span> : null}
+                    {r?.actual_pace_s ? (
+                      <span>{formatPaceSec(r.actual_pace_s)} /km</span>
+                    ) : null}
+                    {r?.perceived_effort ? <span>RPE {r.perceived_effort}</span> : null}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <div className="fixed left-0 right-0 bottom-0 p-4 bg-background/95 backdrop-blur border-t border-border">
