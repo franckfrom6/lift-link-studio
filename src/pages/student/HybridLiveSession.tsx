@@ -355,24 +355,28 @@ export default function HybridLiveSession() {
           if (csErr) throw csErr;
 
           if (blockExecutions.length > 0) {
-            await supabase.from("hybrid_block_executions").insert(
-              blockExecutions.map((be) => ({
-                completed_session_id: cs.id,
-                block_id: be.block_id,
-                status: be.status,
-                skip_reason: be.skip_reason || null,
-                log_data: {
-                  cardio_log: be.cardio_log,
-                  strength_log: be.strength_log,
-                  mixed_log: be.mixed_log,
-                } as any,
-              })),
-            );
+            const { error: beErr } = await supabase
+              .from("hybrid_block_executions")
+              .insert(
+                blockExecutions.map((be) => ({
+                  completed_session_id: cs.id,
+                  block_id: be.block_id,
+                  status: be.status,
+                  skip_reason: be.skip_reason || null,
+                  log_data: {
+                    cardio_log: be.cardio_log,
+                    strength_log: be.strength_log,
+                    mixed_log: be.mixed_log,
+                  } as any,
+                })),
+              );
+            if (beErr) throw beErr;
           }
 
           toast.success("Séance enregistrée !");
           navigate("/student");
-        } catch {
+        } catch (e) {
+          console.error("[HybridLiveSession] save failed:", e);
           toast.error("Erreur lors de l'enregistrement");
         }
       }}

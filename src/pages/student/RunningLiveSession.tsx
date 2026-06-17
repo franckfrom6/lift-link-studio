@@ -196,13 +196,14 @@ const RunningLiveSession = () => {
     if (!user || !studentId || !sessionId || !startTime) return;
     setSaving(true);
     try {
-      await supabase.from("completed_sessions").insert([{
+      const { error: csErr } = await supabase.from("completed_sessions").insert([{
         student_id: studentId,
         session_id: sessionId,
         started_at: startTime.toISOString(),
         completed_at: new Date().toISOString(),
         duration: sessionElapsed,
       }]);
+      if (csErr) throw csErr;
 
       const totalActualKm = blockResults.reduce(
         (a, r) => a + (r.actual_km || 0),
@@ -228,7 +229,7 @@ const RunningLiveSession = () => {
       toast.success("Séance enregistrée 🎉");
       navigate("/student");
     } catch (e) {
-      console.error(e);
+      console.error("[RunningLiveSession] save failed:", e);
       toast.error("Erreur lors de l'enregistrement");
     } finally {
       setSaving(false);
