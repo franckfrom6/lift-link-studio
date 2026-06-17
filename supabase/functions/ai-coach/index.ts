@@ -126,7 +126,8 @@ async function callAnthropic(
   userPrompt: any,
   tools?: any[],
   toolChoice?: any,
-  history?: Array<{ role: string; content: any }>
+  history?: Array<{ role: string; content: any }>,
+  attachment?: any
 ) {
   const client = new Anthropic({ apiKey });
   const anthTools = toAnthropicTools(tools);
@@ -134,17 +135,33 @@ async function callAnthropic(
 
   // History: keep user/assistant turns, coerce content to string,
   // and drop leading assistant turns (first message must be "user").
-  const messages: Array<{ role: "user" | "assistant"; content: string }> = (history || [])
+  const messages: Array<{ role: "user" | "assistant"; content: any }> = (history || [])
     .filter((m: any) => m.role === "user" || m.role === "assistant")
     .map((m: any) => ({
       role: m.role as "user" | "assistant",
       content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
     }));
   while (messages.length > 0 && messages[0].role !== "user") messages.shift();
-  messages.push({
-    role: "user",
-    content: typeof userPrompt === "string" ? userPrompt : JSON.stringify(userPrompt),
-  });
+
+  const userText = typeof userPrompt === "string" ? userPrompt : JSON.stringify(userPrompt);
+  // Claude is natively multimodal: when an image is attached, send it directly
+  // in the final user turn so the model that decides on tool calls (e.g.
+  // create_free_session) actually sees the screenshot — far more reliable than
+  // feeding it a separate text description of the image.
+  const isImage =
+    attachment?.base64 && typeof attachment.type === "string" && attachment.type.startsWith("image/");
+  if (isImage) {
+    const cleaned = String(attachment.base64).replace(/^data:[^,]+,/, "").replace(/\s/g, "");
+    messages.push({
+      role: "user",
+      content: [
+        { type: "text", text: userText },
+        { type: "image", source: { type: "base64", media_type: attachment.type, data: cleaned } },
+      ],
+    });
+  } else {
+    messages.push({ role: "user", content: userText });
+  }
 
   // Adaptive thinking on Opus, except when a tool is forced
   // (thinking is incompatible with forced tool_choice).
@@ -1069,7 +1086,7 @@ ${l}${contextBlock}${imageAnalysisBlock}`;
     attachment?.base64 && typeof attachment.base64 === "string" && attachment?.type?.startsWith("image/")
   );
   const userContent = hasImageAttachment
-    ? `${lastUserMsg || "Analyse l'image jointe."}\n\nImage jointe : ${attachment.name || "image"}. Utilise l'ANALYSE IMAGE IMPORTÉE ci-dessus pour répondre et, si l'utilisateur demande une création de séance, appelle create_free_session.`
+    ? `${lastUserMsg || "Analyse l'image jointe."}\n\nUne image est jointe (${attachment.name || "image"}). Lis-la attentivement : si une section « ANALYSE IMAGE IMPORTÉE » figure ci-dessus, appuie-toi dessus ; sinon lis directement l'image jointe. Si l'utilisateur demande de créer une séance, appelle create_free_session avec les exercices, séries et répétitions que tu vois sur l'image.`
     : lastUserMsg;
   
   const tools = [
@@ -1428,7 +1445,12 @@ serve(async (req) => {
       const sessionCtx = await fetchSessionContext(serviceClient, userId);
       const nutritionCtx = await fetchNutritionContext(serviceClient, userId);
       const coachCtx = await fetchCoachContext(serviceClient, userId);
-      const imageAnalysis = await describeChatImage(LOVABLE_API_KEY, payload?.attachment, ANTHROPIC_API_KEY);
+      // With Claude (multimodal) the image is sent straight to the chat model
+      // below, so the lossy describe-to-text step is only needed for the
+      // Lovable gateway fallback.
+      const imageAnalysis = ANTHROPIC_API_KEY
+        ? ""
+        : await describeChatImage(LOVABLE_API_KEY, payload?.attachment, ANTHROPIC_API_KEY);
       (payload || {})._sessionContext = sessionCtx;
       (payload || {})._nutritionContext = nutritionCtx;
       (payload || {})._coachContext = coachCtx;
@@ -1457,7 +1479,8 @@ serve(async (req) => {
             built.user,
             built.tools,
             toolChoice,
-            chatHistory
+            chatHistory,
+            action === "chat" ? payload?.attachment : undefined
           )
         : await callLovableAI(
             LOVABLE_API_KEY!,
