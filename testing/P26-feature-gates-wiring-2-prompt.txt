@@ -1,0 +1,261 @@
+## P26 — Câblage des feature gates admin → UI (suite de P25)
+
+### Contexte
+Suite du P25. Les 7 gates précédentes sont posées. Ce prompt câble les 6 features
+restantes les plus visibles. Même pattern : `useFeatureAccess` ou `FeatureGate`.
+
+---
+
+### 1 — `weekly_checkin` — StudentWeek.tsx
+
+**Fichier :** `src/pages/student/StudentWeek.tsx`
+
+**Import à ajouter** (si pas déjà présent) :
+```tsx
+import { useFeatureAccess } from "@/providers/PlanProvider";
+```
+
+**Dans le composant**, ajouter :
+```tsx
+const { isEnabled: canCheckin } = useFeatureAccess("weekly_checkin");
+```
+
+**Modifier le CheckinBadge** (ligne ~926-928) pour désactiver le clic si la feature
+est désactivée :
+```tsx
+<CheckinBadge
+  checkin={currentCheckin}
+  onClick={canCheckin ? () => setCheckinFormOpen(true) : undefined}
+/>
+```
+(Quand `onClick` est `undefined`, le badge s'affiche en lecture seule — l'utilisateur
+voit son check-in existant mais ne peut plus en créer un nouveau.)
+
+**Garder** le `WeeklyCheckinForm` dans le JSX (il ne s'ouvrira simplement jamais si
+`canCheckin` est false).
+
+---
+
+### 2 — `exercise_alternatives_manual` — LiveSession.tsx
+
+**Fichier :** `src/pages/student/LiveSession.tsx`
+
+**Import à ajouter** :
+```tsx
+import { useFeatureAccess } from "@/providers/PlanProvider";
+```
+
+**Dans le composant**, ajouter :
+```tsx
+const { isEnabled: canAlternatives } = useFeatureAccess("exercise_alternatives_manual");
+```
+
+**Modifier la prop `onSwapExercise`** passée à `EnhancedExerciseCard` (ligne ~1406) :
+```tsx
+onSwapExercise={canAlternatives ? () => handleOpenSwap(key) : undefined}
+```
+(Quand `undefined`, le bouton swap dans la carte exercice disparaît — vérifier que
+`EnhancedExerciseCard` conditionne déjà l'affichage de ce bouton sur la présence de
+la prop `onSwapExercise`. Si ce n'est pas le cas, ajouter la condition dans
+`EnhancedExerciseCard.tsx`.)
+
+---
+
+### 3 — `session_swap` — StudentWeek.tsx
+
+**Fichier :** `src/pages/student/StudentWeek.tsx`
+
+(Le `useFeatureAccess` est déjà importé depuis la modification du `weekly_checkin`.)
+
+**Ajouter** :
+```tsx
+const { isEnabled: canSessionSwap } = useFeatureAccess("session_swap");
+```
+
+**Conditionner** le DropdownMenuItem de swap (ligne ~1090-1092) :
+```tsx
+{canSessionSwap && (
+  <DropdownMenuItem onClick={() => { setSwapMode(true); setSwapSourceDay(day.dayIndex); setSwapSourceDate(dates[day.dayIndex].date); }}>
+    <ArrowLeftRight className="w-4 h-4 mr-2" />{t('calendar:swap_session')}
+  </DropdownMenuItem>
+)}
+```
+
+---
+
+### 4 — `recovery_recommendations` — StudentRecommendations.tsx
+
+**Fichier :** `src/pages/student/StudentRecommendations.tsx`
+
+**Import à ajouter** :
+```tsx
+import FeatureGate from "@/components/plans/FeatureGate";
+```
+
+**Wrapper** le contenu de la page (le `<div className="space-y-6...">`) :
+```tsx
+const StudentRecommendations = () => {
+  const { t } = useTranslation("recommendations");
+  const navigate = useNavigate();
+
+  return (
+    <FeatureGate feature="recovery_recommendations" showLocked>
+      <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
+        {/* ... contenu existant inchangé ... */}
+      </div>
+    </FeatureGate>
+  );
+};
+```
+
+---
+
+### 5 — `ai_program_generation` — ProgramEditor.tsx
+
+**Fichier :** `src/pages/coach/ProgramEditor.tsx`
+
+**Import à ajouter** :
+```tsx
+import { useFeatureAccess } from "@/providers/PlanProvider";
+```
+
+**Dans le composant**, ajouter :
+```tsx
+const { isEnabled: canAIGeneration } = useFeatureAccess("ai_program_generation");
+```
+
+**Conditionner** le bouton Sparkles (ligne ~339-347) et le panneau IA :
+```tsx
+{canAIGeneration && (
+  <Button
+    onClick={() => setShowAI(!showAI)}
+    variant={showAI ? "secondary" : "outline"}
+    size="sm"
+    className="ml-auto"
+  >
+    <Sparkles className="w-4 h-4 mr-1" />
+    {t("program:generate_ai")}
+  </Button>
+)}
+```
+
+Et le panneau d'IA (ligne ~351) :
+```tsx
+{showAI && canAIGeneration && (
+  <div className="glass rounded-xl p-5 space-y-4 border-primary/20 glow-primary animate-fade-in">
+    {/* ... contenu existant inchangé ... */}
+  </div>
+)}
+```
+
+---
+
+### 6 — `coach_nutrition_recommendations` + `coach_recovery_recommendations` — CoachRecommendations.tsx
+
+**Fichier :** `src/pages/coach/CoachRecommendations.tsx`
+
+(`FeatureGate` est déjà importé ligne 4 dans ce fichier.)
+
+**Imports complémentaires si nécessaires** :
+```tsx
+import { useFeatureAccess } from "@/providers/PlanProvider";
+```
+
+**Dans le composant**, ajouter :
+```tsx
+const { isEnabled: canNutritionRecos } = useFeatureAccess("coach_nutrition_recommendations");
+const { isEnabled: canRecoveryRecos } = useFeatureAccess("coach_recovery_recommendations");
+```
+
+**Remplacer** le bouton "+ Nouvelle recommandation" (ligne ~125-127) pour qu'il soit
+conditionnel selon l'onglet actif :
+```tsx
+{((tab === "nutrition" && canNutritionRecos) || (tab === "recovery" && canRecoveryRecos)) && (
+  <Button onClick={() => { setEditingReco(null); setFormOpen(true); }}>
+    <Plus className="w-4 h-4 mr-1" /> {t("new_recommendation")}
+  </Button>
+)}
+```
+
+**Wrapper** chaque `TabsContent` (lignes ~160-173 pour nutrition, et la suite pour recovery) :
+```tsx
+<TabsContent value="nutrition" className="space-y-2 mt-3">
+  {canNutritionRecos ? (
+    /* ... contenu nutrition existant inchangé ... */
+  ) : (
+    <div className="py-12 text-center space-y-2">
+      <p className="text-sm font-medium">Recommandations nutrition — fonctionnalité avancée</p>
+      <p className="text-xs text-muted-foreground">Activez cette fonctionnalité dans votre plan pour créer des recommandations nutrition personnalisées.</p>
+    </div>
+  )}
+</TabsContent>
+
+<TabsContent value="recovery" className="space-y-2 mt-3">
+  {canRecoveryRecos ? (
+    /* ... contenu recovery existant inchangé ... */
+  ) : (
+    <div className="py-12 text-center space-y-2">
+      <p className="text-sm font-medium">Recommandations récupération — fonctionnalité avancée</p>
+      <p className="text-xs text-muted-foreground">Activez cette fonctionnalité dans votre plan pour créer des recommandations de récupération personnalisées.</p>
+    </div>
+  )}
+</TabsContent>
+```
+
+---
+
+### Note sur `ai_week_analysis`
+
+La clé `ai_week_analysis` dans l'admin correspond vraisemblablement à la page de bilan
+IA (StudentBilan) au même titre que `ai_cycle_report` déjà gatée en P25. Vérifier
+dans l'admin si ces deux keys devraient pointer vers la même feature ou des écrans
+distincts — si le code n'a pas de composant séparé pour `ai_week_analysis`, cette clé
+peut rester non câblée côté UI (elle sera configurable en admin mais sans effet immédiat).
+
+---
+
+### Note sur `program_creation`
+
+La création d'un programme se fait via le bouton "Nouveau programme" dans
+`src/pages/coach/StudentDetail.tsx` (section actions en bas de la fiche athlète) et
+via `ProgramEditor`. Si tu veux gater la création côté coach :
+
+Dans `src/pages/coach/StudentDetail.tsx`, chercher le bouton qui navigue vers
+`/coach/students/${studentId}/program/new` (section AI Bilan + Report buttons, lignes
+~470-480), et le wrapper avec :
+```tsx
+<FeatureGate feature="program_creation">
+  <Button variant="outline" onClick={() => navigate(`/coach/students/${studentId}/program/new`)}>
+    ...
+  </Button>
+</FeatureGate>
+```
+
+---
+
+### Comportement attendu après P25 + P26
+
+| Feature désactivée | Effet visible |
+|---|---|
+| `ai_chat` | Bouton VOLT + chat disparu |
+| `body_measurements` | Mensurations verrouillées dans Progress |
+| `strength_charts` | Graphique progression caché |
+| `ai_cycle_report` | Page bilan bloquée, bouton caché dans StudentDetail |
+| `pdf_export` | Bouton PDF absent dans le bilan |
+| `ai_week_optimizer` | Bloc adaptation IA caché dans StudentDetail |
+| `external_sessions` | Option "Loguer activité" absente |
+| `weekly_checkin` | Check-in badge en lecture seule |
+| `exercise_alternatives_manual` | Bouton swap exercice caché |
+| `session_swap` | Option "Intervertir" absente du menu |
+| `recovery_recommendations` | Page recommandations verrouillée |
+| `ai_program_generation` | Bouton ✨ IA absent dans l'éditeur programme |
+| `coach_nutrition_recommendations` | Tab nutrition en état bloqué |
+| `coach_recovery_recommendations` | Tab récupération en état bloqué |
+
+### Contraintes
+- Ne pas casser le flux existant quand les features sont ACTIVÉES
+- `useFeatureAccess` lit depuis le contexte PlanProvider déjà chargé — pas de
+  requête supplémentaire
+- Les logs et toasts existants restent inchangés
+- `EnhancedExerciseCard` : si la prop `onSwapExercise` est déjà optionnelle et conditionne
+  l'affichage du bouton, aucune modification dans ce composant n'est nécessaire
