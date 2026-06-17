@@ -151,7 +151,11 @@ async function callAnthropic(
   const forcedTool = anthToolChoice?.type === "tool";
   const params: any = {
     model,
-    max_tokens: 16000,
+    // Adaptive thinking tokens count toward max_tokens, so a low cap truncates
+    // the JSON tool output mid-structure (parse fails → action breaks). Give
+    // generous headroom; streaming below keeps the long request under the
+    // SDK/HTTP timeout that a non-streaming call would otherwise hit.
+    max_tokens: 32000,
     system: systemPrompt,
     messages,
   };
@@ -165,12 +169,21 @@ async function callAnthropic(
 
   const start = Date.now();
   try {
-    const response = await client.messages.create(params);
+    // Stream and buffer the final message. Long Opus generations (program
+    // creation with adaptive thinking) routinely exceed the non-streaming HTTP
+    // timeout; streaming avoids that while we still return one complete result.
+    const response = await client.messages.stream(params).finalMessage();
     const durationMs = Date.now() - start;
 
     if (response.stop_reason === "refusal") {
       console.error("Anthropic refusal:", (response as any).stop_details);
       return { error: true, status: 500, durationMs, errText: "refusal" };
+    }
+    if (response.stop_reason === "max_tokens") {
+      // Output hit the ceiling — the JSON below is likely truncated and will
+      // fail to parse. Surface it so it shows up in logs instead of as a silent
+      // "AI returned nothing".
+      console.warn("[ai-coach] Anthropic response truncated (max_tokens). Model:", model);
     }
 
     const toolUse = (response.content as any[]).find((b) => b.type === "tool_use");
