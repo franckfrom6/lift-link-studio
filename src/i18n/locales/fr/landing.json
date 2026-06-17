@@ -38,6 +38,17 @@
   "athletes_testimonial_quote": "J'ai monté 6way parce que je coachais avec un tableur, WhatsApp et des PDF. Au-delà de dix athlètes, tu passes plus de temps à copier-coller qu'à coacher.",
   "athletes_testimonial_author": "Franck · fondateur de 6way",
 
+  "integrations_label": "// INTÉGRATIONS",
+  "integrations_title": "Bientôt connecté à ton matériel.",
+  "integrations_sub": "Tes montres et tes apps de sport synchronisées avec 6way : séances, courses et activités au même endroit, sans double saisie. On y travaille — ça arrive.",
+  "integrations_badge": "En construction",
+  "integrations_garmin_title": "Garmin",
+  "integrations_garmin_body": "Importe automatiquement les courses, sorties vélo et séances enregistrées sur ta montre Garmin.",
+  "integrations_strava_title": "Strava",
+  "integrations_strava_body": "Synchronise tes activités Strava — distance, allure, fréquence cardiaque — directement dans ton suivi.",
+  "integrations_apple_title": "Apple Santé",
+  "integrations_apple_body": "Connecte l'app Apple Santé pour centraliser pas, sommeil, fréquence cardiaque et dépense énergétique.",
+
   "coachs_section_label": "// SECTION 02 · COACHS",
   "coachs_section_title": "Moins d'admin. Plus de coaching.",
   "coachs_section_sub": "Programmes, athlètes, messagerie et acquisition au même endroit. La commission marketplace s'arrête après 3 mois — pas de pourcentage à vie sur tes clients.",

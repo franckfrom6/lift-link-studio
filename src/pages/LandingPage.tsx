@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
-import { Loader2, ChevronDown } from "lucide-react";
+import { Loader2, ChevronDown, Watch, Activity, HeartPulse } from "lucide-react";
 import Logo from "@/components/Logo";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { supabase } from "@/integrations/supabase/client";
@@ -102,6 +102,7 @@ const LandingPage = () => {
       <Hero />
       <SplitChooser />
       <AthletesSection />
+      <IntegrationsSection />
       <CoachsSection />
       <SystemSection />
       <WhyNowSection />
@@ -326,6 +327,59 @@ const AthletesSection = () => {
             — {t("athletes_testimonial_author")}
           </figcaption>
         </figure>
+      </div>
+    </section>
+  );
+};
+
+/* ──────────────────────── INTEGRATIONS (coming soon) ──────────────────────── */
+const IntegrationsSection = () => {
+  const { t } = useTranslation("landing");
+  const items: Array<{ icon: any; title: string; body: string }> = [
+    { icon: Watch, title: "integrations_garmin_title", body: "integrations_garmin_body" },
+    { icon: Activity, title: "integrations_strava_title", body: "integrations_strava_body" },
+    { icon: HeartPulse, title: "integrations_apple_title", body: "integrations_apple_body" },
+  ];
+  return (
+    <section id="integrations" className={sectionPad} style={{ borderTop: `1px solid ${LINE}` }}>
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-16 max-w-3xl">
+          <MicroLabel className="mb-6">{t("integrations_label")}</MicroLabel>
+          <Display className="mb-6">{t("integrations_title")}</Display>
+          <p className="text-lg leading-relaxed" style={{ color: DIM }}>
+            {t("integrations_sub")}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {items.map(({ icon: Icon, title, body }) => (
+            <div
+              key={title}
+              className="p-8 rounded-2xl h-full"
+              style={{ backgroundColor: "#FFFFFF", border: `1px solid ${LINE}` }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div
+                  className="flex h-11 w-11 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: "rgba(232, 74, 20, 0.08)" }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: ACCENT }} strokeWidth={1.75} />
+                </div>
+                <span
+                  className="font-mono text-[10px] font-medium uppercase px-2.5 py-1 rounded-full"
+                  style={{ letterSpacing: "0.15em", color: DIM, border: `1px solid ${LINE}` }}
+                >
+                  {t("integrations_badge")}
+                </span>
+              </div>
+              <h3 className="font-sans text-[22px] font-extrabold mb-3 leading-tight" style={{ color: INK }}>
+                {t(title)}
+              </h3>
+              <p className="text-[15px] leading-relaxed" style={{ color: DIM }}>
+                {t(body)}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

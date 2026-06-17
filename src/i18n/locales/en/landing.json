@@ -38,6 +38,17 @@
   "athletes_testimonial_quote": "I built 6way because I was coaching with a spreadsheet, WhatsApp and PDFs. Past ten athletes, you spend more time copy-pasting than coaching.",
   "athletes_testimonial_author": "Franck · founder of 6way",
 
+  "integrations_label": "// INTEGRATIONS",
+  "integrations_title": "Soon connected to your gear.",
+  "integrations_sub": "Your watches and sport apps synced with 6way: sessions, runs and activities in one place, no double entry. We're building it — coming soon.",
+  "integrations_badge": "In progress",
+  "integrations_garmin_title": "Garmin",
+  "integrations_garmin_body": "Automatically import the runs, rides and workouts recorded on your Garmin watch.",
+  "integrations_strava_title": "Strava",
+  "integrations_strava_body": "Sync your Strava activities — distance, pace, heart rate — straight into your tracking.",
+  "integrations_apple_title": "Apple Health",
+  "integrations_apple_body": "Connect the Apple Health app to centralize steps, sleep, heart rate and energy expenditure.",
+
   "coachs_section_label": "// SECTION 02 · COACHES",
   "coachs_section_title": "Less admin. More coaching.",
   "coachs_section_sub": "Programs, athletes, messaging and client acquisition in one place. The marketplace fee stops after 3 months — no lifetime cut on your clients.",
