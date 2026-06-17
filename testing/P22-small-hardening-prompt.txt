@@ -1,0 +1,86 @@
+## P22 — Petit durcissement : cleanup séries vide + audit impersonation
+
+### Contexte
+Deux finitions issues de la revue de code, faible sévérité mais réelles. Indépendantes.
+
+---
+
+### Fichier : `src/pages/student/LiveSession.tsx`
+
+#### Fix 1 — Cleanup des séries : éviter le `IN ()` invalide quand il ne reste aucune série
+
+Dans `saveSetsForExercise`, le DELETE de nettoyage (vers la ligne ~704) construit
+`.not("set_number", "in", "(${newSetNumbers.join(",")})")`. Si `newSetNumbers` est vide
+(l'utilisateur a ramené l'exercice à zéro série enregistrée), la requête devient
+`...in ("()")` — syntaxe PostgREST invalide → le delete échoue et d'anciennes séries
+restent en base.
+
+Localise le bloc :
+
+```typescript
+    // Supprimer les séries dont le set_number n'existe plus (réduction du nb de séries)
+    const newSetNumbers = rows.map(r => r.set_number);
+    const { error: cleanupError } = await supabase.from("completed_sets")
+      .delete()
+      .eq("completed_session_id", completedSessionId)
+      .eq("session_exercise_id", sessionExId)
+      .not("set_number", "in", `(${newSetNumbers.join(",")})`);
+    if (cleanupError) {
+      console.error("[LiveSession] cleanup extra sets failed:", cleanupError);
+      // non bloquant : l'upsert principal a réussi
+    }
+```
+
+Remplace par :
+
+```typescript
+    // Supprimer les séries dont le set_number n'existe plus (réduction du nb de séries)
+    const newSetNumbers = rows.map(r => r.set_number);
+    const cleanupQuery = supabase.from("completed_sets")
+      .delete()
+      .eq("completed_session_id", completedSessionId)
+      .eq("session_exercise_id", sessionExId);
+    // Si plus aucune série, on supprime tout pour cet exercice ; sinon on garde
+    // uniquement les set_number courants. (Évite un `IN ()` invalide.)
+    const { error: cleanupError } = newSetNumbers.length > 0
+      ? await cleanupQuery.not("set_number", "in", `(${newSetNumbers.join(",")})`)
+      : await cleanupQuery;
+    if (cleanupError) {
+      console.error("[LiveSession] cleanup extra sets failed:", cleanupError);
+      // non bloquant : l'upsert principal a réussi
+    }
+```
+
+---
+
+### Fichier : `src/contexts/ImpersonationContext.tsx`
+
+#### Fix 2 — Logguer l'échec de l'insert d'audit (intégrité de la trace)
+
+Localise l'insert dans `impersonation_audit` (vers les lignes ~70-76). S'il est aujourd'hui
+en fire-and-forget (`void supabase...` ou `.then()` sans handler), ajoute un log d'erreur
+pour que la rupture de la piste d'audit soit visible :
+
+```typescript
+supabase
+  .from("impersonation_audit")
+  .insert({ /* ...champs existants inchangés... */ })
+  .then(({ error }) => {
+    if (error) console.error("[Impersonation] audit insert failed:", error);
+  });
+```
+
+(Garder le comportement non bloquant — on ne casse pas l'impersonation si l'audit échoue,
+on le trace seulement. Si l'insert est déjà awaité avec gestion d'erreur, ne rien changer.)
+
+---
+
+### Comportement attendu
+- Ramener un exercice à zéro série n'échoue plus silencieusement au nettoyage ; les
+  anciennes séries sont bien supprimées
+- Un échec d'insert d'audit d'impersonation apparaît en console au lieu d'être invisible
+
+### Contraintes
+- Aucun changement de comportement pour les cas nominaux
+- Ne pas rendre l'audit bloquant
+- Logs préfixés par le composant entre crochets
