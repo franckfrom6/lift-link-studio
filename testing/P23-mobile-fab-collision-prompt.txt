@@ -1,0 +1,69 @@
+## P23 — Mobile : le FAB « + Séance » est masqué par le bouton IA (VOLT)
+
+### Cause
+Sur mobile, deux boutons flottants sont ancrés au même coin bas-droite et se superposent :
+
+- Bouton IA (`src/components/ai/AISidebarToggle.tsx`) — global, présent sur toutes les pages :
+  `fixed bottom-20 right-4 z-30`, cercle 56×56px → occupe ~80–136px depuis le bas.
+- FAB « + Séance » (`src/pages/student/StudentWeek.tsx`, vers la ligne ~838) :
+  `fixed bottom-24 right-4 z-40` → ~96–140px, MÊME bord droit → il chevauche le bouton IA.
+
+Le bouton IA étant global et le FAB séance spécifique à une page, c'est le FAB séance qui
+doit céder : on l'empile proprement AU-DESSUS du bouton IA, sur le même bord droit.
+
+---
+
+### Fichier : `src/pages/student/StudentWeek.tsx`
+
+#### Fix — Remonter le FAB « + Séance » au-dessus du bouton IA
+
+Localise le FAB mobile (vers la ligne ~831-838) :
+
+```tsx
+{/* Mobile-only FAB — single, obvious entry point to create a session */}
+<button
+  ...
+  className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg active:scale-95 transition-transform md:hidden"
+>
+  ...
+</button>
+```
+
+Remplace la classe `className` par (seul `bottom-24` → `bottom-40` change pour l'empilement,
+le reste est conservé) :
+
+```tsx
+  className="fixed bottom-40 right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg active:scale-95 transition-transform md:hidden"
+```
+
+Calcul de l'empilement (mobile) :
+- Bouton IA : `bottom-20` (80px) + hauteur 56px → bord supérieur à 136px.
+- FAB séance : `bottom-40` (160px) → 24px d'écart franc au-dessus du bouton IA. Plus aucun
+  chevauchement, les deux restent tappables.
+
+(Sur desktop le FAB reste masqué via `md:hidden` — aucun impact. Le bouton header
+« Nouvelle séance » desktop reste inchangé.)
+
+---
+
+### Option (recommandée) — distinguer visuellement les deux FAB
+
+Deux boutons ronds remplis en couleur primaire empilés peuvent se confondre. Pour clarifier
+la hiérarchie sans toucher au bouton IA global, donne au FAB séance un libellé visible
+(déjà le cas avec « Séance ») et garde le bouton IA en icône seule (déjà le cas). Si tu veux
+renforcer : ajoute une légère ombre portée plus marquée au FAB séance
+(`shadow-xl` au lieu de `shadow-lg`) pour qu'il se détache du bouton IA juste en dessous.
+
+---
+
+### Comportement attendu
+- Mobile : le bouton IA (éclair) reste en bas-droite ; le FAB « + Séance » est juste
+  au-dessus, sans chevauchement, les deux pleinement cliquables
+- Aucun changement sur desktop
+- Le FAB séance ne masque plus le bouton IA et inversement
+
+### Contraintes
+- Ne PAS déplacer ni modifier `AISidebarToggle.tsx` (bouton global, présent partout)
+- Ne changer que le positionnement du FAB séance dans `StudentWeek.tsx`
+- Vérifier que le FAB ne recouvre pas non plus la bottom-nav (elle est en `bottom-0`) —
+  `bottom-40` laisse une marge largement suffisante
