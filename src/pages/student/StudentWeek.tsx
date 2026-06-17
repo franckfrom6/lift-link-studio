@@ -835,7 +835,7 @@ const StudentWeek = () => {
           setSessionChooserDate(selectedDate);
           setSessionChooserOpen(true);
         }}
-        className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg active:scale-95 transition-transform md:hidden"
+        className="fixed bottom-40 right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-xl active:scale-95 transition-transform md:hidden"
         aria-label="Nouvelle séance"
       >
         <Plus className="h-4 w-4" strokeWidth={2} />
