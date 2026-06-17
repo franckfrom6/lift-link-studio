@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Trash2, Zap, ArrowUp, Paperclip, ImagePlus } from "lucide-react";
+import { X, Trash2, Zap, ArrowUp, Paperclip, ImagePlus, MessagesSquare, SquarePen, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
@@ -124,6 +124,8 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [input, setInput] = useState("");
   const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
+  const [showConversations, setShowConversations] = useState(false);
+  const [convToDelete, setConvToDelete] = useState<string | null>(null);
 
   const {
     messages,
@@ -131,16 +133,20 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
     isEnabled,
     initialLoaded,
     sendMessage,
-    clearHistory,
-    loadHistory,
+    loadConversations,
+    conversations,
+    activeConversationId,
+    newConversation,
+    selectConversation,
+    deleteConversation,
   } = useAIChat({
     onMessageSent: () =>
       bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
   });
 
   useEffect(() => {
-    if (open && !initialLoaded) loadHistory();
-  }, [open, initialLoaded, loadHistory]);
+    if (open && !initialLoaded) loadConversations();
+  }, [open, initialLoaded, loadConversations]);
 
   useEffect(() => {
     if (open) {
@@ -269,38 +275,26 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
             />
           </div>
           <div className="flex items-center gap-1">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-11 w-11"
-                  disabled={messages.length === 0}
-                  aria-label={t("ai_chat:clear_history")}
-                  style={{ WebkitTapHighlightColor: "transparent" }}
-                >
-                  <Trash2 className="w-4 h-4" strokeWidth={1.5} />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    {t("ai_chat:clear_history")}
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t("common:delete_confirm_msg", {
-                      name: t("ai_chat:title"),
-                    })}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t("common:cancel")}</AlertDialogCancel>
-                  <AlertDialogAction onClick={clearHistory}>
-                    {t("common:confirm")}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11"
+              onClick={() => setShowConversations(true)}
+              aria-label="Conversations"
+              style={{ WebkitTapHighlightColor: "transparent" }}
+            >
+              <MessagesSquare className="w-5 h-5" strokeWidth={1.5} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11"
+              onClick={() => newConversation()}
+              aria-label="Nouvelle conversation"
+              style={{ WebkitTapHighlightColor: "transparent" }}
+            >
+              <SquarePen className="w-5 h-5" strokeWidth={1.5} />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -313,6 +307,74 @@ const AISidebar = ({ open, onClose }: AISidebarProps) => {
             </Button>
           </div>
         </div>
+
+        {/* Conversations panel */}
+        {showConversations && (
+          <div className="absolute inset-0 top-[57px] z-10 bg-background flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <span className="font-semibold">Conversations</span>
+              <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setShowConversations(false)} aria-label="Fermer">
+                <X className="w-5 h-5" strokeWidth={1.5} />
+              </Button>
+            </div>
+            <button
+              onClick={async () => { await newConversation(); setShowConversations(false); }}
+              className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-primary border-b border-border hover:bg-secondary transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Nouvelle conversation
+            </button>
+            <div className="flex-1 overflow-y-auto">
+              {conversations.length === 0 && (
+                <div className="text-center text-sm text-muted-foreground py-8 px-4">
+                  Aucune conversation
+                </div>
+              )}
+              {conversations.map(c => {
+                const d = new Date(c.updated_at);
+                const dateStr = d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+                return (
+                  <div key={c.id} className={`flex items-center gap-2 px-4 py-3 border-b border-border ${c.id === activeConversationId ? "bg-secondary" : ""}`}>
+                    <button
+                      className="flex-1 text-left min-w-0"
+                      onClick={async () => { await selectConversation(c.id); setShowConversations(false); }}
+                    >
+                      <p className="text-sm font-medium truncate">{c.title}</p>
+                      <p className="text-xs text-muted-foreground">{dateStr}</p>
+                    </button>
+                    <button
+                      onClick={() => setConvToDelete(c.id)}
+                      aria-label="Supprimer"
+                      className="shrink-0 w-11 h-11 flex items-center justify-center text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <AlertDialog open={convToDelete !== null} onOpenChange={(o) => !o && setConvToDelete(null)}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Supprimer cette conversation ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tous les messages seront définitivement supprimés.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t("common:cancel")}</AlertDialogCancel>
+                  <AlertDialogAction onClick={async () => {
+                    if (convToDelete) {
+                      await deleteConversation(convToDelete);
+                      setConvToDelete(null);
+                    }
+                  }}>
+                    {t("common:confirm")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
 
         {/* Messages */}
         <div
