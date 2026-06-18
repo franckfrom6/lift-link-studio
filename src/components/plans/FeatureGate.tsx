@@ -28,7 +28,8 @@ const FeatureGate: React.FC<FeatureGateProps> = ({ feature, children, fallback, 
     );
   }
 
-  return <>{fallback || <UpgradePrompt feature={feature} plan={planRequired} />}</>;
+  // No showLocked → render fallback (or null). Use UpgradePrompt only when explicitly provided.
+  return <>{fallback ?? null}</>;
 };
 
 export default FeatureGate;
