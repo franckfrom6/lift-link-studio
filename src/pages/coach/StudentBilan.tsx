@@ -10,11 +10,15 @@ import { toast } from "sonner";
 import { ArrowLeft, Bot, Loader2 } from "lucide-react";
 import AIBilanView, { BilanData, BilanRawData } from "@/components/coach/AIBilanView";
 import { generateBilanPDF } from "@/lib/report-generator";
+import { useFeatureAccess } from "@/providers/PlanProvider";
+import { Lock } from "lucide-react";
 
 const StudentBilan = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation("bilan");
+  const { isEnabled: canCycleReport } = useFeatureAccess("ai_cycle_report");
+  const { isEnabled: canPdfExport } = useFeatureAccess("pdf_export");
 
   const today = new Date();
   const eightWeeksAgo = new Date(today.getTime() - 8 * 7 * 24 * 60 * 60 * 1000);
@@ -95,7 +99,15 @@ const StudentBilan = () => {
       </div>
 
       {/* Date range selector */}
-      {!bilan && (
+      {!canCycleReport ? (
+        <div className="glass p-6 text-center space-y-3">
+          <Lock className="w-8 h-8 mx-auto text-muted-foreground" />
+          <h2 className="font-semibold">Bilan IA — fonctionnalité avancée</h2>
+          <p className="text-sm text-muted-foreground">
+            La génération de bilan IA nécessite un plan supérieur.
+          </p>
+        </div>
+      ) : !bilan ? (
         <div className="glass p-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -121,16 +133,16 @@ const StudentBilan = () => {
             )}
           </Button>
         </div>
-      )}
+      ) : null}
 
       {/* Bilan view */}
-      {bilan && rawData && (
+      {canCycleReport && bilan && rawData && (
         <>
           <AIBilanView
             bilan={bilan}
             rawData={rawData}
             onBilanChange={setBilan}
-            onGeneratePDF={handleGeneratePDF}
+            onGeneratePDF={canPdfExport ? handleGeneratePDF : undefined}
           />
 
           {/* Coach notes */}
