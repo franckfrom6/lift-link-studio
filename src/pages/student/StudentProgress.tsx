@@ -7,6 +7,7 @@ import { useStudentProgram } from "@/hooks/useStudentProgram";
 import { useWeeklyVolumeSeries, ProgPeriod } from "@/hooks/useWeeklyVolumeSeries";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
 import FeatureGate from "@/components/plans/FeatureGate";
+import { useFeatureAccess } from "@/providers/PlanProvider";
 import WeeklyInsightCard from "@/components/student/WeeklyInsightCard";
 import BodyEvolutionSection from "@/components/student/BodyEvolutionSection";
 import ProgressPhotoGallery from "@/components/student/ProgressPhotoGallery";
@@ -27,6 +28,7 @@ const StudentProgress = () => {
   const { t } = useTranslation(["dashboard", "common"]);
   const navigate = useNavigate();
   const isAdvanced = useIsAdvanced();
+  const { isEnabled: canBodyMeasurements } = useFeatureAccess("body_measurements");
   const { summary, loading: summaryLoading } = useStudentDashboard();
   const { program } = useStudentProgram();
   const [period, setPeriod] = useState<ProgPeriod>("12w");
@@ -217,8 +219,8 @@ const StudentProgress = () => {
         />
       </ProgSection>
 
-      {/* Mensurations + photos — Pro only */}
-      {isAdvanced ? (
+      {/* Mensurations + photos */}
+      {isAdvanced && canBodyMeasurements ? (
         <>
           <ProgSection title="Mensurations">
             <BodyEvolutionSection />
@@ -230,6 +232,12 @@ const StudentProgress = () => {
             </ProgSection>
           </FeatureGate>
         </>
+      ) : isAdvanced && !canBodyMeasurements ? (
+        <FeatureGate feature="body_measurements" showLocked>
+          <ProgSection title="Mensurations">
+            <BodyEvolutionSection />
+          </ProgSection>
+        </FeatureGate>
       ) : (
         <ProgSection title="Mensurations">
           <ProgEmptyState
