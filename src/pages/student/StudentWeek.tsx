@@ -68,6 +68,7 @@ const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
   const { user } = useAuth();
   const isAdvanced = useIsAdvanced();
+  const { isEnabled: canExternalSessions } = useFeatureAccess("external_sessions");
   const queryClient = useQueryClient();
   const { program, loading: programLoading, refreshing } = useStudentProgram();
   const DAYS = [
