@@ -55,6 +55,7 @@ import { useWeekData } from "@/hooks/useWeekData";
 import { useMonthSessions } from "@/hooks/useMonthSessions";
 import { formatLocalDate } from "@/lib/date-utils";
 import { AnimatePresence, motion } from "framer-motion";
+import { useFeatureAccess } from "@/providers/PlanProvider";
 
 // Route resolver based on session type (handles legacy untyped sessions)
 const getSessionRoute = (id: string, sessionType?: string): string => {
@@ -67,6 +68,8 @@ const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
   const { user } = useAuth();
   const isAdvanced = useIsAdvanced();
+  const { isEnabled: canCheckin } = useFeatureAccess("weekly_checkin");
+  const { isEnabled: canSessionSwap } = useFeatureAccess("session_swap");
   const queryClient = useQueryClient();
   const { program, loading: programLoading, refreshing } = useStudentProgram();
   const DAYS = [
@@ -925,7 +928,7 @@ const StudentWeek = () => {
         <div className="px-4 pb-2">
           <CheckinBadge
             checkin={currentCheckin}
-            onClick={() => setCheckinFormOpen(true)}
+            onClick={canCheckin ? () => setCheckinFormOpen(true) : undefined}
           />
         </div>
       )}
@@ -1087,9 +1090,11 @@ const StudentWeek = () => {
                   <DropdownMenuItem onClick={() => { setDuplicateSession({ id: sessionInfo.sessionId, name: sessionInfo.name }); setDuplicateOpen(true); }}>
                     <Copy className="w-4 h-4 mr-2" />{t('session:duplicate_title')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setSwapMode(true); setSwapSourceDay(day.dayIndex); setSwapSourceDate(dates[day.dayIndex].date); }}>
-                    <ArrowLeftRight className="w-4 h-4 mr-2" />{t('calendar:swap_session')}
-                  </DropdownMenuItem>
+                  {canSessionSwap && (
+                    <DropdownMenuItem onClick={() => { setSwapMode(true); setSwapSourceDay(day.dayIndex); setSwapSourceDate(dates[day.dayIndex].date); }}>
+                      <ArrowLeftRight className="w-4 h-4 mr-2" />{t('calendar:swap_session')}
+                    </DropdownMenuItem>
+                  )}
                 </>
               )}
               {isSessionDay && sessionInfo && !sessionCompleted && (

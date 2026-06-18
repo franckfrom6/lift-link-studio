@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Loader2, BookOpen, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import FeatureGate from "@/components/plans/FeatureGate";
+import { useFeatureAccess } from "@/providers/PlanProvider";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,6 +40,8 @@ const CoachRecommendations = () => {
     deleteRecoveryReco,
   } = useCoachRecommendations();
 
+  const { isEnabled: canNutritionRecos } = useFeatureAccess("coach_nutrition_recommendations");
+  const { isEnabled: canRecoveryRecos } = useFeatureAccess("coach_recovery_recommendations");
   const [tab, setTab] = useState<"nutrition" | "recovery">("nutrition");
   const [formOpen, setFormOpen] = useState(false);
   const [editingReco, setEditingReco] = useState<any>(null);
@@ -122,9 +125,11 @@ const CoachRecommendations = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <Button onClick={() => { setEditingReco(null); setFormOpen(true); }}>
-          <Plus className="w-4 h-4 mr-1" /> {t("new_recommendation")}
-        </Button>
+        {((tab === "nutrition" && canNutritionRecos) || (tab === "recovery" && canRecoveryRecos)) && (
+          <Button onClick={() => { setEditingReco(null); setFormOpen(true); }}>
+            <Plus className="w-4 h-4 mr-1" /> {t("new_recommendation")}
+          </Button>
+        )}
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as "nutrition" | "recovery")}>
@@ -158,32 +163,46 @@ const CoachRecommendations = () => {
         </div>
 
         <TabsContent value="nutrition" className="space-y-2 mt-3">
-          {filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">{t("no_recommendations")}</p>
+          {canNutritionRecos ? (
+            filtered.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">{t("no_recommendations")}</p>
+            ) : (
+              filtered.map((r) => (
+                <CoachRecommendationCard
+                  key={r.id}
+                  reco={r}
+                  onEdit={() => { setEditingReco(r); setFormOpen(true); }}
+                  onDelete={() => handleDelete(r.id)}
+                />
+              ))
+            )
           ) : (
-            filtered.map((r) => (
-              <CoachRecommendationCard
-                key={r.id}
-                reco={r}
-                onEdit={() => { setEditingReco(r); setFormOpen(true); }}
-                onDelete={() => handleDelete(r.id)}
-              />
-            ))
+            <div className="py-12 text-center space-y-2">
+              <p className="text-sm font-medium">Recommandations nutrition — fonctionnalité avancée</p>
+              <p className="text-xs text-muted-foreground">Activez cette fonctionnalité dans votre plan pour créer des recommandations nutrition personnalisées.</p>
+            </div>
           )}
         </TabsContent>
 
         <TabsContent value="recovery" className="space-y-2 mt-3">
-          {filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">{t("no_recommendations")}</p>
+          {canRecoveryRecos ? (
+            filtered.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">{t("no_recommendations")}</p>
+            ) : (
+              filtered.map((r) => (
+                <CoachRecommendationCard
+                  key={r.id}
+                  reco={r}
+                  onEdit={() => { setEditingReco(r); setFormOpen(true); }}
+                  onDelete={() => handleDelete(r.id)}
+                />
+              ))
+            )
           ) : (
-            filtered.map((r) => (
-              <CoachRecommendationCard
-                key={r.id}
-                reco={r}
-                onEdit={() => { setEditingReco(r); setFormOpen(true); }}
-                onDelete={() => handleDelete(r.id)}
-              />
-            ))
+            <div className="py-12 text-center space-y-2">
+              <p className="text-sm font-medium">Recommandations récupération — fonctionnalité avancée</p>
+              <p className="text-xs text-muted-foreground">Activez cette fonctionnalité dans votre plan pour créer des recommandations de récupération personnalisées.</p>
+            </div>
           )}
         </TabsContent>
       </Tabs>
