@@ -2,6 +2,7 @@ import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Copy, Trash2, Activity, Z
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
+import { useFeatureAccess } from "@/providers/PlanProvider";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
 import FirstStepsChecklist from "@/components/onboarding/FirstStepsChecklist";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,7 @@ const StudentWeek = () => {
   const { t, i18n } = useTranslation(['calendar', 'common', 'session']);
   const { user } = useAuth();
   const isAdvanced = useIsAdvanced();
+  const { isEnabled: canExternalSessions } = useFeatureAccess("external_sessions");
   const queryClient = useQueryClient();
   const { program, loading: programLoading, refreshing } = useStudentProgram();
   const DAYS = [
@@ -1076,9 +1078,11 @@ const StudentWeek = () => {
                   <DropdownMenuItem onClick={() => { setSessionChooserDate(day.date); setSessionChooserOpen(true); }}>
                     <Dumbbell className="w-4 h-4 mr-2" />{t('session:builder_title')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
-                    <Plus className="w-4 h-4 mr-2" />{t('calendar:log_activity')}
-                  </DropdownMenuItem>
+                  {canExternalSessions && (
+                    <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
+                      <Plus className="w-4 h-4 mr-2" />{t('calendar:log_activity')}
+                    </DropdownMenuItem>
+                  )}
                 </>
               )}
               {/* Day with a programmed session → management actions */}

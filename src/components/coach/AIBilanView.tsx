@@ -48,7 +48,7 @@ interface AIBilanViewProps {
   bilan: BilanData;
   rawData: BilanRawData;
   onBilanChange: (bilan: BilanData) => void;
-  onGeneratePDF: () => void;
+  onGeneratePDF?: () => void;
 }
 
 const AIBilanView = ({ bilan, rawData, onBilanChange, onGeneratePDF }: AIBilanViewProps) => {
@@ -136,9 +136,11 @@ const AIBilanView = ({ bilan, rawData, onBilanChange, onGeneratePDF }: AIBilanVi
             {rawData.student_name} · {rawData.date_start} → {rawData.date_end} ({rawData.weeks} {t("weeks")})
           </p>
         </div>
-        <Button onClick={onGeneratePDF} size="sm">
-          <FileText className="w-4 h-4 mr-1" /> {t("generate_pdf")}
-        </Button>
+        {onGeneratePDF && (
+          <Button onClick={onGeneratePDF} size="sm">
+            <FileText className="w-4 h-4 mr-1" /> {t("generate_pdf")}
+          </Button>
+        )}
       </div>
 
       {/* Summary */}
