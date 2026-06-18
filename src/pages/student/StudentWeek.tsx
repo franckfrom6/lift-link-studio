@@ -1078,9 +1078,11 @@ const StudentWeek = () => {
                   <DropdownMenuItem onClick={() => { setSessionChooserDate(day.date); setSessionChooserOpen(true); }}>
                     <Dumbbell className="w-4 h-4 mr-2" />{t('session:builder_title')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
-                    <Plus className="w-4 h-4 mr-2" />{t('calendar:log_activity')}
-                  </DropdownMenuItem>
+                  {canExternalSessions && (
+                    <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
+                      <Plus className="w-4 h-4 mr-2" />{t('calendar:log_activity')}
+                    </DropdownMenuItem>
+                  )}
                 </>
               )}
               {/* Day with a programmed session → management actions */}
