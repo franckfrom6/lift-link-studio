@@ -1,6 +1,7 @@
 import React from "react";
 import { useFeatureAccess } from "@/providers/PlanProvider";
 import UpgradePrompt from "./UpgradePrompt";
+// UpgradePrompt is still used in showLocked overlay
 
 interface FeatureGateProps {
   feature: string;
