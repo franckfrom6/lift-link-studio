@@ -333,6 +333,110 @@ const AdminPanel = () => {
           ))}
         </TabsContent>
       </Tabs>
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Créer un utilisateur</DialogTitle>
+            <DialogDescription>
+              Crée un compte auth + profil. Un magic link sera généré pour la première connexion.
+            </DialogDescription>
+          </DialogHeader>
+
+          {generatedLink ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Compte créé. Le lien magique a été envoyé par email. Tu peux aussi le copier ci-dessous :
+              </p>
+              <div className="flex items-center gap-2">
+                <Input value={generatedLink} readOnly className="text-xs font-mono" />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedLink);
+                    toast.success("Lien copié");
+                  }}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => { setCreateOpen(false); resetCreateForm(); }}>
+                  Fermer
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Email</Label>
+                <Input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="nom@exemple.com"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Nom complet</Label>
+                <Input
+                  value={newFullName}
+                  onChange={(e) => setNewFullName(e.target.value)}
+                  placeholder="Alex Martin"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Rôle</Label>
+                <Select value={newRole} onValueChange={(v) => setNewRole(v as "student" | "coach")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Athlète</SelectItem>
+                    <SelectItem value="coach">Coach</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {newRole === "student" && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Coach assigné (optionnel)</Label>
+                  <Select value={newCoachId} onValueChange={setNewCoachId}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Aucun (self-guided)</SelectItem>
+                      {coaches.map((c) => (
+                        <SelectItem key={c.user_id} value={c.user_id}>
+                          {c.full_name || c.user_id.slice(0, 8)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="space-y-1">
+                <Label className="text-xs">Plan</Label>
+                <Select value={newPlanName} onValueChange={setNewPlanName}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {allPlans.map((p: any) => (
+                      <SelectItem key={p.name} value={p.name}>
+                        {i18n.language === "fr" ? p.displayNameFr : p.displayNameEn}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>
+                  Annuler
+                </Button>
+                <Button onClick={handleCreateUser} disabled={creating}>
+                  {creating ? "Création..." : "Créer"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
