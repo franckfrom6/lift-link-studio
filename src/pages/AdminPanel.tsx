@@ -8,10 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Shield, Trash2, Plus } from "lucide-react";
+import { Search, Shield, Trash2, Plus, UserPlus, Copy } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import PlanBadge from "@/components/plans/PlanBadge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface UserRow {
   user_id: string;
@@ -34,6 +42,57 @@ const AdminPanel = () => {
   const [newOverrideKey, setNewOverrideKey] = useState("");
   const [newOverrideEnabled, setNewOverrideEnabled] = useState(true);
   const [newOverrideReason, setNewOverrideReason] = useState("");
+
+  // Create user modal state
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newFullName, setNewFullName] = useState("");
+  const [newRole, setNewRole] = useState<"student" | "coach">("student");
+  const [newCoachId, setNewCoachId] = useState<string>("none");
+  const [newPlanName, setNewPlanName] = useState<string>("free");
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+
+  const coaches = users.filter((u) => u.role === "coach");
+
+  const resetCreateForm = () => {
+    setNewEmail("");
+    setNewFullName("");
+    setNewRole("student");
+    setNewCoachId("none");
+    setNewPlanName("free");
+    setGeneratedLink(null);
+  };
+
+  const handleCreateUser = async () => {
+    if (!newEmail.trim() || !newFullName.trim()) {
+      toast.error("Email et nom requis");
+      return;
+    }
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: {
+          email: newEmail.trim(),
+          full_name: newFullName.trim(),
+          role: newRole,
+          coach_id: newRole === "student" && newCoachId !== "none" ? newCoachId : null,
+          plan_name: newPlanName,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Utilisateur créé ✓");
+      setGeneratedLink(data?.magic_link ?? null);
+      await fetchUsers();
+      refetch();
+    } catch (e: any) {
+      console.error("[AdminPanel] create user failed", e);
+      toast.error(e?.message ?? "Échec de la création");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -141,14 +200,25 @@ const AdminPanel = () => {
         </TabsList>
 
         <TabsContent value="users" className="space-y-4 mt-4">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Button
+              size="sm"
+              onClick={() => {
+                resetCreateForm();
+                setCreateOpen(true);
+              }}
+            >
+              <UserPlus className="w-4 h-4 mr-1" /> Créer un utilisateur
+            </Button>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
