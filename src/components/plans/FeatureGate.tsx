@@ -1,6 +1,7 @@
 import React from "react";
 import { useFeatureAccess } from "@/providers/PlanProvider";
 import UpgradePrompt from "./UpgradePrompt";
+// UpgradePrompt is still used in showLocked overlay
 
 interface FeatureGateProps {
   feature: string;
@@ -28,7 +29,8 @@ const FeatureGate: React.FC<FeatureGateProps> = ({ feature, children, fallback, 
     );
   }
 
-  return <>{fallback || <UpgradePrompt feature={feature} plan={planRequired} />}</>;
+  // No showLocked → render fallback (or null). Use UpgradePrompt only when explicitly provided.
+  return <>{fallback ?? null}</>;
 };
 
 export default FeatureGate;

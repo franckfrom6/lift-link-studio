@@ -2,6 +2,7 @@ import { Dumbbell, ArrowLeftRight, X, Plus, RefreshCw, Copy, Trash2, Activity, Z
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsAdvanced } from "@/contexts/DisplayModeContext";
+import { useFeatureAccess } from "@/providers/PlanProvider";
 import OnboardingTooltip from "@/components/onboarding/OnboardingTooltip";
 import FirstStepsChecklist from "@/components/onboarding/FirstStepsChecklist";
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,6 @@ import { useWeekData } from "@/hooks/useWeekData";
 import { useMonthSessions } from "@/hooks/useMonthSessions";
 import { formatLocalDate } from "@/lib/date-utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { useFeatureAccess } from "@/providers/PlanProvider";
 
 // Route resolver based on session type (handles legacy untyped sessions)
 const getSessionRoute = (id: string, sessionType?: string): string => {
@@ -70,6 +70,7 @@ const StudentWeek = () => {
   const isAdvanced = useIsAdvanced();
   const { isEnabled: canCheckin } = useFeatureAccess("weekly_checkin");
   const { isEnabled: canSessionSwap } = useFeatureAccess("session_swap");
+  const { isEnabled: canExternalSessions } = useFeatureAccess("external_sessions");
   const queryClient = useQueryClient();
   const { program, loading: programLoading, refreshing } = useStudentProgram();
   const DAYS = [
@@ -1079,9 +1080,11 @@ const StudentWeek = () => {
                   <DropdownMenuItem onClick={() => { setSessionChooserDate(day.date); setSessionChooserOpen(true); }}>
                     <Dumbbell className="w-4 h-4 mr-2" />{t('session:builder_title')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
-                    <Plus className="w-4 h-4 mr-2" />{t('calendar:log_activity')}
-                  </DropdownMenuItem>
+                  {canExternalSessions && (
+                    <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
+                      <Plus className="w-4 h-4 mr-2" />{t('calendar:log_activity')}
+                    </DropdownMenuItem>
+                  )}
                 </>
               )}
               {/* Day with a programmed session → management actions */}

@@ -1,47 +1,58 @@
-## Bi-set (superset) support
+## Objectif
 
-A sizable feature touching DB, coach editor, and athlete live session. Plan below before implementation.
+Permettre la création d'athlètes (et de coachs) de deux façons :
+1. **Depuis l'app admin** : formulaire complet → crée le compte + profil + lien coach optionnel + envoie un magic link.
+2. **Depuis Lovable Cloud** : l'utilisateur passe par l'onboarding normal à sa 1re connexion et choisit lui-même coach/athlète (déjà couvert par le trigger `handle_new_user` qu'on vient d'ajouter — rien à faire de plus, c'est exactement le flux "choix à la 1re connexion").
 
-### 1. DB migration
-- Add `superset_group INTEGER DEFAULT NULL` to `public.session_exercises`.
-- No RLS changes needed (inherits existing policies).
-- After migration approval, generated types will include the new column.
+## Plan
 
-### 2. Coach side — program editor
-- Locate the component rendering ordered exercises within a session (likely `src/components/coach/SessionEditor.tsx` or similar — will read first).
-- Between each pair of adjacent exercise rows, render a small "↕ Bi-set" toggle button.
-- Click behavior:
-  - If neither exercise has a `superset_group`, assign both the next free integer for that session.
-  - If already linked together, clicking unlinks (set both to `null`).
-  - If one is already in a different group, replace with the new shared group.
-- Visual indicator when linked: vertical bracket / chip "↕ Bi-set" rendered between the two rows.
-- Persist via existing UPSERT save path (so `superset_group` is included in the payload).
+### 1. Edge function `admin-create-user`
 
-### 3. Athlete live session
-- In `src/pages/student/LiveSession.tsx`:
-  - Pre-compute groups: consecutive exercises sharing the same non-null `superset_group` become a "block".
-  - Render block as a single card containing both `EnhancedExerciseCard`s stacked with a divider, header label "Bi-set".
-  - Set-validation flow:
-    - User validates set N of exercise A → does NOT trigger rest timer; highlight exercise B's set N as next.
-    - User validates set N of exercise B → triggers a single rest timer using A's `rest_seconds`.
-    - After rest, both cards advance to set N+1.
-  - Header label per round: `Série N : {A.name} + {B.name} · Repos {rest}s`.
-  - Completed_sets are still inserted per exercise (no duplication).
-- Non-superset exercises behavior unchanged.
+Nouvelle fonction `supabase/functions/admin-create-user/index.ts` qui utilise la `service_role` :
 
-### 4. Set counting fix
-- Achieved naturally: each exercise's sets log independently to `completed_sets`, but rest timer is gated on both exercises completing the same set index.
+- **Auth** : vérifie le JWT du caller via `getClaims(token)` puis check `is_admin = true` dans `profiles`. Sinon 403.
+- **Input validé** (Zod) :
+  - `email` (requis)
+  - `full_name` (requis)
+  - `role` : `"coach" | "student"` (requis)
+  - `coach_id` (optionnel, uniquement si role=student)
+  - `plan_name` (optionnel, défaut `free`)
+- **Actions** :
+  1. `admin.createUser({ email, email_confirm: true, user_metadata: { full_name } })`
+  2. `upsert` dans `profiles` avec `user_id`, `full_name`, `role`, `onboarding_completed = true`
+  3. Si `coach_id` fourni + role=student : `insert` dans `coach_students` (status=active)
+  4. Si `plan_name` ≠ free : update/insert `user_subscriptions`
+  5. `admin.generateLink({ type: 'magiclink', email })` → renvoyer le lien au front (l'email part automatiquement via les templates auth en place)
+- **CORS** + erreurs propres + logs `[admin-create-user]`.
+- `config.toml` : `verify_jwt = false` (on valide en code).
 
-### Files touched
-- New SQL migration
-- `src/components/coach/SessionEditor.tsx` (or actual editor)
-- `src/pages/student/LiveSession.tsx`
-- Possibly small helper in `src/components/student/EnhancedExerciseCard.tsx` to suppress its internal rest-timer trigger when part of a superset (controlled mode).
+### 2. UI admin — modale "Créer un utilisateur"
 
-### Order of execution
-1. Run DB migration (await approval).
-2. Update coach editor UI + save payload.
-3. Update live session rendering + rest-timer gating.
-4. Smoke test in preview.
+Dans `src/pages/AdminPanel.tsx`, ajouter au-dessus de la liste users un bouton **"+ Créer un utilisateur"** qui ouvre un `Dialog` shadcn contenant :
 
-Confirm and I'll start with the migration.
+- `Input` email
+- `Input` full_name
+- `Select` rôle (Athlète / Coach)
+- Si rôle = Athlète :
+  - `Select` coach assigné (optionnel — peuplé depuis `profiles where role='coach'`)
+- `Select` plan (free / pro / … — depuis `allPlans` déjà chargé)
+- Bouton "Créer" → `supabase.functions.invoke('admin-create-user', { body })`
+- Toast succès + refresh de la liste users + affichage du magic link copiable (utile si l'email n'arrive pas tout de suite).
+
+### 3. Vérification
+
+- Créer un athlète depuis l'admin : il apparaît immédiatement dans la liste, reçoit un email magic link, peut se connecter sans onboarding.
+- Créer un user depuis Lovable Cloud : il atterrit sur `/onboarding` à sa 1re connexion (comportement actuel, déjà OK depuis la migration précédente).
+
+### Détails techniques
+
+- L'edge function utilise `SUPABASE_SERVICE_ROLE_KEY` (déjà présente dans les secrets).
+- Le trigger `auto_assign_free_plan` existant gère le plan free par défaut ; on n'override que si l'admin choisit autre chose.
+- Le trigger `handle_new_user` (déjà en place) crée le profil ; l'edge function le met juste à jour avec role + onboarding_completed=true via `upsert`.
+- Pas de modif des RLS existantes (la fonction utilise service_role).
+
+### Hors scope
+
+- Création en masse / import CSV.
+- Modification d'un user existant via cette modale (l'admin a déjà le changement de plan en place).
+- Reset password depuis l'admin (peut être ajouté dans un 2e temps).

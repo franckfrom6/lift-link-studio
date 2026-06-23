@@ -32,6 +32,7 @@ import { ExternalSessionData } from "@/components/student/ExternalSessionForm";
 import StudentRecommendationCards from "@/components/student/StudentRecommendationCards";
 import CoachFeedbackView from "@/components/coach/CoachFeedbackView";
 import StudentDisplayModeBanner from "@/components/coach/StudentDisplayModeBanner";
+import FeatureGate from "@/components/plans/FeatureGate";
 import { SENSATION_CONFIG, SensationTag, formatDuration } from "@/types/hybrid";
 
 interface StudentProfile {
@@ -456,27 +457,31 @@ const StudentDetail = () => {
 
       {/* AI Adaptation */}
       {program && (
-        <div className="space-y-3">
-          <AIAdaptationView
-            studentId={student.user_id}
-            programId={program.id}
-            weekNumber={1}
-            studentName={student.full_name}
-          />
-        </div>
+        <FeatureGate feature="ai_week_optimizer">
+          <div className="space-y-3">
+            <AIAdaptationView
+              studentId={student.user_id}
+              programId={program.id}
+              weekNumber={1}
+              studentName={student.full_name}
+            />
+          </div>
+        </FeatureGate>
       )}
 
       {/* AI Bilan + Report buttons */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <Button
-          variant="outline"
-          className="flex-1"
-          onClick={() => navigate(`/coach/students/${studentId}/bilan`)}
-        >
-          <Bot className="w-4 h-4 mr-2" />
-          {t("program:generate_ai_bilan")}
-        </Button>
-      </div>
+      <FeatureGate feature="ai_cycle_report">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => navigate(`/coach/students/${studentId}/bilan`)}
+          >
+            <Bot className="w-4 h-4 mr-2" />
+            {t("program:generate_ai_bilan")}
+          </Button>
+        </div>
+      </FeatureGate>
 
       {/* Coach recommendations for this student */}
       <div className="space-y-3">

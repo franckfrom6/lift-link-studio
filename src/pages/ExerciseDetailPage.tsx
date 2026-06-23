@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ExerciseVideoEmbed } from "@/components/student/ExerciseVideoEmbed";
+import FeatureGate from "@/components/plans/FeatureGate";
 
 function fmtDate(iso: string): string {
   const d = new Date(iso);
@@ -180,15 +181,17 @@ export default function ExerciseDetailPage({ studentIdOverride }: ExerciseDetail
         )}
 
         {/* ── Progression chart ── */}
-        <section className="rounded-md border border-border bg-card p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground font-semibold">
-              Progression — top set (1RM estimé)
+        <FeatureGate feature="strength_charts" showLocked>
+          <section className="rounded-md border border-border bg-card p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground font-semibold">
+                Progression — top set (1RM estimé)
+              </div>
+              <div className="text-[10px] text-muted-subtle tabular-nums">{sessions.length} séance{sessions.length > 1 ? "s" : ""}</div>
             </div>
-            <div className="text-[10px] text-muted-subtle tabular-nums">{sessions.length} séance{sessions.length > 1 ? "s" : ""}</div>
-          </div>
-          <ExerciseProgressionChart sessions={sessions} metric="e1rm" />
-        </section>
+            <ExerciseProgressionChart sessions={sessions} metric="e1rm" />
+          </section>
+        </FeatureGate>
 
         {/* ── Recent sessions ── */}
         <section className="rounded-md border border-border bg-card overflow-hidden">

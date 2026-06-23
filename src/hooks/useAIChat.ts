@@ -25,6 +25,12 @@ export interface ChatAttachment {
   base64: string;
 }
 
+export interface Conversation {
+  id: string;
+  title: string;
+  updated_at: string;
+}
+
 export function useAIChat(options?: UseAIChatOptions) {
   const { t } = useTranslation("ai_chat");
   const { user, profile, role } = useAuth();
@@ -35,6 +41,8 @@ export function useAIChat(options?: UseAIChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
   // Reset chat state when the signed-in user changes (logout/login or account switch).
   const prevUserIdRef = useRef<string | null>(null);
@@ -43,26 +51,103 @@ export function useAIChat(options?: UseAIChatOptions) {
     if (prevUserIdRef.current !== null && prevUserIdRef.current !== uid) {
       setMessages([]);
       setInitialLoaded(false);
+      setConversations([]);
+      setActiveConversationId(null);
     }
     prevUserIdRef.current = uid;
   }, [user?.id]);
 
-  const loadHistory = useCallback(async () => {
-    if (!user || initialLoaded) return;
+  const createConversation = useCallback(async (): Promise<Conversation | null> => {
+    if (!user) return null;
+    const { data, error } = await supabase
+      .from("ai_conversations")
+      .insert({ user_id: user.id, title: "Nouvelle conversation" })
+      .select("id, title, updated_at")
+      .single();
+    if (error) {
+      console.error("[useAIChat] createConversation:", error);
+      return null;
+    }
+    return data as Conversation;
+  }, [user]);
+
+  const loadMessagesFor = useCallback(async (convId: string) => {
     const { data, error } = await supabase
       .from("ai_chat_messages")
       .select("id, role, content, context_page")
-      .eq("user_id", user.id)
+      .eq("conversation_id", convId)
       .order("created_at", { ascending: true })
-      .limit(50);
+      .limit(200);
     if (error) {
-      console.error("Error loading chat history:", error);
-      toast.error(t("error"));
-    } else if (data) {
-      setMessages(data as Message[]);
+      console.error("[useAIChat] loadMessagesFor:", error);
+      return;
     }
+    setMessages((data ?? []) as Message[]);
+  }, []);
+
+  const loadConversations = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("ai_conversations")
+      .select("id, title, updated_at")
+      .eq("user_id", user.id)
+      .eq("archived", false)
+      .order("updated_at", { ascending: false });
+    if (error) {
+      console.error("[useAIChat] loadConversations:", error);
+      setInitialLoaded(true);
+      return;
+    }
+    let list = (data ?? []) as Conversation[];
+    if (list.length === 0) {
+      const created = await createConversation();
+      if (created) list = [created];
+    }
+    setConversations(list);
+    setActiveConversationId(prev => {
+      const next = prev ?? list[0]?.id ?? null;
+      if (next && next !== prev) {
+        loadMessagesFor(next);
+      } else if (next && next === prev) {
+        loadMessagesFor(next);
+      }
+      return next;
+    });
     setInitialLoaded(true);
-  }, [user, initialLoaded, t]);
+  }, [user, createConversation, loadMessagesFor]);
+
+  // Backwards-compatible alias
+  const loadHistory = loadConversations;
+
+  const newConversation = useCallback(async () => {
+    const conv = await createConversation();
+    if (!conv) return;
+    setConversations(prev => [conv, ...prev]);
+    setActiveConversationId(conv.id);
+    setMessages([]);
+  }, [createConversation]);
+
+  const selectConversation = useCallback(async (id: string) => {
+    if (!user) return;
+    setActiveConversationId(id);
+    await loadMessagesFor(id);
+  }, [user, loadMessagesFor]);
+
+  const deleteConversation = useCallback(async (id: string) => {
+    if (!user) return;
+    const { error } = await supabase.from("ai_conversations").delete().eq("id", id);
+    if (error) {
+      console.error("[useAIChat] deleteConversation:", error);
+      toast.error(t("error"));
+      return;
+    }
+    setConversations(prev => prev.filter(c => c.id !== id));
+    if (activeConversationId === id) {
+      setMessages([]);
+      setActiveConversationId(null);
+      await loadConversations();
+    }
+  }, [user, activeConversationId, loadConversations, t]);
 
   const buildContext = useCallback(() => {
     const ctx: string[] = [];
@@ -85,8 +170,21 @@ export function useAIChat(options?: UseAIChatOptions) {
       return;
     }
 
+    let convId = activeConversationId;
+    if (!convId) {
+      const conv = await createConversation();
+      if (!conv) {
+        toast.error(t("error"));
+        return;
+      }
+      convId = conv.id;
+      setConversations(prev => [conv, ...prev]);
+      setActiveConversationId(conv.id);
+    }
+
     const displayText = text.trim() || (file ? `📎 ${file.name}` : "");
     const userMsg: Message = { role: "user", content: displayText, context_page: location.pathname };
+    const isFirst = messages.length === 0;
     setMessages(prev => [...prev, userMsg]);
 
     const { error: insertError } = await supabase.from("ai_chat_messages").insert({
@@ -94,8 +192,9 @@ export function useAIChat(options?: UseAIChatOptions) {
       role: "user",
       content: displayText,
       context_page: location.pathname,
+      conversation_id: convId,
     });
-    if (insertError) console.error("Error saving user message:", insertError);
+    if (insertError) console.error("[useAIChat] save user msg:", insertError);
 
     setIsLoading(true);
     options?.onMessageSent?.();
@@ -180,21 +279,39 @@ export function useAIChat(options?: UseAIChatOptions) {
         role: "assistant",
         content: assistantContent,
         context_page: location.pathname,
+        conversation_id: convId,
       });
-      if (saveError) console.error("Error saving assistant message:", saveError);
+      if (saveError) console.error("[useAIChat] save assistant msg:", saveError);
+
+      const nowIso = new Date().toISOString();
+      const newTitle = (text.trim() || file?.name || "Conversation").slice(0, 40);
+      const { error: convErr } = await supabase
+        .from("ai_conversations")
+        .update({
+          updated_at: nowIso,
+          ...(isFirst ? { title: newTitle } : {}),
+        })
+        .eq("id", convId);
+      if (convErr) console.error("[useAIChat] bump conversation:", convErr);
+      setConversations(prev => {
+        const updated = prev.map(c => c.id === convId
+          ? { ...c, updated_at: nowIso, title: isFirst ? newTitle : c.title }
+          : c);
+        return [...updated].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+      });
     } catch (e) {
-      console.error("VOLT AI error details:", e);
+      console.error("[useAIChat] VOLT AI error:", e);
       toast.error(t("error"));
     } finally {
       setIsLoading(false);
     }
-  }, [user, isEnabled, messages, buildContext, location.pathname, t, options, queryClient]);
+  }, [user, isEnabled, messages, buildContext, location.pathname, t, options, queryClient, activeConversationId, createConversation]);
 
   const clearHistory = useCallback(async () => {
     if (!user) return;
     const { error } = await supabase.from("ai_chat_messages").delete().eq("user_id", user.id);
     if (error) {
-      console.error("Error clearing chat:", error);
+      console.error("[useAIChat] clearHistory:", error);
       toast.error(t("error"));
       return;
     }
@@ -209,5 +326,11 @@ export function useAIChat(options?: UseAIChatOptions) {
     sendMessage,
     clearHistory,
     loadHistory,
+    loadConversations,
+    conversations,
+    activeConversationId,
+    newConversation,
+    selectConversation,
+    deleteConversation,
   };
 }
