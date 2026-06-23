@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Search, Trash2, Plus, Users, ChevronLeft, ChevronRight, Link2, Unlink } from "lucide-react";
+import { Search, Trash2, Plus, Users, ChevronLeft, ChevronRight, Link2, Unlink, UserPlus, Copy } from "lucide-react";
 import PlanBadge from "@/components/plans/PlanBadge";
 import { format } from "date-fns";
 
@@ -57,6 +58,48 @@ const AdminUsers = () => {
   const [coachAssignments, setCoachAssignments] = useState<CoachStudentRow[]>([]);
   const [assignCoachId, setAssignCoachId] = useState("");
   const [assignStudentId, setAssignStudentId] = useState("");
+
+  // Create user modal state
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newFullName, setNewFullName] = useState("");
+  const [newUserRole, setNewUserRole] = useState<"student" | "coach">("student");
+  const [newCoachId, setNewCoachId] = useState<string>("none");
+  const [newPlanName, setNewPlanName] = useState<string>("free");
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+
+  const resetCreateForm = () => {
+    setNewEmail(""); setNewFullName(""); setNewUserRole("student");
+    setNewCoachId("none"); setNewPlanName("free"); setGeneratedLink(null);
+  };
+
+  const handleCreateUser = async () => {
+    if (!newEmail.trim() || !newFullName.trim()) { toast.error("Email et nom requis"); return; }
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: {
+          email: newEmail.trim(),
+          full_name: newFullName.trim(),
+          role: newUserRole,
+          coach_id: newUserRole === "student" && newCoachId !== "none" ? newCoachId : null,
+          plan_name: newPlanName,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Utilisateur créé ✓");
+      setGeneratedLink(data?.magic_link ?? null);
+      await fetchUsers();
+      refetch();
+    } catch (e: any) {
+      console.error("[AdminUsers] create user failed", e);
+      toast.error(e?.message ?? "Échec de la création");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -189,6 +232,9 @@ const AdminUsers = () => {
               <SelectItem value="advanced">Advanced</SelectItem>
             </SelectContent>
           </Select>
+          <Button size="sm" onClick={() => { resetCreateForm(); setCreateOpen(true); }}>
+            <UserPlus className="w-4 h-4 mr-1" /> Créer
+          </Button>
         </div>
       </div>
 
