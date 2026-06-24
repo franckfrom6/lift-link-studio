@@ -34,19 +34,44 @@ serve(async (req) => {
 
     const { email, password, full_name, role } = await req.json();
 
-    // Create user with service role
+    // Create user with service role — if already exists, look it up and reuse
+    let userId: string | null = null;
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
     });
 
-    if (createError) throw createError;
+    if (createError) {
+      const msg = (createError.message || "").toLowerCase();
+      const alreadyExists =
+        msg.includes("already been registered") ||
+        msg.includes("already registered") ||
+        msg.includes("already exists") ||
+        (createError as any).status === 422;
+      if (!alreadyExists) throw createError;
+
+      // Find existing user by email (paginate through users)
+      let found: any = null;
+      for (let page = 1; page <= 20 && !found; page++) {
+        const { data: list, error: listErr } = await adminClient.auth.admin.listUsers({ page, perPage: 200 });
+        if (listErr) throw listErr;
+        found = list.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+        if (!list.users.length || list.users.length < 200) break;
+      }
+      if (!found) throw new Error("User exists but could not be located");
+      userId = found.id;
+
+      // Reset password so the temp password works
+      await adminClient.auth.admin.updateUserById(userId, { password, email_confirm: true });
+    } else {
+      userId = newUser.user.id;
+    }
 
     // Upsert profile (trigger on_auth_user_created may have already inserted
     // an empty row — use upsert so we always set full_name, role, onboarding_completed)
     const { error: profileError } = await adminClient.from("profiles").upsert({
-      user_id: newUser.user.id,
+      user_id: userId,
       full_name,
       role,
       onboarding_completed: true,
@@ -60,7 +85,7 @@ serve(async (req) => {
         body: {
           templateName: "pilot-welcome",
           recipientEmail: email,
-          idempotencyKey: `pilot-welcome-${newUser.user.id}`,
+          idempotencyKey: `pilot-welcome-${userId}`,
           templateData: {
             firstName: full_name?.split(" ")[0] || "",
             email,
@@ -73,7 +98,7 @@ serve(async (req) => {
       console.error("Failed to send welcome email", emailErr);
     }
 
-    return new Response(JSON.stringify({ user_id: newUser.user.id }), {
+    return new Response(JSON.stringify({ user_id: userId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
