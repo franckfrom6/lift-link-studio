@@ -17,9 +17,16 @@ serve(async (req) => {
 
     // Verify caller is admin
     const authHeader = req.headers.get("Authorization")!;
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: { user: caller } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (!caller) throw new Error("Unauthorized");
+    const token = authHeader?.replace("Bearer ", "") ?? "";
+    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: claimsData, error: claimsErr } = await anonClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      console.error("getClaims failed", claimsErr);
+      throw new Error("Unauthorized");
+    }
+    const callerId = claimsData.claims.sub as string;
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
@@ -27,7 +34,7 @@ serve(async (req) => {
     const { data: profile } = await adminClient
       .from("profiles")
       .select("is_admin")
-      .eq("user_id", caller.id)
+      .eq("user_id", callerId)
       .single();
 
     if (!profile?.is_admin) throw new Error("Not admin");
