@@ -43,13 +43,14 @@ serve(async (req) => {
 
     if (createError) throw createError;
 
-    // Create profile
-    const { error: profileError } = await adminClient.from("profiles").insert({
+    // Upsert profile (trigger on_auth_user_created may have already inserted
+    // an empty row — use upsert so we always set full_name, role, onboarding_completed)
+    const { error: profileError } = await adminClient.from("profiles").upsert({
       user_id: newUser.user.id,
       full_name,
       role,
       onboarding_completed: true,
-    });
+    }, { onConflict: "user_id" });
 
     if (profileError) throw profileError;
 
