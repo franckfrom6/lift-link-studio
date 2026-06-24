@@ -34,6 +34,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { AnimatePresence, motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { isLinkedToNext } from "@/lib/superset-utils";
+import { useFeatureAccess } from "@/providers/PlanProvider";
 
 interface Substitution {
   key: string;
@@ -67,6 +68,7 @@ const LiveSession = () => {
   const { user, profile } = useAuth();
   const { program: dbProgram, loading: programLoading } = useStudentProgram();
   const isAdvanced = useIsAdvanced();
+  const { isEnabled: canAlternatives } = useFeatureAccess("exercise_alternatives_manual");
   const { effectiveStudentId } = useImpersonation();
   const studentId = user ? effectiveStudentId(user.id) : null;
 
@@ -1403,7 +1405,7 @@ const LiveSession = () => {
                         onAllSetsComplete={() => handleExerciseComplete(key)}
                         onSetValidated={(rest) => handleSupersetAwareRest(key, rest)}
                         onRestStart={(secs) => handleSupersetAwareRest(key, secs)}
-                        onSwapExercise={() => handleOpenSwap(key)}
+                        onSwapExercise={canAlternatives ? () => handleOpenSwap(key) : undefined}
                         onSkipExercise={() => handleOpenSkip(key)}
                         isSubstituted={isSubstituted}
                         isSkipped={isSkipped}

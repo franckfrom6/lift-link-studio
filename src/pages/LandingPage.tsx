@@ -560,6 +560,15 @@ const WaitlistSection = () => {
         },
       })
       .catch((err) => console.error("Confirmation email failed", err));
+    supabase.functions
+      .invoke("send-transactional-email", {
+        body: {
+          templateName: "pilot-request-admin-notify",
+          idempotencyKey: `pilot-request-admin-notify-${id}`,
+          templateData: { email: cleanEmail, role: formRole, firstName: localPart },
+        },
+      })
+      .catch((err) => console.error("Admin notification email failed", err));
   };
 
   return (

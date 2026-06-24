@@ -16,6 +16,7 @@ import { saveProgram } from "@/hooks/useSaveProgram";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import ProgressionTimeline, { ProgressionPhase } from "@/components/student/ProgressionTimeline";
+import { useFeatureAccess } from "@/providers/PlanProvider";
 
 const ProgramEditor = () => {
   const { studentId, programId } = useParams();
@@ -23,6 +24,7 @@ const ProgramEditor = () => {
   const { user } = useAuth();
   const { t } = useTranslation(["program", "common"]);
   const { generate, loading: aiLoading } = useGenerateProgram();
+  const { isEnabled: canAIGeneration } = useFeatureAccess("ai_program_generation");
   const [student, setStudent] = useState<{ full_name: string; goal: string | null; level: string | null } | null>(null);
 
   // Fetch real student data from DB
@@ -336,19 +338,21 @@ const ProgramEditor = () => {
             {t("program:activate_program")}
           </Button>
         )}
-        <Button
-          onClick={() => setShowAI(!showAI)}
-          variant={showAI ? "secondary" : "outline"}
-          size="sm"
-          className="ml-auto"
-        >
-          <Sparkles className="w-4 h-4 mr-1" />
-          {t("program:generate_ai")}
-        </Button>
+        {canAIGeneration && (
+          <Button
+            onClick={() => setShowAI(!showAI)}
+            variant={showAI ? "secondary" : "outline"}
+            size="sm"
+            className="ml-auto"
+          >
+            <Sparkles className="w-4 h-4 mr-1" />
+            {t("program:generate_ai")}
+          </Button>
+        )}
       </div>
 
       {/* AI Generation Panel */}
-      {showAI && (
+      {showAI && canAIGeneration && (
         <div className="glass rounded-xl p-5 space-y-4 border-primary/20 glow-primary animate-fade-in">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

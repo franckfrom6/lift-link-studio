@@ -1,0 +1,256 @@
+## P25 — Câblage des feature gates admin → UI
+
+### Contexte
+Le système de plan (`PlanProvider` → `useFeatureAccess` → `FeatureGate`) existe et
+fonctionne correctement pour 4 features. Mais 26 features configurables dans l'admin
+n'ont aucune gate UI : les désactiver ne change rien côté utilisateur.
+
+Ce prompt câble les 7 plus impactantes + expose `ai_chat` dans l'admin.
+
+---
+
+### 1 — Ajouter `ai_chat` à l'UI admin (translations seulement)
+
+Le code gate déjà `ai_chat` via `useFeatureAccess("ai_chat")` dans `useAIChat.ts` et
+`AISidebarToggle.tsx`, mais la clé n'est pas dans le panneau admin — l'admin ne peut
+pas la configurer.
+
+**`src/i18n/locales/en/admin.json`** — ajouter dans l'objet `features` :
+```json
+"ai_chat": "AI Chat / VOLT"
+```
+
+**`src/i18n/locales/fr/admin.json`** — ajouter dans l'objet `features` :
+```json
+"ai_chat": "Chat IA / VOLT"
+```
+
+---
+
+### 2 — `body_measurements` — StudentProgress.tsx
+
+**Fichier :** `src/pages/student/StudentProgress.tsx`
+
+Actuellement la section "Mensurations" est conditionnée par `isAdvanced` (préférence
+d'affichage de l'utilisateur), pas par le plan. Remplacer la condition pour utiliser la
+feature gate du plan.
+
+**Import à ajouter** (si pas déjà présent) :
+```tsx
+import { useFeatureAccess } from "@/providers/PlanProvider";
+```
+
+**Dans le composant StudentProgress**, ajouter :
+```tsx
+const { isEnabled: canBodyMeasurements } = useFeatureAccess("body_measurements");
+```
+
+**Remplacer** le bloc `{/* Mensurations + photos — Pro only */}` (lignes ~220-241) :
+
+```tsx
+{/* Mensurations + photos */}
+{isAdvanced && canBodyMeasurements ? (
+  <>
+    <ProgSection title="Mensurations">
+      <BodyEvolutionSection />
+    </ProgSection>
+
+    <FeatureGate feature="progress_photos" showLocked>
+      <ProgSection title="Photos">
+        <ProgressPhotoGallery />
+      </ProgSection>
+    </FeatureGate>
+  </>
+) : isAdvanced && !canBodyMeasurements ? (
+  <FeatureGate feature="body_measurements" showLocked>
+    <ProgSection title="Mensurations">
+      <BodyEvolutionSection />
+    </ProgSection>
+  </FeatureGate>
+) : (
+  <ProgSection title="Mensurations">
+    <ProgEmptyState
+      icon={ImageIcon}
+      title="Disponible en mode Pro"
+      description="Active le mode Pro pour suivre poids, masse grasse et photos de progression."
+    />
+  </ProgSection>
+)}
+```
+
+---
+
+### 3 — `strength_charts` — ExerciseDetailPage.tsx
+
+**Fichier :** `src/pages/ExerciseDetailPage.tsx`
+
+**Import à ajouter** :
+```tsx
+import FeatureGate from "@/components/plans/FeatureGate";
+```
+
+**Wrapper** la section progression (lignes ~183-191) avec FeatureGate :
+
+```tsx
+<FeatureGate feature="strength_charts" showLocked>
+  <section className="rounded-md border border-border bg-card p-4">
+    <div className="flex items-center justify-between mb-3">
+      <div className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground font-semibold">
+        Progression — top set (1RM estimé)
+      </div>
+      <div className="text-[10px] text-muted-subtle tabular-nums">{sessions.length} séance{sessions.length > 1 ? "s" : ""}</div>
+    </div>
+    <ExerciseProgressionChart sessions={sessions} metric="e1rm" />
+  </section>
+</FeatureGate>
+```
+
+---
+
+### 4 — `ai_cycle_report` + `pdf_export` — StudentBilan.tsx
+
+**Fichier :** `src/pages/coach/StudentBilan.tsx`
+
+**Imports à ajouter** :
+```tsx
+import { useFeatureAccess } from "@/providers/PlanProvider";
+```
+
+**Dans le composant StudentBilan**, ajouter en haut du corps de la fonction :
+```tsx
+const { isEnabled: canCycleReport } = useFeatureAccess("ai_cycle_report");
+const { isEnabled: canPdfExport } = useFeatureAccess("pdf_export");
+```
+
+**Modifications :**
+
+1. Wrapper la condition du bouton "Générer" et du formulaire date pour afficher un
+   état bloqué si `!canCycleReport` :
+   ```tsx
+   {!canCycleReport ? (
+     <div className="glass p-6 text-center text-sm text-muted-foreground space-y-2">
+       <Bot className="w-8 h-8 mx-auto text-muted-foreground/40" />
+       <p className="font-medium">Bilan IA — fonctionnalité avancée</p>
+       <p className="text-xs">La génération de bilan IA nécessite un plan supérieur.</p>
+     </div>
+   ) : !bilan ? (
+     /* ... bloc date selector + bouton Générer existant ... */
+   ) : (
+     /* ... AIBilanView existant ... */
+   )}
+   ```
+
+2. Passer `onGeneratePDF` à `AIBilanView` conditionnellement :
+   ```tsx
+   <AIBilanView
+     bilan={bilan}
+     rawData={rawData}
+     onBilanChange={setBilan}
+     onGeneratePDF={canPdfExport ? handleGeneratePDF : undefined}
+   />
+   ```
+   (Si `onGeneratePDF` est undefined, le bouton PDF dans AIBilanView doit être caché.
+   Vérifier que `AIBilanView` conditionne déjà l'affichage du bouton PDF sur la présence
+   de `onGeneratePDF` — c'est le cas si c'est un prop optionnel.)
+
+---
+
+### 5 — `ai_week_optimizer` — StudentDetail.tsx
+
+**Fichier :** `src/pages/coach/StudentDetail.tsx`
+
+**Import à ajouter** :
+```tsx
+import FeatureGate from "@/components/plans/FeatureGate";
+```
+
+**Wrapper** le bloc `{/* AI Adaptation */}` (lignes ~457-467) :
+
+```tsx
+{program && (
+  <FeatureGate feature="ai_week_optimizer" showLocked>
+    <div className="space-y-3">
+      <AIAdaptationView
+        studentId={student.user_id}
+        programId={program.id}
+        weekNumber={1}
+        studentName={student.full_name}
+      />
+    </div>
+  </FeatureGate>
+)}
+```
+
+**Wrapper** aussi le bouton "Générer bilan IA" (lignes ~470-479) pour qu'il soit caché
+si `ai_cycle_report` est désactivé :
+
+```tsx
+{/* AI Bilan + Report buttons */}
+<FeatureGate feature="ai_cycle_report">
+  <div className="flex flex-col sm:flex-row gap-2">
+    <Button
+      variant="outline"
+      className="flex-1"
+      onClick={() => navigate(`/coach/students/${studentId}/bilan`)}
+    >
+      <Bot className="w-4 h-4 mr-2" />
+      {t("program:generate_ai_bilan")}
+    </Button>
+  </div>
+</FeatureGate>
+```
+
+---
+
+### 6 — `external_sessions` — StudentWeek.tsx
+
+**Fichier :** `src/pages/student/StudentWeek.tsx`
+
+**Import à ajouter** :
+```tsx
+import { useFeatureAccess } from "@/providers/PlanProvider";
+```
+
+**Dans le composant StudentWeek**, ajouter :
+```tsx
+const { isEnabled: canExternalSessions } = useFeatureAccess("external_sessions");
+```
+
+**Conditionner** le DropdownMenuItem "Ajouter une activité externe" (ligne ~1079) :
+```tsx
+{canExternalSessions && (
+  <DropdownMenuItem onClick={() => handleAddExternal(day.date)}>
+    <Plus className="w-4 h-4 mr-2" />{t('calendar:log_activity')}
+  </DropdownMenuItem>
+)}
+```
+
+---
+
+### 7 — `FeatureGate` sans `showLocked` = rendu null (comportement attendu)
+
+Pour les usages sans `showLocked` (StudentDetail bouton bilan, StudentWeek dropdown),
+`FeatureGate` doit retourner `null` quand la feature est désactivée (comportement
+actuel du composant — vérifier que c'est bien le cas dans `FeatureGate.tsx`).
+
+---
+
+### Comportement attendu après ces changements
+
+| Feature désactivée dans admin | Effet visible |
+|---|---|
+| `ai_chat` | Bouton VOLT + chat disparu (déjà fonctionnel) |
+| `body_measurements` | Section mensurations montre état verrouillé dans Progress |
+| `strength_charts` | Graphique progression caché dans détail exercice |
+| `ai_cycle_report` | Page bilan montre message bloqué ; bouton "Générer bilan" caché dans StudentDetail |
+| `pdf_export` | Bouton télécharger PDF absent dans le bilan généré |
+| `ai_week_optimizer` | Section adaptation IA cachée dans StudentDetail |
+| `external_sessions` | Option "Loguer activité" absente du menu journée |
+
+### Contraintes
+- Ne pas casser la logique `isAdvanced` existante (c'est une préférence UI, pas un plan)
+- Utiliser `<FeatureGate showLocked>` pour les sections importantes (montre un état
+  "premium" au lieu de disparaître silencieusement)
+- Utiliser `<FeatureGate>` sans `showLocked` pour les boutons/actions secondaires
+  (ils disparaissent simplement)
+- Aucun refetch supplémentaire — `useFeatureAccess` lit depuis le contexte déjà chargé

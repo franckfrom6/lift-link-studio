@@ -1,0 +1,289 @@
+## P24 — Chat VOLT : plusieurs conversations séparées (fil de discussions)
+
+### Objectif
+Aujourd'hui le chat VOLT n'a qu'UN seul fil continu (tout l'historique de l'athlète
+mélangé). On veut un système de conversations multiples, façon ChatGPT :
+- une liste de conversations (la plus récente en haut),
+- un bouton « Nouvelle conversation »,
+- chaque conversation a son propre historique et un titre,
+- on bascule de l'une à l'autre, on peut en supprimer.
+
+Trois parties : (1) migration SQL, (2) hook `useAIChat`, (3) UI `AISidebar`.
+
+---
+
+### Partie 1 — Migration SQL (à créer et appliquer)
+
+```sql
+-- Conversations du chat VOLT : plusieurs fils séparés par athlète.
+CREATE TABLE IF NOT EXISTS public.ai_conversations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  title text NOT NULL DEFAULT 'Nouvelle conversation',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  archived boolean NOT NULL DEFAULT false
+);
+
+ALTER TABLE public.ai_conversations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage their own conversations"
+  ON public.ai_conversations
+  FOR ALL
+  TO authenticated
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+-- Rattacher les messages à une conversation
+ALTER TABLE public.ai_chat_messages
+  ADD COLUMN IF NOT EXISTS conversation_id uuid
+  REFERENCES public.ai_conversations(id) ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_conversation
+  ON public.ai_chat_messages (conversation_id, created_at);
+
+-- Backfill : regrouper l'historique existant de chaque user dans une conversation
+DO $$
+DECLARE u record; conv_id uuid;
+BEGIN
+  FOR u IN SELECT DISTINCT user_id FROM public.ai_chat_messages WHERE conversation_id IS NULL LOOP
+    INSERT INTO public.ai_conversations (user_id, title)
+      VALUES (u.user_id, 'Historique') RETURNING id INTO conv_id;
+    UPDATE public.ai_chat_messages
+      SET conversation_id = conv_id
+      WHERE user_id = u.user_id AND conversation_id IS NULL;
+  END LOOP;
+END $$;
+```
+
+---
+
+### Partie 2 — `src/hooks/useAIChat.ts`
+
+Ajouter la notion de conversation active. Étendre l'API du hook sans casser les
+consommateurs existants.
+
+**Nouveaux types / state :**
+
+```typescript
+export interface Conversation {
+  id: string;
+  title: string;
+  updated_at: string;
+}
+// state
+const [conversations, setConversations] = useState<Conversation[]>([]);
+const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+```
+
+**`loadConversations()`** — charge les conversations non archivées de l'utilisateur,
+triées par `updated_at` desc. À appeler à l'ouverture du chat. Si l'utilisateur n'a
+AUCUNE conversation, en créer une vide automatiquement et la rendre active.
+
+```typescript
+const loadConversations = useCallback(async () => {
+  if (!user) return;
+  const { data, error } = await supabase
+    .from("ai_conversations")
+    .select("id, title, updated_at")
+    .eq("user_id", user.id)
+    .eq("archived", false)
+    .order("updated_at", { ascending: false });
+  if (error) { console.error("[useAIChat] loadConversations:", error); return; }
+  let list = data ?? [];
+  if (list.length === 0) {
+    const created = await createConversation(); // voir ci-dessous
+    if (created) list = [created];
+  }
+  setConversations(list);
+  // sélectionne la plus récente si aucune active
+  setActiveConversationId(prev => prev ?? list[0]?.id ?? null);
+}, [user]);
+```
+
+**`createConversation()`** — insère une conversation vide et la retourne :
+
+```typescript
+const createConversation = useCallback(async (): Promise<Conversation | null> => {
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from("ai_conversations")
+    .insert({ user_id: user.id, title: "Nouvelle conversation" })
+    .select("id, title, updated_at")
+    .single();
+  if (error) { console.error("[useAIChat] createConversation:", error); return null; }
+  return data as Conversation;
+}, [user]);
+```
+
+**`newConversation()`** (exposé à l'UI) — crée une conversation, la met active, vide le fil :
+
+```typescript
+const newConversation = useCallback(async () => {
+  const conv = await createConversation();
+  if (!conv) return;
+  setConversations(prev => [conv, ...prev]);
+  setActiveConversationId(conv.id);
+  setMessages([]);
+}, [createConversation]);
+```
+
+**`selectConversation(id)`** — bascule + charge les messages de cette conversation :
+
+```typescript
+const selectConversation = useCallback(async (id: string) => {
+  if (!user) return;
+  setActiveConversationId(id);
+  const { data, error } = await supabase
+    .from("ai_chat_messages")
+    .select("id, role, content, context_page")
+    .eq("conversation_id", id)
+    .order("created_at", { ascending: true })
+    .limit(200);
+  if (error) { console.error("[useAIChat] selectConversation:", error); return; }
+  setMessages((data ?? []) as Message[]);
+}, [user]);
+```
+
+**`deleteConversation(id)`** — supprime (ON DELETE CASCADE nettoie les messages) :
+
+```typescript
+const deleteConversation = useCallback(async (id: string) => {
+  if (!user) return;
+  const { error } = await supabase.from("ai_conversations").delete().eq("id", id);
+  if (error) { console.error("[useAIChat] deleteConversation:", error); toast.error(t("error")); return; }
+  setConversations(prev => prev.filter(c => c.id !== id));
+  if (activeConversationId === id) {
+    setMessages([]);
+    setActiveConversationId(null);
+    // recharge / recrée une conversation
+    await loadConversations();
+  }
+}, [user, activeConversationId, loadConversations, t]);
+```
+
+**`loadHistory()`** existant → REMPLACÉ par `loadConversations()` (charge la liste puis
+les messages de l'active via `selectConversation`). Adapte l'effet d'ouverture pour
+appeler `loadConversations()` puis, quand `activeConversationId` change, charger ses
+messages.
+
+**`sendMessage`** — modifications :
+1. S'assurer qu'une conversation active existe ; sinon en créer une à la volée.
+2. Insérer les messages user ET assistant avec `conversation_id: activeId`.
+3. Après réponse, bumper `updated_at` de la conversation et, si son titre est encore
+   « Nouvelle conversation », le remplacer par les ~40 premiers caractères du 1er message
+   user (titre auto).
+4. N'envoyer à l'edge function QUE les messages de la conversation active (déjà le cas
+   puisque `messages` ne contient que l'active).
+
+```typescript
+// au début de sendMessage, après les guards :
+let convId = activeConversationId;
+if (!convId) {
+  const conv = await createConversation();
+  if (!conv) { toast.error(t("error")); return; }
+  convId = conv.id;
+  setConversations(prev => [conv, ...prev]);
+  setActiveConversationId(conv.id);
+}
+// ... inserts ai_chat_messages : ajouter conversation_id: convId aux deux insert
+// ... après l'insert assistant :
+const isFirst = messages.length === 0;
+await supabase.from("ai_conversations")
+  .update({
+    updated_at: new Date().toISOString(),
+    ...(isFirst ? { title: (text.trim() || file?.name || "Conversation").slice(0, 40) } : {}),
+  })
+  .eq("id", convId);
+// rafraîchir la liste locale (titre + ordre)
+setConversations(prev => {
+  const updated = prev.map(c => c.id === convId
+    ? { ...c, updated_at: new Date().toISOString(), title: isFirst ? (text.trim() || file?.name || c.title).slice(0,40) : c.title }
+    : c);
+  return [...updated].sort((a,b) => b.updated_at.localeCompare(a.updated_at));
+});
+```
+
+**Retour du hook** — exposer en plus :
+`conversations, activeConversationId, newConversation, selectConversation, deleteConversation`
+(et remplacer `loadHistory` par `loadConversations`, ou garder `loadHistory` comme alias
+qui appelle `loadConversations` pour ne pas casser l'appelant).
+
+---
+
+### Partie 3 — `src/components/ai/AISidebar.tsx`
+
+1. **Header** : à côté du titre VOLT, ajouter deux actions :
+   - un bouton « ☰ » (icône `List` ou `MessagesSquare`) qui ouvre le panneau de conversations,
+   - un bouton « + » (`Plus` / `SquarePen`) « Nouvelle conversation » qui appelle `newConversation()`.
+   (Le bouton « clear history » actuel peut être retiré ou déplacé dans le panneau.)
+
+2. **Panneau de conversations** (slide-over interne au sidebar, recouvrant le fil) :
+   - Liste des `conversations` : chaque ligne = titre (truncate) + date relative,
+     ligne active surlignée (`bg-secondary`), tap → `selectConversation(id)` puis fermer
+     le panneau.
+   - Bouton « + Nouvelle conversation » en haut du panneau.
+   - Sur chaque ligne, un bouton corbeille (`Trash2`) → `deleteConversation(id)` avec
+     confirmation (réutilise l'`AlertDialog` déjà présent).
+   - Si liste vide : petit état vide.
+
+```tsx
+{showConversations && (
+  <div className="absolute inset-0 z-10 bg-background flex flex-col">
+    <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+      <span className="font-semibold">Conversations</span>
+      <Button variant="ghost" size="icon" onClick={() => setShowConversations(false)} aria-label="Fermer">
+        <X className="w-5 h-5" />
+      </Button>
+    </div>
+    <button
+      onClick={async () => { await newConversation(); setShowConversations(false); }}
+      className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-primary border-b border-border"
+    >
+      <Plus className="w-4 h-4" /> Nouvelle conversation
+    </button>
+    <div className="flex-1 overflow-y-auto">
+      {conversations.map(c => (
+        <div key={c.id} className={`flex items-center gap-2 px-4 py-3 border-b border-border ${c.id === activeConversationId ? "bg-secondary" : ""}`}>
+          <button className="flex-1 text-left min-w-0" onClick={async () => { await selectConversation(c.id); setShowConversations(false); }}>
+            <p className="text-sm font-medium truncate">{c.title}</p>
+            <p className="text-xs text-muted-foreground">{/* date relative de c.updated_at */}</p>
+          </button>
+          <button onClick={() => setConvToDelete(c.id)} aria-label="Supprimer" className="shrink-0 text-muted-foreground hover:text-destructive">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+```
+
+3. **Effet d'ouverture** : remplacer l'appel `loadHistory()` par `loadConversations()`.
+   Charger les messages de la conversation active quand `activeConversationId` change.
+
+4. Le reste du fil (bulles, markdown, suggestions, input, pièce jointe) est inchangé.
+
+---
+
+### (Optionnel, recommandé) — miniature de l'image jointe dans le fil
+Quand un message user contient une image jointe, afficher une petite miniature dans la
+bulle (au lieu du seul « 📎 nom »), pour que l'utilisateur VOIE que son screenshot a bien
+été envoyé. Nécessite de conserver un aperçu (data URL réduite) avec le message côté state.
+Peut être fait dans un second temps.
+
+---
+
+### Comportement attendu
+- Bouton « Nouvelle conversation » → fil vide, nouvelle entrée en haut de la liste
+- La liste affiche toutes les conversations, plus récente en haut, titre auto depuis le
+  1er message
+- Basculer entre conversations recharge le bon historique
+- Supprimer une conversation efface ses messages (cascade) et bascule sur une autre
+- L'IA ne reçoit que l'historique de la conversation active (pas de mélange)
+
+### Contraintes
+- RLS stricte : un user ne voit/modifie que ses conversations
+- Ne pas casser l'envoi de message ni la pièce jointe existants
+- Pas de refetch global agressif : mettre à jour l'état local après chaque action
+- Logs préfixés `[useAIChat]`
